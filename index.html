@@ -87,6 +87,51 @@
         .display-none { display: none !important; }
         
         #loading-status { color: #0ff; margin-top: 20px; font-family: monospace; font-size: 12px; height: 20px; }
+
+        /* Quick Radio Button (Top-right) */
+        #radio-quick {
+            position: absolute; top: 14px; right: 14px;
+            z-index: 80;
+            width: 40px; height: 40px;
+            background: transparent url('radio.png') center center / contain no-repeat;
+            border: none;
+            cursor: pointer;
+            user-select: none;
+            backdrop-filter: blur(6px);
+            transition: opacity 1s ease-in-out;
+        }
+        #radio-quick:hover { background: rgba(255,255,255,0.2); }
+
+        /* Radio Panel */
+        #radio-panel {
+            position: absolute; top: 54px; right: 14px;
+            width: 360px; max-height: 60vh; overflow: auto;
+            z-index: 90;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+        }
+        #radio-panel h3 {
+            margin: 0; padding: 12px 14px; font-weight: 500; font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            letter-spacing: 1px; text-transform: uppercase; color: #ddd;
+        }
+        #radio-list { padding: 8px; }
+        .radio-item {
+            padding: 10px 12px; margin: 6px 0; border-radius: 6px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.12);
+            cursor: pointer; transition: 0.15s;
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 13px;
+        }
+        .radio-item:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.4);
+            box-shadow: 0 0 20px rgba(255,255,255,0.08) inset;
+        }
     </style>
 
     <!-- Import Map -->
@@ -146,6 +191,12 @@
 
     <div id="canvas-container"></div>
     <audio id="radio-element" crossorigin="anonymous"></audio>
+    <!-- Quick Radio Button and Panel -->
+    <div id="radio-quick" class="interactive" role="button" aria-label="Radio control" title="Left-click: random station • Right-click: choose"></div>
+    <div id="radio-panel" class="display-none">
+        <h3>Radio Stations</h3>
+        <div id="radio-list"></div>
+    </div>
 
     <script type="module">
         import * as THREE from 'three';
@@ -170,15 +221,26 @@
         const container = document.getElementById('canvas-container');
         const statusEl = document.getElementById('loading-status');
         const uiLayer = document.getElementById('ui-layer');
+        const radioQuickBtn = document.getElementById('radio-quick');
+        const radioPanel = document.getElementById('radio-panel');
+        const radioListEl = document.getElementById('radio-list');
+        const radioInputEl = document.getElementById('radio-url');
+        const audioEl = document.getElementById('radio-element');
+        const stations = [];
+        let currentStationIndex = -1;
 
         // --- UI UTILS ---
         function resetIdleTimer() {
             uiLayer.style.opacity = '1';
+            radioQuickBtn.style.opacity = '1';
+            radioQuickBtn.style.pointerEvents = 'auto';
             document.body.style.cursor = 'default';
             if (state.idleTimer) clearTimeout(state.idleTimer);
             if(state.isPlaying) {
                 state.idleTimer = setTimeout(() => {
                     uiLayer.style.opacity = '0';
+                    radioQuickBtn.style.opacity = '0';
+                    radioQuickBtn.style.pointerEvents = 'none';
                     document.body.style.cursor = 'none';
                 }, 3000);
             }
@@ -219,8 +281,7 @@
 
         function playRadio() {
             initAudio();
-            const url = document.getElementById('radio-url').value;
-            const audioEl = document.getElementById('radio-element');
+            const url = radioInputEl.value;
             
             statusEl.innerText = "Connecting to Stream...";
             
@@ -232,7 +293,7 @@
                 state.sourceNode = state.audioCtx.createMediaElementSource(audioEl);
                 state.sourceNode.connect(state.analyserNode);
                 state.analyserNode.connect(state.audioCtx.destination);
-                startGame();
+                if(!state.isPlaying) startGame();
             }).catch(e => {
                 statusEl.innerText = "Stream Error: CORS or Format.";
                 alert("Stream failed to play. The radio station might be blocking browser visualizers.");
@@ -322,14 +383,28 @@
             }
 
             nextPreset() {
-                this.currentPresetIdx = (this.currentPresetIdx + 1) % this.presetKeys.length;
+                // Pick a random preset different from current
+                let next = this.currentPresetIdx;
+                if(this.presetKeys.length > 1) {
+                    while(next === this.currentPresetIdx) {
+                        next = Math.floor(Math.random() * this.presetKeys.length);
+                    }
+                }
+                this.currentPresetIdx = next;
                 this.loadPreset(this.currentPresetIdx);
                 this.restartCycle();
             }
 
             restartCycle() {
-                if(this.cycleInterval) clearInterval(this.cycleInterval);
-                this.cycleInterval = setInterval(() => this.nextPreset(), 15000);
+                if(this.cycleTimeout) clearTimeout(this.cycleTimeout);
+                const schedule = () => {
+                    const delay = 12000 + Math.random() * 13000; // 12s - 25s
+                    this.cycleTimeout = setTimeout(() => {
+                        this.nextPreset();
+                        schedule();
+                    }, delay);
+                };
+                schedule();
             }
             
             loadCustomMilk(jsonTxt) {
@@ -337,7 +412,7 @@
                     const preset = JSON.parse(jsonTxt);
                     this.visualizer.loadPreset(preset, 1.0);
                     document.getElementById('mode-sub').innerText = "CUSTOM PRESET";
-                    clearInterval(this.cycleInterval);
+                    if(this.cycleTimeout) clearTimeout(this.cycleTimeout);
                 } catch(e) { alert("Invalid JSON"); }
             }
 
@@ -359,7 +434,7 @@
 
             destroy() {
                 cancelAnimationFrame(this.animId);
-                clearInterval(this.cycleInterval);
+                if(this.cycleTimeout) clearTimeout(this.cycleTimeout);
                 window.removeEventListener('resize', this.resizeHandler);
                 container.innerHTML = '';
             }
@@ -460,11 +535,46 @@
             };
         };
 
+        const sceneBars = (scene, camera) => {
+            const group = new THREE.Group();
+            const bars = [];
+            const numBars = 64;
+            const spacing = 0.25;
+            for(let i = 0; i < numBars; i++) {
+                const geo = new THREE.BoxGeometry(0.18, 0.5, 0.18);
+                const mat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x001f1f, metalness: 0.1, roughness: 0.6 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.x = (i - numBars/2) * spacing;
+                group.add(mesh);
+                bars.push(mesh);
+            }
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            const point = new THREE.PointLight(0x00ffff, 1.2, 50);
+            point.position.set(0, 5, 5);
+            scene.add(ambient, point, group);
+            camera.position.z = 8;
+            return (data, time) => {
+                const step = Math.floor(data.length / numBars);
+                const t = time * 0.0008;
+                for(let i = 0; i < numBars; i++) {
+                    const v = data[i * step] / 255;
+                    const h = 0.2 + v * 3.0;
+                    bars[i].scale.y = h;
+                    bars[i].position.y = h * 0.25;
+                    const hue = (i / numBars + t) % 1;
+                    bars[i].material.color.setHSL(hue, 1, 0.5);
+                    bars[i].material.emissive.setHSL(hue, 1, 0.2);
+                }
+                group.rotation.y = Math.sin(t * 0.5) * 0.2;
+            };
+        };
+
         // --- MASTER CONTROL ---
         const modes = [
             new MilkdropEngine(),
             new ThreeEngine("Neon Sphere", sceneSphere),
-            new ThreeEngine("Cyber Tunnel", sceneTunnel)
+            new ThreeEngine("Cyber Tunnel", sceneTunnel),
+            new ThreeEngine("Audio Bars", sceneBars)
         ];
 
         function loadMode(index) {
@@ -502,6 +612,91 @@
             }
         });
 
+        // --- RADIO: Load stations and UI ---
+        async function loadStations() {
+            try {
+                const resp = await fetch('radio.txt');
+                const txt = await resp.text();
+                stations.length = 0;
+                txt.split('\n').forEach((line) => {
+                    const raw = line.trim();
+                    if(!raw) return;
+                    const parts = raw.split('|');
+                    if(parts.length >= 2) {
+                        const name = parts[0].trim();
+                        const url = parts.slice(1).join('|').trim();
+                        stations.push({ name, url });
+                    }
+                });
+                renderStationList();
+            } catch(e) {
+                console.warn('Failed to load radio.txt', e);
+            }
+        }
+
+        function renderStationList() {
+            radioListEl.innerHTML = '';
+            stations.forEach((s, i) => {
+                const item = document.createElement('div');
+                item.className = 'radio-item';
+                const nameEl = document.createElement('div');
+                nameEl.textContent = s.name;
+                const goEl = document.createElement('div');
+                goEl.textContent = '➤';
+                item.appendChild(nameEl);
+                item.appendChild(goEl);
+                item.addEventListener('click', () => {
+                    setStation(i);
+                    hideRadioPanel();
+                });
+                radioListEl.appendChild(item);
+            });
+        }
+
+        function setStation(index) {
+            if(index < 0 || index >= stations.length) return;
+            currentStationIndex = index;
+            const s = stations[index];
+            radioInputEl.value = s.url;
+            playRadio();
+        }
+
+        function pickRandomStation() {
+            if(stations.length === 0) return;
+            let idx = currentStationIndex;
+            if(stations.length === 1) idx = 0;
+            else {
+                while(idx === currentStationIndex) {
+                    idx = Math.floor(Math.random() * stations.length);
+                }
+            }
+            setStation(idx);
+        }
+
+        function showRadioPanel() { radioPanel.classList.remove('display-none'); }
+        function hideRadioPanel() { radioPanel.classList.add('display-none'); }
+        function toggleRadioPanel() {
+            if(radioPanel.classList.contains('display-none')) showRadioPanel();
+            else hideRadioPanel();
+        }
+
+        radioQuickBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            pickRandomStation();
+        });
+        radioQuickBtn.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleRadioPanel();
+        });
+        document.addEventListener('click', (e) => {
+            if(!radioPanel.classList.contains('display-none')) {
+                if(!radioPanel.contains(e.target) && e.target !== radioQuickBtn) {
+                    hideRadioPanel();
+                }
+            }
+        });
+
         // Drag Drop
         document.body.addEventListener('dragover', e => e.preventDefault());
         document.body.addEventListener('drop', (e) => {
@@ -512,6 +707,20 @@
             reader.onload = (ev) => state.activeVisualizer.loadCustomMilk(ev.target.result);
             reader.readAsText(file);
         });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if(e.key === 'f' || e.key === 'F') {
+                toggleFullscreen();
+            } else if(e.key === 's' || e.key === 'S') {
+                if(state.currentModeIdx === 0 && state.activeVisualizer?.nextPreset) {
+                    state.activeVisualizer.nextPreset();
+                }
+            }
+        });
+
+        // Bootstrap station list
+        loadStations();
 
     </script>
 </body>
