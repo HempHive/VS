@@ -135,6 +135,11 @@
             border-color: rgba(255,255,255,0.4);
             box-shadow: 0 0 20px rgba(255,255,255,0.08) inset;
         }
+        .radio-item.active {
+            border-color: #d4af37;
+            box-shadow: 0 0 0 2px rgba(212,175,55,0.3) inset, 0 0 16px rgba(212,175,55,0.15);
+            background: rgba(212,175,55,0.08);
+        }
 
         /* Station Banner (Top-left) */
         #station-banner {
@@ -686,6 +691,8 @@
             stations.forEach((s, i) => {
                 const item = document.createElement('div');
                 item.className = 'radio-item';
+                item.dataset.index = String(i);
+                if(i === currentStationIndex) item.classList.add('active');
                 const nameEl = document.createElement('div');
                 nameEl.textContent = s.name;
                 const goEl = document.createElement('div');
@@ -694,7 +701,6 @@
                 item.appendChild(goEl);
                 item.addEventListener('click', () => {
                     setStation(i);
-                    hideRadioPanel();
                 });
                 radioListEl.appendChild(item);
             });
@@ -706,7 +712,17 @@
             const s = stations[index];
             radioInputEl.value = s.url;
             showStationBanner(s.name);
+            updateStationActiveHighlight();
             playRadio();
+        }
+
+        function updateStationActiveHighlight() {
+            const children = Array.from(radioListEl.children);
+            children.forEach((el) => {
+                const idx = Number(el.dataset.index || -1);
+                if(idx === currentStationIndex) el.classList.add('active');
+                else el.classList.remove('active');
+            });
         }
 
         function pickRandomStation() {
