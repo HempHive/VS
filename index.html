@@ -100,7 +100,9 @@
             backdrop-filter: blur(6px);
             transition: opacity 1s ease-in-out;
         }
-        #radio-quick:hover { background: rgba(255,255,255,0.2); }
+        #radio-quick:hover {
+            filter: brightness(1.15);
+        }
 
         /* Radio Panel */
         #radio-panel {
@@ -131,6 +133,23 @@
             background: rgba(255,255,255,0.15);
             border-color: rgba(255,255,255,0.4);
             box-shadow: 0 0 20px rgba(255,255,255,0.08) inset;
+        }
+
+        /* Station Banner (Top-left) */
+        #station-banner {
+            position: absolute; top: 14px; left: 14px;
+            z-index: 80;
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.55);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: #fff;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            transition: opacity 1s ease-in-out;
+            max-width: min(60vw, 720px);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
     </style>
 
@@ -197,6 +216,7 @@
         <h3>Radio Stations</h3>
         <div id="radio-list"></div>
     </div>
+    <div id="station-banner" class="display-none"></div>
 
     <script type="module">
         import * as THREE from 'three';
@@ -226,6 +246,7 @@
         const radioListEl = document.getElementById('radio-list');
         const radioInputEl = document.getElementById('radio-url');
         const audioEl = document.getElementById('radio-element');
+        const stationBanner = document.getElementById('station-banner');
         const stations = [];
         let currentStationIndex = -1;
 
@@ -234,6 +255,9 @@
             uiLayer.style.opacity = '1';
             radioQuickBtn.style.opacity = '1';
             radioQuickBtn.style.pointerEvents = 'auto';
+            if(!stationBanner.classList.contains('display-none')) {
+                stationBanner.style.opacity = '1';
+            }
             document.body.style.cursor = 'default';
             if (state.idleTimer) clearTimeout(state.idleTimer);
             if(state.isPlaying) {
@@ -241,6 +265,9 @@
                     uiLayer.style.opacity = '0';
                     radioQuickBtn.style.opacity = '0';
                     radioQuickBtn.style.pointerEvents = 'none';
+                    if(!stationBanner.classList.contains('display-none')) {
+                        stationBanner.style.opacity = '0';
+                    }
                     document.body.style.cursor = 'none';
                 }, 3000);
             }
@@ -284,6 +311,12 @@
             const url = radioInputEl.value;
             
             statusEl.innerText = "Connecting to Stream...";
+            // Update banner title
+            if(currentStationIndex >= 0 && stations[currentStationIndex] && stations[currentStationIndex].url === url) {
+                showStationBanner(stations[currentStationIndex].name);
+            } else {
+                showStationBanner(deriveTitleFromUrl(url));
+            }
             
             audioEl.crossOrigin = "anonymous"; 
             audioEl.src = url;
@@ -658,6 +691,7 @@
             currentStationIndex = index;
             const s = stations[index];
             radioInputEl.value = s.url;
+            showStationBanner(s.name);
             playRadio();
         }
 
@@ -678,6 +712,22 @@
         function toggleRadioPanel() {
             if(radioPanel.classList.contains('display-none')) showRadioPanel();
             else hideRadioPanel();
+        }
+
+        function showStationBanner(text) {
+            stationBanner.textContent = text || '';
+            if(!text) return;
+            stationBanner.classList.remove('display-none');
+            stationBanner.style.opacity = '1';
+        }
+
+        function deriveTitleFromUrl(url) {
+            try {
+                const u = new URL(url);
+                return u.hostname.replace(/^www\./, '');
+            } catch {
+                return url;
+            }
         }
 
         radioQuickBtn.addEventListener('click', (e) => {
