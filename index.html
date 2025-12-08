@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Omni-Vis: Tomorrowland Edition</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; color: white; cursor: none; }
+        
+        /* Layout */
+        #canvas-container { 
+            position: absolute; top: 0; left: 0;
+            width: 100vw; height: 100vh; 
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* UI Overlays */
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; transition: opacity 0.5s; backdrop-filter: blur(10px);
+            cursor: default;
+        }
+
+        #ui-layer {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 140px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 40px; box-sizing: border-box;
+            background: linear-gradient(to top, rgba(0,0,0,1), transparent);
+            z-index: 50;
+            transition: opacity 1s ease-in-out;
+            opacity: 1;
+        }
+
+        /* Center Control Group */
+        .center-controls {
+            display: flex; align-items: center; justify-content: center; gap: 20px;
+        }
+
+        /* Interactive Elements */
+        .interactive { pointer-events: auto; cursor: pointer; }
+
+        h1 { font-weight: 200; letter-spacing: 8px; text-transform: uppercase; margin-bottom: 30px; text-shadow: 0 0 20px rgba(255,255,255,0.2); text-align: center; }
+
+        .control-group {
+            display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center;
+        }
+
+        .btn-main {
+            padding: 15px 30px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); color: #fff;
+            font-size: 13px; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s;
+            border-radius: 4px; min-width: 150px;
+        }
+        .btn-main:hover { background: #fff; color: #000; box-shadow: 0 0 20px rgba(255,255,255,0.4); border-color: #fff; }
+
+        /* Secondary Icon Buttons (Fullscreen / Skip) */
+        .icon-btn {
+            background: transparent; border: none; color: rgba(255,255,255,0.6);
+            font-size: 24px; padding: 10px; transition: 0.2s; display: flex; align-items: center;
+        }
+        .icon-btn:hover { color: #fff; transform: scale(1.2); text-shadow: 0 0 10px #fff; }
+
+        .radio-input {
+            padding: 15px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #0f0; 
+            width: 320px; font-family: monospace;
+        }
+
+        /* Navigation Arrows */
+        .nav-btn {
+            font-size: 50px; opacity: 0.3; transition: 0.3s; user-select: none; padding: 20px;
+        }
+        .nav-btn:hover { opacity: 1; text-shadow: 0 0 15px #fff; transform: scale(1.1); }
+
+        #mode-info { text-align: center; min-width: 250px; }
+        #mode-title { font-size: 24px; font-weight: 600; display: block; letter-spacing: 2px; margin-bottom: 5px; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        #mode-sub { font-size: 12px; color: #aaa; font-family: monospace; letter-spacing: 1px; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; margin: 0 auto;}
+
+        .hidden { opacity: 0 !important; pointer-events: none; }
+        .display-none { display: none !important; }
+        
+        #loading-status { color: #0ff; margin-top: 20px; font-family: monospace; font-size: 12px; height: 20px; }
+    </style>
+
+    <!-- Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://esm.sh/three@0.160.0",
+                "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/",
+                "butterchurn": "https://esm.sh/butterchurn@2.6.0",
+                "butterchurn-presets": "https://esm.sh/butterchurn-presets@2.4.7",
+                "lodash": "https://esm.sh/lodash@4.17.21"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- START SCREEN -->
+    <div id="overlay">
+        <h1>Omni-Vis</h1>
+        
+        <div class="control-group">
+            <!-- DEFAULT RADIO URL: BigFM Tomorrowland -->
+            <input type="text" id="radio-url" class="radio-input interactive" value="https://stream.bigfm.de/tomorrowland/mp3-128/" placeholder="Paste Stream URL">
+            <button class="btn-main interactive" id="btn-radio">▶ Start Radio</button>
+        </div>
+
+        <div class="control-group">
+            <button class="btn-main interactive" id="btn-mic">Use Microphone</button>
+            <button class="btn-main interactive" onclick="document.getElementById('file-input').click()">Load Local MP3</button>
+            <input type="file" id="file-input" accept="audio/*" style="display:none">
+        </div>
+
+        <div id="loading-status">Select a source to begin</div>
+    </div>
+
+    <!-- HUD (Fades out when idle) -->
+    <div id="ui-layer" class="hidden">
+        <div class="nav-btn interactive" id="btn-prev">❮</div>
+
+        <div class="center-controls">
+            <!-- SKIP PRESET BUTTON (Only for ProjectM) -->
+            <button class="icon-btn interactive display-none" id="btn-skip-preset" title="Next Visual Preset">⏭</button>
+
+            <!-- TITLE INFO -->
+            <div id="mode-info">
+                <span id="mode-title">INIT</span>
+                <span id="mode-sub">Engine Ready</span>
+            </div>
+
+            <!-- FULLSCREEN BUTTON -->
+            <button class="icon-btn interactive" id="btn-fullscreen" title="Toggle Fullscreen">⛶</button>
+        </div>
+
+        <div class="nav-btn interactive" id="btn-next">❯</div>
+    </div>
+
+    <div id="canvas-container"></div>
+    <audio id="radio-element" crossorigin="anonymous"></audio>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
+        import butterchurn from 'butterchurn';
+        import butterchurnPresets from 'butterchurn-presets';
+
+        // --- GLOBAL STATE ---
+        const state = {
+            audioCtx: null,
+            sourceNode: null,
+            analyserNode: null,
+            isPlaying: false,
+            currentModeIdx: 0,
+            activeVisualizer: null,
+            idleTimer: null
+        };
+
+        const container = document.getElementById('canvas-container');
+        const statusEl = document.getElementById('loading-status');
+        const uiLayer = document.getElementById('ui-layer');
+
+        // --- UI UTILS ---
+        function resetIdleTimer() {
+            uiLayer.style.opacity = '1';
+            document.body.style.cursor = 'default';
+            if (state.idleTimer) clearTimeout(state.idleTimer);
+            if(state.isPlaying) {
+                state.idleTimer = setTimeout(() => {
+                    uiLayer.style.opacity = '0';
+                    document.body.style.cursor = 'none';
+                }, 3000);
+            }
+        }
+        window.addEventListener('mousemove', resetIdleTimer);
+        window.addEventListener('click', resetIdleTimer);
+
+        // Updated Fullscreen Logic with forced Resize Trigger
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().then(() => {
+                    setTimeout(() => forceResize(), 200);
+                }).catch(err => console.log(err));
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().then(() => {
+                        setTimeout(() => forceResize(), 200);
+                    });
+                }
+            }
+        }
+
+        function forceResize() {
+            if(state.activeVisualizer && state.activeVisualizer.onResize) {
+                state.activeVisualizer.onResize();
+            }
+        }
+
+        // --- AUDIO ENGINE ---
+        function initAudio() {
+            if(!state.audioCtx) {
+                state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                state.analyserNode = state.audioCtx.createAnalyser();
+                state.analyserNode.fftSize = 2048; 
+            }
+            if(state.audioCtx.state === 'suspended') state.audioCtx.resume();
+        }
+
+        function playRadio() {
+            initAudio();
+            const url = document.getElementById('radio-url').value;
+            const audioEl = document.getElementById('radio-element');
+            
+            statusEl.innerText = "Connecting to Stream...";
+            
+            audioEl.crossOrigin = "anonymous"; 
+            audioEl.src = url;
+            
+            audioEl.play().then(() => {
+                if(state.sourceNode) state.sourceNode.disconnect();
+                state.sourceNode = state.audioCtx.createMediaElementSource(audioEl);
+                state.sourceNode.connect(state.analyserNode);
+                state.analyserNode.connect(state.audioCtx.destination);
+                startGame();
+            }).catch(e => {
+                statusEl.innerText = "Stream Error: CORS or Format.";
+                alert("Stream failed to play. The radio station might be blocking browser visualizers.");
+            });
+        }
+
+        async function useMic() {
+            initAudio();
+            statusEl.innerText = "Requesting Mic Access...";
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                if(state.sourceNode) state.sourceNode.disconnect();
+                state.sourceNode = state.audioCtx.createMediaStreamSource(stream);
+                state.sourceNode.connect(state.analyserNode);
+                startGame();
+            } catch(e) { statusEl.innerText = "Error: " + e.message; }
+        }
+
+        function useFile(e) {
+            initAudio();
+            const file = e.target.files[0];
+            if(!file) return;
+            statusEl.innerText = "Decoding...";
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                state.audioCtx.decodeAudioData(ev.target.result, (buffer) => {
+                    if(state.sourceNode) state.sourceNode.stop();
+                    state.sourceNode = state.audioCtx.createBufferSource();
+                    state.sourceNode.buffer = buffer;
+                    state.sourceNode.loop = true;
+                    state.sourceNode.connect(state.analyserNode);
+                    state.analyserNode.connect(state.audioCtx.destination);
+                    state.sourceNode.start(0);
+                    startGame();
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function startGame() {
+            state.isPlaying = true;
+            document.getElementById('overlay').classList.add('hidden');
+            document.getElementById('ui-layer').classList.remove('hidden');
+            loadMode(0); // Start with ProjectM
+            resetIdleTimer();
+        }
+
+        // --- ENGINE: BUTTERCHURN ---
+        class MilkdropEngine {
+            constructor() {
+                this.name = "ProjectM / Milkdrop";
+                this.presets = butterchurnPresets.getPresets();
+                this.presetKeys = Object.keys(this.presets);
+                this.currentPresetIdx = Math.floor(Math.random() * this.presetKeys.length);
+                this.resizeHandler = this.onResize.bind(this);
+                this.canvas = null; // Track canvas reference
+            }
+
+            init() {
+                container.innerHTML = '';
+                this.canvas = document.createElement('canvas');
+                
+                // FIX: Explicitly set canvas attributes to window size
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                
+                container.appendChild(this.canvas);
+
+                this.visualizer = butterchurn.createVisualizer(state.audioCtx, this.canvas, {
+                    width: window.innerWidth, 
+                    height: window.innerHeight,
+                    pixelRatio: window.devicePixelRatio || 1
+                });
+                this.visualizer.connectAudio(state.analyserNode);
+                this.loadPreset(this.currentPresetIdx);
+
+                window.addEventListener('resize', this.resizeHandler);
+                
+                this.animate();
+                this.restartCycle();
+            }
+
+            loadPreset(idx) {
+                const key = this.presetKeys[idx];
+                this.visualizer.loadPreset(this.presets[key], 2.7); 
+                document.getElementById('mode-sub').innerText = key;
+            }
+
+            nextPreset() {
+                this.currentPresetIdx = (this.currentPresetIdx + 1) % this.presetKeys.length;
+                this.loadPreset(this.currentPresetIdx);
+                this.restartCycle();
+            }
+
+            restartCycle() {
+                if(this.cycleInterval) clearInterval(this.cycleInterval);
+                this.cycleInterval = setInterval(() => this.nextPreset(), 15000);
+            }
+            
+            loadCustomMilk(jsonTxt) {
+                try {
+                    const preset = JSON.parse(jsonTxt);
+                    this.visualizer.loadPreset(preset, 1.0);
+                    document.getElementById('mode-sub').innerText = "CUSTOM PRESET";
+                    clearInterval(this.cycleInterval);
+                } catch(e) { alert("Invalid JSON"); }
+            }
+
+            onResize() { 
+                if(this.visualizer && this.canvas) {
+                    const w = window.innerWidth;
+                    const h = window.innerHeight;
+                    // FIX: Update attributes AND renderer
+                    this.canvas.width = w;
+                    this.canvas.height = h;
+                    this.visualizer.setRendererSize(w, h);
+                }
+            }
+
+            animate() {
+                this.animId = requestAnimationFrame(this.animate.bind(this));
+                this.visualizer.render();
+            }
+
+            destroy() {
+                cancelAnimationFrame(this.animId);
+                clearInterval(this.cycleInterval);
+                window.removeEventListener('resize', this.resizeHandler);
+                container.innerHTML = '';
+            }
+        }
+
+        // --- ENGINE: THREE.JS ---
+        class ThreeEngine {
+            constructor(name, sceneFn) {
+                this.name = name;
+                this.sceneFn = sceneFn;
+                this.resizeHandler = this.onResize.bind(this);
+            }
+
+            init() {
+                container.innerHTML = '';
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+                this.camera.position.z = 4;
+                
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(window.devicePixelRatio); // Sharpness
+                container.appendChild(this.renderer.domElement);
+
+                this.composer = new EffectComposer(this.renderer);
+                this.composer.addPass(new RenderPass(this.scene, this.camera));
+                const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+                bloom.threshold = 0; bloom.strength = 1.2; bloom.radius = 0.5;
+                this.composer.addPass(bloom);
+
+                this.dataArray = new Uint8Array(state.analyserNode.frequencyBinCount);
+                this.updateFn = this.sceneFn(this.scene, this.camera);
+                
+                window.addEventListener('resize', this.resizeHandler);
+                this.animate();
+            }
+
+            onResize() {
+                if(!this.camera || !this.renderer) return;
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.composer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            animate() {
+                this.animId = requestAnimationFrame(this.animate.bind(this));
+                state.analyserNode.getByteFrequencyData(this.dataArray);
+                if(this.updateFn) this.updateFn(this.dataArray, performance.now());
+                this.composer.render();
+            }
+
+            destroy() {
+                cancelAnimationFrame(this.animId);
+                window.removeEventListener('resize', this.resizeHandler);
+                this.renderer.dispose();
+                container.innerHTML = '';
+            }
+        }
+
+        // --- SCENES ---
+        const sceneSphere = (scene) => {
+            const geo = new THREE.IcosahedronGeometry(1.8, 30);
+            const mat = new THREE.MeshPhysicalMaterial({ wireframe: true, color: 0x00ff00, emissive: 0x004400 });
+            const mesh = new THREE.Mesh(geo, mat);
+            scene.add(mesh);
+            return (data, time) => {
+                const bass = data[20]/255; 
+                const t = time*0.0005;
+                mesh.rotation.y += 0.005; 
+                mesh.scale.setScalar(1 + bass*0.5); 
+                mesh.material.color.setHSL(t%1, 1, 0.5);
+            };
+        };
+
+        const sceneTunnel = (scene, camera) => {
+            const group = new THREE.Group();
+            const count = 40;
+            const meshes = [];
+            for(let i=0; i<count; i++){
+                const geo = new THREE.TorusGeometry(1+(i*0.5), 0.05, 8, 50);
+                const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 });
+                const mesh = new THREE.Mesh(geo, mat);
+                group.add(mesh);
+                meshes.push(mesh);
+            }
+            scene.add(group);
+            return (data, time) => {
+                const step = Math.floor(data.length/count);
+                for(let i=0; i<count; i++){
+                    const val = data[i*step]/255;
+                    meshes[i].scale.setScalar(1 + val);
+                    meshes[i].material.color.setHSL(val + (time*0.0002), 1, 0.5);
+                    meshes[i].rotation.z += 0.01 * (i%2?1:-1);
+                }
+                camera.position.z = 25 + Math.sin(time*0.001)*5;
+                camera.rotation.z = time * 0.0005;
+            };
+        };
+
+        // --- MASTER CONTROL ---
+        const modes = [
+            new MilkdropEngine(),
+            new ThreeEngine("Neon Sphere", sceneSphere),
+            new ThreeEngine("Cyber Tunnel", sceneTunnel)
+        ];
+
+        function loadMode(index) {
+            if(state.activeVisualizer) state.activeVisualizer.destroy();
+            let idx = index;
+            if(idx < 0) idx = modes.length - 1;
+            if(idx >= modes.length) idx = 0;
+            state.currentModeIdx = idx;
+            state.activeVisualizer = modes[idx];
+            
+            // UI Updates
+            document.getElementById('mode-title').innerText = state.activeVisualizer.name;
+            if(idx !== 0) document.getElementById('mode-sub').innerText = "3D Interactive";
+            
+            // Show/Hide Skip Button
+            const skipBtn = document.getElementById('btn-skip-preset');
+            if(idx === 0) skipBtn.classList.remove('display-none');
+            else skipBtn.classList.add('display-none');
+
+            state.activeVisualizer.init();
+        }
+
+        // --- BINDINGS ---
+        document.getElementById('btn-prev').addEventListener('click', () => { loadMode(state.currentModeIdx - 1); resetIdleTimer(); });
+        document.getElementById('btn-next').addEventListener('click', () => { loadMode(state.currentModeIdx + 1); resetIdleTimer(); });
+        document.getElementById('btn-radio').addEventListener('click', playRadio);
+        document.getElementById('btn-mic').addEventListener('click', useMic);
+        document.getElementById('file-input').addEventListener('change', useFile);
+        document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
+        
+        // Skip Preset Button Logic
+        document.getElementById('btn-skip-preset').addEventListener('click', () => {
+            if(state.currentModeIdx === 0 && state.activeVisualizer.nextPreset) {
+                state.activeVisualizer.nextPreset();
+            }
+        });
+
+        // Drag Drop
+        document.body.addEventListener('dragover', e => e.preventDefault());
+        document.body.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if(state.currentModeIdx !== 0) return alert("Switch to ProjectM mode first");
+            const file = e.dataTransfer.files[0];
+            const reader = new FileReader();
+            reader.onload = (ev) => state.activeVisualizer.loadCustomMilk(ev.target.result);
+            reader.readAsText(file);
+        });
+
+    </script>
+</body>
+</html>
