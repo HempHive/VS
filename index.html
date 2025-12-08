@@ -114,6 +114,7 @@
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.6);
             backdrop-filter: blur(8px);
+            transition: opacity 1s ease-in-out;
         }
         #radio-panel h3 {
             margin: 0; padding: 12px 14px; font-weight: 500; font-size: 14px;
@@ -249,6 +250,7 @@
         const stationBanner = document.getElementById('station-banner');
         const stations = [];
         let currentStationIndex = -1;
+        let panelIdleTimer = null;
 
         // --- UI UTILS ---
         function resetIdleTimer() {
@@ -258,8 +260,13 @@
             if(!stationBanner.classList.contains('display-none')) {
                 stationBanner.style.opacity = '1';
             }
+            if(!radioPanel.classList.contains('display-none')) {
+                radioPanel.style.opacity = '1';
+                radioPanel.style.pointerEvents = 'auto';
+            }
             document.body.style.cursor = 'default';
             if (state.idleTimer) clearTimeout(state.idleTimer);
+            if (panelIdleTimer) clearTimeout(panelIdleTimer);
             if(state.isPlaying) {
                 state.idleTimer = setTimeout(() => {
                     uiLayer.style.opacity = '0';
@@ -270,6 +277,13 @@
                     }
                     document.body.style.cursor = 'none';
                 }, 3000);
+                // Radio panel fades out after double time (6s) if open
+                if(!radioPanel.classList.contains('display-none')) {
+                    panelIdleTimer = setTimeout(() => {
+                        radioPanel.style.opacity = '0';
+                        radioPanel.style.pointerEvents = 'none';
+                    }, 6000);
+                }
             }
         }
         window.addEventListener('mousemove', resetIdleTimer);
