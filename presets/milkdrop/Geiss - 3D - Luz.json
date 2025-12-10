@@ -1,0 +1,5 @@
+{
+  "name": "Geiss - 3D - Luz",
+  "description": "Geiss - 3D - Luz",
+  "milkdrop_raw": "[preset00]\r\nfGammaAdj=2.000000\r\nfDecay=0.990000\r\nfVideoEchoZoom=2.000000\r\nfVideoEchoAlpha=0.000000\r\nnVideoEchoOrientation=0\r\nnWaveMode=0\r\nbAdditiveWaves=0\r\nbWaveDots=0\r\nbModWaveAlphaByVolume=0\r\nbMaximizeWaveColor=1\r\nbTexWrap=1\r\nbDarkenCenter=0\r\nbMotionVectorsOn=0\r\nnMotionVectorsX=12\r\nnMotionVectorsY=9\r\nfWaveAlpha=0.500000\r\nfWaveScale=71.269997\r\nfWaveSmoothing=0.500000\r\nfWaveParam=0.000000\r\nfModWaveAlphaStart=0.750000\r\nfModWaveAlphaEnd=0.950000\r\nfWarpAnimSpeed=1.000000\r\nfWarpScale=2.853000\r\nfZoomExponent=3.600000\r\nfShader=0.000000\r\nzoom=1.014000\r\nrot=-0.020000\r\ncx=0.500000\r\ncy=0.500000\r\ndx=0.000000\r\ndy=0.000000\r\nwarp=0.309000\r\nsx=1.000000\r\nsy=1.000000\r\nwave_r=0.600000\r\nwave_g=0.600000\r\nwave_b=0.600000\r\nwave_x=0.500000\r\nwave_y=0.470000\r\nper_frame_1=zoom = zoom + 0.023*( 0.60*sin(0.339*time) + 0.40*sin(0.276*time) );\r\nper_frame_2=rot = rot + 0.030*( 0.60*sin(0.381*time) + 0.40*sin(0.579*time) );\r\nper_pixel_1=rot=rot+0.04*rad*cos(ang*4+time*1.9);\r\nbRedBlueStereo=1\r\nfRating=5.000000\r\n"
+}
