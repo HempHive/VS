@@ -223,9 +223,7 @@
         <div id="radio-list"></div>
     </div>
     <div id="station-banner" class="display-none"></div>
-    <!-- Butterchurn preset libraries -->
-<script src="https://cdn.jsdelivr.net/npm/butterchurn-presets@2.6.7/dist/butterchurnPresets.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/butterchurn-presets-extra@2.6.7/dist/butterchurnPresetsExtra.min.js"></script>
+
     <script type="module">
         import * as THREE from 'three';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -234,7 +232,7 @@
         import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
         import butterchurn from 'butterchurn';
         import butterchurnPresets from 'butterchurn-presets';
-        window.butterchurnPresetsExtra = {};
+
         // --- GLOBAL STATE ---
         const state = {
             audioCtx: null,
@@ -245,7 +243,7 @@
             activeVisualizer: null,
             idleTimer: null
         };
-        
+
         const container = document.getElementById('canvas-container');
         const statusEl = document.getElementById('loading-status');
         const uiLayer = document.getElementById('ui-layer');
@@ -493,92 +491,7 @@
                 container.innerHTML = '';
             }
         }
-          class MilkdropMegaEngine {
-    constructor() {
-        this.name = "ProjectM Extended";
-        this.canvas = null;
-        this.visualizer = null;
-        this.presetList = [];
-        this.currentIndex = 0;
-        this.resizeHandler = this.onResize.bind(this);
-    }
 
-    async init() {
-
-        container.innerHTML = '';
-
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        container.appendChild(this.canvas);
-
-        // Merge and weight presets
-        const base = Object.values(window.butterchurnPresets.getPresets());
-        const extra = Object.values(window.butterchurnPresetsExtra.getPresets());
-
-        // Best collections (weighted heavier)
-        const best1 = Object.values(window.butterchurnPresets.collectionBest || {});
-        const best2 = Object.values(window.butterchurnPresets.collectionMindtrip || {});
-        const best3 = Object.values(window.butterchurnPresetsExtra.best || {});
-
-        this.presetList = [
-            ...base,
-            ...extra,
-            ...best1, ...best1,  // weight ×2
-            ...best2, ...best2,  // weight ×2
-            ...best3, ...best3   // weight ×2
-        ];
-
-        this.visualizer = butterchurn.createVisualizer(
-            state.audioCtx,
-            this.canvas,
-            {
-                width: window.innerWidth,
-                height: window.innerHeight,
-                pixelRatio: window.devicePixelRatio || 1,
-            }
-        );
-
-        this.visualizer.connectAudio(state.analyserNode);
-
-        this.nextPreset();
-        this.startCycle();
-        this.animate();
-
-        window.addEventListener("resize", this.resizeHandler);
-    }
-
-    nextPreset() {
-        this.currentIndex = Math.floor(Math.random() * this.presetList.length);
-        this.visualizer.loadPreset(this.presetList[this.currentIndex], 2.7);
-    }
-
-    startCycle() {
-        this.cycle = setInterval(
-            () => this.nextPreset(),
-            12000 + Math.random() * 10000
-        );
-    }
-
-    animate() {
-        this.frame = requestAnimationFrame(() => this.animate());
-        if (this.visualizer) this.visualizer.render();
-    }
-
-    onResize() {
-        if (!this.canvas || !this.visualizer) return;
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.visualizer.setRendererSize(window.innerWidth, window.innerHeight);
-    }
-
-    destroy() {
-        cancelAnimationFrame(this.frame);
-        clearInterval(this.cycle);
-        window.removeEventListener("resize", this.resizeHandler);
-        container.innerHTML = "";
-    }
-}
         // --- ENGINE: THREE.JS ---
         class ThreeEngine {
             constructor(name, sceneFn) {
@@ -707,18 +620,14 @@
                 group.rotation.y = Math.sin(t * 0.5) * 0.2;
             };
         };
-       // --- MEGA MILKDROP INIT (Step 1) ---
-let megaPresetIndex = null;
-
 
         // --- MASTER CONTROL ---
         const modes = [
-    new MilkdropEngine(),
-    new ThreeEngine("Neon Sphere", sceneSphere),
-    new ThreeEngine("Cyber Tunnel", sceneTunnel),
-    new ThreeEngine("Audio Bars", sceneBars),
-    new MilkdropMegaEngine()   // <-- NEW 5th MODE
-];
+            new MilkdropEngine(),
+            new ThreeEngine("Neon Sphere", sceneSphere),
+            new ThreeEngine("Cyber Tunnel", sceneTunnel),
+            new ThreeEngine("Audio Bars", sceneBars)
+        ];
 
         function loadMode(index) {
             if(state.activeVisualizer) state.activeVisualizer.destroy();
@@ -730,17 +639,12 @@ let megaPresetIndex = null;
             
             // UI Updates
             document.getElementById('mode-title').innerText = state.activeVisualizer.name;
-            if (idx === 1 || idx === 2 || idx === 3) {
-    document.getElementById('mode-sub').innerText = "3D Interactive";
-}
+            if(idx !== 0) document.getElementById('mode-sub').innerText = "3D Interactive";
             
             // Show/Hide Skip Button
             const skipBtn = document.getElementById('btn-skip-preset');
-            if (idx === 0 || idx === 4) {
-    skipBtn.classList.remove('display-none');
-} else {
-    skipBtn.classList.add('display-none');
-}
+            if(idx === 0) skipBtn.classList.remove('display-none');
+            else skipBtn.classList.add('display-none');
 
             state.activeVisualizer.init();
         }
@@ -755,9 +659,9 @@ let megaPresetIndex = null;
         
         // Skip Preset Button Logic
         document.getElementById('btn-skip-preset').addEventListener('click', () => {
-            if ((state.currentModeIdx === 0 || state.currentModeIdx === 4) && state.activeVisualizer.nextPreset) {
-    state.activeVisualizer.nextPreset();
-}
+            if(state.currentModeIdx === 0 && state.activeVisualizer.nextPreset) {
+                state.activeVisualizer.nextPreset();
+            }
         });
 
         // --- RADIO: Load stations and UI ---
@@ -889,7 +793,7 @@ let megaPresetIndex = null;
             if(e.key === 'f' || e.key === 'F') {
                 toggleFullscreen();
             } else if(e.key === 's' || e.key === 'S') {
-                if ((state.currentModeIdx === 0 || state.currentModeIdx === 4) && state.activeVisualizer?.nextPreset) {
+                if(state.currentModeIdx === 0 && state.activeVisualizer?.nextPreset) {
                     state.activeVisualizer.nextPreset();
                 }
             }
