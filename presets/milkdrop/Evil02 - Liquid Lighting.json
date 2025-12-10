@@ -1,0 +1,35 @@
+{
+  "name": "Evil02 - Liquid Lighting",
+  "init_code": "",
+  "per_frame": "wave_g\nwave_b\ndx\ndecay",
+  "per_pixel": "zoom\nblah",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 7.113811,
+  "rot": 0.02,
+  "cx": 1.28,
+  "cy": 0.5,
+  "warp": 0.055772,
+  "gamma": 1.993,
+  "warp_speed": 0.909091,
+  "wave_scale": 7.321607,
+  "decay": 0.98
+}

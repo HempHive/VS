@@ -1,0 +1,35 @@
+{
+  "name": "Rozzor & Neuro - Starover (Semicolon Mix)",
+  "init_code": "",
+  "per_frame": "wave_r\nwave_g\nwave_b\nob_r\nob_g\nob_b\nib_r\nib_g\nib_b\nvolume\nxamptarg\nxamp\nxdir\nxaccel\nxspeed\nxpos\ndx\nyamptarg\nyamp\nydir\nyaccel\nyspeed\nyspeed + ydir*yamp - ypos - yspeed*0.055*below(abs(ypos),yamp);\nypos\ndy\nzoom",
+  "per_pixel": "myzoom\n\nzoom\nmyzoom\ncx",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 32.544483,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.01,
+  "gamma": 1.7,
+  "warp_speed": 4.583206,
+  "wave_scale": 0.01,
+  "decay": 0.97
+}

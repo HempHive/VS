@@ -1,0 +1,35 @@
+{
+  "name": "Rovastar and Fvese - Hyperspace Nightmare",
+  "init_code": "",
+  "per_frame": "warp\ndx\ndy\nwave_r\nwave_g\nwave_b\nmadbass\nmadtreb\nlastingbass\nwave_mystery\nzoom\nib_a\nob_r\nmv_x\nmv_y\nmv_r\nmv_b\nmv_g",
+  "per_pixel": "bass_effect\nbass_factor\nrot\nzoom",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.999514,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.0101,
+  "gamma": 1,
+  "warp_speed": 1,
+  "wave_scale": 0.029878,
+  "decay": 0.98
+}

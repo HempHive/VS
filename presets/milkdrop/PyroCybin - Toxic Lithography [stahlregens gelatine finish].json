@@ -1,0 +1,34 @@
+{
+  "name": "PyroCybin - Toxic Lithography [stahlregens gelatine finish]",
+  "init_code": "attenfactor\nmybass\nmymid\nmytreb",
+  "per_frame": "wave_r\nwave_g\nwave_b\nzoom\nrot\nmybass\nmymid\nmytreb\nq1\nq2\nq3\nmonitor",
+  "per_pixel": "q5\nzoom\nzoom",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.999514,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0,
+  "gamma": 1,
+  "wave_scale": 2.985751,
+  "decay": 1
+}

@@ -1,0 +1,35 @@
+{
+  "name": "Rovastar - Destiny Star (Starbrust Mix)",
+  "init_code": "",
+  "per_frame": "mv_r\nmv_b\nmv_g\nwave_g\nwave_r\nwave_b\nwave_x\nob_a\nob_r\nob_b\nob_g\nmv_y\nq8\noldq8\nq7\nzoom",
+  "per_pixel": "rot\nq1\nq2\nrot",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.961268,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 2,
+  "warp": 0.01,
+  "gamma": 1,
+  "warp_speed": 1,
+  "wave_scale": 0.591236,
+  "decay": 1
+}

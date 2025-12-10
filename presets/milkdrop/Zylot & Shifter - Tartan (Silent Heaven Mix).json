@@ -1,0 +1,35 @@
+{
+  "name": "Zylot & Shifter - Tartan (Silent Heaven Mix)",
+  "init_code": "wr1\nwg1\nwb1\nwr2\nwg2\nwb2\nws",
+  "per_frame": "vol\nob_r\nob_g\nob_b\nrot\nwarp\nmv_a\nmv_x\nmv_y\nmv_r\nmv_g\nmv_b\nmv_l\nmv_dy\nmv_dx",
+  "per_pixel": "",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.999514,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.01,
+  "gamma": 1,
+  "warp_speed": 1,
+  "wave_scale": 0.972366,
+  "decay": 1
+}

@@ -1,0 +1,35 @@
+{
+  "name": "Rovastar & Malte - Circle Of Deeper Meaning",
+  "init_code": "",
+  "per_frame": "xwave_x\nxwave_y\nwave_r\nwave_g\nib_r\ndecay\nbass_effect\nq1\nsx\nsy\nmv_y",
+  "per_pixel": "rot",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1,
+  "rot": 0.006,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0,
+  "gamma": 2.61,
+  "warp_speed": 1,
+  "wave_scale": 0.995766,
+  "decay": 0.988999
+}

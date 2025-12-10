@@ -1,0 +1,35 @@
+{
+  "name": "beta106Random - Turbulence Sandwich",
+  "init_code": "",
+  "per_frame": "warp\nwave_r\nwave_g\nwave_b\nrot\nwave_r\nwave_g\nwave_b\n\nwave_b\nob_g\nwave_g\nib_a\nwave_r\nmv_x\nob_a\nib_G\ndy\nwave_r\nob_g\nwave_y\ndy\ndy\nwave_r\nwave_r\nwave_b\nwave_b\nwave_g\nwave_g\nwave_y\nwave_y\nob_g\nob_g\nob_a\nob_a\nib_g\nib_g\nib_a\nib_a\nmv_x\nmv_x\nwave_r\nwave_r\nwave_g\nwave_g\nwave_b\nwave_b\nob_g\nob_g\nwave_y\nwave_y\nwave_b\nwave_b\nwave_g\nwave_g\nwave_r\nwave_r\nob_a\nob_a\nob_g\nob_g\nib_G\nib_G\nwave_y\nwave_y\nib_a\nib_a",
+  "per_pixel": "ray\nzoom\nrot\ndx\ndy\nzoom\n;\nwarp\nwarp\nwarp",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 1,
+  "gamma": 2,
+  "warp_speed": 1,
+  "wave_scale": 0.880224,
+  "decay": 0.95
+}

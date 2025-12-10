@@ -1,0 +1,35 @@
+{
+  "name": "Rovastar - VooV's Light Pattern",
+  "init_code": "",
+  "per_frame": "wave_r\nwave_g\nwave_b\nq8\noldq8\nib_r\nib_g\nib_b\nq7\nob_size\nmonitor",
+  "per_pixel": "rot\nzoom\nrot\nzoom",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.903947,
+  "rot": 0.02,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.198054,
+  "gamma": 2,
+  "warp_speed": 1,
+  "wave_scale": 1.053731,
+  "decay": 0.925
+}

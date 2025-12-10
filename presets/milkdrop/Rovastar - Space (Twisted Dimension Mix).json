@@ -1,0 +1,35 @@
+{
+  "name": "Rovastar - Space (Twisted Dimension Mix)",
+  "init_code": "",
+  "per_frame": "warp\nwave_mystery\nvol\nxamptarg\nxamp\nxdir\nxspeed\nxpos\nmyx\nyamptarg\nyamp\nydir\nyspeed\nypos\nmyy\n\ncx\ncy\n\n\n\ndx\ndy\n\n\nbass_thresh\ndx_residual\ndy_residual\n\nwave_a\nmonitor\nzoom\nrot\nwave_x\nwave_y\nmonitor\nmv_dx\nmv_dy\necho_zoom\nmonitor",
+  "per_pixel": "zoom\nsy\nrot\ndx\ndy",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0,
+  "gamma": 2.98,
+  "warp_speed": 1,
+  "wave_scale": 0,
+  "decay": 0.94
+}

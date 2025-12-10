@@ -1,0 +1,35 @@
+{
+  "name": "Rovastar - Oozing Resistance",
+  "init_code": "",
+  "per_frame": "ob_r\nob_g\nob_b\nwave_a\nq8\noldq8\nwarp",
+  "per_pixel": "rot\ndx\ndy\nzoom",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.999513,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.01,
+  "gamma": 1,
+  "warp_speed": 1,
+  "wave_scale": 0.01,
+  "decay": 1
+}

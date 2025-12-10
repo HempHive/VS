@@ -1,0 +1,35 @@
+{
+  "name": "Ondras - Eruptions",
+  "init_code": "",
+  "per_frame": "wave_g\n\nnahoda\nn_uhel\nspoustime\n\njedeme\nuhel\n\nq1\nq2",
+  "per_pixel": "r\nr\n\nuhel\n\nzoom\n\ndx\ndy",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.999514,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.01,
+  "gamma": 1,
+  "warp_speed": 1,
+  "wave_scale": 0.080814,
+  "decay": 0.97
+}

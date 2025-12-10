@@ -1,0 +1,35 @@
+{
+  "name": "Rovastar & Unchained - Further Tastes Of Ambrosia",
+  "init_code": "",
+  "per_frame": "warp\nstate\nwave_r\nwave_g\nwave_b\nQ1\nvol\nxamptarg\nxamp\nxdir\nxaccel\nxspeed\nxpos\nyamptarg\nyamp\nydir\nyaccel\nyspeed\nypos\nmv_x_speed\nmv_y_speed\nmv_x_range\nmv_y_range\nmv_x_amount\nmv_y_amount\nmv_x\nmv_y\nmv_b\nmv_r\nmv_g\nmv_l",
+  "per_pixel": "floon\nflarn\nzoom\nrot",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1.0201,
+  "rot": 0,
+  "cx": 0.47,
+  "cy": 0.5,
+  "warp": 1,
+  "gamma": 2,
+  "warp_speed": 1,
+  "wave_scale": 0.685147,
+  "decay": 0.994
+}

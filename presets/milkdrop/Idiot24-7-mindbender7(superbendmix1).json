@@ -1,0 +1,35 @@
+{
+  "name": "Idiot24-7-mindbender7(superbendmix1)",
+  "init_code": "",
+  "per_frame": "ob_r\nob_b\nob_g\necho_alpha\ncx\ncy\n\ndx\ndy",
+  "per_pixel": "rot\n34)))*Sin(Bass*.43)*sin(time*.13)*sin(time*.54)*rad*sin(time*.44)*x*sin(time*.32)*y*Sin(time*.32);;\nrot\n(above(treb+bass-time,treb+mid*time))+.2*Sin(time+Rad)*sin(time*.43)*rad*Sin(time*.43)\n*Sin(time*.54)*log(pow(rad,rad*2))*x*sin(time*.43*y*sin(time*.23))*x*Sin(time*.32)*y*Sin(Time*.32);\nsx\n*x*sin(time*.43)*y*sin(time*.53);\nsy\n*x*sin(time*.43)*y*sin(time*.23);\ndx\n*rad*sin(time*.54)*sin(time*.43);\ndy\n*rad*sin(time*.\n43)*sin(time*.43);;",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.961226,
+  "rot": -0.2,
+  "cx": 0.4999,
+  "cy": 0.4999,
+  "warp": 0.01,
+  "gamma": 1.42,
+  "warp_speed": 1,
+  "wave_scale": 0.20462,
+  "decay": 0.991
+}

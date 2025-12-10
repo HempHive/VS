@@ -1,0 +1,35 @@
+{
+  "name": "Illusion & Unchained - New Strategy",
+  "init_code": "",
+  "per_frame": "warp\nold_bass_flop\nold_treb_flop\nold_mid_flop\nchaos\nentropy\nbass_thresh\nbass_flop\ntreb_thresh\ntreb_flop\nmid_thresh\nmid_flop\nbass_changed\nmid_changed\ntreb_changed\nbass_residual\ntreb_residual\nmid_residual\npulse\nq1\nq2\nq3\nq4\nq5\nq6\nq7\nq8\nwave_r\nwave_b\nwave_g\nob_r\nob_b\nob_g\nib_r\nib_b\nib_g\nob_size\nib_size\nmv_r\nmv_b\nmv_g\nmv_a\nmv_l\nmv_x\nmv_y\nwave_mystery",
+  "per_pixel": "newrad\nzoom\n+.2+newrad*q5));;\nrot\ncx\ncy\nsx\nsy",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.9984,
+  "rot": 0.002,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.01,
+  "gamma": 1,
+  "warp_speed": 5.99579,
+  "wave_scale": 0.01,
+  "decay": 1
+}

@@ -1,0 +1,35 @@
+{
+  "name": "beta106i - Origins of Life (All Human)",
+  "init_code": "",
+  "per_frame": "warp\nwave_r\n0.2*(0.3*cos(1.28*time)+0.317*sin(1.8*time));\nwave_g\n0.2*(0.3*cos(1.2*time)+0.32*sin(1.623*time));\nwave_b\n0.2*(0.4*cos(0.9*time)+0.328*sin(1.5245*time));",
+  "per_pixel": "thresh\ndx_r\ndy_r\n\nsib\nsit\nsim\nfx\nfy\n\nbruch\nbrach\n\nzoom\nzoom\nzoom\nzoom\nzoom",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.01,
+  "gamma": 1,
+  "warp_speed": 1,
+  "wave_scale": 3.915797,
+  "decay": 0.95
+}

@@ -1,0 +1,35 @@
+{
+  "name": "yin - 102 - Through the ether (The separation) - Bitcore Tweak",
+  "init_code": "max_bass\nt0",
+  "per_frame": "wave_r\nwave_b\nwave_g\nb\nm\nt\nmv_r\nmv_g\nmv_b\n\nq1\nq2\nq3\nf\nbeat_avg\nbeat_avg\n\nmax_bass\nmax_bass\nmax_bass\ntrig\nendframe\ntrig\nendframe\nq4\nwave_a\nrot\nrot\nob_size\n\nob_r\nob_g\nob_b\nob_a\nmv_x\nsx\nsy\nzoom\n\n\nsure\ninterval\nlastbeat\ndbass\nbeat\nsure\nmin(.095+sure,1),beat*(sure-.095)+(1-beat)*sure*.9996);\nsure\ncheat\nbeat\nsure\nmaxdbass\nmaxdbass\nmaxdbass\ninterval\nlastbeat\ncheat\npbass\n\nwave_a\n\n\nwave_a\ncvol\ndx\ndy\nwave_mystery -.3+.7*sin(5*bass+2.43+cos(15*time+1.65));\nzoom\nq4\nmonitor",
+  "per_pixel": "dx\ndy\nzoom\n\ndx\ndy\nzoom\n\nzoom",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.999902,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.078303,
+  "gamma": 2.050001,
+  "warp_speed": 1,
+  "wave_scale": 0,
+  "decay": 0.975
+}

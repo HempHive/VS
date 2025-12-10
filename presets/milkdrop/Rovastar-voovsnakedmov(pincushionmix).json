@@ -1,0 +1,35 @@
+{
+  "name": "Rovastar-voovsnakedmov(pincushionmix)",
+  "init_code": "",
+  "per_frame": "warp\nq8\noldq8\nq1\nq2\nq6\nq7\nchange\noldchange\nchange\nq4\nzz\noldzz\nzz\nq5\nq3\nwave_a\nmonitor\ndecay",
+  "per_pixel": "newx\nnewy\nnewrad\nnewang\nnewzoom\ndx\ndy\nnewx\nnewy\nnewrad\nnewang\nnewzoom\ndx\ndy\nnewx\nnewy\nnewrad\nnewang\nnewzoom\ndx\ndy",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.980296,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.01,
+  "gamma": 2.995,
+  "warp_speed": 1,
+  "wave_scale": 1.186471,
+  "decay": 0.9
+}

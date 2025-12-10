@@ -1,0 +1,35 @@
+{
+  "name": "Aderrasi - Chromatic Abyss (Refined Abyss Mix)",
+  "init_code": "",
+  "per_frame": "wave_r\nwave_b\nwave_g\nwave_x\nwave_y\nturn\ndx_r\ndy_r\ndx\ndy",
+  "per_pixel": "zoom",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.01,
+  "gamma": 1,
+  "warp_speed": 1,
+  "wave_scale": 0.250013,
+  "decay": 0.99
+}

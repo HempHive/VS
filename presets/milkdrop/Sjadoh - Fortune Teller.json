@@ -1,0 +1,35 @@
+{
+  "name": "Sjadoh - Fortune Teller",
+  "init_code": "",
+  "per_frame": "zoom\nwave_r\nwave_g\nwave_b",
+  "per_pixel": "warp",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 2.38096,
+  "rot": 0.4,
+  "cx": 1.1,
+  "cy": 0.5,
+  "warp": 2.155453,
+  "gamma": 2.4,
+  "warp_speed": 0.591237,
+  "wave_scale": 1.207771,
+  "decay": 0.9
+}

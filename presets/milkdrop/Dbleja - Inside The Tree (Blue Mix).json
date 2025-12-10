@@ -1,0 +1,35 @@
+{
+  "name": "Dbleja - Inside The Tree (Blue Mix)",
+  "init_code": "",
+  "per_frame": "aaa\n\nzoom\n\n\nmv_a\nwave_r\nwave_g\nwave_b\nwarp\nrot\nmonitor\ncx\ncy\nmonitor",
+  "per_pixel": "",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1.0065,
+  "rot": 0,
+  "cx": 0.5301,
+  "cy": 0.5,
+  "warp": 6.165909,
+  "gamma": 2.63,
+  "warp_speed": 1.220146,
+  "wave_scale": 0.01,
+  "decay": 0.935
+}

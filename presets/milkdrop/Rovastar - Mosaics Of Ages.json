@@ -1,0 +1,35 @@
+{
+  "name": "Rovastar - Mosaics Of Ages",
+  "init_code": "",
+  "per_frame": "ob_r\nob_g\nob_b\nwarp\nib_size\nib_r\nib_g\nib_b\ndx\ndy\n\nvolume\nbeatrate\nlastbeat\nmeanbass_att\npeakbass_att\nbeat\nbeatrate\npeakbass_att\nlastbeat\nbeatcounter\nbeatcounter\nbeateven\n\nq2",
+  "per_pixel": "qx\nqy\nbox\nbox\nq1\nzoom\nrot\ncx\ncy",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.998531,
+  "rot": 0.002,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.01,
+  "gamma": 1,
+  "warp_speed": 5.99579,
+  "wave_scale": 0.6401,
+  "decay": 1
+}

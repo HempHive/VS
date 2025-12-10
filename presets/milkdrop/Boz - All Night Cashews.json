@@ -1,0 +1,35 @@
+{
+  "name": "Boz - All Night Cashews",
+  "init_code": "",
+  "per_frame": "wave_r\nwave_g\nwave_b\nrot\ncx\ncy\nzoom",
+  "per_pixel": "zoom",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.370388,
+  "rot": 0.18,
+  "cx": 0.32,
+  "cy": 0.38,
+  "warp": 0.012485,
+  "gamma": 1.994,
+  "warp_speed": 1,
+  "wave_scale": 2.051123,
+  "decay": 0.979
+}

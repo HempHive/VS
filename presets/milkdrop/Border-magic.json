@@ -1,0 +1,35 @@
+{
+  "name": "Border-magic",
+  "init_code": "",
+  "per_frame": "wave_r\nwave_g\nwave_b\nrot\ndecay\nwarp\nib_r\nib_g\nib_b",
+  "per_pixel": "zoom\nwarp\nzoomexp\nsx\nsy",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1.008151,
+  "rot": -0.02,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 1.007607,
+  "gamma": 2.05,
+  "warp_speed": 1.001829,
+  "wave_scale": 0.599579,
+  "decay": 0.98
+}

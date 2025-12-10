@@ -1,0 +1,35 @@
+{
+  "name": "Che - Barcode Infidelity (Deep Pricelist Mix)",
+  "init_code": "",
+  "per_frame": "le\npulse\n\npulsefreq\nif(pulse,.8*pulsefreq+.2*(time-lastpulse),pulsefreq));\nlastpulse\n\nbt\n\nhccp\n(pow(sin((bt-1)*7.854),4)-1),0);\nbeat\nbtblock\nlastbeat\nbeatfreq\nif(beat,.8*beatfreq+.2*(time-lastbeat),beatfreq));\n\nth\nth+th*.07/(th-12)+below(th,2.7)*.1*(2.7-th));\nth\nthccl\n\nbccl\nq1\nq2\n\nwave_r\nwave_g\nwave_b",
+  "per_pixel": "rot\nzoom\n\n\nbrdr\ndy\ndx\nrot\nzoom\nsx\nsy",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.518655,
+  "rot": 1,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0,
+  "gamma": 1,
+  "warp_speed": 1,
+  "wave_scale": 0.303117,
+  "decay": 0.992
+}

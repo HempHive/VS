@@ -1,0 +1,35 @@
+{
+  "name": "Bmelgren&Rovastar-Jester'sAwakening(R",
+  "init_code": "Eff_test\nEff_size",
+  "per_frame": "warp\nvol\nxamptarg\nxamp\nxdir\nxspeed\nxpos\nyamptarg\nyamp\nydir\nyspeed\nypos\nib_r\nib_g\nib_b\nob_g\nob_r\nob_a\nob_size\nmv_dx\nmv_dy\nmv_l\nmv_r\nmv_b\nmv_g\nvolume\nbeatrate\nlastbeat\nmeanbass_att\npeakbass_att\nbeat\nbeatrate\npeakbass_att\nlastbeat\npeakbass_att\nEff_test\nEff_size\nOld_Eff_size\nq5\nmv_l\nq6\nq4\ndecay\nwave_r\nwave_g\nwave_b",
+  "per_pixel": "q1\nq3\nq7\nq8\ncx\ncy\nrot\nq9\nzoom\ndx\nsx\nsy",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.9999,
+  "rot": 0.1,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 1,
+  "gamma": 1.994,
+  "warp_speed": 1,
+  "wave_scale": 0.197884,
+  "decay": 0.93
+}

@@ -1,0 +1,35 @@
+{
+  "name": "Pinbi7 & Rocke - super star",
+  "init_code": "",
+  "per_frame": "warp\nwave_r\nwave_g\nwave_b\nwave_mystery\ncx\ncy\ndecay",
+  "per_pixel": "rot\nzoom",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.8596,
+  "rot": 1,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 1.6283,
+  "gamma": 2,
+  "warp_speed": 0.3963,
+  "wave_scale": 0.040942,
+  "decay": 0.99
+}

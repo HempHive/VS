@@ -1,0 +1,35 @@
+{
+  "name": "Rovastar & Krash - Hallucinogenic Pyramids (Extra Beat Time Mix)",
+  "init_code": "",
+  "per_frame": "wave_b\nwave_r\nwave_g\ndecay\ntreb_effect\nmid_effect\nob_size\nib_size\nob_g\nib_g\nib_b\nok_to_change\nbass_effect\nbeat_time\neffect\neffect\nbass_effect\nq1\nq2\nwave_x\nwave_mystery\nmonitor\nzoom",
+  "per_pixel": "zoom",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1.007,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0,
+  "gamma": 2,
+  "warp_speed": 1,
+  "wave_scale": 1.599182,
+  "decay": 0.98
+}

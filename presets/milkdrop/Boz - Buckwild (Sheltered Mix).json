@@ -1,0 +1,35 @@
+{
+  "name": "Boz - Buckwild (Sheltered Mix)",
+  "init_code": "",
+  "per_frame": "rot\n\nob_r\nob_b\nob_g\nCX\nib_r\nib_b\nib_g",
+  "per_pixel": "",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1.016043,
+  "rot": 1,
+  "cx": 2,
+  "cy": -1,
+  "warp": 0.014451,
+  "gamma": 2,
+  "warp_speed": 1,
+  "wave_scale": 0.01,
+  "decay": 0.9622
+}

@@ -1,0 +1,35 @@
+{
+  "name": "Rovastar & Unchained - Orb Of Voodoo",
+  "init_code": "",
+  "per_frame": "warp\nstate\nwave_b\nwave_g\nwave_r\nzoom\nq1\nwave_mystery",
+  "per_pixel": "myval\nzoom\nrot\nsx",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1.009898,
+  "rot": 0,
+  "cx": 0.47,
+  "cy": 0.5,
+  "warp": 1,
+  "gamma": 2,
+  "warp_speed": 1,
+  "wave_scale": 0.620217,
+  "decay": 0.9
+}

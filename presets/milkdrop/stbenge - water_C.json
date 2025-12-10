@@ -1,0 +1,33 @@
+{
+  "name": "stbenge - water_C",
+  "init_code": "",
+  "per_frame": "",
+  "per_pixel": "",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 1,
+      "thick": 1,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "q1\nq2",
+      "code_per_point": "pi\nq2\nv\nav\ntv\na\nxv\nyv\nxv\nxv\n\nx2\ny2\n\n\nx2\n\nx"
+    }
+  ],
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0,
+  "gamma": 1,
+  "warp_speed": 1,
+  "wave_scale": 1.285751,
+  "decay": 0.975
+}

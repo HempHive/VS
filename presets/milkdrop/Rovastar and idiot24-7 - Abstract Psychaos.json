@@ -1,0 +1,35 @@
+{
+  "name": "Rovastar and idiot24-7 - Abstract Psychaos",
+  "init_code": "",
+  "per_frame": "bass_thresh\ntreb_thresh\nbass_on\ntreb_on\nswapcolour\nred_aim\ngreen_aim\nblue_aim\nred\ngreen\nblue\nmv_b\nmv_g\nmv_r\nwave_r\nwave_b\nvolume\nbeatrate\nlastbeat\nmeanbass_att\npeakbass_att\nbeat\nbeatrate\npeakbass_att\nlastbeat\npeakbass_att\nbeatcounter\nbeatcounter\nwave_g\nq3",
+  "per_pixel": "zoomexp\nzoom\nrot",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1.137532,
+  "rot": 1,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.01,
+  "gamma": 1.84,
+  "warp_speed": 6.623081,
+  "wave_scale": 0.01,
+  "decay": 0.93
+}

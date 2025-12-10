@@ -1,0 +1,35 @@
+{
+  "name": "beta106i - Potion of Life",
+  "init_code": "",
+  "per_frame": "wave_r\nwave_g\nwave_b\nwarp\n\nob_r\nob_b\nob_g\nib_a\nib_r\nib_b\nib_g",
+  "per_pixel": "thresh\ndx_r\ndy_r\n\nsix\n\ndx\ndy\nzoom\nrot\nsx\nsy\nzoom\ncx\ncy",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.01,
+  "gamma": 1,
+  "warp_speed": 0.01,
+  "wave_scale": 0.01,
+  "decay": 1
+}

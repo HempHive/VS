@@ -1,0 +1,35 @@
+{
+  "name": "Bmelgren&unchained-roadkilldin(remix)",
+  "init_code": "",
+  "per_frame": "warp\nold_bass_flop\nold_treb_flop\nold_mid_flop\nchaos\nentropy\nbass_thresh\nbass_flop\ntreb_thresh\ntreb_flop\nmid_thresh\nmid_flop\nbass_changed\nmid_changed\ntreb_changed\nbass_residual\ntreb_residual\nmid_residual\npulse\nbeat\nsound_check\nq1\nq2\nq3\nq4\nq5\nwave_r\nwave_g\nwave_b\nib_r\nib_b\nib_g\nib_a\nib_size\nwave_x",
+  "per_pixel": "dy\ndy\ndx\ndx\nzoom",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.923482,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 1,
+  "gamma": 1.7,
+  "warp_speed": 1,
+  "wave_scale": 1.027955,
+  "decay": 0.97
+}

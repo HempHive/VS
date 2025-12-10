@@ -1,0 +1,35 @@
+{
+  "name": "Krash and Fvese - Molten Indecision (Fvese Remix)",
+  "init_code": "",
+  "per_frame": "warp\ndx\ndy\ndrip1grav\ndrip1x\ndrip1y\ndrip2grav\ndrip2x\ndrip2y\ndrip3grav\ndrip3x\ndrip3y\ndrip4grav\ndrip4x\ndrip4y\ndrip1y\ndrip2y\ndrip3y\ndrip4y\nq1\nq2\nwave_r\nwave_g\nwave_b\nvol\nxamptarg\nxamp\nxdir\nxspeed\nxpos\nwave_x\nyamptarg\nyamp\nydir\nyspeed\nypos\nwave_y\nrot\ncx\ncy\ndy\nwave_mystery\nwarp\ndy\nob_a",
+  "per_pixel": "dy\nzoom\nrot",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 1,
+  "gamma": 2,
+  "warp_speed": 1,
+  "wave_scale": 6,
+  "decay": 1
+}

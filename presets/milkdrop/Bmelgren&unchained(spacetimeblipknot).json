@@ -1,0 +1,35 @@
+{
+  "name": "Bmelgren&unchained(spacetimeblipknot)",
+  "init_code": "",
+  "per_frame": "wave_r\nwave_b\nrot\ncx\ncy\nzoomexp\ndecay\ndx\ndy\nbass_thresh\ndx_residual\ndy_residual\nq1\nq2\nmv_x",
+  "per_pixel": "zoom",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 1.0002,
+  "rot": 0,
+  "cx": 0.53,
+  "cy": 0.5,
+  "warp": 0.263,
+  "gamma": 2,
+  "warp_speed": 1.53,
+  "wave_scale": 0.780265,
+  "decay": 0.98
+}

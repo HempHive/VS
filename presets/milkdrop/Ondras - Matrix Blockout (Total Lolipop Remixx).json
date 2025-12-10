@@ -1,0 +1,35 @@
+{
+  "name": "Ondras - Matrix Blockout (Total Lolipop Remixx)",
+  "init_code": "delka_x\ndelka_y\nx\ny",
+  "per_frame": "zmena\n\nx\ny\n\nq1",
+  "per_pixel": "action\n\nzoom\n\nneakce_x\nakce_x\nneakce_y\nakce_y\n\ndx\ndy",
+  "shapes": [],
+  "waves": [
+    {
+      "enabled": 1,
+      "samples": 512,
+      "spectrum": 0,
+      "dots": 0,
+      "thick": 0,
+      "additive": 0,
+      "r": 1,
+      "g": 1,
+      "b": 1,
+      "a": 1,
+      "scaling": 1,
+      "smoothing": 0.5,
+      "sep": 0,
+      "code_per_frame": "",
+      "code_per_point": ""
+    }
+  ],
+  "zoom": 0.999514,
+  "rot": 0,
+  "cx": 0.5,
+  "cy": 0.5,
+  "warp": 0.01,
+  "gamma": 1,
+  "warp_speed": 0.671653,
+  "wave_scale": 4.325441,
+  "decay": 0.999
+}
