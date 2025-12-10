@@ -243,16 +243,7 @@
             activeVisualizer: null,
             idleTimer: null
         };
-        async function loadExternalMilkdropPresets() {
-    try {
-        const resp = await fetch("presets/milkdrop-presets.json");
-        const json = await resp.json();
-        return json;
-    } catch (err) {
-        console.error("Failed to load external Milkdrop preset pack:", err);
-        return {};
-    }
-}
+        
         const container = document.getElementById('canvas-container');
         const statusEl = document.getElementById('loading-status');
         const uiLayer = document.getElementById('ui-layer');
@@ -500,31 +491,30 @@
                 container.innerHTML = '';
             }
         }
-           class MilkdropMegaEngine {
+          class MilkdropMegaEngine {
     constructor() {
-        this.name = "Milky";
-        this.resizeHandler = this.onResize.bind(this);
-        this.presets = null;
-        this.presetKeys = [];
-        this.currentPresetIdx = 0;
+        this.name = "Milkdrop Extended";
         this.canvas = null;
+        this.presets = [];
+        this.currentIndex = 0;
+
+        // FIX: store bound resize handler
+        this.resizeHandler = this.onResize.bind(this);
     }
 
     async init() {
-        // Load container + canvas
         container.innerHTML = '';
         this.canvas = document.createElement('canvas');
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
         container.appendChild(this.canvas);
 
-        // Load presets JSON if not loaded yet
-        if (!this.presets) {
-            this.presets = await loadExternalMilkdropPresets();
-            this.presetKeys = Object.keys(this.presets);
+        // Load preset index
+        if (this.presets.length === 0) {
+            const list = await fetch("presets/milkdrop/index.json").then(r => r.json());
+            this.presets = list;
         }
 
-        // Create visualizer
         this.visualizer = butterchurn.createVisualizer(state.audioCtx, this.canvas, {
             width: window.innerWidth,
             height: window.innerHeight,
@@ -533,41 +523,32 @@
 
         this.visualizer.connectAudio(state.analyserNode);
 
-        // Pick a random preset to start
-        this.currentPresetIdx = Math.floor(Math.random() * this.presetKeys.length);
-        this.loadPreset(this.currentPresetIdx);
+        // First preset
+        this.nextPreset();
 
-        // Resize + animation
+        // FIX: proper resize listener
         window.addEventListener('resize', this.resizeHandler);
+
         this.animate();
-        this.schedulePresetRotation();
+        this.cycle();
     }
 
-    loadPreset(idx) {
-        const key = this.presetKeys[idx];
-        const preset = this.presets[key];
-        this.visualizer.loadPreset(preset, 2.5);
-        document.getElementById('mode-sub').innerText = key;
+    async loadPreset(idx) {
+        const filename = this.presets[idx];
+        const json = await fetch("presets/milkdrop/" + filename).then(r => r.json());
+        this.visualizer.loadPreset(json, 2.5);
+        document.getElementById("mode-sub").innerText = filename;
     }
 
     nextPreset() {
-        let next = this.currentPresetIdx;
-        if (this.presetKeys.length > 1) {
-            while (next === this.currentPresetIdx) {
-                next = Math.floor(Math.random() * this.presetKeys.length);
-            }
-        }
-        this.currentPresetIdx = next;
-        this.loadPreset(next);
+        this.currentIndex = Math.floor(Math.random() * this.presets.length);
+        this.loadPreset(this.currentIndex);
     }
 
-    schedulePresetRotation() {
-        if (this.rotationTimer) clearTimeout(this.rotationTimer);
-        const delay = 8000 + Math.random() * 12000;
-        this.rotationTimer = setTimeout(() => {
+    cycle() {
+        this.cycleTimer = setInterval(() => {
             this.nextPreset();
-            this.schedulePresetRotation();
-        }, delay);
+        }, 10000);
     }
 
     animate() {
@@ -576,18 +557,19 @@
     }
 
     onResize() {
-        if (this.visualizer && this.canvas) {
-            this.canvas.width = window.innerWidth;
-            this.canvas.height = window.innerHeight;
-            this.visualizer.setRendererSize(window.innerWidth, window.innerHeight);
-        }
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.visualizer.setRendererSize(window.innerWidth, window.innerHeight);
     }
 
     destroy() {
         cancelAnimationFrame(this.animId);
-        clearTimeout(this.rotationTimer);
+        clearInterval(this.cycleTimer);
+
+        // FIX: remove correct resize handler
         window.removeEventListener('resize', this.resizeHandler);
-        container.innerHTML = '';
+
+        container.innerHTML = "";
     }
 }
         // --- ENGINE: THREE.JS ---
