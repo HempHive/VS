@@ -223,7 +223,9 @@
         <div id="radio-list"></div>
     </div>
     <div id="station-banner" class="display-none"></div>
-
+    <!-- Butterchurn preset libraries -->
+<script src="https://cdn.jsdelivr.net/npm/butterchurn-presets@2.6.7/dist/butterchurnPresets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/butterchurn-presets-extra@2.6.7/dist/butterchurnPresetsExtra.min.js"></script>
     <script type="module">
         import * as THREE from 'three';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -232,7 +234,7 @@
         import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
         import butterchurn from 'butterchurn';
         import butterchurnPresets from 'butterchurn-presets';
-
+        window.butterchurnPresetsExtra = {};
         // --- GLOBAL STATE ---
         const state = {
             audioCtx: null,
@@ -493,128 +495,87 @@
         }
           class MilkdropMegaEngine {
     constructor() {
-        this.name = "Milkdrop Extended";
+        this.name = "ProjectM Extended";
         this.canvas = null;
-        this.allPresets = [];      // flattened list of preset names
-        this.chunks = [];          // list of chunk filenames
+        this.visualizer = null;
+        this.presetList = [];
         this.currentIndex = 0;
-
         this.resizeHandler = this.onResize.bind(this);
     }
 
     async init() {
+
         container.innerHTML = '';
+
         this.canvas = document.createElement('canvas');
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
         container.appendChild(this.canvas);
 
-        // Load index.json once
-        if (this.allPresets.length === 0) {
-            const index = await fetch("presets/chunks/index.json").then(r => r.json());
-            this.chunks = index.chunks;
+        // Merge and weight presets
+        const base = Object.values(window.butterchurnPresets.getPresets());
+        const extra = Object.values(window.butterchurnPresetsExtra.getPresets());
 
-            // Flatten all preset names from all chunks 
-            // (We don't load the chunks yet — only read the names)
-            for (let i = 0; i < this.chunks.length; i++) {
-                const chunkName = this.chunks[i];
-                // Preload just preset names by reading JS file as text (fast)
-                const txt = await fetch("presets/chunks/" + chunkName).then(r => r.text());
+        // Best collections (weighted heavier)
+        const best1 = Object.values(window.butterchurnPresets.collectionBest || {});
+        const best2 = Object.values(window.butterchurnPresets.collectionMindtrip || {});
+        const best3 = Object.values(window.butterchurnPresetsExtra.best || {});
 
-                // extract keys: "PresetName.milk":
-                const matches = [...txt.matchAll(/window\.butterchurnPresetsExtra\["(.+?)"\]/g)];
-                for (const m of matches) this.allPresets.push(m[1]);
+        this.presetList = [
+            ...base,
+            ...extra,
+            ...best1, ...best1,  // weight ×2
+            ...best2, ...best2,  // weight ×2
+            ...best3, ...best3   // weight ×2
+        ];
+
+        this.visualizer = butterchurn.createVisualizer(
+            state.audioCtx,
+            this.canvas,
+            {
+                width: window.innerWidth,
+                height: window.innerHeight,
+                pixelRatio: window.devicePixelRatio || 1,
             }
-        }
+        );
 
-        // Build visualizer
-        this.visualizer = butterchurn.createVisualizer(state.audioCtx, this.canvas, {
-            width: window.innerWidth,
-            height: window.innerHeight,
-            pixelRatio: window.devicePixelRatio || 1
-        });
         this.visualizer.connectAudio(state.analyserNode);
 
         this.nextPreset();
-        window.addEventListener('resize', this.resizeHandler);
-
-        this.animate();
         this.startCycle();
-    }
+        this.animate();
 
-    async loadChunk(chunkFile) {
-        return new Promise((resolve, reject) => {
-            const s = document.createElement("script");
-            s.src = "presets/chunks/" + chunkFile;
-            s.onload = resolve;
-            s.onerror = reject;
-            document.body.appendChild(s);
-        });
-    }
-
-    async loadPreset(idx) {
-        const presetName = this.allPresets[idx];
-
-        // find which chunk contains this preset
-        let chunkToLoad = null;
-        for (const chunkFile of this.chunks) {
-            if (presetName.startsWith(chunkFile.replace('.js',''))) continue; 
-            // quick match via text load (cheap)
-            const txt = await fetch("presets/chunks/" + chunkFile).then(r => r.text());
-            if (txt.includes(`["${presetName}"]`)) {
-                chunkToLoad = chunkFile;
-                break;
-            }
-        }
-
-        if (!chunkToLoad) {
-            console.warn("Preset not found in chunks:", presetName);
-            return;
-        }
-
-        // Load the chunk if not already loaded
-        if (!window.butterchurnPresetsExtra) {
-            window.butterchurnPresetsExtra = {};
-        }
-
-        // Prevent reloading (optional)
-        if (!window.butterchurnPresetsExtra[presetName]) {
-            await this.loadChunk(chunkToLoad);
-        }
-
-        // Load into butterchurn
-        const presetObj = window.butterchurnPresetsExtra[presetName];
-        this.visualizer.loadPreset(presetObj, 2.2);
-
-        document.getElementById("mode-sub").innerText = presetName;
+        window.addEventListener("resize", this.resizeHandler);
     }
 
     nextPreset() {
-        this.currentIndex = Math.floor(Math.random() * this.allPresets.length);
-        this.loadPreset(this.currentIndex);
+        this.currentIndex = Math.floor(Math.random() * this.presetList.length);
+        this.visualizer.loadPreset(this.presetList[this.currentIndex], 2.7);
     }
 
     startCycle() {
-        this.cycleTimer = setInterval(() => {
-            this.nextPreset();
-        }, 12000 + Math.random() * 12000);
+        this.cycle = setInterval(
+            () => this.nextPreset(),
+            12000 + Math.random() * 10000
+        );
     }
 
     animate() {
-        this.animId = requestAnimationFrame(this.animate.bind(this));
-        this.visualizer.render();
+        this.frame = requestAnimationFrame(() => this.animate());
+        if (this.visualizer) this.visualizer.render();
     }
 
     onResize() {
+        if (!this.canvas || !this.visualizer) return;
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
         this.visualizer.setRendererSize(window.innerWidth, window.innerHeight);
     }
 
     destroy() {
-        cancelAnimationFrame(this.animId);
-        clearInterval(this.cycleTimer);
-        window.removeEventListener('resize', this.resizeHandler);
+        cancelAnimationFrame(this.frame);
+        clearInterval(this.cycle);
+        window.removeEventListener("resize", this.resizeHandler);
         container.innerHTML = "";
     }
 }
@@ -746,6 +707,9 @@
                 group.rotation.y = Math.sin(t * 0.5) * 0.2;
             };
         };
+       // --- MEGA MILKDROP INIT (Step 1) ---
+let megaPresetIndex = null;
+
 
         // --- MASTER CONTROL ---
         const modes = [
