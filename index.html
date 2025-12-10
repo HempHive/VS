@@ -243,7 +243,16 @@
             activeVisualizer: null,
             idleTimer: null
         };
-
+        async function loadExternalMilkdropPresets() {
+    try {
+        const resp = await fetch("presets/milkdrop-presets.json");
+        const json = await resp.json();
+        return json;
+    } catch (err) {
+        console.error("Failed to load external Milkdrop preset pack:", err);
+        return {};
+    }
+}
         const container = document.getElementById('canvas-container');
         const statusEl = document.getElementById('loading-status');
         const uiLayer = document.getElementById('ui-layer');
@@ -491,7 +500,96 @@
                 container.innerHTML = '';
             }
         }
+           class MilkdropMegaEngine {
+    constructor() {
+        this.name = "Milky";
+        this.resizeHandler = this.onResize.bind(this);
+        this.presets = null;
+        this.presetKeys = [];
+        this.currentPresetIdx = 0;
+        this.canvas = null;
+    }
 
+    async init() {
+        // Load container + canvas
+        container.innerHTML = '';
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        container.appendChild(this.canvas);
+
+        // Load presets JSON if not loaded yet
+        if (!this.presets) {
+            this.presets = await loadExternalMilkdropPresets();
+            this.presetKeys = Object.keys(this.presets);
+        }
+
+        // Create visualizer
+        this.visualizer = butterchurn.createVisualizer(state.audioCtx, this.canvas, {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            pixelRatio: window.devicePixelRatio || 1
+        });
+
+        this.visualizer.connectAudio(state.analyserNode);
+
+        // Pick a random preset to start
+        this.currentPresetIdx = Math.floor(Math.random() * this.presetKeys.length);
+        this.loadPreset(this.currentPresetIdx);
+
+        // Resize + animation
+        window.addEventListener('resize', this.resizeHandler);
+        this.animate();
+        this.schedulePresetRotation();
+    }
+
+    loadPreset(idx) {
+        const key = this.presetKeys[idx];
+        const preset = this.presets[key];
+        this.visualizer.loadPreset(preset, 2.5);
+        document.getElementById('mode-sub').innerText = key;
+    }
+
+    nextPreset() {
+        let next = this.currentPresetIdx;
+        if (this.presetKeys.length > 1) {
+            while (next === this.currentPresetIdx) {
+                next = Math.floor(Math.random() * this.presetKeys.length);
+            }
+        }
+        this.currentPresetIdx = next;
+        this.loadPreset(next);
+    }
+
+    schedulePresetRotation() {
+        if (this.rotationTimer) clearTimeout(this.rotationTimer);
+        const delay = 8000 + Math.random() * 12000;
+        this.rotationTimer = setTimeout(() => {
+            this.nextPreset();
+            this.schedulePresetRotation();
+        }, delay);
+    }
+
+    animate() {
+        this.animId = requestAnimationFrame(this.animate.bind(this));
+        this.visualizer.render();
+    }
+
+    onResize() {
+        if (this.visualizer && this.canvas) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+            this.visualizer.setRendererSize(window.innerWidth, window.innerHeight);
+        }
+    }
+
+    destroy() {
+        cancelAnimationFrame(this.animId);
+        clearTimeout(this.rotationTimer);
+        window.removeEventListener('resize', this.resizeHandler);
+        container.innerHTML = '';
+    }
+}
         // --- ENGINE: THREE.JS ---
         class ThreeEngine {
             constructor(name, sceneFn) {
@@ -623,11 +721,12 @@
 
         // --- MASTER CONTROL ---
         const modes = [
-            new MilkdropEngine(),
-            new ThreeEngine("Neon Sphere", sceneSphere),
-            new ThreeEngine("Cyber Tunnel", sceneTunnel),
-            new ThreeEngine("Audio Bars", sceneBars)
-        ];
+    new MilkdropEngine(),
+    new ThreeEngine("Neon Sphere", sceneSphere),
+    new ThreeEngine("Cyber Tunnel", sceneTunnel),
+    new ThreeEngine("Audio Bars", sceneBars),
+    new MilkdropMegaEngine()   // <-- NEW 5th MODE
+];
 
         function loadMode(index) {
             if(state.activeVisualizer) state.activeVisualizer.destroy();
@@ -639,12 +738,17 @@
             
             // UI Updates
             document.getElementById('mode-title').innerText = state.activeVisualizer.name;
-            if(idx !== 0) document.getElementById('mode-sub').innerText = "3D Interactive";
+            if (idx === 1 || idx === 2 || idx === 3) {
+    document.getElementById('mode-sub').innerText = "3D Interactive";
+}
             
             // Show/Hide Skip Button
             const skipBtn = document.getElementById('btn-skip-preset');
-            if(idx === 0) skipBtn.classList.remove('display-none');
-            else skipBtn.classList.add('display-none');
+            if (idx === 0 || idx === 4) {
+    skipBtn.classList.remove('display-none');
+} else {
+    skipBtn.classList.add('display-none');
+}
 
             state.activeVisualizer.init();
         }
@@ -659,9 +763,9 @@
         
         // Skip Preset Button Logic
         document.getElementById('btn-skip-preset').addEventListener('click', () => {
-            if(state.currentModeIdx === 0 && state.activeVisualizer.nextPreset) {
-                state.activeVisualizer.nextPreset();
-            }
+            if ((state.currentModeIdx === 0 || state.currentModeIdx === 4) && state.activeVisualizer.nextPreset) {
+    state.activeVisualizer.nextPreset();
+}
         });
 
         // --- RADIO: Load stations and UI ---
@@ -793,7 +897,7 @@
             if(e.key === 'f' || e.key === 'F') {
                 toggleFullscreen();
             } else if(e.key === 's' || e.key === 'S') {
-                if(state.currentModeIdx === 0 && state.activeVisualizer?.nextPreset) {
+                if ((state.currentModeIdx === 0 || state.currentModeIdx === 4) && state.activeVisualizer?.nextPreset) {
                     state.activeVisualizer.nextPreset();
                 }
             }
