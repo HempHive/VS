@@ -1,0 +1,14 @@
+{
+  "shapes": [
+    "x=0; y=0; r=1;"
+  ],
+  "waves": [
+    "sample=0;"
+  ],
+  "init_code": "",
+  "per_frame_code": "",
+  "per_pixel_code": "",
+  "warp_shader": "",
+  "composite_shader": "",
+  "presetName": ""
+}
