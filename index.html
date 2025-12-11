@@ -428,7 +428,8 @@
             isPlaying: false,
             currentModeIdx: 0,
             activeVisualizer: null,
-            idleTimer: null
+            idleTimer: null,
+            mediaStream: null
         };
 
         const container = document.getElementById('canvas-container');
@@ -638,6 +639,7 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 if(state.sourceNode) state.sourceNode.disconnect();
                 state.sourceNode = state.audioCtx.createMediaStreamSource(stream);
+                state.mediaStream = stream;
                 state.sourceNode.connect(state.analyserNode);
                 startGame();
             } catch(e) { statusEl.innerText = "Error: " + e.message; }
@@ -672,6 +674,40 @@
             resetIdleTimer();
         }
 
+function stopAllAndShowStart() {
+    // Stop active visualizer
+    if (state.activeVisualizer && typeof state.activeVisualizer.destroy === 'function') {
+        try { state.activeVisualizer.destroy(); } catch(e) {}
+    }
+    state.activeVisualizer = null;
+    // Stop audio sources
+    try {
+        if (state.sourceNode) {
+            try { state.sourceNode.disconnect(); } catch(e) {}
+            try { if (typeof state.sourceNode.stop === 'function') state.sourceNode.stop(0); } catch(e) {}
+            state.sourceNode = null;
+        }
+        if (state.mediaStream) {
+            try { state.mediaStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+            state.mediaStream = null;
+        }
+        if (audioEl) {
+            try { audioEl.pause(); } catch(e) {}
+            try { audioEl.currentTime = 0; } catch(e) {}
+            try { audioEl.src = ''; audioEl.load(); } catch(e) {}
+        }
+    } catch (err) { /* ignore */ }
+    // Hide player UI and other overlays, show start overlay
+    document.getElementById('ui-layer').classList.add('hidden');
+    if (typeof hideRadioPanel === 'function') { try { hideRadioPanel(); } catch(e) {} }
+    const sb = document.getElementById('station-banner');
+    if (sb) { sb.classList.add('display-none'); }
+    if (typeof hideWebm === 'function' && typeof webmOn !== 'undefined' && webmOn) {
+        try { hideWebm(); } catch(e) {}
+    }
+    state.isPlaying = false;
+    showOverlay();
+}
         // --- ENGINE: BUTTERCHURN ---
         class MilkdropEngine {
             constructor() {
@@ -2557,18 +2593,18 @@
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            if(e.key === 'f' || e.key === 'F') {
+            if (e.key === 'f' || e.key === 'F') {
                 toggleFullscreen();
-            } else if(e.key === 's' || e.key === 'S') {
-                if(state.activeVisualizer?.nextPreset) {
+            } else if (e.key === 's' || e.key === 'S') {
+                if (state.activeVisualizer?.nextPreset) {
                     state.activeVisualizer.nextPreset();
                 }
-            } else if(e.key === 'Escape') {
-                showOverlay();
-            } else if(e.key === 'ArrowLeft') {
-                if(webmOn) prevWebm();
-            } else if(e.key === 'ArrowRight') {
-                if(webmOn) nextWebm();
+            } else if (e.key === 'Escape') {
+                stopAllAndShowStart();
+            } else if (e.key === 'Arrow Left' || e.key === 'ArrowLeft') {
+                if (webmOn) prevWebm();
+            } else if (e.key === 'ArrowRight' || e.key === 'Arrow Right') {
+                if (webmOn) nextWebm();
             }
         });
 
