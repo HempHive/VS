@@ -291,6 +291,7 @@
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+        import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
         import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
         import butterchurn from 'butterchurn';
         import butterchurnPresets from 'butterchurn-presets';
@@ -894,6 +895,91 @@
             };
         };
 
+        // --- Additional Tunnel Variants ---
+        const sceneNeonTunnel = (scene, camera) => {
+            const rings = [];
+            const count = 36;
+            for(let i=0;i<count;i++){
+                const geo = new THREE.TorusGeometry(2.5, 0.08, 16, 120);
+                const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.6 });
+                const m = new THREE.Mesh(geo, mat);
+                m.position.z = -i*1.4;
+                rings.push(m);
+                scene.add(m);
+            }
+            camera.position.z = 4;
+            return (data, time) => {
+                const bass = data[8]/255;
+                rings.forEach((r, i) => {
+                    r.position.z += 0.12 + bass*0.6;
+                    if(r.position.z > 3.5) r.position.z -= count*1.4;
+                    const hue = ((i/count) + time*0.0002) % 1;
+                    r.material.color.setHSL(hue, 1, 0.6);
+                    r.rotation.x = time*0.0006 + i*0.03;
+                });
+                camera.rotation.z = Math.sin(time*0.0006)*0.15;
+            };
+        };
+
+        const sceneTwistTunnel = (scene, camera) => {
+            const group = new THREE.Group();
+            const segs = [];
+            for(let i=0;i<90;i++){
+                const geo = new THREE.CylinderGeometry(2.2, 2.2, 0.4, 60, 1, true);
+                const mat = new THREE.MeshBasicMaterial({ color: 0xff66ff, wireframe: true, transparent: true, opacity: 0.5 });
+                const m = new THREE.Mesh(geo, mat);
+                m.position.z = -i*0.9;
+                m.rotation.z = i*0.1;
+                group.add(m);
+                segs.push(m);
+            }
+            scene.add(group);
+            camera.position.z = 3.5;
+            return (data, time) => {
+                const mid = data[24]/255;
+                segs.forEach((s, i) => {
+                    s.position.z += 0.08 + mid*0.5;
+                    if(s.position.z > 2.5) s.position.z -= 90*0.9;
+                    s.rotation.z += 0.003 + mid*0.03;
+                    const hue = ((i/90) + time*0.00015) % 1;
+                    s.material.color.setHSL(hue, 1, 0.6);
+                    s.material.opacity = 0.25 + mid*0.75;
+                });
+                group.rotation.y = Math.sin(time*0.0005)*0.3;
+            };
+        };
+
+        const sceneParticleTunnel = (scene, camera) => {
+            const num = 3000;
+            const geo = new THREE.BufferGeometry();
+            const positions = new Float32Array(num*3);
+            for(let i=0;i<num;i++){
+                const r = 2 + Math.random()*2.5;
+                const a = Math.random()*Math.PI*2;
+                const z = -Math.random()*60;
+                positions[i*3+0] = Math.cos(a)*r;
+                positions[i*3+1] = Math.sin(a)*r;
+                positions[i*3+2] = z;
+            }
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.05, transparent: true, opacity: 0.9 });
+            const points = new THREE.Points(geo, mat);
+            scene.add(points);
+            camera.position.z = 3;
+            return (data, time) => {
+                const bass = data[6]/255;
+                const arr = geo.attributes.position.array;
+                for(let i=0;i<arr.length;i+=3){
+                    arr[i+2] += 0.22 + bass*1.6;
+                    if(arr[i+2] > 2.5) arr[i+2] -= 62.5;
+                }
+                geo.attributes.position.needsUpdate = true;
+                const hue = (time*0.0002)%1;
+                mat.color.setHSL(hue, 1, 0.7);
+                points.rotation.z += 0.001 + bass*0.02;
+            };
+        };
+
         const sceneGalaxy = (scene, camera) => {
             const count = 4000;
             const geo = new THREE.BufferGeometry();
@@ -1058,6 +1144,71 @@
             };
         };
 
+        // --- Infinity Pattern Tunnels ---
+        const sceneInfinityTunnel = (scene, camera, composer) => {
+            const rings = [];
+            const count = 64;
+            const baseRadius = 2.2;
+            for(let i=0;i<count;i++){
+                const geo = new THREE.TorusGeometry(baseRadius, 0.06, 12, 120);
+                const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.65 });
+                const m = new THREE.Mesh(geo, mat);
+                m.position.z = -i*1.0;
+                rings.push(m);
+                scene.add(m);
+            }
+            const after = new AfterimagePass(0.88);
+            composer.addPass(after);
+            camera.position.z = 4;
+            return (data, time) => {
+                const t = time * 0.001;
+                const bass = data[10]/255;
+                rings.forEach((r, i) => {
+                    // Figure-eight cross-section via Lissajous pattern
+                    const phase = (i*0.22) + t*1.2;
+                    r.position.x = Math.sin(phase) * (baseRadius * 0.6);
+                    r.position.y = Math.sin(phase*2.0) * (baseRadius * 0.35);
+                    r.position.z += 0.18 + bass*0.8;
+                    if(r.position.z > 2.5) r.position.z -= count*1.0;
+                    const hue = ((i/count) + t*0.05) % 1;
+                    r.material.color.setHSL(hue, 1, 0.6);
+                    r.material.opacity = 0.35 + bass*0.6;
+                    r.rotation.x = phase*0.2;
+                    r.rotation.y = -phase*0.15;
+                });
+                camera.rotation.z = Math.sin(t*0.8)*0.2;
+            };
+        };
+
+        const sceneInfinityMirror = (scene, camera, composer) => {
+            const frames = [];
+            const count = 40;
+            for(let i=0;i<count;i++){
+                const geo = new THREE.RingGeometry(0.8, 3.0, 6, 1);
+                const mat = new THREE.MeshBasicMaterial({ color: 0x88ccff, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+                const ring = new THREE.Mesh(geo, mat);
+                ring.position.z = -i*1.4;
+                frames.push(ring);
+                scene.add(ring);
+            }
+            const after = new AfterimagePass(0.9);
+            composer.addPass(after);
+            camera.position.z = 3.8;
+            return (data, time) => {
+                const t = time*0.001;
+                const mid = data[24]/255;
+                frames.forEach((f, i) => {
+                    f.position.z += 0.14 + mid*0.7;
+                    if(f.position.z > 2.5) f.position.z -= count*1.4;
+                    const s = 0.9 + Math.sin(i*0.2 + t*2.0)*0.08 + mid*0.2;
+                    f.scale.set(s, s, s);
+                    f.rotation.z = t*0.7 + i*0.05;
+                    const hue = ((i/count) + t*0.1) % 1;
+                    f.material.color.setHSL(hue, 1, 0.65);
+                    f.material.opacity = 0.3 + mid*0.7;
+                });
+            };
+        };
         // --- Kaleidoscope Shader ---
         const KaleidoShader = {
             uniforms: {
@@ -1090,6 +1241,39 @@
                     vec2 pos = vec2(cos(a), sin(a)) * r;
                     vec4 col = texture2D(tDiffuse, pos + 0.5);
                     gl_FragColor = col;
+                }
+            `
+        };
+
+        const RadialZoomShader = {
+            uniforms: {
+                tDiffuse: { value: null },
+                center: { value: new THREE.Vector2(0.5, 0.5) },
+                strength: { value: 0.2 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform vec2 center;
+                uniform float strength;
+                varying vec2 vUv;
+                void main() {
+                    vec4 color = vec4(0.0);
+                    float total = 0.0;
+                    vec2 toCenter = center - vUv;
+                    float offset = strength * 0.02;
+                    for (float t = 0.0; t <= 1.0; t += 0.1) {
+                        vec2 sampleUv = vUv + toCenter * t * offset;
+                        color += texture2D(tDiffuse, sampleUv);
+                        total += 1.0;
+                    }
+                    gl_FragColor = color / total;
                 }
             `
         };
@@ -1142,6 +1326,148 @@
             };
         };
 
+        const sceneKaleidoLayered = (scene, camera, composer) => {
+            const group = buildKaleidoSource(scene);
+            const k1 = new ShaderPass(KaleidoShader);
+            const k2 = new ShaderPass(KaleidoShader);
+            k1.uniforms.sides.value = 7.0;
+            k2.uniforms.sides.value = 11.0;
+            composer.addPass(k1);
+            composer.addPass(k2);
+            camera.position.z = 5;
+            return (data, time) => {
+                const bass = data[10]/255;
+                group.rotation.x = time*0.0005;
+                group.rotation.y = Math.sin(time*0.0003)*0.4;
+                k1.uniforms.rotation.value = time*0.0002 + bass*0.5;
+                k2.uniforms.rotation.value = -time*0.00025 + bass*0.7;
+                k1.uniforms.angle.value = Math.sin(time*0.0004)*0.6;
+                k2.uniforms.angle.value = Math.cos(time*0.00045)*0.6;
+            };
+        };
+
+        const sceneKaleidoZoom = (scene, camera, composer) => {
+            const group = buildKaleidoSource(scene);
+            const kaleido = new ShaderPass(KaleidoShader);
+            const zoom = new ShaderPass(RadialZoomShader);
+            composer.addPass(kaleido);
+            composer.addPass(zoom);
+            camera.position.z = 4.5;
+            return (data, time) => {
+                const bass = data[14]/255;
+                group.rotation.y = time*0.0005 + bass*0.3;
+                kaleido.uniforms.sides.value = 10.0;
+                kaleido.uniforms.rotation.value = time*0.00025;
+                zoom.uniforms.center.value.set(0.5, 0.5);
+                zoom.uniforms.strength.value = 0.1 + bass*0.6;
+            };
+        };
+
+        // --- Emoji Helpers and Scenes ---
+        function createEmojiTexture(char) {
+            const size = 256;
+            const canvas = document.createElement('canvas');
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0,0,size,size);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '200px Apple Color Emoji, Noto Color Emoji, Segoe UI Emoji, EmojiOne Mozilla, Twemoji Mozilla, Segoe UI Symbol, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(char, size/2, size/2);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        const EMOJIS = ['🎵','✨','🔥','💫','🌈','💥','❤️','🌀','🌟','🤖','🎧','🎉','🎇','🛰️','🪐','⚡️'];
+
+        const sceneEmojiSwarm = (scene, camera) => {
+            const sprites = [];
+            const velocities = [];
+            const count = 240;
+            const textures = EMOJIS.map(e => createEmojiTexture(e));
+            for(let i=0;i<count;i++){
+                const tex = textures[i % textures.length];
+                const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+                const spr = new THREE.Sprite(mat);
+                spr.position.set((Math.random()-0.5)*18, (Math.random()-0.5)*10, (Math.random()-0.5)*12);
+                const s = Math.random()*0.7 + 0.3;
+                spr.scale.set(s, s, 1);
+                sprites.push(spr);
+                velocities.push(new THREE.Vector3((Math.random()-0.5)*0.03, (Math.random()-0.5)*0.03, (Math.random()-0.5)*0.03));
+                scene.add(spr);
+            }
+            camera.position.z = 8;
+            return (data, time) => {
+                const t = time*0.001;
+                const bass = data[6]/255;
+                sprites.forEach((s, i) => {
+                    const v = velocities[i];
+                    // Simple cohesion toward origin + slight orbit
+                    const toCenter = s.position.clone().multiplyScalar(-0.002);
+                    v.add(toCenter);
+                    v.x += Math.sin(t + i*0.1)*0.001;
+                    v.y += Math.cos(t*0.8 + i*0.07)*0.001;
+                    s.position.add(v);
+                    // Wrap bounds
+                    if(s.position.x > 10) s.position.x = -10;
+                    if(s.position.x < -10) s.position.x = 10;
+                    if(s.position.y > 6) s.position.y = -6;
+                    if(s.position.y < -6) s.position.y = 6;
+                    if(s.position.z > 8) s.position.z = -8;
+                    if(s.position.z < -8) s.position.z = 8;
+                    // Pulse size with bass
+                    const base = 0.3 + (i%5)*0.04;
+                    const pulse = base + bass*0.8;
+                    s.scale.set(pulse, pulse, 1);
+                    s.material.opacity = 0.6 + bass*0.4;
+                });
+                camera.rotation.z = Math.sin(t*0.4)*0.1;
+            };
+        };
+
+        const sceneEmojiOrbits = (scene, camera) => {
+            const group = new THREE.Group();
+            scene.add(group);
+            const textures = EMOJIS.map(e => createEmojiTexture(e));
+            const rings = [];
+            for(let r=0;r<5;r++){
+                const ringGroup = new THREE.Group();
+                const num = 18 + r*6;
+                const radius = 2.0 + r*1.2;
+                for(let i=0;i<num;i++){
+                    const tex = textures[(i+r) % textures.length];
+                    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+                    const spr = new THREE.Sprite(mat);
+                    const a = (i/num)*Math.PI*2;
+                    spr.position.set(Math.cos(a)*radius, Math.sin(a)*radius, -r*0.4);
+                    const s = 0.25 + r*0.08;
+                    spr.scale.set(s, s, 1);
+                    ringGroup.add(spr);
+                }
+                group.add(ringGroup);
+                rings.push({ group: ringGroup, radius });
+            }
+            camera.position.z = 8;
+            return (data, time) => {
+                const bass = data[8]/255;
+                const mid = data[24]/255;
+                rings.forEach((r, i) => {
+                    r.group.rotation.z += 0.002 + bass*0.02 + i*0.0005;
+                    r.group.position.z = Math.sin(time*0.0006 + i)*0.6;
+                    r.group.children.forEach((spr, j) => {
+                        spr.material.rotation = time*0.0004 + j*0.05;
+                        const s = spr.scale.x;
+                        const pulse = s * (1.0 + mid*0.8*Math.sin(time*0.004 + j));
+                        spr.scale.set(pulse, pulse, 1);
+                    });
+                });
+                group.rotation.x = Math.sin(time*0.0004)*0.2;
+                group.rotation.y = Math.cos(time*0.0003)*0.2;
+            };
+        };
+
         // --- MASTER CONTROL ---
         const modes = [
             new MilkdropEngine(),
@@ -1152,15 +1478,24 @@
             new ThreeEngine("Starfield", sceneStarfield),
             new ThreeEngine("Wave Grid", sceneWaveGrid),
             new ThreeEngine("Particles", sceneParticles),
+            new ThreeEngine("Infinity Tunnel", sceneInfinityTunnel),
+            new ThreeEngine("Infinity Mirror", sceneInfinityMirror),
+            new ThreeEngine("Neon Tunnel", sceneNeonTunnel),
+            new ThreeEngine("Twist Tunnel", sceneTwistTunnel),
+            new ThreeEngine("Particle Tunnel", sceneParticleTunnel),
             new ThreeEngine("Galaxy", sceneGalaxy),
             new ThreeEngine("Kaleido Rings", sceneKaleidoRings),
             new ThreeEngine("Terrain", sceneTerrain),
             new ThreeEngine("Hex Grid", sceneHexGrid),
             new ThreeEngine("Ribbons", sceneRibbons),
+            new ThreeEngine("Emoji Swarm", sceneEmojiSwarm),
+            new ThreeEngine("Emoji Orbits", sceneEmojiOrbits),
             new ThreeEngine("Kaleidoscope 6", sceneKaleido(6)),
             new ThreeEngine("Kaleidoscope 8", sceneKaleido(8)),
             new ThreeEngine("Kaleidoscope 12", sceneKaleido(12)),
-            new ThreeEngine("Kaleidoscope Spiral", sceneKaleidoSpiral)
+            new ThreeEngine("Kaleidoscope Spiral", sceneKaleidoSpiral),
+            new ThreeEngine("Kaleidoscope Layered", sceneKaleidoLayered),
+            new ThreeEngine("Kaleidoscope Zoom", sceneKaleidoZoom)
         ];
 
         function loadMode(index) {
