@@ -31,9 +31,10 @@
         }
 
         #ui-layer {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 140px;
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            min-height: clamp(88px, 12vh, 160px);
             display: flex; justify-content: space-between; align-items: center;
-            padding: 0 40px; box-sizing: border-box;
+            padding: 0 clamp(12px, 3vw, 40px); box-sizing: border-box;
             background: linear-gradient(to top, rgba(0,0,0,1), transparent);
             z-index: 50;
             transition: opacity 1s ease-in-out;
@@ -42,7 +43,8 @@
 
         /* Center Control Group */
         .center-controls {
-            display: flex; align-items: center; justify-content: center; gap: 20px;
+            display: flex; align-items: center; justify-content: center;
+            gap: clamp(10px, 2vw, 24px); flex-wrap: wrap;
         }
 
         /* Interactive Elements */
@@ -64,7 +66,7 @@
         /* Secondary Icon Buttons (Fullscreen / Skip) */
         .icon-btn {
             background: transparent; border: none; color: rgba(255,255,255,0.6);
-            font-size: 24px; padding: 10px; transition: 0.2s; display: flex; align-items: center;
+            font-size: clamp(18px, 2.5vw, 28px); padding: 10px; transition: 0.2s; display: flex; align-items: center;
         }
         .icon-btn:hover { color: #fff; transform: scale(1.2); text-shadow: 0 0 10px #fff; }
 
@@ -75,13 +77,13 @@
 
         /* Navigation Arrows */
         .nav-btn {
-            font-size: 50px; opacity: 0.3; transition: 0.3s; user-select: none; padding: 20px;
+            font-size: clamp(36px, 6vw, 64px); opacity: 0.3; transition: 0.3s; user-select: none; padding: clamp(10px, 2vh, 20px);
         }
         .nav-btn:hover { opacity: 1; text-shadow: 0 0 15px #fff; transform: scale(1.1); }
 
-        #mode-info { text-align: center; min-width: 250px; }
-        #mode-title { font-size: 24px; font-weight: 600; display: block; letter-spacing: 2px; margin-bottom: 5px; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        #mode-sub { font-size: 12px; color: #aaa; font-family: monospace; letter-spacing: 1px; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; margin: 0 auto;}
+        #mode-info { text-align: center; min-width: clamp(180px, 25vw, 360px); }
+        #mode-title { font-size: clamp(18px, 2.2vw, 28px); font-weight: 600; display: block; letter-spacing: 2px; margin-bottom: 5px; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        #mode-sub { font-size: clamp(10px, 1.2vw, 14px); color: #aaa; font-family: monospace; letter-spacing: 1px; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; margin: 0 auto;}
 
         .hidden { opacity: 0 !important; pointer-events: none; }
         .display-none { display: none !important; }
@@ -102,6 +104,28 @@
         }
         #radio-quick:hover {
             filter: brightness(1.15);
+        }
+        
+        /* Shuffle Toggle (Top-left) */
+        #shuffle-toggle {
+            position: absolute; top: 58px; left: 14px;
+            z-index: 80;
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.5);
+            color: rgba(255,255,255,0.9);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            backdrop-filter: blur(6px);
+            transition: opacity 1s ease-in-out, filter 0.2s;
+            font-size: 20px;
+        }
+        #shuffle-toggle:hover { filter: brightness(1.15); }
+        #shuffle-toggle.shuffle-on {
+            border: 1px solid rgba(212,175,55,0.6);
+            box-shadow: 0 0 16px rgba(212,175,55,0.25);
         }
 
         /* Radio Panel */
@@ -152,10 +176,14 @@
             color: #fff;
             font-size: 13px;
             letter-spacing: 0.5px;
-            pointer-events: none;
+            pointer-events: auto;
             transition: opacity 1s ease-in-out;
             max-width: min(60vw, 720px);
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        #station-banner.shuffle-on {
+            border: 1px solid rgba(212,175,55,0.6);
+            box-shadow: 0 0 16px rgba(212,175,55,0.25);
         }
         
         /* Settings Panel */
@@ -285,11 +313,11 @@
                 <span id="mode-sub">Engine Ready</span>
             </div>
 
-            <!-- FULLSCREEN BUTTON -->
-            <button class="icon-btn interactive" id="btn-fullscreen" title="Toggle Fullscreen">⛶</button>
-            
             <!-- SETTINGS BUTTON -->
             <button class="icon-btn interactive" id="btn-settings" title="Visualizer Settings">⚙︎</button>
+            
+            <!-- FULLSCREEN BUTTON -->
+            <button class="icon-btn interactive" id="btn-fullscreen" title="Toggle Fullscreen">⛶</button>
         </div>
 
         <div class="nav-btn interactive" id="btn-next">❯</div>
@@ -348,31 +376,31 @@
         <div id="webm-settings-content">
             <div class="settings-row">
                 <label for="inp-webm-scale">Size (vw)</label>
-                <input id="inp-webm-scale" type="number" min="10" max="100" step="1" value="50">
+                <input id="inp-webm-scale" type="range" min="10" max="100" step="1" value="50">
             </div>
             <div class="settings-row">
                 <label for="inp-webm-x">X (vw)</label>
-                <input id="inp-webm-x" type="number" min="0" max="100" step="1" value="50">
+                <input id="inp-webm-x" type="range" min="0" max="100" step="1" value="50">
             </div>
             <div class="settings-row">
                 <label for="inp-webm-y">Y (vh)</label>
-                <input id="inp-webm-y" type="number" min="0" max="100" step="1" value="50">
+                <input id="inp-webm-y" type="range" min="0" max="100" step="1" value="50">
             </div>
             <div class="settings-row">
                 <label for="inp-webm-rot">Rotate (deg)</label>
-                <input id="inp-webm-rot" type="number" min="-180" max="180" step="1" value="0">
+                <input id="inp-webm-rot" type="range" min="-180" max="180" step="1" value="0">
             </div>
             <div class="settings-row">
                 <label for="inp-webm-speed">Speed</label>
-                <input id="inp-webm-speed" type="number" min="0.1" max="4" step="0.1" value="1.0">
+                <input id="inp-webm-speed" type="range" min="0.1" max="4" step="0.1" value="1.0">
             </div>
             <div class="settings-row">
                 <label for="inp-webm-opacity">Opacity</label>
-                <input id="inp-webm-opacity" type="number" min="0" max="1" step="0.05" value="1">
+                <input id="inp-webm-opacity" type="range" min="0" max="1" step="0.05" value="1">
             </div>
             <div class="settings-row">
                 <label for="inp-webm-dup">Duplicates (0-2)</label>
-                <input id="inp-webm-dup" type="number" min="0" max="2" step="1" value="0">
+                <input id="inp-webm-dup" type="range" min="0" max="2" step="1" value="0">
             </div>
             <div class="settings-actions">
                 <button class="btn-small" id="btn-webm-apply">Apply</button>
@@ -473,6 +501,7 @@
             radioQuickBtn.style.pointerEvents = 'auto';
             if(!stationBanner.classList.contains('display-none')) {
                 stationBanner.style.opacity = '1';
+                stationBanner.style.pointerEvents = 'auto';
             }
             if(!radioPanel.classList.contains('display-none')) {
                 radioPanel.style.opacity = '1';
@@ -498,6 +527,7 @@
                     radioQuickBtn.style.pointerEvents = 'none';
                     if(!stationBanner.classList.contains('display-none')) {
                         stationBanner.style.opacity = '0';
+                        stationBanner.style.pointerEvents = 'none';
                     }
                     // Hide webm nav
                     webmPrevBtn.style.opacity = '0';
@@ -2446,7 +2476,7 @@
         }
 
         // Swap: left-click now opens panel; right-click picks random
-        radioQuickBtn.title = "Left-click: choose • Right-click: random station • Double-click: toggle visual shuffle";
+        radioQuickBtn.title = "Left-click: choose • Right-click: random station";
         radioQuickBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             toggleRadioPanel();
@@ -2456,8 +2486,9 @@
             e.stopPropagation();
             pickRandomStation();
         });
-        radioQuickBtn.addEventListener('dblclick', (e) => {
-            e.preventDefault();
+        // Station banner toggles shuffle
+        stationBanner.title = "Click: toggle visual shuffle";
+        stationBanner.addEventListener('click', (e) => {
             e.stopPropagation();
             setModeShuffle(!modeShuffleOn);
         });
@@ -2700,6 +2731,10 @@
             if(modeShuffleTimer) { clearTimeout(modeShuffleTimer); modeShuffleTimer = null; }
             if(modeShuffleOn) {
                 scheduleModeShuffle();
+                stationBanner.classList.add('shuffle-on');
+            }
+            if(!modeShuffleOn) {
+                stationBanner.classList.remove('shuffle-on');
             }
         }
         function scheduleModeShuffle() {
