@@ -1215,7 +1215,9 @@
                 tDiffuse: { value: null },
                 sides: { value: 6.0 },
                 angle: { value: 0.0 },
-                rotation: { value: 0.0 }
+                rotation: { value: 0.0 },
+                time: { value: 0.0 },
+                gain: { value: 0.0 }
             },
             vertexShader: `
                 varying vec2 vUv;
@@ -1229,7 +1231,46 @@
                 uniform float sides;
                 uniform float angle;
                 uniform float rotation;
+                uniform float time;
+                uniform float gain;
                 varying vec2 vUv;
+                
+                float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453123); }
+                float noise(vec2 p){
+                    vec2 i = floor(p);
+                    vec2 f = fract(p);
+                    float a = hash(i);
+                    float b = hash(i + vec2(1.0, 0.0));
+                    float c = hash(i + vec2(0.0, 1.0));
+                    float d = hash(i + vec2(1.0, 1.0));
+                    vec2 u = f*f*(3.0-2.0*f);
+                    return mix(a, b, u.x) + (c - a)*u.y*(1.0 - u.x) + (d - b)*u.x*u.y;
+                }
+                float fbm(vec2 p){
+                    float v = 0.0;
+                    float a = 0.5;
+                    for(int i=0;i<5;i++){
+                        v += a * noise(p);
+                        p = p * 2.0 + vec2(23.1, 17.7);
+                        a *= 0.5;
+                    }
+                    return v;
+                }
+                vec3 palette(float t){
+                    return 0.5 + 0.5*cos(6.2831853*(vec3(0.0,0.33,0.67) + t));
+                }
+                vec4 fractalColor(vec2 uv){
+                    // Centered uv for fractal evolution
+                    vec2 q = uv - 0.5;
+                    float r = length(q);
+                    float ang = atan(q.y, q.x);
+                    vec2 p = vec2(cos(ang), sin(ang)) * (r * 2.2);
+                    float f = fbm(p * 1.8 + vec2(time*0.15, -time*0.11 + gain*0.3));
+                    vec3 col = palette(f + r*0.25 + gain*0.2);
+                    // Radial darkening to avoid bright center
+                    float vign = smoothstep(0.95, 0.3, r);
+                    return vec4(col * vign, 1.0);
+                }
                 void main() {
                     vec2 uv = vUv - 0.5;
                     float r = length(uv);
@@ -1239,7 +1280,16 @@
                     a = abs(a - sector * 0.5);
                     a += angle;
                     vec2 pos = vec2(cos(a), sin(a)) * r;
-                    vec4 col = texture2D(tDiffuse, pos + 0.5);
+                    vec2 sampleUv = pos + 0.5;
+                    bool inBounds = all(greaterThanEqual(sampleUv, vec2(0.0))) && all(lessThanEqual(sampleUv, vec2(1.0)));
+                    vec4 src = texture2D(tDiffuse, clamp(sampleUv, 0.0, 1.0));
+                    vec4 fractCol = fractalColor(sampleUv);
+                    // Blend: use fractal when out-of-bounds, otherwise softly mix by radial factor to eliminate white cores
+                    float mixAmt = smoothstep(0.0, 0.35, r) * 0.7 + gain*0.2;
+                    vec4 col = mix(src, fractCol, mixAmt);
+                    if(!inBounds){
+                        col = fractCol;
+                    }
                     gl_FragColor = col;
                 }
             `
@@ -1308,6 +1358,8 @@
                 group.rotation.x = Math.sin(time*0.0004)*0.3;
                 pass.uniforms.rotation.value = time*0.0002 + bass*0.6;
                 pass.uniforms.angle.value = Math.sin(time*0.0005)*0.5;
+                pass.uniforms.time.value = time*0.001;
+                pass.uniforms.gain.value = bass;
             };
         };
 
@@ -1323,6 +1375,8 @@
                 pass.uniforms.angle.value = Math.cos(time*0.0006)*0.8;
                 group.rotation.y += 0.002 + bass*0.02;
                 group.rotation.z = Math.sin(time*0.0003)*0.4;
+                pass.uniforms.time.value = time*0.001;
+                pass.uniforms.gain.value = (data[12]+data[24])/(2.0*255.0);
             };
         };
 
@@ -1343,6 +1397,11 @@
                 k2.uniforms.rotation.value = -time*0.00025 + bass*0.7;
                 k1.uniforms.angle.value = Math.sin(time*0.0004)*0.6;
                 k2.uniforms.angle.value = Math.cos(time*0.00045)*0.6;
+                k1.uniforms.time.value = time*0.001;
+                k2.uniforms.time.value = time*0.001;
+                const g = (data[6]+data[12]+data[24])/(3.0*255.0);
+                k1.uniforms.gain.value = g;
+                k2.uniforms.gain.value = g*0.8;
             };
         };
 
@@ -1360,6 +1419,174 @@
                 kaleido.uniforms.rotation.value = time*0.00025;
                 zoom.uniforms.center.value.set(0.5, 0.5);
                 zoom.uniforms.strength.value = 0.1 + bass*0.6;
+                kaleido.uniforms.time.value = time*0.001;
+                kaleido.uniforms.gain.value = (data[10]+data[14]+data[18])/(3.0*255.0);
+            };
+        };
+
+        // --- Self-Replicating / Fractal Scenes ---
+        const sceneMengerSponge = (scene, camera) => {
+            const depth = 2; // keep counts reasonable
+            const positions = [];
+            function addLevel(center, size, d){
+                if(d === 0){
+                    positions.push({ center, size });
+                    return;
+                }
+                const step = size / 3;
+                for(let x=0;x<3;x++){
+                    for(let y=0;y<3;y++){
+                        for(let z=0;z<3;z++){
+                            // Skip the center cross sections
+                            const mid = (x===1) + (y===1) + (z===1);
+                            if(mid >= 2) continue;
+                            const nx = center.x + (x-1)*step;
+                            const ny = center.y + (y-1)*step;
+                            const nz = center.z + (z-1)*step;
+                            addLevel(new THREE.Vector3(nx, ny, nz), step, d-1);
+                        }
+                    }
+                }
+            }
+            addLevel(new THREE.Vector3(0,0,0), 6, depth);
+            const count = positions.length;
+            const geo = new THREE.BoxGeometry(1,1,1);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x66ccff, metalness: 0.3, roughness: 0.6, emissive: 0x000000 });
+            const mesh = new THREE.InstancedMesh(geo, mat, count);
+            const dummy = new THREE.Object3D();
+            positions.forEach((p, i) => {
+                dummy.position.copy(p.center);
+                dummy.scale.setScalar(p.size * 0.95);
+                dummy.updateMatrix();
+                mesh.setMatrixAt(i, dummy.matrix);
+            });
+            mesh.instanceMatrix.needsUpdate = true;
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const light = new THREE.PointLight(0xffffff, 2, 100);
+            light.position.set(6, 8, 10);
+            scene.add(light, mesh);
+            camera.position.set(0, 0, 14);
+            return (data, time) => {
+                const g = (data[6]+data[12]+data[24])/(3*255);
+                mesh.rotation.x = time*0.0003 + g*0.4;
+                mesh.rotation.y = time*0.0004 + g*0.5;
+                mat.emissiveIntensity = 0.2 + g*2.0;
+                const hue = (time*0.00008 + g*0.3) % 1;
+                mat.color.setHSL(hue, 0.7, 0.6);
+            };
+        };
+
+        const sceneSierpinskiTetra = (scene, camera) => {
+            // Base tetra geometry
+            const r = 1;
+            const v = [
+                new THREE.Vector3(1, 1, 1),
+                new THREE.Vector3(-1, -1, 1),
+                new THREE.Vector3(-1, 1, -1),
+                new THREE.Vector3(1, -1, -1)
+            ];
+            const base = new THREE.TetrahedronGeometry(r, 0);
+            const mat = new THREE.MeshStandardMaterial({ color: 0xff88aa, metalness: 0.2, roughness: 0.7 });
+            const depth = 4;
+            const transforms = [];
+            function add(level, center, scale){
+                if(level === 0){
+                    transforms.push({ center, scale });
+                    return;
+                }
+                const s = scale * 0.5;
+                for(let i=0;i<4;i++){
+                    add(level-1, new THREE.Vector3(
+                        center.x + v[i].x * s,
+                        center.y + v[i].y * s,
+                        center.z + v[i].z * s
+                    ), s);
+                }
+            }
+            add(depth, new THREE.Vector3(0,0,0), 3.0);
+            const inst = new THREE.InstancedMesh(base, mat, transforms.length);
+            const dummy = new THREE.Object3D();
+            transforms.forEach((t, i) => {
+                dummy.position.copy(t.center);
+                dummy.scale.setScalar(t.scale);
+                dummy.updateMatrix();
+                inst.setMatrixAt(i, dummy.matrix);
+            });
+            inst.instanceMatrix.needsUpdate = true;
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            const light = new THREE.PointLight(0xff66ff, 2.4, 100);
+            light.position.set(6, 6, 12);
+            scene.add(light, inst);
+            camera.position.set(0, 0, 16);
+            return (data, time) => {
+                const bass = data[8]/255;
+                inst.rotation.y = time*0.00035 + bass*0.6;
+                inst.rotation.x = time*0.0002;
+                const hue = (time*0.00012) % 1;
+                mat.color.setHSL(hue, 0.8, 0.6);
+                light.intensity = 1.4 + bass*3.0;
+            };
+        };
+
+        const sceneGameOfLife = (scene, camera) => {
+            const W = 128, H = 128;
+            const cells = new Uint8Array(W*H);
+            const nextCells = new Uint8Array(W*H);
+            // random init
+            for(let i=0;i<W*H;i++){ cells[i] = Math.random() < 0.15 ? 1 : 0; }
+            const data = new Uint8Array(W*H*3);
+            const tex = new THREE.DataTexture(data, W, H, THREE.RGBFormat);
+            tex.needsUpdate = true;
+            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.95 });
+            const plane = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), mat);
+            scene.add(plane);
+            camera.position.z = 10;
+            function step() {
+                for(let y=0;y<H;y++){
+                    for(let x=0;x<W;x++){
+                        const idx = y*W + x;
+                        let n = 0;
+                        for(let dy=-1;dy<=1;dy++){
+                            for(let dx=-1;dx<=1;dx++){
+                                if(dx===0 && dy===0) continue;
+                                const nx = (x+dx+W)%W;
+                                const ny = (y+dy+H)%H;
+                                n += cells[ny*W + nx];
+                            }
+                        }
+                        const c = cells[idx];
+                        nextCells[idx] = (c===1 && (n===2 || n===3)) || (c===0 && n===3) ? 1 : 0;
+                    }
+                }
+                cells.set(nextCells);
+            }
+            let acc = 0;
+            return (audio, time) => {
+                const g = (audio[6]+audio[12]+audio[24])/(3*255);
+                // step a few times per second + boost with audio
+                acc += 0.016 + g*0.05;
+                while(acc > 0.1){ step(); acc -= 0.1; }
+                // write texture
+                const t = time*0.0002;
+                for(let y=0;y<H;y++){
+                    for(let x=0;x<W;x++){
+                        const idx = y*W + x;
+                        const alive = cells[idx];
+                        const i3 = idx*3;
+                        const hue = (t + x/W*0.3 + y/H*0.2) % 1;
+                        const c = alive ? hue : 0.0;
+                        // hsv to rgb approx via palette
+                        const r = 0.5 + 0.5*Math.cos(6.2831*(c + 0.0));
+                        const gch = 0.5 + 0.5*Math.cos(6.2831*(c + 0.33));
+                        const b = 0.5 + 0.5*Math.cos(6.2831*(c + 0.67));
+                        data[i3+0] = Math.floor(r*255);
+                        data[i3+1] = Math.floor(gch*255);
+                        data[i3+2] = Math.floor(b*255);
+                    }
+                }
+                tex.needsUpdate = true;
+                plane.rotation.z = Math.sin(time*0.0003)*0.2;
+                plane.scale.setScalar(1.0 + g*0.3);
             };
         };
 
