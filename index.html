@@ -263,11 +263,11 @@
         <div id="settings-content">
             <div class="settings-row">
                 <label for="inp-shuffle-min">Shuffle min (s)</label>
-                <input id="inp-shuffle-min" type="number" min="3" max="120" step="1" value="12">
+                <input id="inp-shuffle-min" type="number" min="3" max="120" step="1" value="30">
             </div>
             <div class="settings-row">
                 <label for="inp-shuffle-max">Shuffle max (s)</label>
-                <input id="inp-shuffle-max" type="number" min="5" max="180" step="1" value="25">
+                <input id="inp-shuffle-max" type="number" min="5" max="180" step="1" value="60">
             </div>
             <div class="settings-row">
                 <label for="inp-transition">Transition (s)</label>
@@ -290,6 +290,7 @@
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
         import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
         import butterchurn from 'butterchurn';
         import butterchurnPresets from 'butterchurn-presets';
@@ -328,8 +329,8 @@
         
         // Settings state (for ProjectM v2)
         const visualSettings = {
-            shuffleMinSec: 12,
-            shuffleMaxSec: 25,
+            shuffleMinSec: 30,
+            shuffleMaxSec: 60,
             transitionSec: 2.7,
             pixelRatio: 1
         };
@@ -527,7 +528,11 @@
             restartCycle() {
                 if(this.cycleTimeout) clearTimeout(this.cycleTimeout);
                 const schedule = () => {
-                    const delay = 12000 + Math.random() * 13000; // 12s - 25s
+                    const minS = Number(visualSettings.shuffleMinSec) || 30;
+                    const maxS = Number(visualSettings.shuffleMaxSec) || 60;
+                    const lo = Math.min(minS, maxS);
+                    const hi = Math.max(minS, maxS);
+                    const delay = (lo + Math.random() * (hi - lo)) * 1000;
                     this.cycleTimeout = setTimeout(() => {
                         this.nextPreset();
                         schedule();
@@ -704,7 +709,7 @@
                 this.composer.addPass(bloom);
 
                 this.dataArray = new Uint8Array(state.analyserNode.frequencyBinCount);
-                this.updateFn = this.sceneFn(this.scene, this.camera);
+                this.updateFn = this.sceneFn(this.scene, this.camera, this.composer);
                 
                 window.addEventListener('resize', this.resizeHandler);
                 this.animate();
@@ -1053,6 +1058,90 @@
             };
         };
 
+        // --- Kaleidoscope Shader ---
+        const KaleidoShader = {
+            uniforms: {
+                tDiffuse: { value: null },
+                sides: { value: 6.0 },
+                angle: { value: 0.0 },
+                rotation: { value: 0.0 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float sides;
+                uniform float angle;
+                uniform float rotation;
+                varying vec2 vUv;
+                void main() {
+                    vec2 uv = vUv - 0.5;
+                    float r = length(uv);
+                    float a = atan(uv.y, uv.x) + rotation;
+                    float sector = 6.28318530718 / max(1.0, sides);
+                    a = mod(a, sector);
+                    a = abs(a - sector * 0.5);
+                    a += angle;
+                    vec2 pos = vec2(cos(a), sin(a)) * r;
+                    vec4 col = texture2D(tDiffuse, pos + 0.5);
+                    gl_FragColor = col;
+                }
+            `
+        };
+
+        // Helper: build a simple colorful source for kaleidoscope
+        function buildKaleidoSource(scene) {
+            const group = new THREE.Group();
+            const num = 24;
+            for(let i=0;i<num;i++){
+                const hue = i/num;
+                const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(hue, 1, 0.6) });
+                const geo = new THREE.TorusKnotGeometry(0.5 + (i%6)*0.05, 0.12, 90, 18, 2 + (i%3), 3 + (i%4));
+                const m = new THREE.Mesh(geo, mat);
+                m.position.set(Math.cos(i)*2.2, Math.sin(i*1.3)*1.2, -1 - (i%5)*0.2);
+                m.rotation.x = i*0.2;
+                m.rotation.y = i*0.15;
+                group.add(m);
+            }
+            scene.add(group);
+            return group;
+        }
+
+        const sceneKaleido = (sides) => (scene, camera, composer) => {
+            const group = buildKaleidoSource(scene);
+            const pass = new ShaderPass(KaleidoShader);
+            pass.uniforms.sides.value = sides;
+            composer.addPass(pass);
+            camera.position.z = 4;
+            return (data, time) => {
+                const bass = data[12]/255;
+                group.rotation.y = time*0.0006 + bass*0.2;
+                group.rotation.x = Math.sin(time*0.0004)*0.3;
+                pass.uniforms.rotation.value = time*0.0002 + bass*0.6;
+                pass.uniforms.angle.value = Math.sin(time*0.0005)*0.5;
+            };
+        };
+
+        const sceneKaleidoSpiral = (scene, camera, composer) => {
+            const group = buildKaleidoSource(scene);
+            const pass = new ShaderPass(KaleidoShader);
+            composer.addPass(pass);
+            camera.position.z = 5;
+            return (data, time) => {
+                const bass = data[6]/255;
+                pass.uniforms.sides.value = 5.0 + Math.floor((Math.sin(time*0.0007)+1.0)*3.5); // 5..12
+                pass.uniforms.rotation.value = time*0.00035 + bass*0.8;
+                pass.uniforms.angle.value = Math.cos(time*0.0006)*0.8;
+                group.rotation.y += 0.002 + bass*0.02;
+                group.rotation.z = Math.sin(time*0.0003)*0.4;
+            };
+        };
+
         // --- MASTER CONTROL ---
         const modes = [
             new MilkdropEngine(),
@@ -1067,7 +1156,11 @@
             new ThreeEngine("Kaleido Rings", sceneKaleidoRings),
             new ThreeEngine("Terrain", sceneTerrain),
             new ThreeEngine("Hex Grid", sceneHexGrid),
-            new ThreeEngine("Ribbons", sceneRibbons)
+            new ThreeEngine("Ribbons", sceneRibbons),
+            new ThreeEngine("Kaleidoscope 6", sceneKaleido(6)),
+            new ThreeEngine("Kaleidoscope 8", sceneKaleido(8)),
+            new ThreeEngine("Kaleidoscope 12", sceneKaleido(12)),
+            new ThreeEngine("Kaleidoscope Spiral", sceneKaleidoSpiral)
         ];
 
         function loadMode(index) {
@@ -1226,14 +1319,16 @@
             }
         }
 
+        // Swap: left-click now opens panel; right-click picks random
+        radioQuickBtn.title = "Left-click: choose • Right-click: random station";
         radioQuickBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            pickRandomStation();
+            toggleRadioPanel();
         });
         radioQuickBtn.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            toggleRadioPanel();
+            pickRandomStation();
         });
         document.addEventListener('click', (e) => {
             if(!radioPanel.classList.contains('display-none')) {
