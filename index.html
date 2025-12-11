@@ -187,6 +187,52 @@
             font-size: 12px; letter-spacing: 1px; border-radius: 4px;
         }
         .btn-small:hover { background: #fff; color: #000; }
+        
+        /* WebM Overlay */
+        #webm-overlay {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 45;
+            pointer-events: none;
+        }
+        #webm-overlay video {
+            width: 50vw; height: auto; display: block;
+            pointer-events: none;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        .webm-nav {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            z-index: 60;
+            font-size: 56px; color: rgba(255,255,255,0.7);
+            background: transparent; border: none; padding: 12px; cursor: pointer;
+            transition: opacity 1s ease-in-out, transform 0.2s;
+            opacity: 1;
+        }
+        .webm-nav:hover { color: #fff; text-shadow: 0 0 15px #fff; transform: translateY(-50%) scale(1.1); }
+        #webm-prev { left: 14px; }
+        #webm-next { right: 14px; }
+        
+        /* WebM Settings Panel (mirror of settings-panel) */
+        #webm-settings-panel {
+            position: absolute; bottom: 160px; left: 14px;
+            width: 360px; max-height: 60vh; overflow: auto;
+            z-index: 90;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            transition: opacity 0.3s ease-in-out;
+        }
+        #webm-settings-panel h3 {
+            margin: 0; padding: 12px 14px; font-weight: 500; font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            letter-spacing: 1px; text-transform: uppercase; color: #ddd;
+        }
+        #webm-settings-content { padding: 12px; }
+        .settings-row input[type="range"] { flex: 1; }
     </style>
 
     <!-- Import Map -->
@@ -230,6 +276,8 @@
         <div class="center-controls">
             <!-- SKIP PRESET BUTTON (Only for ProjectM) -->
             <button class="icon-btn interactive display-none" id="btn-skip-preset" title="Next Visual Preset">⏭</button>
+            <!-- WEBM TOGGLE -->
+            <button class="icon-btn interactive" id="btn-webm" title="Toggle WebM Overlay">🪩</button>
 
             <!-- TITLE INFO -->
             <div id="mode-info">
@@ -257,6 +305,15 @@
     </div>
     <div id="station-banner" class="display-none"></div>
     
+    <!-- WebM Overlay + Nav -->
+    <div id="webm-overlay" class="display-none">
+        <video id="webm-video" muted loop playsinline></video>
+        <video id="webm-video-left" muted loop playsinline class="display-none"></video>
+        <video id="webm-video-right" muted loop playsinline class="display-none"></video>
+    </div>
+    <button id="webm-prev" class="webm-nav display-none" title="Previous video">❮</button>
+    <button id="webm-next" class="webm-nav display-none" title="Next video">❯</button>
+    
     <!-- Settings Panel -->
     <div id="settings-panel" class="display-none">
         <h3>Visualizer Settings</h3>
@@ -281,6 +338,45 @@
             <div class="settings-actions">
                 <button class="btn-small" id="btn-settings-apply">Apply</button>
                 <button class="btn-small" id="btn-settings-close">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- WebM Settings Panel -->
+    <div id="webm-settings-panel" class="display-none">
+        <h3>WebM Settings</h3>
+        <div id="webm-settings-content">
+            <div class="settings-row">
+                <label for="inp-webm-scale">Size (vw)</label>
+                <input id="inp-webm-scale" type="number" min="10" max="100" step="1" value="50">
+            </div>
+            <div class="settings-row">
+                <label for="inp-webm-x">X (vw)</label>
+                <input id="inp-webm-x" type="number" min="0" max="100" step="1" value="50">
+            </div>
+            <div class="settings-row">
+                <label for="inp-webm-y">Y (vh)</label>
+                <input id="inp-webm-y" type="number" min="0" max="100" step="1" value="50">
+            </div>
+            <div class="settings-row">
+                <label for="inp-webm-rot">Rotate (deg)</label>
+                <input id="inp-webm-rot" type="number" min="-180" max="180" step="1" value="0">
+            </div>
+            <div class="settings-row">
+                <label for="inp-webm-speed">Speed</label>
+                <input id="inp-webm-speed" type="number" min="0.1" max="4" step="0.1" value="1.0">
+            </div>
+            <div class="settings-row">
+                <label for="inp-webm-opacity">Opacity</label>
+                <input id="inp-webm-opacity" type="number" min="0" max="1" step="0.05" value="1">
+            </div>
+            <div class="settings-row">
+                <label for="inp-webm-dup">Duplicates (0-2)</label>
+                <input id="inp-webm-dup" type="number" min="0" max="2" step="1" value="0">
+            </div>
+            <div class="settings-actions">
+                <button class="btn-small" id="btn-webm-apply">Apply</button>
+                <button class="btn-small" id="btn-webm-close">Close</button>
             </div>
         </div>
     </div>
@@ -324,11 +420,43 @@
         const inpShuffleMax = document.getElementById('inp-shuffle-max');
         const inpTransition = document.getElementById('inp-transition');
         const inpPixelRatio = document.getElementById('inp-pixelratio');
+        const webmOverlayEl = document.getElementById('webm-overlay');
+        const webmVideoEl = document.getElementById('webm-video');
+        const webmVideoLeftEl = document.getElementById('webm-video-left');
+        const webmVideoRightEl = document.getElementById('webm-video-right');
+        const webmBtn = document.getElementById('btn-webm');
+        const webmPrevBtn = document.getElementById('webm-prev');
+        const webmNextBtn = document.getElementById('webm-next');
+        const webmSettingsPanel = document.getElementById('webm-settings-panel');
+        const webmApplyBtn = document.getElementById('btn-webm-apply');
+        const webmCloseBtn = document.getElementById('btn-webm-close');
+        const inpWebmScale = document.getElementById('inp-webm-scale');
+        const inpWebmX = document.getElementById('inp-webm-x');
+        const inpWebmY = document.getElementById('inp-webm-y');
+        const inpWebmRot = document.getElementById('inp-webm-rot');
+        const inpWebmSpeed = document.getElementById('inp-webm-speed');
+        const inpWebmOpacity = document.getElementById('inp-webm-opacity');
+        const inpWebmDup = document.getElementById('inp-webm-dup');
         const stations = [];
         let currentStationIndex = -1;
         let panelIdleTimer = null;
+        let webmList = [];
+        let webmIndex = 0;
+        let webmOn = false;
         let radioPanelTimer = null;
         let settingsPanelTimer = null;
+        let webmSettingsTimer = null;
+        const webmSettings = {
+            scaleVw: 50,
+            posXvw: 50,
+            posYvh: 50,
+            rotationDeg: 0,
+            playbackRate: 1.0,
+            opacity: 1.0,
+            duplicates: 0
+        };
+        let modeShuffleOn = false;
+        let modeShuffleTimer = null;
         
         // Settings state (for ProjectM v2)
         const visualSettings = {
@@ -350,11 +478,19 @@
                 radioPanel.style.opacity = '1';
                 radioPanel.style.pointerEvents = 'auto';
             }
+            // Show webm nav when overlay is active
+            if(webmOn && !webmOverlayEl.classList.contains('display-none')) {
+                webmPrevBtn.style.opacity = '1';
+                webmNextBtn.style.opacity = '1';
+                webmPrevBtn.style.pointerEvents = 'auto';
+                webmNextBtn.style.pointerEvents = 'auto';
+            }
             document.body.style.cursor = 'default';
             if (state.idleTimer) clearTimeout(state.idleTimer);
             if (panelIdleTimer) clearTimeout(panelIdleTimer);
             if (radioPanelTimer) clearTimeout(radioPanelTimer);
             if (settingsPanelTimer) clearTimeout(settingsPanelTimer);
+            if (webmSettingsTimer) clearTimeout(webmSettingsTimer);
             if(state.isPlaying) {
                 state.idleTimer = setTimeout(() => {
                     uiLayer.style.opacity = '0';
@@ -363,11 +499,17 @@
                     if(!stationBanner.classList.contains('display-none')) {
                         stationBanner.style.opacity = '0';
                     }
+                    // Hide webm nav
+                    webmPrevBtn.style.opacity = '0';
+                    webmNextBtn.style.opacity = '0';
+                    webmPrevBtn.style.pointerEvents = 'none';
+                    webmNextBtn.style.pointerEvents = 'none';
                     document.body.style.cursor = 'none';
                 }, 3000);
                 // Panels fade out and close after 30s if open
                 if(!radioPanel.classList.contains('display-none')) scheduleRadioPanelClose();
                 if(!settingsPanel.classList.contains('display-none')) scheduleSettingsPanelClose();
+                if(!webmSettingsPanel.classList.contains('display-none')) scheduleWebmSettingsClose();
             }
         }
         window.addEventListener('mousemove', resetIdleTimer);
@@ -810,6 +952,116 @@
                     bars[i].material.emissive.setHSL(hue, 1, 0.2);
                 }
                 group.rotation.y = Math.sin(t * 0.5) * 0.2;
+            };
+        };
+
+        // High-energy neon sphere variants
+        const sceneElectroSphere = (scene, camera) => {
+            const geo = new THREE.IcosahedronGeometry(1.6, 64);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x66ccff, metalness: 0.8, roughness: 0.2, emissive: 0x000000 });
+            const mesh = new THREE.Mesh(geo, mat);
+            scene.add(mesh);
+            const base = geo.attributes.position.array.slice();
+            const noise = new SimplexNoise();
+            const light = new THREE.PointLight(0x66ccff, 2.2, 40);
+            light.position.set(2, 2, 4);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.25), light);
+            camera.position.z = 5;
+            return (data, time) => {
+                const t = time*0.0007;
+                const arr = geo.attributes.position.array;
+                const bass = data[8]/255;
+                for(let i=0;i<arr.length;i+=3){
+                    const x = base[i], y = base[i+1], z = base[i+2];
+                    const n = noise.noise3d(x*0.8 + t*0.9, y*0.8 - t*0.7, z*0.8 + t*0.6);
+                    const scale = 1.0 + n*(0.12 + bass*0.8);
+                    arr[i] = x*scale; arr[i+1] = y*scale; arr[i+2] = z*scale;
+                }
+                geo.attributes.position.needsUpdate = true;
+                geo.computeVertexNormals();
+                mesh.rotation.y += 0.01 + bass*0.06;
+                mesh.rotation.x += 0.004;
+                const hue = (t*0.3 + bass*0.4) % 1;
+                mat.color.setHSL(hue, 1, 0.55);
+                light.intensity = 1.8 + bass*3.2;
+            };
+        };
+
+        const scenePhotonShell = (scene, camera) => {
+            // Points on a sphere shell
+            const num = 4000;
+            const positions = new Float32Array(num*3);
+            for(let i=0;i<num;i++){
+                const u = Math.random();
+                const v = Math.random();
+                const theta = 2*Math.PI*u;
+                const phi = Math.acos(2*v-1);
+                const r = 1.8;
+                positions[i*3+0] = r*Math.sin(phi)*Math.cos(theta);
+                positions[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
+                positions[i*3+2] = r*Math.cos(phi);
+            }
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.04, transparent: true, opacity: 0.9 });
+            const points = new THREE.Points(geo, mat);
+            scene.add(points);
+            // Orbiting rings
+            const rings = [];
+            for(let i=0;i<3;i++){
+                const ring = new THREE.TorusGeometry(2.0 + i*0.15, 0.03, 12, 200);
+                const m = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 });
+                const tor = new THREE.Mesh(ring, m);
+                scene.add(tor);
+                rings.push(tor);
+            }
+            camera.position.z = 6;
+            return (data, time) => {
+                const t = time*0.001;
+                const bass = data[10]/255;
+                points.rotation.y = t*0.4 + bass*0.6;
+                points.rotation.x = Math.sin(t*0.4)*0.2;
+                const hue = (t*0.2 + bass*0.4) % 1;
+                mat.color.setHSL(hue, 1, 0.6);
+                mat.size = 0.03 + bass*0.15;
+                rings.forEach((r, i) => {
+                    r.rotation.x = t*(i+1);
+                    r.rotation.y = t*(i+1)*0.6;
+                    r.material.color.setHSL((hue + i*0.1)%1, 1, 0.6);
+                    r.material.opacity = 0.4 + bass*0.5;
+                });
+            };
+        };
+
+        const scenePulseOrb = (scene, camera) => {
+            const layers = [];
+            for(let i=0;i<3;i++){
+                const geo = new THREE.SphereGeometry(1.5 + i*0.2, 64, 64);
+                const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
+                mat.blending = THREE.AdditiveBlending;
+                mat.depthWrite = false;
+                const mesh = new THREE.Mesh(geo, mat);
+                layers.push(mesh);
+                scene.add(mesh);
+            }
+            const light = new THREE.PointLight(0xffffff, 1.2, 60);
+            light.position.set(0, 0, 8);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.25), light);
+            camera.position.z = 7;
+            return (data, time) => {
+                const t = time*0.001;
+                const bass = data[6]/255;
+                const mid = data[24]/255;
+                layers.forEach((m, i) => {
+                    const hue = (t*0.15 + i*0.15) % 1;
+                    m.material.color.setHSL(hue, 1, 0.6);
+                    const s = 1.0 + bass*(0.6 + i*0.2) + Math.sin(t*2 + i)*0.05;
+                    m.scale.setScalar(s);
+                    m.rotation.y += 0.003 + mid*0.02 + i*0.002;
+                    m.rotation.x += 0.002 + i*0.001;
+                    m.material.opacity = 0.25 + bass*(0.3 + i*0.15);
+                });
+                light.intensity = 1.0 + bass*3.0;
             };
         };
 
@@ -1940,6 +2192,9 @@
             new MilkdropEngine(),
             new MilkdropEngineV2(),
             new ThreeEngine("Neon Sphere", sceneSphere),
+            new ThreeEngine("Electro Sphere", sceneElectroSphere),
+            new ThreeEngine("Photon Shell", scenePhotonShell),
+            new ThreeEngine("Pulse Orb", scenePulseOrb),
             new ThreeEngine("Cyber Tunnel", sceneTunnel),
             new ThreeEngine("Audio Bars", sceneBars),
             new ThreeEngine("Starfield", sceneStarfield),
@@ -1999,6 +2254,29 @@
         document.getElementById('btn-mic').addEventListener('click', useMic);
         document.getElementById('file-input').addEventListener('change', useFile);
         document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
+        // WebM toggle and nav
+        webmBtn.addEventListener('click', () => {
+            if(!webmOn) {
+                if(webmList.length === 0) {
+                    // Ensure list is loaded then show
+                    loadWebmList().finally(() => {
+                        if(webmList.length > 0) showWebm();
+                        else alert('No WebM files found in webm/.');
+                    });
+                } else {
+                    showWebm();
+                }
+            } else {
+                hideWebm();
+            }
+        });
+        webmBtn.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleWebmSettingsPanel();
+        });
+        webmPrevBtn.addEventListener('click', () => { prevWebm(); resetIdleTimer(); });
+        webmNextBtn.addEventListener('click', () => { nextWebm(); resetIdleTimer(); });
         settingsBtn.addEventListener('click', () => {
             if(settingsPanel.classList.contains('display-none')) {
                 settingsPanel.classList.remove('display-none');
@@ -2168,7 +2446,7 @@
         }
 
         // Swap: left-click now opens panel; right-click picks random
-        radioQuickBtn.title = "Left-click: choose • Right-click: random station";
+        radioQuickBtn.title = "Left-click: choose • Right-click: random station • Double-click: toggle visual shuffle";
         radioQuickBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             toggleRadioPanel();
@@ -2177,6 +2455,11 @@
             e.preventDefault();
             e.stopPropagation();
             pickRandomStation();
+        });
+        radioQuickBtn.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setModeShuffle(!modeShuffleOn);
         });
         document.addEventListener('click', (e) => {
             if(!radioPanel.classList.contains('display-none')) {
@@ -2215,11 +2498,217 @@
                 if(state.activeVisualizer?.nextPreset) {
                     state.activeVisualizer.nextPreset();
                 }
+            } else if(e.key === 'ArrowLeft') {
+                if(webmOn) prevWebm();
+            } else if(e.key === 'ArrowRight') {
+                if(webmOn) nextWebm();
             }
         });
 
         // Bootstrap station list
         loadStations();
+        // Preload webm list (best-effort)
+        loadWebmList();
+
+        // --- WEBM HELPERS ---
+        async function loadWebmList() {
+            try {
+                // Try a manifest first
+                const resp = await fetch('webm/webms.txt', { cache: 'no-store' });
+                if(resp.ok) {
+                    const txt = await resp.text();
+                    const files = txt.split('\n').map(s => s.trim()).filter(Boolean);
+                    webmList = files.map(f => f.startsWith('webm/') ? f : `webm/${f}`);
+                    webmIndex = 0;
+                    return;
+                }
+            } catch {}
+            // Try directory listing parse (best-effort)
+            try {
+                const dirResp = await fetch('webm/', { cache: 'no-store' });
+                if(dirResp.ok) {
+                    const html = await dirResp.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const anchors = Array.from(doc.querySelectorAll('a,link'));
+                    const found = anchors.map(a => a.getAttribute('href') || '').filter(href => /\.webm(\?.*)?$/i.test(href));
+                    if(found.length > 0) {
+                        const normalized = found.map(f => f.startsWith('webm/') ? f : `webm/${f.replace(/^\//,'')}`);
+                        // Deduplicate
+                        webmList = Array.from(new Set(normalized));
+                        webmIndex = 0;
+                        return;
+                    }
+                }
+            } catch {}
+            // Fallback to known files
+            const defaults = ['webm/red.webm', 'webm/grn.webm'];
+            webmList = defaults;
+            webmIndex = 0;
+        }
+
+        function showWebm() {
+            if(webmList.length === 0) return;
+            webmOn = true;
+            setWebm(webmIndex);
+            webmOverlayEl.classList.remove('display-none');
+            webmPrevBtn.classList.remove('display-none');
+            webmNextBtn.classList.remove('display-none');
+            applyWebmSettings();
+        }
+
+        function hideWebm() {
+            webmOn = false;
+            webmOverlayEl.classList.add('display-none');
+            webmPrevBtn.classList.add('display-none');
+            webmNextBtn.classList.add('display-none');
+            try { webmVideoEl.pause(); } catch {}
+            try { webmVideoLeftEl.pause(); } catch {}
+            try { webmVideoRightEl.pause(); } catch {}
+            webmVideoEl.src = '';
+            webmVideoLeftEl.src = '';
+            webmVideoRightEl.src = '';
+        }
+
+        function setWebm(index) {
+            if(webmList.length === 0) return;
+            if(index < 0) index = webmList.length - 1;
+            if(index >= webmList.length) index = 0;
+            webmIndex = index;
+            const src = webmList[webmIndex];
+            if(webmVideoEl.src.endsWith(src)) return;
+            webmVideoEl.src = src;
+            webmVideoEl.muted = true;
+            webmVideoEl.loop = true;
+            webmVideoEl.playsInline = true;
+            webmVideoEl.autoplay = true;
+            webmVideoEl.play().catch(()=>{ /* ignore */ });
+            // mirror to duplicates
+            [webmVideoLeftEl, webmVideoRightEl].forEach(v => {
+                v.src = src;
+                v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
+                v.playbackRate = webmSettings.playbackRate;
+                v.style.opacity = String(webmSettings.opacity);
+                v.play().catch(()=>{});
+            });
+        }
+
+        function nextWebm() { setWebm(webmIndex + 1); }
+        function prevWebm() { setWebm(webmIndex - 1); }
+        
+        function toggleWebmSettingsPanel() {
+            if(webmSettingsPanel.classList.contains('display-none')) {
+                webmSettingsPanel.classList.remove('display-none');
+                webmSettingsPanel.style.opacity = '1';
+                webmSettingsPanel.style.pointerEvents = 'auto';
+                scheduleWebmSettingsClose();
+                // sync inputs
+                inpWebmScale.value = String(webmSettings.scaleVw);
+                inpWebmX.value = String(webmSettings.posXvw);
+                inpWebmY.value = String(webmSettings.posYvh);
+                inpWebmRot.value = String(webmSettings.rotationDeg);
+                inpWebmSpeed.value = String(webmSettings.playbackRate);
+                inpWebmOpacity.value = String(webmSettings.opacity);
+                inpWebmDup.value = String(webmSettings.duplicates);
+            } else {
+                hideWebmSettingsPanel();
+            }
+        }
+        function hideWebmSettingsPanel() {
+            if (webmSettingsTimer) { clearTimeout(webmSettingsTimer); webmSettingsTimer = null; }
+            webmSettingsPanel.classList.add('display-none');
+            webmSettingsPanel.style.opacity = '';
+            webmSettingsPanel.style.pointerEvents = '';
+        }
+        function scheduleWebmSettingsClose() {
+            if (webmSettingsTimer) clearTimeout(webmSettingsTimer);
+            webmSettingsTimer = setTimeout(() => {
+                webmSettingsPanel.style.opacity = '0';
+                webmSettingsPanel.style.pointerEvents = 'none';
+                setTimeout(() => { hideWebmSettingsPanel(); }, 1200);
+            }, 30000);
+        }
+        webmCloseBtn.addEventListener('click', hideWebmSettingsPanel);
+        webmApplyBtn.addEventListener('click', () => {
+            webmSettings.scaleVw = Number(inpWebmScale.value) || 50;
+            webmSettings.posXvw = Number(inpWebmX.value) || 50;
+            webmSettings.posYvh = Number(inpWebmY.value) || 50;
+            webmSettings.rotationDeg = Number(inpWebmRot.value) || 0;
+            webmSettings.playbackRate = Math.max(0.1, Math.min(4, Number(inpWebmSpeed.value) || 1));
+            webmSettings.opacity = Math.max(0, Math.min(1, Number(inpWebmOpacity.value) || 1));
+            webmSettings.duplicates = Math.max(0, Math.min(2, Math.floor(Number(inpWebmDup.value) || 0)));
+            applyWebmSettings();
+            scheduleWebmSettingsClose();
+        });
+        // Live-change on input
+        [inpWebmScale, inpWebmX, inpWebmY, inpWebmRot, inpWebmSpeed, inpWebmOpacity, inpWebmDup].forEach(el => {
+            el.addEventListener('input', () => {
+                webmApplyBtn.click();
+            });
+        });
+        function applyWebmSettings() {
+            // central
+            webmVideoEl.style.width = `${webmSettings.scaleVw}vw`;
+            webmOverlayEl.style.left = `${webmSettings.posXvw}vw`;
+            webmOverlayEl.style.top = `${webmSettings.posYvh}vh`;
+            webmOverlayEl.style.transform = `translate(-50%, -50%)`;
+            webmVideoEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
+            webmVideoEl.style.opacity = String(webmSettings.opacity);
+            try { webmVideoEl.playbackRate = webmSettings.playbackRate; } catch {}
+            // duplicates
+            const dup = webmSettings.duplicates;
+            const offsetVw = webmSettings.scaleVw * 0.6;
+            if(dup >= 1) {
+                webmVideoLeftEl.classList.remove('display-none');
+                webmVideoLeftEl.style.width = `${webmSettings.scaleVw}vw`;
+                webmVideoLeftEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
+                webmVideoLeftEl.style.opacity = String(webmSettings.opacity);
+                try { webmVideoLeftEl.playbackRate = webmSettings.playbackRate; } catch {}
+            } else {
+                webmVideoLeftEl.classList.add('display-none');
+            }
+            if(dup >= 2) {
+                webmVideoRightEl.classList.remove('display-none');
+                webmVideoRightEl.style.width = `${webmSettings.scaleVw}vw`;
+                webmVideoRightEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
+                webmVideoRightEl.style.opacity = String(webmSettings.opacity);
+                try { webmVideoRightEl.playbackRate = webmSettings.playbackRate; } catch {}
+            } else {
+                webmVideoRightEl.classList.add('display-none');
+            }
+            // Position duplicates relative to overlay center using absolute positioning containers
+            // We'll position by setting margins on the left/right elements
+            webmVideoEl.style.display = 'block';
+            webmVideoLeftEl.style.display = dup >= 1 ? 'block' : 'none';
+            webmVideoRightEl.style.display = dup >= 2 ? 'block' : 'none';
+            // Reset any existing margins
+            webmVideoEl.style.margin = '0';
+            webmVideoLeftEl.style.margin = '0';
+            webmVideoRightEl.style.margin = '0';
+            // Arrange: left video shifted left by offset, right shifted right by offset, overlapping allowed
+            webmVideoLeftEl.style.position = 'absolute';
+            webmVideoRightEl.style.position = 'absolute';
+            webmVideoEl.style.position = 'relative';
+            webmVideoLeftEl.style.left = `-${offsetVw}vw`;
+            webmVideoLeftEl.style.top = `0`;
+            webmVideoRightEl.style.left = `${offsetVw}vw`;
+            webmVideoRightEl.style.top = `0`;
+        }
+        // --- MODE SHUFFLE ---
+        function setModeShuffle(on) {
+            modeShuffleOn = on;
+            if(modeShuffleTimer) { clearTimeout(modeShuffleTimer); modeShuffleTimer = null; }
+            if(modeShuffleOn) {
+                scheduleModeShuffle();
+            }
+        }
+        function scheduleModeShuffle() {
+            if(!modeShuffleOn) return;
+            modeShuffleTimer = setTimeout(() => {
+                loadMode(state.currentModeIdx + 1);
+                scheduleModeShuffle();
+            }, 30000);
+        }
 
     </script>
 </body>
