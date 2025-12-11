@@ -157,6 +157,36 @@
             max-width: min(60vw, 720px);
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
+        
+        /* Settings Panel */
+        #settings-panel {
+            position: absolute; bottom: 160px; right: 14px;
+            width: 360px; max-height: 60vh; overflow: auto;
+            z-index: 90;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            transition: opacity 0.3s ease-in-out;
+        }
+        #settings-panel h3 {
+            margin: 0; padding: 12px 14px; font-weight: 500; font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            letter-spacing: 1px; text-transform: uppercase; color: #ddd;
+        }
+        #settings-content { padding: 12px; }
+        .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 0; }
+        .settings-row label { font-size: 12px; color: #ccc; }
+        .settings-row input[type="number"] { width: 96px; padding: 6px 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 4px; }
+        .settings-row input[type="range"] { flex: 1; }
+        .settings-note { font-size: 11px; color: #8aa; margin-top: 8px; line-height: 1.35; }
+        .settings-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+        .btn-small {
+            padding: 8px 12px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: #fff;
+            font-size: 12px; letter-spacing: 1px; border-radius: 4px;
+        }
+        .btn-small:hover { background: #fff; color: #000; }
     </style>
 
     <!-- Import Map -->
@@ -209,6 +239,9 @@
 
             <!-- FULLSCREEN BUTTON -->
             <button class="icon-btn interactive" id="btn-fullscreen" title="Toggle Fullscreen">⛶</button>
+            
+            <!-- SETTINGS BUTTON -->
+            <button class="icon-btn interactive" id="btn-settings" title="Visualizer Settings">⚙︎</button>
         </div>
 
         <div class="nav-btn interactive" id="btn-next">❯</div>
@@ -223,6 +256,34 @@
         <div id="radio-list"></div>
     </div>
     <div id="station-banner" class="display-none"></div>
+    
+    <!-- Settings Panel -->
+    <div id="settings-panel" class="display-none">
+        <h3>Visualizer Settings</h3>
+        <div id="settings-content">
+            <div class="settings-row">
+                <label for="inp-shuffle-min">Shuffle min (s)</label>
+                <input id="inp-shuffle-min" type="number" min="3" max="120" step="1" value="12">
+            </div>
+            <div class="settings-row">
+                <label for="inp-shuffle-max">Shuffle max (s)</label>
+                <input id="inp-shuffle-max" type="number" min="5" max="180" step="1" value="25">
+            </div>
+            <div class="settings-row">
+                <label for="inp-transition">Transition (s)</label>
+                <input id="inp-transition" type="number" min="0" max="10" step="0.1" value="2.7">
+            </div>
+            <div class="settings-row">
+                <label for="inp-pixelratio">Pixel Ratio</label>
+                <input id="inp-pixelratio" type="number" min="0.5" max="3" step="0.1" value="1">
+            </div>
+            <div class="settings-note">Settings apply to ProjectM v2. Shuffle times are randomized between min and max. Transition affects preset morph duration. Pixel ratio applies on next init.</div>
+            <div class="settings-actions">
+                <button class="btn-small" id="btn-settings-apply">Apply</button>
+                <button class="btn-small" id="btn-settings-close">Close</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import * as THREE from 'three';
@@ -253,9 +314,25 @@
         const radioInputEl = document.getElementById('radio-url');
         const audioEl = document.getElementById('radio-element');
         const stationBanner = document.getElementById('station-banner');
+        const settingsPanel = document.getElementById('settings-panel');
+        const settingsBtn = document.getElementById('btn-settings');
+        const settingsApplyBtn = document.getElementById('btn-settings-apply');
+        const settingsCloseBtn = document.getElementById('btn-settings-close');
+        const inpShuffleMin = document.getElementById('inp-shuffle-min');
+        const inpShuffleMax = document.getElementById('inp-shuffle-max');
+        const inpTransition = document.getElementById('inp-transition');
+        const inpPixelRatio = document.getElementById('inp-pixelratio');
         const stations = [];
         let currentStationIndex = -1;
         let panelIdleTimer = null;
+        
+        // Settings state (for ProjectM v2)
+        const visualSettings = {
+            shuffleMinSec: 12,
+            shuffleMaxSec: 25,
+            transitionSec: 2.7,
+            pixelRatio: 1
+        };
 
         // --- UI UTILS ---
         function resetIdleTimer() {
@@ -492,6 +569,122 @@
             }
         }
 
+        // --- ENGINE: BUTTERCHURN v2 (Enhanced) ---
+        class MilkdropEngineV2 {
+            constructor() {
+                this.name = "ProjectM v2";
+                this.resizeHandler = this.onResize.bind(this);
+                this.canvas = null;
+                this.transitionSec = visualSettings.transitionSec;
+                
+                // Attempt to find the "largest available pack"
+                // Heuristic: if butterchurnPresets.getPresets returns a flat object, use it.
+                // If there are nested groups, pick the sub-object with the most keys.
+                const basePresets = butterchurnPresets.getPresets?.() || {};
+                const groupCandidates = Object.values(basePresets).filter(v => typeof v === 'object' && v && !Array.isArray(v));
+                if(groupCandidates.length > 0) {
+                    // Pick largest sub-group if values look like nested packs; else fall back to base
+                    let largest = null;
+                    let largestSize = 0;
+                    groupCandidates.forEach(g => {
+                        const size = Object.keys(g).length;
+                        if(size > largestSize) { largest = g; largestSize = size; }
+                    });
+                    this.presets = (largestSize > 0 ? largest : basePresets);
+                } else {
+                    this.presets = basePresets;
+                }
+                this.presetKeys = Object.keys(this.presets);
+                this.currentPresetIdx = Math.floor(Math.random() * Math.max(1, this.presetKeys.length));
+            }
+
+            init() {
+                container.innerHTML = '';
+                this.canvas = document.createElement('canvas');
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                container.appendChild(this.canvas);
+
+                const pxRatio = Number(visualSettings.pixelRatio) || (window.devicePixelRatio || 1);
+                this.visualizer = butterchurn.createVisualizer(state.audioCtx, this.canvas, {
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                    pixelRatio: pxRatio
+                });
+                this.visualizer.connectAudio(state.analyserNode);
+                this.loadPreset(this.currentPresetIdx);
+
+                window.addEventListener('resize', this.resizeHandler);
+                this.animate();
+                this.restartCycle();
+            }
+
+            loadPreset(idx) {
+                if(this.presetKeys.length === 0) return;
+                const key = this.presetKeys[idx];
+                const transition = Number(visualSettings.transitionSec) || this.transitionSec || 2.7;
+                this.visualizer.loadPreset(this.presets[key], transition);
+                document.getElementById('mode-sub').innerText = key;
+            }
+
+            nextPreset() {
+                if(this.presetKeys.length === 0) return;
+                let next = this.currentPresetIdx;
+                if(this.presetKeys.length > 1) {
+                    while(next === this.currentPresetIdx) {
+                        next = Math.floor(Math.random() * this.presetKeys.length);
+                    }
+                }
+                this.currentPresetIdx = next;
+                this.loadPreset(this.currentPresetIdx);
+                this.restartCycle();
+            }
+
+            restartCycle() {
+                if(this.cycleTimeout) clearTimeout(this.cycleTimeout);
+                const schedule = () => {
+                    const minS = Number(visualSettings.shuffleMinSec) || 12;
+                    const maxS = Number(visualSettings.shuffleMaxSec) || 25;
+                    const lo = Math.min(minS, maxS);
+                    const hi = Math.max(minS, maxS);
+                    const delay = (lo + Math.random() * (hi - lo)) * 1000;
+                    this.cycleTimeout = setTimeout(() => {
+                        this.nextPreset();
+                        schedule();
+                    }, delay);
+                };
+                schedule();
+            }
+
+            applySettings() {
+                // Restart scheduling with new shuffle window
+                this.restartCycle();
+                // Transition seconds will be used on next loadPreset call automatically
+            }
+
+            onResize() {
+                if(this.visualizer && this.canvas) {
+                    const w = window.innerWidth;
+                    const h = window.innerHeight;
+                    this.canvas.width = w;
+                    this.canvas.height = h;
+                    this.visualizer.setRendererSize(w, h);
+                }
+            }
+
+            animate() {
+                this.animId = requestAnimationFrame(this.animate.bind(this));
+                this.visualizer.render();
+            }
+
+            destroy() {
+                cancelAnimationFrame(this.animId);
+                if(this.cycleTimeout) clearTimeout(this.cycleTimeout);
+                window.removeEventListener('resize', this.resizeHandler);
+                container.innerHTML = '';
+            }
+        }
+
         // --- ENGINE: THREE.JS ---
         class ThreeEngine {
             constructor(name, sceneFn) {
@@ -621,12 +814,98 @@
             };
         };
 
+        // New scenes
+        const sceneStarfield = (scene, camera) => {
+            const stars = [];
+            const geo = new THREE.SphereGeometry(0.02, 6, 6);
+            for(let i=0;i<1200;i++){
+                const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: Math.random()*0.8+0.2 });
+                const m = new THREE.Mesh(geo, mat);
+                m.position.set((Math.random()-0.5)*80, (Math.random()-0.5)*80, (Math.random()-0.5)*80);
+                scene.add(m); stars.push(m);
+            }
+            camera.position.z = 6;
+            return (data, time) => {
+                const bass = data[8]/255;
+                const t = time*0.0002;
+                stars.forEach((s, i) => {
+                    s.position.z += 0.02 + bass*0.3;
+                    if(s.position.z > 40) s.position.z = -40;
+                    const hue = (i/1200 + t) % 1;
+                    s.material.color.setHSL(hue, 0.7, 0.6);
+                });
+                camera.rotation.z = Math.sin(t*2)*0.1;
+            };
+        };
+
+        const sceneWaveGrid = (scene, camera) => {
+            const gridSize = 64;
+            const spacing = 0.2;
+            const group = new THREE.Group();
+            const planes = [];
+            for(let x=0;x<gridSize;x++){
+                for(let y=0;y<gridSize;y++){
+                    const geo = new THREE.PlaneGeometry(0.18, 0.18);
+                    const mat = new THREE.MeshBasicMaterial({ color: 0x66ccff, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+                    const p = new THREE.Mesh(geo, mat);
+                    p.position.set((x - gridSize/2)*spacing, (y - gridSize/2)*spacing, 0);
+                    group.add(p);
+                    planes.push(p);
+                }
+            }
+            scene.add(group);
+            camera.position.z = 8;
+            return (data, time) => {
+                const step = Math.floor(data.length / gridSize);
+                const t = time * 0.0015;
+                planes.forEach((p, idx) => {
+                    const i = idx % gridSize;
+                    const j = Math.floor(idx / gridSize);
+                    const v = data[(i*step) % data.length]/255;
+                    p.position.z = Math.sin(i*0.2 + j*0.25 + t*4) * (0.1 + v*0.8);
+                    const hue = (v + (i+j)/ (gridSize*2) + t*0.2)%1;
+                    p.material.color.setHSL(hue, 1, 0.5);
+                    p.material.opacity = 0.35 + v*0.65;
+                });
+                group.rotation.x = Math.sin(t*0.2)*0.4;
+                group.rotation.y = Math.cos(t*0.25)*0.4;
+            };
+        };
+
+        const sceneParticles = (scene, camera) => {
+            const num = 1500;
+            const geo = new THREE.BufferGeometry();
+            const positions = new Float32Array(num*3);
+            for(let i=0;i<num;i++){
+                positions[i*3+0] = (Math.random()-0.5)*40;
+                positions[i*3+1] = (Math.random()-0.5)*40;
+                positions[i*3+2] = (Math.random()-0.5)*40;
+            }
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.08, transparent: true, opacity: 0.8 });
+            const points = new THREE.Points(geo, mat);
+            scene.add(points);
+            camera.position.z = 10;
+            return (data, time) => {
+                const bass = data[4]/255;
+                points.rotation.y += 0.001 + bass*0.01;
+                points.rotation.x += 0.0006;
+                const hue = (time*0.0001)%1;
+                points.material.color.setHSL(hue, 1, 0.6);
+                points.material.size = 0.05 + bass*0.25;
+            };
+        };
+
         // --- MASTER CONTROL ---
         const modes = [
             new MilkdropEngine(),
+            new MilkdropEngineV2(),
             new ThreeEngine("Neon Sphere", sceneSphere),
             new ThreeEngine("Cyber Tunnel", sceneTunnel),
-            new ThreeEngine("Audio Bars", sceneBars)
+            new ThreeEngine("Audio Bars", sceneBars),
+            new ThreeEngine("Starfield", sceneStarfield),
+            new ThreeEngine("Wave Grid", sceneWaveGrid),
+            new ThreeEngine("Particles", sceneParticles)
         ];
 
         function loadMode(index) {
@@ -639,11 +918,13 @@
             
             // UI Updates
             document.getElementById('mode-title').innerText = state.activeVisualizer.name;
-            if(idx !== 0) document.getElementById('mode-sub').innerText = "3D Interactive";
+            if(!(state.activeVisualizer && state.activeVisualizer.loadPreset)) {
+                document.getElementById('mode-sub').innerText = "3D Interactive";
+            }
             
             // Show/Hide Skip Button
             const skipBtn = document.getElementById('btn-skip-preset');
-            if(idx === 0) skipBtn.classList.remove('display-none');
+            if(state.activeVisualizer && typeof state.activeVisualizer.nextPreset === 'function') skipBtn.classList.remove('display-none');
             else skipBtn.classList.add('display-none');
 
             state.activeVisualizer.init();
@@ -656,10 +937,33 @@
         document.getElementById('btn-mic').addEventListener('click', useMic);
         document.getElementById('file-input').addEventListener('change', useFile);
         document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
+        settingsBtn.addEventListener('click', () => {
+            if(settingsPanel.classList.contains('display-none')) {
+                settingsPanel.classList.remove('display-none');
+            } else {
+                settingsPanel.classList.add('display-none');
+            }
+        });
+        settingsCloseBtn.addEventListener('click', () => settingsPanel.classList.add('display-none'));
+        settingsApplyBtn.addEventListener('click', () => {
+            // Read and clamp settings
+            const minS = Math.max(3, Math.min(120, Number(inpShuffleMin.value) || 12));
+            const maxS = Math.max(5, Math.min(180, Number(inpShuffleMax.value) || 25));
+            const trans = Math.max(0, Math.min(10, Number(inpTransition.value) || 2.7));
+            const px = Math.max(0.5, Math.min(3, Number(inpPixelRatio.value) || 1));
+            visualSettings.shuffleMinSec = minS;
+            visualSettings.shuffleMaxSec = maxS;
+            visualSettings.transitionSec = trans;
+            visualSettings.pixelRatio = px;
+            // Apply if active is v2
+            if(state.activeVisualizer && state.activeVisualizer instanceof MilkdropEngineV2) {
+                state.activeVisualizer.applySettings?.();
+            }
+        });
         
         // Skip Preset Button Logic
         document.getElementById('btn-skip-preset').addEventListener('click', () => {
-            if(state.currentModeIdx === 0 && state.activeVisualizer.nextPreset) {
+            if(state.activeVisualizer && state.activeVisualizer.nextPreset) {
                 state.activeVisualizer.nextPreset();
             }
         });
@@ -781,10 +1085,20 @@
         document.body.addEventListener('dragover', e => e.preventDefault());
         document.body.addEventListener('drop', (e) => {
             e.preventDefault();
-            if(state.currentModeIdx !== 0) return alert("Switch to ProjectM mode first");
+            // Accept only for ProjectM (either version)
+            const active = state.activeVisualizer;
+            if(!(active instanceof MilkdropEngine) && !(active instanceof MilkdropEngineV2)) {
+                return alert("Switch to ProjectM (v1 or v2) first");
+            }
             const file = e.dataTransfer.files[0];
+            if(!file) return;
+            const lower = file.name.toLowerCase();
+            if(lower.endsWith('.milk')) {
+                alert("Raw .milk files are not directly supported. Please convert to butterchurn JSON first.");
+                return;
+            }
             const reader = new FileReader();
-            reader.onload = (ev) => state.activeVisualizer.loadCustomMilk(ev.target.result);
+            reader.onload = (ev) => active.loadCustomMilk?.(ev.target.result);
             reader.readAsText(file);
         });
 
@@ -793,7 +1107,7 @@
             if(e.key === 'f' || e.key === 'F') {
                 toggleFullscreen();
             } else if(e.key === 's' || e.key === 'S') {
-                if(state.currentModeIdx === 0 && state.activeVisualizer?.nextPreset) {
+                if(state.activeVisualizer?.nextPreset) {
                     state.activeVisualizer.nextPreset();
                 }
             }
