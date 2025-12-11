@@ -290,7 +290,7 @@
 
         <div class="control-group">
             <button class="btn-main interactive" id="btn-mic">Use Microphone</button>
-            <button class="btn-main interactive" onclick="document.getElementById('file-input').click()">Load Local MP3</button>
+            <button class="btn-main interactive" id="btn-file" onclick="document.getElementById('file-input').click()">Load Local MP3</button>
             <input type="file" id="file-input" accept="audio/*" style="display:none">
         </div>
 
@@ -575,6 +575,34 @@
             }
             if(state.audioCtx.state === 'suspended') state.audioCtx.resume();
         }
+        
+        // Enable/disable start controls (radio/mic/file/url)
+        function setStartControlsEnabled(enabled) {
+            const btnRadio = document.getElementById('btn-radio');
+            const btnMic = document.getElementById('btn-mic');
+            const btnFile = document.getElementById('btn-file');
+            const urlInput = document.getElementById('radio-url');
+            [btnRadio, btnMic, btnFile, urlInput].forEach(el => {
+                if(!el) return;
+                if(enabled) {
+                    el.removeAttribute('disabled');
+                    el.setAttribute('tabindex', '0');
+                } else {
+                    el.setAttribute('disabled', 'true');
+                    el.setAttribute('tabindex', '-1');
+                }
+            });
+        }
+        function showOverlay() {
+            const overlay = document.getElementById('overlay');
+            overlay.classList.remove('hidden');
+            setStartControlsEnabled(true);
+        }
+        function hideOverlay() {
+            const overlay = document.getElementById('overlay');
+            overlay.classList.add('hidden');
+            setStartControlsEnabled(false);
+        }
 
         function playRadio() {
             initAudio();
@@ -638,7 +666,7 @@
 
         function startGame() {
             state.isPlaying = true;
-            document.getElementById('overlay').classList.add('hidden');
+            hideOverlay();
             document.getElementById('ui-layer').classList.remove('hidden');
             loadMode(0); // Start with ProjectM
             resetIdleTimer();
@@ -2276,6 +2304,12 @@
 
             state.activeVisualizer.init();
         }
+        
+        // Allow opening overlay by clicking the title area
+        document.getElementById('mode-info').addEventListener('click', (e) => {
+            e.stopPropagation();
+            showOverlay();
+        });
 
         // --- BINDINGS ---
         document.getElementById('btn-prev').addEventListener('click', () => { loadMode(state.currentModeIdx - 1); resetIdleTimer(); });
@@ -2529,6 +2563,8 @@
                 if(state.activeVisualizer?.nextPreset) {
                     state.activeVisualizer.nextPreset();
                 }
+            } else if(e.key === 'Escape') {
+                showOverlay();
             } else if(e.key === 'ArrowLeft') {
                 if(webmOn) prevWebm();
             } else if(e.key === 'ArrowRight') {
