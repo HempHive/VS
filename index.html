@@ -327,6 +327,8 @@
         const stations = [];
         let currentStationIndex = -1;
         let panelIdleTimer = null;
+        let radioPanelTimer = null;
+        let settingsPanelTimer = null;
         
         // Settings state (for ProjectM v2)
         const visualSettings = {
@@ -351,6 +353,8 @@
             document.body.style.cursor = 'default';
             if (state.idleTimer) clearTimeout(state.idleTimer);
             if (panelIdleTimer) clearTimeout(panelIdleTimer);
+            if (radioPanelTimer) clearTimeout(radioPanelTimer);
+            if (settingsPanelTimer) clearTimeout(settingsPanelTimer);
             if(state.isPlaying) {
                 state.idleTimer = setTimeout(() => {
                     uiLayer.style.opacity = '0';
@@ -361,13 +365,9 @@
                     }
                     document.body.style.cursor = 'none';
                 }, 3000);
-                // Radio panel fades out after double time (6s) if open
-                if(!radioPanel.classList.contains('display-none')) {
-                    panelIdleTimer = setTimeout(() => {
-                        radioPanel.style.opacity = '0';
-                        radioPanel.style.pointerEvents = 'none';
-                    }, 6000);
-                }
+                // Panels fade out and close after 30s if open
+                if(!radioPanel.classList.contains('display-none')) scheduleRadioPanelClose();
+                if(!settingsPanel.classList.contains('display-none')) scheduleSettingsPanelClose();
             }
         }
         window.addEventListener('mousemove', resetIdleTimer);
@@ -2002,11 +2002,34 @@
         settingsBtn.addEventListener('click', () => {
             if(settingsPanel.classList.contains('display-none')) {
                 settingsPanel.classList.remove('display-none');
+                settingsPanel.style.opacity = '1';
+                settingsPanel.style.pointerEvents = 'auto';
+                scheduleSettingsPanelClose();
             } else {
+                if (settingsPanelTimer) { clearTimeout(settingsPanelTimer); settingsPanelTimer = null; }
                 settingsPanel.classList.add('display-none');
+                settingsPanel.style.opacity = '';
+                settingsPanel.style.pointerEvents = '';
             }
         });
-        settingsCloseBtn.addEventListener('click', () => settingsPanel.classList.add('display-none'));
+        settingsCloseBtn.addEventListener('click', () => { 
+            if (settingsPanelTimer) { clearTimeout(settingsPanelTimer); settingsPanelTimer = null; }
+            settingsPanel.classList.add('display-none');
+            settingsPanel.style.opacity = '';
+            settingsPanel.style.pointerEvents = '';
+        });
+        function scheduleSettingsPanelClose() {
+            if (settingsPanelTimer) clearTimeout(settingsPanelTimer);
+            settingsPanelTimer = setTimeout(() => {
+                settingsPanel.style.opacity = '0';
+                settingsPanel.style.pointerEvents = 'none';
+                setTimeout(() => { 
+                    settingsPanel.classList.add('display-none'); 
+                    settingsPanel.style.opacity = '';
+                    settingsPanel.style.pointerEvents = '';
+                }, 1200);
+            }, 30000);
+        }
         settingsApplyBtn.addEventListener('click', () => {
             // Read and clamp settings
             const minS = Math.max(3, Math.min(120, Number(inpShuffleMin.value) || 12));
@@ -2103,11 +2126,29 @@
             setStation(idx);
         }
 
-        function showRadioPanel() { radioPanel.classList.remove('display-none'); }
-        function hideRadioPanel() { radioPanel.classList.add('display-none'); }
+        function showRadioPanel() { 
+            radioPanel.classList.remove('display-none'); 
+            radioPanel.style.opacity = '1';
+            radioPanel.style.pointerEvents = 'auto';
+            scheduleRadioPanelClose();
+        }
+        function hideRadioPanel() { 
+            if (radioPanelTimer) { clearTimeout(radioPanelTimer); radioPanelTimer = null; }
+            radioPanel.classList.add('display-none'); 
+            radioPanel.style.opacity = '';
+            radioPanel.style.pointerEvents = '';
+        }
         function toggleRadioPanel() {
             if(radioPanel.classList.contains('display-none')) showRadioPanel();
             else hideRadioPanel();
+        }
+        function scheduleRadioPanelClose() {
+            if (radioPanelTimer) clearTimeout(radioPanelTimer);
+            radioPanelTimer = setTimeout(() => {
+                radioPanel.style.opacity = '0';
+                radioPanel.style.pointerEvents = 'none';
+                setTimeout(() => { hideRadioPanel(); }, 1200);
+            }, 30000);
         }
 
         function showStationBanner(text) {
