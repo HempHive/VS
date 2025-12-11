@@ -1590,6 +1590,246 @@
             };
         };
 
+        // Mandelbrot (shader)
+        const sceneMandelbrot = (scene, camera) => {
+            const uni = {
+                time: { value: 0.0 },
+                center: { value: new THREE.Vector2(-0.5, 0.0) },
+                zoom: { value: 1.0 },
+                gain: { value: 0.0 },
+                aspect: { value: window.innerWidth / window.innerHeight }
+            };
+            const mat = new THREE.ShaderMaterial({
+                uniforms: uni,
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+                    }
+                `,
+                fragmentShader: `
+                    precision highp float;
+                    varying vec2 vUv;
+                    uniform vec2 center;
+                    uniform float zoom;
+                    uniform float time;
+                    uniform float gain;
+                    uniform float aspect;
+                    vec3 palette(float t){
+                        return 0.5 + 0.5*cos(6.28318*(vec3(0.0,0.33,0.67) + t));
+                    }
+                    void main(){
+                        vec2 uv = (vUv - 0.5);
+                        uv.x *= aspect;
+                        vec2 c = center + uv / zoom;
+                        vec2 z = vec2(0.0);
+                        float it = 0.0;
+                        const int MAX_IT = 200;
+                        float maxIter = 60.0 + gain*120.0;
+                        for(int i=0; i<MAX_IT; i++){
+                            if(it > maxIter) break;
+                            float x = (z.x*z.x - z.y*z.y) + c.x;
+                            float y = (2.0*z.x*z.y) + c.y;
+                            z = vec2(x,y);
+                            if(dot(z,z) > 4.0) break;
+                            it += 1.0;
+                        }
+                        float t = it / maxIter;
+                        float sm = t + 1.0 - log2(log(length(z)))/log(2.0);
+                        sm = clamp(sm, 0.0, 1.0);
+                        vec3 col = palette(sm + time*0.02);
+                        gl_FragColor = vec4(col * pow(t, 0.5), 1.0);
+                    }
+                `
+            });
+            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+            scene.add(mesh);
+            camera.position.z = 1;
+            return (audio, time) => {
+                const g = (audio[6]+audio[12]+audio[24])/(3.0*255.0);
+                uni.time.value = time*0.001;
+                uni.gain.value = g;
+                const baseZoom = 0.85 + Math.sin(time*0.0001)*0.15;
+                uni.zoom.value = 1.5 + baseZoom * (1.0 + g*4.0);
+                uni.center.value.set(-0.5 + Math.sin(time*0.00008)*0.15, Math.cos(time*0.00006)*0.1);
+                uni.aspect.value = window.innerWidth / window.innerHeight;
+            };
+        };
+
+        // Julia Set (shader)
+        const sceneJulia = (scene, camera) => {
+            const uni = {
+                time: { value: 0.0 },
+                c: { value: new THREE.Vector2(-0.70176, -0.3842) },
+                zoom: { value: 1.0 },
+                gain: { value: 0.0 },
+                aspect: { value: window.innerWidth / window.innerHeight }
+            };
+            const mat = new THREE.ShaderMaterial({
+                uniforms: uni,
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+                    }
+                `,
+                fragmentShader: `
+                    precision highp float;
+                    varying vec2 vUv;
+                    uniform vec2 c;
+                    uniform float zoom;
+                    uniform float time;
+                    uniform float gain;
+                    uniform float aspect;
+                    vec3 palette(float t){
+                        return 0.5 + 0.5*cos(6.28318*(vec3(0.0,0.33,0.67) + t));
+                    }
+                    void main(){
+                        vec2 uv = (vUv - 0.5);
+                        uv.x *= aspect;
+                        vec2 z = uv / zoom * 2.0;
+                        float it = 0.0;
+                        const int MAX_IT = 200;
+                        float maxIter = 60.0 + gain*120.0;
+                        for(int i=0; i<MAX_IT; i++){
+                            if(it > maxIter) break;
+                            z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
+                            if(dot(z,z) > 16.0) break;
+                            it += 1.0;
+                        }
+                        float t = it / maxIter;
+                        float sm = t + 1.0 - log2(log(length(z)))/log(2.0);
+                        sm = clamp(sm, 0.0, 1.0);
+                        vec3 col = palette(sm + time*0.02);
+                        gl_FragColor = vec4(col * pow(t, 0.55), 1.0);
+                    }
+                `
+            });
+            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+            scene.add(mesh);
+            camera.position.z = 1;
+            return (audio, time) => {
+                const g = (audio[8]+audio[16]+audio[24])/(3.0*255.0);
+                uni.time.value = time*0.001;
+                uni.gain.value = g;
+                uni.zoom.value = 1.4 + 0.6*Math.sin(time*0.0002) + g*2.2;
+                const ang = time*0.00015;
+                uni.c.value.set(Math.cos(ang)*0.7, Math.sin(ang*1.3)*0.5);
+                uni.aspect.value = window.innerWidth / window.innerHeight;
+            };
+        };
+
+        // Barnsley Fern (points)
+        const sceneBarnsleyFern = (scene, camera) => {
+            const num = 30000;
+            const geo = new THREE.BufferGeometry();
+            const positions = new Float32Array(num*3);
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const mat = new THREE.PointsMaterial({ color: 0x66ff99, size: 0.03, transparent: true, opacity: 0.9 });
+            const points = new THREE.Points(geo, mat);
+            scene.add(points);
+            camera.position.z = 8;
+            let x = 0, y = 0;
+            function step() {
+                const r = Math.random();
+                let nx, ny;
+                if (r < 0.01) { nx = 0.0; ny = 0.16*y; }
+                else if (r < 0.86) { nx = 0.85*x + 0.04*y; ny = -0.04*x + 0.85*y + 1.6; }
+                else if (r < 0.93) { nx = 0.2*x - 0.26*y; ny = 0.23*x + 0.22*y + 1.6; }
+                else { nx = -0.15*x + 0.28*y; ny = 0.26*x + 0.24*y + 0.44; }
+                x = nx; y = ny;
+            }
+            return (audio, time) => {
+                const g = (audio[6]+audio[12]+audio[24])/(3.0*255.0);
+                for (let i=0;i<num;i++) {
+                    step();
+                    positions[i*3+0] = x*1.6 - 2.0;
+                    positions[i*3+1] = y*1.6 - 3.0;
+                    positions[i*3+2] = 0;
+                }
+                geo.attributes.position.needsUpdate = true;
+                const hue = (time*0.0001 + g*0.5) % 1;
+                mat.color.setHSL(hue, 0.8, 0.6);
+                points.rotation.z = Math.sin(time*0.0003)*0.1;
+                points.scale.setScalar(1.0 + g*0.2);
+            };
+        };
+
+        // Lorenz Attractor (line)
+        const sceneLorenz = (scene, camera) => {
+            const maxPts = 6000;
+            const positions = new Float32Array(maxPts*3);
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const mat = new THREE.LineBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.9 });
+            const line = new THREE.Line(geo, mat);
+            scene.add(line);
+            camera.position.z = 30;
+            let x = 0.01, y = 0.0, z = 0.0;
+            const dt = 0.005;
+            const sigma = 10.0, rho = 28.0, beta = 8.0/3.0;
+            let idx = 0;
+            return (audio, time) => {
+                const g = (audio[10]+audio[18])/(2.0*255.0);
+                for (let k=0;k<10;k++) {
+                    const dx = sigma*(y - x);
+                    const dy = x*(rho - z) - y;
+                    const dz = x*y - beta*z;
+                    x += dx*dt;
+                    y += dy*dt;
+                    z += dz*dt;
+                    positions[idx*3+0] = x;
+                    positions[idx*3+1] = y;
+                    positions[idx*3+2] = z - 20.0;
+                    idx = (idx + 1) % maxPts;
+                }
+                geo.attributes.position.needsUpdate = true;
+                line.rotation.y = time*0.0002 + g*0.4;
+                line.rotation.x = Math.sin(time*0.0003)*0.2;
+                const hue = (time*0.00008 + g*0.4) % 1.0;
+                mat.color.setHSL(hue, 1, 0.6);
+            };
+        };
+
+        // Sierpinski Carpet (instanced)
+        const sceneSierpinskiCarpet = (scene, camera) => {
+            const depth = 4;
+            const squares = [];
+            function add(level, cx, cy, size) {
+                if (level === 0) { squares.push({ cx, cy, size }); return; }
+                const s3 = size/3;
+                for (let dx=-1; dx<=1; dx++){
+                    for (let dy=-1; dy<=1; dy++){
+                        if (dx === 0 && dy === 0) continue;
+                        add(level-1, cx + dx*s3, cy + dy*s3, s3);
+                    }
+                }
+            }
+            add(depth, 0, 0, 6);
+            const geo = new THREE.PlaneGeometry(1, 1);
+            const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const inst = new THREE.InstancedMesh(geo, mat, squares.length);
+            const dummy = new THREE.Object3D();
+            squares.forEach((s, i) => {
+                dummy.position.set(s.cx, s.cy, 0);
+                dummy.scale.set(s.size*0.95, s.size*0.95, 1);
+                dummy.updateMatrix();
+                inst.setMatrixAt(i, dummy.matrix);
+            });
+            inst.instanceMatrix.needsUpdate = true;
+            scene.add(inst);
+            camera.position.z = 10;
+            return (audio, time) => {
+                const g = (audio[4]+audio[12]+audio[28])/(3.0*255.0);
+                const hue = (time*0.00015 + g*0.4) % 1.0;
+                mat.color.setHSL(hue, 1, 0.6);
+                inst.rotation.z = Math.sin(time*0.0003)*0.2;
+                inst.scale.setScalar(1.0 + g*0.25);
+            };
+        };
+
         // --- Emoji Helpers and Scenes ---
         function createEmojiTexture(char) {
             const size = 256;
@@ -1715,6 +1955,11 @@
             new ThreeEngine("Terrain", sceneTerrain),
             new ThreeEngine("Hex Grid", sceneHexGrid),
             new ThreeEngine("Ribbons", sceneRibbons),
+            new ThreeEngine("Mandelbrot", sceneMandelbrot),
+            new ThreeEngine("Julia Set", sceneJulia),
+            new ThreeEngine("Barnsley Fern", sceneBarnsleyFern),
+            new ThreeEngine("Lorenz Attractor", sceneLorenz),
+            new ThreeEngine("Sierpinski Carpet", sceneSierpinskiCarpet),
             new ThreeEngine("Emoji Swarm", sceneEmojiSwarm),
             new ThreeEngine("Emoji Orbits", sceneEmojiOrbits),
             new ThreeEngine("Kaleidoscope 6", sceneKaleido(6)),
