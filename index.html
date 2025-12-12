@@ -2763,6 +2763,11 @@ function stopAllAndShowStart() {
             webmSettings.playbackRate = Math.max(0.1, Math.min(4, Number(inpWebmSpeed.value) || 1));
             webmSettings.opacity = Math.max(0, Math.min(1, Number(inpWebmOpacity.value) || 1));
             webmSettings.duplicates = Math.max(0, Math.min(2, Math.floor(Number(inpWebmDup.value) || 0)));
+            // Force center X when duplicates == 2
+            if (webmSettings.duplicates === 2) {
+                webmSettings.posXvw = 50;
+                inpWebmX.value = '50';
+            }
             applyWebmSettings();
             scheduleWebmSettingsClose();
         });
