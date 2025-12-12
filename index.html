@@ -191,7 +191,7 @@
             position: absolute; bottom: 160px; right: 14px;
             width: 360px; max-height: 60vh; overflow: auto;
             z-index: 90;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.55);
             border: 1px solid rgba(255,255,255,0.2);
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.6);
@@ -247,7 +247,7 @@
             position: absolute; bottom: 160px; left: 14px;
             width: 360px; max-height: 60vh; overflow: auto;
             z-index: 90;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.55);
             border: 1px solid rgba(255,255,255,0.2);
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.6);
@@ -255,9 +255,12 @@
             transition: opacity 0.3s ease-in-out;
         }
         #webm-settings-panel h3 {
-            margin: 0; padding: 12px 14px; font-weight: 500; font-size: 14px;
-            border-bottom: 1px solid rgba(255,255,255,0.12);
+            margin: 0; font-weight: 500; font-size: 14px;
             letter-spacing: 1px; text-transform: uppercase; color: #ddd;
+        }
+        #webm-settings-panel .panel-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.12);
         }
         #webm-settings-content { padding: 12px; }
         .settings-row input[type="range"] { flex: 1; }
@@ -372,7 +375,10 @@
     
     <!-- WebM Settings Panel -->
     <div id="webm-settings-panel" class="display-none">
-        <h3>WebM Settings</h3>
+        <div class="panel-head">
+            <h3>AVATER SETTINGS</h3>
+            <button class="btn-small" id="btn-webm-reset" title="Reset to defaults">Reset</button>
+        </div>
         <div id="webm-settings-content">
             <div class="settings-row">
                 <label for="inp-webm-scale">Size (vw)</label>
@@ -396,7 +402,7 @@
             </div>
             <div class="settings-row">
                 <label for="inp-webm-opacity">Opacity</label>
-                <input id="inp-webm-opacity" type="range" min="0" max="1" step="0.05" value="1">
+                <input id="inp-webm-opacity" type="range" min="0" max="1" step="0.05" value="0.55">
             </div>
             <div class="settings-row">
                 <label for="inp-webm-dup">Duplicates (0-2)</label>
@@ -481,7 +487,7 @@
             posYvh: 50,
             rotationDeg: 0,
             playbackRate: 1.0,
-            opacity: 1.0,
+            opacity: 0.55,
             duplicates: 0
         };
         let modeShuffleOn = false;
@@ -2732,6 +2738,23 @@ function stopAllAndShowStart() {
             }, 30000);
         }
         webmCloseBtn.addEventListener('click', hideWebmSettingsPanel);
+        document.getElementById('btn-webm-reset').addEventListener('click', () => {
+            webmSettings.scaleVw = 50;
+            webmSettings.posXvw = 50;
+            webmSettings.posYvh = 50;
+            webmSettings.rotationDeg = 0;
+            webmSettings.playbackRate = 1.0;
+            webmSettings.opacity = 0.55;
+            webmSettings.duplicates = 0;
+            inpWebmScale.value = '50';
+            inpWebmX.value = '50';
+            inpWebmY.value = '50';
+            inpWebmRot.value = '0';
+            inpWebmSpeed.value = '1.0';
+            inpWebmOpacity.value = '0.55';
+            inpWebmDup.value = '0';
+            applyWebmSettings();
+        });
         webmApplyBtn.addEventListener('click', () => {
             webmSettings.scaleVw = Number(inpWebmScale.value) || 50;
             webmSettings.posXvw = Number(inpWebmX.value) || 50;
@@ -2752,7 +2775,9 @@ function stopAllAndShowStart() {
         function applyWebmSettings() {
             // central
             webmVideoEl.style.width = `${webmSettings.scaleVw}vw`;
-            webmOverlayEl.style.left = `${webmSettings.posXvw}vw`;
+            const centralized = (webmSettings.duplicates === 2) && (webmList && webmList.length === 2);
+            const leftVw = centralized ? 50 : webmSettings.posXvw;
+            webmOverlayEl.style.left = `${leftVw}vw`;
             webmOverlayEl.style.top = `${webmSettings.posYvh}vh`;
             webmOverlayEl.style.transform = `translate(-50%, -50%)`;
             webmVideoEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
