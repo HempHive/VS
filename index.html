@@ -208,6 +208,77 @@
         .settings-row label { font-size: 12px; color: #ccc; }
         .settings-row input[type="number"] { width: 96px; padding: 6px 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 4px; }
         .settings-row input[type="range"] { flex: 1; }
+        
+        /* Unified slider styling (transparent tracks) */
+        #settings-panel input[type="range"],
+        #webm-settings-panel input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 16px;
+            background: transparent;
+            cursor: pointer;
+        }
+        /* WebKit track */
+        #settings-panel input[type="range"]::-webkit-slider-runnable-track,
+        #webm-settings-panel input[type="range"]::-webkit-slider-runnable-track {
+            height: 6px;
+            background: rgba(255,255,255,0.14);
+            border-radius: 6px;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+        }
+        /* WebKit thumb */
+        #settings-panel input[type="range"]::-webkit-slider-thumb,
+        #webm-settings-panel input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.85);
+            border: 1px solid rgba(255,255,255,0.35);
+            margin-top: -4px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.25);
+        }
+        /* Firefox track */
+        #settings-panel input[type="range"]::-moz-range-track,
+        #webm-settings-panel input[type="range"]::-moz-range-track {
+            height: 6px;
+            background: rgba(255,255,255,0.14);
+            border-radius: 6px;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+        }
+        /* Firefox progress (filled portion) */
+        #settings-panel input[type="range"]::-moz-range-progress,
+        #webm-settings-panel input[type="range"]::-moz-range-progress {
+            height: 6px;
+            background: rgba(212,175,55,0.28); /* subtle gold on filled part */
+            border-radius: 6px 0 0 6px;
+        }
+        /* Firefox thumb */
+        #settings-panel input[type="range"]::-moz-range-thumb,
+        #webm-settings-panel input[type="range"]::-moz-range-thumb {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.85);
+            border: 1px solid rgba(255,255,255,0.35);
+            box-shadow: 0 0 8px rgba(0,0,0,0.25);
+        }
+        /* Hover/active states to increase opacity */
+        #settings-panel input[type="range"]:hover::-webkit-slider-runnable-track,
+        #webm-settings-panel input[type="range"]:hover::-webkit-slider-runnable-track {
+            background: rgba(255,255,255,0.2);
+        }
+        #settings-panel input[type="range"]:active::-webkit-slider-runnable-track,
+        #webm-settings-panel input[type="range"]:active::-webkit-slider-runnable-track {
+            background: rgba(255,255,255,0.28);
+        }
+        #settings-panel input[type="range"]:hover::-moz-range-track,
+        #webm-settings-panel input[type="range"]:hover::-moz-range-track {
+            background: rgba(255,255,255,0.2);
+        }
+        #settings-panel input[type="range"]:active::-moz-range-track,
+        #webm-settings-panel input[type="range"]:active::-moz-range-track {
+            background: rgba(255,255,255,0.28);
+        }
         .settings-note { font-size: 11px; color: #8aa; margin-top: 8px; line-height: 1.35; }
         .settings-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
         .btn-small {
@@ -351,19 +422,19 @@
         <div id="settings-content">
             <div class="settings-row">
                 <label for="inp-shuffle-min">Shuffle min (s)</label>
-                <input id="inp-shuffle-min" type="number" min="3" max="120" step="1" value="30">
+                <input id="inp-shuffle-min" type="range" min="3" max="120" step="1" value="30">
             </div>
             <div class="settings-row">
                 <label for="inp-shuffle-max">Shuffle max (s)</label>
-                <input id="inp-shuffle-max" type="number" min="5" max="180" step="1" value="60">
+                <input id="inp-shuffle-max" type="range" min="5" max="180" step="1" value="60">
             </div>
             <div class="settings-row">
                 <label for="inp-transition">Transition (s)</label>
-                <input id="inp-transition" type="number" min="0" max="10" step="0.1" value="2.7">
+                <input id="inp-transition" type="range" min="0" max="10" step="0.1" value="2.7">
             </div>
             <div class="settings-row">
                 <label for="inp-pixelratio">Pixel Ratio</label>
-                <input id="inp-pixelratio" type="number" min="0.5" max="3" step="0.1" value="1">
+                <input id="inp-pixelratio" type="range" min="0.5" max="3" step="0.1" value="1">
             </div>
             <div class="settings-note">Settings apply to ProjectM v2. Shuffle times are randomized between min and max. Transition affects preset morph duration. Pixel ratio applies on next init.</div>
             <div class="settings-actions">
@@ -402,7 +473,7 @@
             </div>
             <div class="settings-row">
                 <label for="inp-webm-opacity">Opacity</label>
-                <input id="inp-webm-opacity" type="range" min="0" max="1" step="0.05" value="0.65">
+                <input id="inp-webm-opacity" type="range" min="0" max="1" step="0.01" value="0.82">
             </div>
             <div class="settings-row">
                 <label for="inp-webm-dup">Duplicates (0-2)</label>
@@ -487,7 +558,7 @@
             posYvh: 50,
             rotationDeg: 0,
             playbackRate: 1.0,
-            opacity: 0.65,
+            opacity: 0.82,
             duplicates: 0
         };
         let modeShuffleOn = false;
@@ -2744,14 +2815,14 @@ function stopAllAndShowStart() {
             webmSettings.posYvh = 50;
             webmSettings.rotationDeg = 0;
             webmSettings.playbackRate = 1.0;
-            webmSettings.opacity = 0.65;
+            webmSettings.opacity = 0.82;
             webmSettings.duplicates = 0;
             inpWebmScale.value = '50';
             inpWebmX.value = '50';
             inpWebmY.value = '50';
             inpWebmRot.value = '0';
             inpWebmSpeed.value = '1.0';
-            inpWebmOpacity.value = '0.65';
+            inpWebmOpacity.value = '0.82';
             inpWebmDup.value = '0';
             applyWebmSettings();
         });
