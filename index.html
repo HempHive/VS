@@ -2775,7 +2775,7 @@ function stopAllAndShowStart() {
         function applyWebmSettings() {
             // central
             webmVideoEl.style.width = `${webmSettings.scaleVw}vw`;
-            const centralized = (webmSettings.duplicates === 2) && (webmList && webmList.length === 2);
+            const centralized = (webmSettings.duplicates === 2);
             const leftVw = centralized ? 50 : webmSettings.posXvw;
             webmOverlayEl.style.left = `${leftVw}vw`;
             webmOverlayEl.style.top = `${webmSettings.posYvh}vh`;
