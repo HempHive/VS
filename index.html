@@ -2791,6 +2791,8 @@ function stopAllAndShowStart() {
                 v.style.opacity = String(webmSettings.opacity);
                 v.play().catch(()=>{});
             });
+            // Ensure current settings are applied consistently to the main video and duplicates
+            applyWebmSettings();
         }
 
         function nextWebm() { setWebm(webmIndex + 1); }
@@ -2828,7 +2830,17 @@ function stopAllAndShowStart() {
                 setTimeout(() => { hideWebmSettingsPanel(); }, 1200);
             }, 30000);
         }
-        webmCloseBtn.addEventListener('click', hideWebmSettingsPanel);
+        webmCloseBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            hideWebmSettingsPanel();
+        });
+        // Allow closing the Avatar Settings with Escape for reliability
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !webmSettingsPanel.classList.contains('display-none')) {
+                hideWebmSettingsPanel();
+            }
+        });
         document.getElementById('btn-webm-reset').addEventListener('click', () => {
             webmSettings.scaleVw = 50;
             webmSettings.posXvw = 50;
