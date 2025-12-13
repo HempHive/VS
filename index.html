@@ -453,7 +453,7 @@
             <h3>AVATAR SETTINGS</h3>
             <div style="display:flex; gap:8px; align-items:center">
                 <button class="btn-small" id="btn-webm-reset" title="Reset to defaults">Reset</button>
-                <button class="btn-small" id="btn-webm-close">Close</button>
+                <button class="icon-btn interactive" id="btn-webm-close" title="Close" aria-label="Close" onclick="hideWebmSettingsPanel && hideWebmSettingsPanel()">✕</button>
             </div>
         </div>
         <div id="webm-settings-content">
@@ -2801,6 +2801,7 @@ function stopAllAndShowStart() {
         function toggleWebmSettingsPanel() {
             if(webmSettingsPanel.classList.contains('display-none')) {
                 webmSettingsPanel.classList.remove('display-none');
+                webmSettingsPanel.style.display = 'block';
                 webmSettingsPanel.style.opacity = '1';
                 webmSettingsPanel.style.pointerEvents = 'auto';
                 scheduleWebmSettingsClose();
@@ -2819,9 +2820,12 @@ function stopAllAndShowStart() {
         function hideWebmSettingsPanel() {
             if (webmSettingsTimer) { clearTimeout(webmSettingsTimer); webmSettingsTimer = null; }
             webmSettingsPanel.classList.add('display-none');
+            webmSettingsPanel.style.display = 'none';
             webmSettingsPanel.style.opacity = '';
             webmSettingsPanel.style.pointerEvents = '';
         }
+        // expose for inline handlers
+        window.hideWebmSettingsPanel = hideWebmSettingsPanel;
         function scheduleWebmSettingsClose() {
             if (webmSettingsTimer) clearTimeout(webmSettingsTimer);
             webmSettingsTimer = setTimeout(() => {
@@ -2830,10 +2834,50 @@ function stopAllAndShowStart() {
                 setTimeout(() => { hideWebmSettingsPanel(); }, 1200);
             }, 30000);
         }
-        webmCloseBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            hideWebmSettingsPanel();
+        if (webmCloseBtn) {
+            webmCloseBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (webmSettingsTimer) { clearTimeout(webmSettingsTimer); webmSettingsTimer = null; }
+                hideWebmSettingsPanel();
+            });
+            // Support pointerdown for cases where click is swallowed by other handlers
+            webmCloseBtn.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (webmSettingsTimer) { clearTimeout(webmSettingsTimer); webmSettingsTimer = null; }
+                hideWebmSettingsPanel();
+            });
+            // Also close on right-click/contextmenu for consistency with toggle behavior
+            webmCloseBtn.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (webmSettingsTimer) { clearTimeout(webmSettingsTimer); webmSettingsTimer = null; }
+                hideWebmSettingsPanel();
+            });
+        }
+        // Event delegation fallback in case the button is replaced dynamically
+        webmSettingsPanel.addEventListener('click', (e) => {
+            const t = e.target;
+            if (!t) return;
+            const btn = (t.id === 'btn-webm-close') ? t : (t.closest ? t.closest('#btn-webm-close') : null);
+            if (btn) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (webmSettingsTimer) { clearTimeout(webmSettingsTimer); webmSettingsTimer = null; }
+                hideWebmSettingsPanel();
+            }
+        });
+        webmSettingsPanel.addEventListener('pointerdown', (e) => {
+            const t = e.target;
+            if (!t) return;
+            const btn = (t.id === 'btn-webm-close') ? t : (t.closest ? t.closest('#btn-webm-close') : null);
+            if (btn) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (webmSettingsTimer) { clearTimeout(webmSettingsTimer); webmSettingsTimer = null; }
+                hideWebmSettingsPanel();
+            }
         });
         // Allow closing the Avatar Settings with Escape for reliability
         document.addEventListener('keydown', (e) => {
@@ -2841,6 +2885,15 @@ function stopAllAndShowStart() {
                 hideWebmSettingsPanel();
             }
         });
+        // Close when clicking outside the avatar settings panel
+        document.addEventListener('click', (e) => {
+            if (webmSettingsPanel.classList.contains('display-none')) return;
+            const target = e.target;
+            // If click is inside the panel, ignore
+            if (webmSettingsPanel.contains(target)) return;
+            // Otherwise, close
+            hideWebmSettingsPanel();
+        }, true);
         document.getElementById('btn-webm-reset').addEventListener('click', () => {
             webmSettings.scaleVw = 50;
             webmSettings.posXvw = 50;
