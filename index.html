@@ -450,8 +450,11 @@
     <!-- WebM Settings Panel -->
     <div id="webm-settings-panel" class="display-none">
         <div class="panel-head">
-            <h3>AVATER SETTINGS</h3>
-            <button class="btn-small" id="btn-webm-reset" title="Reset to defaults">Reset</button>
+            <h3>AVATAR SETTINGS</h3>
+            <div style="display:flex; gap:8px; align-items:center">
+                <button class="btn-small" id="btn-webm-reset" title="Reset to defaults">Reset</button>
+                <button class="btn-small" id="btn-webm-close">Close</button>
+            </div>
         </div>
         <div id="webm-settings-content">
             <div class="settings-row">
@@ -481,10 +484,6 @@
             <div class="settings-row">
                 <label for="inp-webm-dup">Duplicates (0-2)</label>
                 <input id="inp-webm-dup" type="range" min="0" max="2" step="1" value="0">
-            </div>
-            <div class="settings-actions">
-                <button class="btn-small" id="btn-webm-apply">Apply</button>
-                <button class="btn-small" id="btn-webm-close">Close</button>
             </div>
         </div>
     </div>
@@ -537,7 +536,6 @@
         const webmPrevBtn = document.getElementById('webm-prev');
         const webmNextBtn = document.getElementById('webm-next');
         const webmSettingsPanel = document.getElementById('webm-settings-panel');
-        const webmApplyBtn = document.getElementById('btn-webm-apply');
         const webmCloseBtn = document.getElementById('btn-webm-close');
         const inpWebmScale = document.getElementById('inp-webm-scale');
         const inpWebmX = document.getElementById('inp-webm-x');
@@ -2848,7 +2846,8 @@ function stopAllAndShowStart() {
             inpWebmDup.value = '0';
             applyWebmSettings();
         });
-        webmApplyBtn.addEventListener('click', () => {
+        // Live-change on input (with special-case for duplicates)
+        function updateWebmSettingsFromInputs() {
             webmSettings.scaleVw = Number(inpWebmScale.value) || 50;
             webmSettings.posXvw = Number(inpWebmX.value) || 50;
             webmSettings.posYvh = Number(inpWebmY.value) || 50;
@@ -2863,20 +2862,9 @@ function stopAllAndShowStart() {
             }
             applyWebmSettings();
             scheduleWebmSettingsClose();
-        });
-        // Live-change on input (with special-case for duplicates)
+        }
         [inpWebmScale, inpWebmX, inpWebmY, inpWebmRot, inpWebmSpeed, inpWebmOpacity, inpWebmDup].forEach(el => {
-            el.addEventListener('input', () => {
-                if (el === inpWebmDup) {
-                    const dupVal = Math.max(0, Math.min(2, Math.floor(Number(inpWebmDup.value) || 0)));
-                    if (dupVal === 2) {
-                        // Force center X when duplicates == 2
-                        webmSettings.posXvw = 50;
-                        inpWebmX.value = '50';
-                    }
-                }
-                webmApplyBtn.click();
-            });
+            el.addEventListener('input', updateWebmSettingsFromInputs);
         });
         function applyWebmSettings() {
             // central
