@@ -3,4 +3,5 @@ bfg.webm
 grn.webm
 bln.webm
 pme.webm
+fr.webm
 gd.webm
