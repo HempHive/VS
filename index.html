@@ -555,6 +555,9 @@
         let radioPanelTimer = null;
         let settingsPanelTimer = null;
         let webmSettingsTimer = null;
+        // Hold the radio button visible after right-click random selection
+        let radioQuickHoldUntil = 0;
+        let radioQuickHoldTimeout = null;
         const webmSettings = {
             scaleVw: 50,
             posXvw: 50,
@@ -604,8 +607,11 @@
             if(state.isPlaying) {
                 state.idleTimer = setTimeout(() => {
                     uiLayer.style.opacity = '0';
-                    radioQuickBtn.style.opacity = '0';
-                    radioQuickBtn.style.pointerEvents = 'none';
+                    // Honor hold window after right-click
+                    if (Date.now() >= radioQuickHoldUntil) {
+                        radioQuickBtn.style.opacity = '0';
+                        radioQuickBtn.style.pointerEvents = 'none';
+                    }
                     if(!stationBanner.classList.contains('display-none')) {
                         stationBanner.style.opacity = '0';
                         stationBanner.style.pointerEvents = 'none';
@@ -2635,6 +2641,19 @@ function stopAllAndShowStart() {
             e.preventDefault();
             e.stopPropagation();
             pickRandomStation();
+            // Keep the radio button visible for 10s after right-click shuffle
+            radioQuickBtn.style.opacity = '1';
+            radioQuickBtn.style.pointerEvents = 'auto';
+            radioQuickHoldUntil = Date.now() + 10000;
+            if (radioQuickHoldTimeout) { clearTimeout(radioQuickHoldTimeout); radioQuickHoldTimeout = null; }
+            radioQuickHoldTimeout = setTimeout(() => {
+                radioQuickHoldUntil = 0;
+                // Only hide if UI is idle (layer opacity is 0)
+                if (uiLayer.style.opacity === '0') {
+                    radioQuickBtn.style.opacity = '0';
+                    radioQuickBtn.style.pointerEvents = 'none';
+                }
+            }, 10000);
         });
         // Station banner toggles shuffle
         stationBanner.title = "Click: toggle visual shuffle";
