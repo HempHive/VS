@@ -1,9 +1,11 @@
 red.webm
 bfg.webm
-ac.webm
 fr.webm
 tr.webm
 gd.webm
 grn.webm
 bln.webm
 pme.webm
+jr3.webm
+jr2.webm
+jr.webm
