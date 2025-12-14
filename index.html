@@ -29,6 +29,18 @@
             z-index: 100; transition: opacity 0.5s; backdrop-filter: blur(10px);
             cursor: default;
         }
+        /* Digital transition when starting visuals */
+        #overlay.digital-out {
+            animation: digitalOut 520ms ease forwards;
+        }
+        @keyframes digitalOut {
+            0% { opacity: 1; transform: none; filter: none; }
+            15% { transform: translateY(-2px) skewX(-2deg); filter: contrast(120%) saturate(110%); }
+            30% { transform: translateY(1px) skewX(2deg); filter: contrast(140%) saturate(120%); }
+            55% { opacity: 0.6; transform: translateY(-1px) skewX(-1deg); }
+            75% { opacity: 0.25; transform: translateY(0) skewX(0deg); filter: contrast(160%) saturate(130%); }
+            100% { opacity: 0; transform: none; filter: none; }
+        }
 
         #ui-layer {
             position: absolute; bottom: 0; left: 0; width: 100%;
@@ -44,7 +56,10 @@
         /* Center Control Group */
         .center-controls {
             display: flex; align-items: center; justify-content: center;
-            gap: clamp(10px, 2vw, 24px); flex-wrap: wrap;
+            gap: clamp(8px, 2vw, 24px); 
+            flex-wrap: nowrap;
+            flex: 1 1 auto;
+            min-width: 0; /* allow shrinking */
         }
 
         /* Interactive Elements */
@@ -88,9 +103,29 @@
         }
         .nav-btn:hover { opacity: 1; text-shadow: 0 0 15px #fff; transform: scale(1.1); }
 
-        #mode-info { text-align: center; min-width: clamp(180px, 25vw, 360px); }
-        #mode-title { font-size: clamp(18px, 2.2vw, 28px); font-weight: 600; display: block; letter-spacing: 2px; margin-bottom: 5px; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        #mode-sub { font-size: clamp(10px, 1.2vw, 14px); color: #aaa; font-family: monospace; letter-spacing: 1px; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; margin: 0 auto;}
+        #mode-info { 
+            text-align: center; 
+            min-width: 0; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            flex: 1 1 auto; 
+        }
+        #mode-title { 
+            font-size: clamp(16px, 2vw, 26px); 
+            font-weight: 600; 
+            display: inline; 
+            letter-spacing: 2px; 
+            margin-right: 8px; 
+            text-shadow: 0 0 10px rgba(0,0,0,0.5); 
+        }
+        #mode-sub { 
+            font-size: clamp(10px, 1.2vw, 14px); 
+            color: #aaa; 
+            font-family: monospace; 
+            letter-spacing: 1px; 
+            display: inline; 
+        }
 
         .hidden { opacity: 0 !important; pointer-events: none; }
         .display-none { display: none !important; }
@@ -99,9 +134,11 @@
 
         /* Quick Radio Button (Top-right) */
         #radio-quick {
-            position: absolute; top: 14px; right: 14px;
+            position: absolute; 
+            top: 14px; 
+            right: 14px;
             z-index: 80;
-            width: 40px; height: 40px;
+            width: 80px; height: 80px;
             background-color: transparent;
             background-image: url('radio.png');
             background-repeat: no-repeat;
@@ -118,9 +155,11 @@
         
         /* Shuffle Toggle (Top-left) */
         #shuffle-toggle {
-            position: absolute; top: 58px; left: 14px;
+            position: absolute; 
+            top: clamp(24px, 12vh, 140px); 
+            left: 14px;
             z-index: 80;
-            width: 40px; height: 40px;
+            width: 80px; height: 80px;
             display: flex; align-items: center; justify-content: center;
             background: rgba(0,0,0,0.5);
             color: rgba(255,255,255,0.9);
@@ -130,7 +169,7 @@
             user-select: none;
             backdrop-filter: blur(6px);
             transition: opacity 1s ease-in-out, filter 0.2s;
-            font-size: 20px;
+            font-size: 36px;
         }
         #shuffle-toggle:hover { filter: brightness(1.15); }
         #shuffle-toggle.shuffle-on {
@@ -459,7 +498,8 @@
         <div class="panel-head">
             <h3>AVATAR SETTINGS</h3>
             <div style="display:flex; gap:8px; align-items:center">
-                <button class="btn-small" id="btn-webm-reset" title="Reset to defaults">Reset</button>
+                <button class="btn-small" id="btn-webm-auto" title="Toggle random WebM (30-60s)">Auto: Off</button>
+                <button class="btn-small" id="btn-webm-reset" title="Reset to defaults">⎋</button>
                 <button class="icon-btn interactive" id="btn-webm-close" title="Close" aria-label="Close" onclick="hideWebmSettingsPanel && hideWebmSettingsPanel()">✕</button>
             </div>
         </div>
@@ -575,6 +615,9 @@
         // Radio retry policy
         let radioRetryAttempts = 0;
         const MAX_RADIO_RETRIES = 6;
+        // WebM auto-random toggle
+        let webmAutoOn = false;
+        let webmAutoTimer = null;
         let modeShuffleOn = false;
         let modeShuffleTimer = null;
         
@@ -779,10 +822,16 @@
 
         function startGame() {
             state.isPlaying = true;
-            hideOverlay();
+            const overlay = document.getElementById('overlay');
+            // Digital transition: animate overlay out, then start visuals
+            overlay.classList.add('digital-out');
             document.getElementById('ui-layer').classList.remove('hidden');
-            loadMode(0); // Start with ProjectM
-            resetIdleTimer();
+            setTimeout(() => {
+                hideOverlay();
+                overlay.classList.remove('digital-out');
+                loadMode(0); // Start with ProjectM
+                resetIdleTimer();
+            }, 520);
         }
 
 function stopAllAndShowStart() {
@@ -817,6 +866,9 @@ function stopAllAndShowStart() {
         try { hideWebm(); } catch(e) {}
     }
     state.isPlaying = false;
+    if (typeof statusEl !== 'undefined' && statusEl) {
+        try { statusEl.innerText = "Not streaming — choose a source to begin"; } catch(e) {}
+    }
     showOverlay();
 }
         // --- ENGINE: BUTTERCHURN ---
@@ -2782,6 +2834,8 @@ function stopAllAndShowStart() {
             webmPrevBtn.classList.remove('display-none');
             webmNextBtn.classList.remove('display-none');
             applyWebmSettings();
+            // resume auto if enabled
+            if (webmAutoOn) scheduleWebmAuto();
         }
 
         function hideWebm() {
@@ -2795,6 +2849,8 @@ function stopAllAndShowStart() {
             webmVideoEl.src = '';
             webmVideoLeftEl.src = '';
             webmVideoRightEl.src = '';
+            // stop auto when hidden
+            cancelWebmAuto();
         }
 
         function setWebm(index) {
@@ -2824,6 +2880,26 @@ function stopAllAndShowStart() {
 
         function nextWebm() { setWebm(webmIndex + 1); }
         function prevWebm() { setWebm(webmIndex - 1); }
+        // --- WebM Auto Random ---
+        function scheduleWebmAuto() {
+            cancelWebmAuto();
+            const delay = (30 + Math.random() * 30) * 1000; // 30-60s
+            webmAutoTimer = setTimeout(() => {
+                if (webmOn && webmList.length > 0) {
+                    nextWebm();
+                }
+                scheduleWebmAuto();
+            }, delay);
+        }
+        function cancelWebmAuto() {
+            if (webmAutoTimer) { clearTimeout(webmAutoTimer); webmAutoTimer = null; }
+        }
+        function setWebmAuto(on) {
+            webmAutoOn = !!on;
+            const autoBtn = document.getElementById('btn-webm-auto');
+            if (autoBtn) autoBtn.textContent = webmAutoOn ? 'Auto: On' : 'Auto: Off';
+            if (webmAutoOn) scheduleWebmAuto(); else cancelWebmAuto();
+        }
         
         function toggleWebmSettingsPanel() {
             if(webmSettingsPanel.classList.contains('display-none')) {
@@ -2938,7 +3014,7 @@ function stopAllAndShowStart() {
             inpWebmDup.value = '0';
             applyWebmSettings();
         });
-        // Live-change on input (with special-case for duplicates)
+        // Live-change on input
         function updateWebmSettingsFromInputs() {
             webmSettings.scaleVw = Number(inpWebmScale.value) || 50;
             webmSettings.posXvw = Number(inpWebmX.value) || 50;
@@ -2947,28 +3023,25 @@ function stopAllAndShowStart() {
             webmSettings.playbackRate = Math.max(0.1, Math.min(4, Number(inpWebmSpeed.value) || 1));
             webmSettings.opacity = Math.max(0, Math.min(1, Number(inpWebmOpacity.value) || 1));
             webmSettings.duplicates = Math.max(0, Math.min(2, Math.floor(Number(inpWebmDup.value) || 0)));
-            // Force center X when duplicates == 2
-            if (webmSettings.duplicates === 2) {
-                webmSettings.posXvw = 50;
-                inpWebmX.value = '50';
-            }
             applyWebmSettings();
             scheduleWebmSettingsClose();
         }
         [inpWebmScale, inpWebmX, inpWebmY, inpWebmRot, inpWebmSpeed, inpWebmOpacity, inpWebmDup].forEach(el => {
             el.addEventListener('input', updateWebmSettingsFromInputs);
         });
+        // Bind auto toggle
+        const btnWebmAuto = document.getElementById('btn-webm-auto');
+        if (btnWebmAuto) {
+            btnWebmAuto.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setWebmAuto(!webmAutoOn);
+            });
+        }
         function applyWebmSettings() {
             // central
             webmVideoEl.style.width = `${webmSettings.scaleVw}vw`;
-            const centralized = (webmSettings.duplicates === 2);
-            if (centralized) {
-                // Force X to center both in settings and UI
-                webmSettings.posXvw = 50;
-                if (inpWebmX) inpWebmX.value = '50';
-            }
-            const leftVw = centralized ? 50 : webmSettings.posXvw;
-            webmOverlayEl.style.left = `${leftVw}vw`;
+            webmOverlayEl.style.left = `${webmSettings.posXvw}vw`;
             webmOverlayEl.style.top = `${webmSettings.posYvh}vh`;
             webmOverlayEl.style.transform = `translate(-50%, -50%)`;
             webmVideoEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
