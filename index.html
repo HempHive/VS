@@ -69,6 +69,13 @@
             font-size: clamp(18px, 2.5vw, 28px); padding: 10px; transition: 0.2s; display: flex; align-items: center;
         }
         .icon-btn:hover { color: #fff; transform: scale(1.2); text-shadow: 0 0 10px #fff; }
+        /* Precise hitbox for the WebM close (✕) button */
+        #btn-webm-close {
+            width: 32px; height: 32px;
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0; line-height: 1; font-size: 20px;
+            cursor: pointer; user-select: none;
+        }
 
         .radio-input {
             padding: 15px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #0f0; 
@@ -565,6 +572,9 @@
             opacity: 0.82,
             duplicates: 0
         };
+        // Radio retry policy
+        let radioRetryAttempts = 0;
+        const MAX_RADIO_RETRIES = 6;
         let modeShuffleOn = false;
         let modeShuffleTimer = null;
         
@@ -681,11 +691,13 @@
         function showOverlay() {
             const overlay = document.getElementById('overlay');
             overlay.classList.remove('hidden');
+            overlay.style.display = 'flex';
             setStartControlsEnabled(true);
         }
         function hideOverlay() {
             const overlay = document.getElementById('overlay');
             overlay.classList.add('hidden');
+            overlay.style.display = 'none';
             setStartControlsEnabled(false);
         }
 
@@ -710,9 +722,24 @@
                 state.sourceNode.connect(state.analyserNode);
                 state.analyserNode.connect(state.audioCtx.destination);
                 if(!state.isPlaying) startGame();
+                // success: reset retry attempts
+                radioRetryAttempts = 0;
             }).catch(e => {
-                statusEl.innerText = "Stream Error: CORS or Format.";
-                alert("Stream failed to play. The radio station might be blocking browser visualizers.");
+                // auto-retry with a new random station instead of alerting
+                radioRetryAttempts = (radioRetryAttempts || 0) + 1;
+                if (radioRetryAttempts <= MAX_RADIO_RETRIES && stations.length > 0) {
+                    statusEl.innerText = "Stream failed. Trying another station...";
+                    // If we don't have a current index, pick one; otherwise pick a different random
+                    if (currentStationIndex < 0 || currentStationIndex >= stations.length) {
+                        currentStationIndex = Math.floor(Math.random() * stations.length);
+                        setStation(currentStationIndex);
+                    } else {
+                        pickRandomStation();
+                    }
+                } else {
+                    statusEl.innerText = "No playable station found.";
+                    // do not alert; user experience prefers silent retry
+                }
             });
         }
 
