@@ -49,10 +49,19 @@
 			letter-spacing: 10px;
 			text-transform: uppercase;
 			margin-bottom: 30px;
-			text-shadow: 0 0 20px rgba(255,255,255,0.15);
+			font-size: clamp(48px, 9vw, 140px);
+			text-shadow: 0 0 20px rgba(255,255,255,0.15), 0 0 24px var(--glowColor, rgba(102,204,255,0.6)), 0 0 48px var(--glowColor, rgba(102,204,255,0.35));
 		}
 		#logo-omni.logo-animate {
 			animation: omniShimmer 1400ms ease forwards;
+		}
+		/* Persistent glow pulse around OMNI */
+		#logo-omni.logo-glow {
+			animation: logoGlow 2400ms ease-in-out infinite alternate;
+		}
+		@keyframes logoGlow {
+			0% { text-shadow: 0 0 3px rgba(255,255,255,0.2), 0 0 8px var(--glowColor, #66ccff), 0 0 16px var(--glowColor, #66ccff); }
+			100% { text-shadow: 0 0 16px rgba(255,255,255,0.4), 0 0 36px var(--glowColor, #66ccff), 0 0 76px var(--glowColor, #66ccff); }
 		}
 		@keyframes omniShimmer {
 			0% { opacity: 0; transform: translateY(8px) scale(0.98); color: var(--omniColor, #66ccff); text-shadow: 0 0 0 var(--omniColor, #66ccff); }
@@ -442,8 +451,8 @@
         </div>
 
         <div class="control-group">
-            <button class="btn-main interactive" id="btn-mic">Use Microphone</button>
-            <button class="btn-main interactive" id="btn-file" onclick="document.getElementById('file-input').click()">Load Local MP3</button>
+			<button class="btn-main interactive" id="btn-mic">USE MIC / MIDI</button>
+			<button class="btn-main interactive" id="btn-file" onclick="document.getElementById('file-input').click()">LOAD LOCAL AUDIO</button>
             <input type="file" id="file-input" accept="audio/*" style="display:none">
         </div>
 
@@ -650,6 +659,30 @@
         let webmAutoTimer = null;
 		// Bottom text color history (avoid immediate repeats)
 		let recentBottomColors = [];
+		// Overlay glow color cycler
+		let overlayGlowCycleCount = 0;
+		let overlayGlowListenerBound = false;
+		function randomHexColor() {
+			return '#' + Math.floor(Math.random()*0xFFFFFF).toString(16).padStart(6,'0');
+		}
+		// Typed status text effect
+		let statusTypeTimer = null;
+		function typeStatus(text) {
+			const el = document.getElementById('loading-status');
+			if (!el) return;
+			if (statusTypeTimer) { try { clearTimeout(statusTypeTimer); } catch(e) {} statusTypeTimer = null; }
+			const full = String(text || '');
+			el.innerText = '';
+			let i = 0;
+			const step = () => {
+				el.innerText = full.slice(0, i);
+				i++;
+				if (i <= full.length) {
+					statusTypeTimer = setTimeout(step, 60);
+				}
+			};
+			step();
+		}
 		function setBottomTextRandomColor() {
 			const titleEl = document.getElementById('mode-title');
 			const subEl = document.getElementById('mode-sub');
@@ -781,18 +814,34 @@
 		function applyOverlayGlowAndLogo() {
             const overlay = document.getElementById('overlay');
 			// Randomize overlay glow and OMNI shimmer color
-			const glowHex = '#' + Math.floor(Math.random()*0xFFFFFF).toString(16).padStart(6,'0');
+			const glowHex = randomHexColor();
 			overlay.style.setProperty('--glowColor', glowHex);
 			overlay.classList.add('glow-on');
+			// reset cycle counter so next change happens on next min pass
+			overlayGlowCycleCount = 0;
+			// Bind cycler once to change color at each min edge (every other iteration)
+			if (!overlayGlowListenerBound) {
+				overlay.addEventListener('animationiteration', (e) => {
+					if (!e.animationName || e.animationName.indexOf('borderGlow') === -1) return;
+					overlayGlowCycleCount++;
+					// Even counts (2,4,...) correspond to the animation reaching 0% (min) on alternate cycles
+					if (overlayGlowCycleCount % 2 === 0 && overlay.classList.contains('glow-on')) {
+						overlay.style.setProperty('--glowColor', randomHexColor());
+					}
+				});
+				overlayGlowListenerBound = true;
+			}
 			const logo = document.getElementById('logo-omni');
 			if (logo) {
-				const omniHex = '#' + Math.floor(Math.random()*0xFFFFFF).toString(16).padStart(6,'0');
+				const omniHex = randomHexColor();
 				logo.style.setProperty('--omniColor', omniHex);
 				// retrigger animation
 				logo.classList.remove('logo-animate');
 				// force reflow
 				void logo.offsetWidth;
 				logo.classList.add('logo-animate');
+				// ensure persistent glow pulse is active
+				logo.classList.add('logo-glow');
 			}
 		}
 		function showOverlay() {
@@ -800,6 +849,10 @@
 			overlay.classList.remove('hidden');
 			overlay.style.display = 'flex';
 			applyOverlayGlowAndLogo();
+			// Type the current status line on start screen
+			if (statusEl) {
+				typeStatus(statusEl.innerText || 'Select a source to begin');
+			}
             setStartControlsEnabled(true);
         }
         function hideOverlay() {
@@ -814,6 +867,11 @@
 			const overlay = document.getElementById('overlay');
 			if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') {
 				applyOverlayGlowAndLogo();
+				// Type initial status if present
+				const s = document.getElementById('loading-status');
+				if (s && s.innerText && s.innerText.trim().length > 0) {
+					typeStatus(s.innerText.trim());
+				}
 			}
 		})();
 
@@ -938,10 +996,10 @@ function stopAllAndShowStart() {
     if (typeof hideWebm === 'function' && typeof webmOn !== 'undefined' && webmOn) {
         try { hideWebm(); } catch(e) {}
     }
-    state.isPlaying = false;
-    if (typeof statusEl !== 'undefined' && statusEl) {
-        try { statusEl.innerText = "Not streaming — choose a source to begin"; } catch(e) {}
-    }
+	state.isPlaying = false;
+	if (typeof statusEl !== 'undefined' && statusEl) {
+		try { typeStatus("Not streaming — choose a source to begin"); } catch(e) {}
+	}
     showOverlay();
 }
         // --- ENGINE: BUTTERCHURN ---
