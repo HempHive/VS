@@ -904,6 +904,10 @@
 			overlay.classList.remove('hidden');
 			overlay.style.display = 'flex';
 			applyOverlayGlowAndLogo();
+			// Hide quick radio button on start page
+			if (typeof radioQuickBtn !== 'undefined' && radioQuickBtn) {
+				radioQuickBtn.style.display = 'none';
+			}
 			// Show full-screen border frame
 			const border = document.getElementById('border-frame');
 			if (border) border.classList.add('visible');
@@ -1044,6 +1048,10 @@
                 hideOverlay();
                 overlay.classList.remove('digital-out');
                 loadMode(0); // Start with ProjectM
+                // Show quick radio button once the app has started
+                if (typeof radioQuickBtn !== 'undefined' && radioQuickBtn) {
+                    radioQuickBtn.style.display = '';
+                }
                 resetIdleTimer();
             }, 520);
         }
