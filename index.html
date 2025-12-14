@@ -4,8 +4,13 @@
     <meta charset="UTF-8">
     <title>OmnI: Tomorrow</title>
     <link href="favicon.ico" rel="icon" type="image/x-icon"/>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; color: white; cursor: none; }
+		body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Quicksand', sans-serif; color: white; cursor: none; }
+		/* Ensure Quicksand applies across the UI */
+		*, *::before, *::after { font-family: 'Quicksand', sans-serif !important; }
         
         /* Layout */
         #canvas-container { 
@@ -21,7 +26,7 @@
             height: 100%;
         }
         
-        /* UI Overlays */
+		/* UI Overlays */
         #overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95);
@@ -29,6 +34,32 @@
             z-index: 100; transition: opacity 0.5s; backdrop-filter: blur(10px);
             cursor: default;
         }
+		/* Overlay border glow (random color set via --glowColor) */
+		#overlay.glow-on {
+			box-shadow: inset 0 0 60px var(--glowColor, #66ccff), 0 0 120px var(--glowColor, #66ccff);
+			animation: borderGlow 2400ms ease-in-out infinite alternate;
+		}
+		@keyframes borderGlow {
+			0% { box-shadow: inset 0 0 24px var(--glowColor, #66ccff), 0 0 40px var(--glowColor, #66ccff); }
+			100% { box-shadow: inset 0 0 90px var(--glowColor, #66ccff), 0 0 160px var(--glowColor, #66ccff); }
+		}
+		/* OMNI logo shimmer */
+		#logo-omni {
+			font-weight: 700;
+			letter-spacing: 10px;
+			text-transform: uppercase;
+			margin-bottom: 30px;
+			text-shadow: 0 0 20px rgba(255,255,255,0.15);
+		}
+		#logo-omni.logo-animate {
+			animation: omniShimmer 1400ms ease forwards;
+		}
+		@keyframes omniShimmer {
+			0% { opacity: 0; transform: translateY(8px) scale(0.98); color: var(--omniColor, #66ccff); text-shadow: 0 0 0 var(--omniColor, #66ccff); }
+			35% { opacity: 1; transform: translateY(0) scale(1.0); color: var(--omniColor, #66ccff); text-shadow: 0 0 16px var(--omniColor, #66ccff), 0 0 28px var(--omniColor, #66ccff); }
+			70% { color: #dfefff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+			100% { color: #ffffff; text-shadow: 0 0 0 rgba(255,255,255,0); }
+		}
         /* Digital transition when starting visuals */
         #overlay.digital-out {
             animation: digitalOut 520ms ease forwards;
@@ -92,10 +123,10 @@
             cursor: pointer; user-select: none;
         }
 
-        .radio-input {
-            padding: 15px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #0f0; 
-            width: 320px; font-family: monospace;
-        }
+		.radio-input {
+			padding: 15px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #0f0; 
+			width: 320px;
+		}
 
         /* Navigation Arrows */
         .nav-btn {
@@ -119,18 +150,17 @@
             margin-right: 8px; 
             text-shadow: 0 0 10px rgba(0,0,0,0.5); 
         }
-        #mode-sub { 
-            font-size: clamp(10px, 1.2vw, 14px); 
-            color: #aaa; 
-            font-family: monospace; 
-            letter-spacing: 1px; 
-            display: inline; 
-        }
+		#mode-sub { 
+			font-size: clamp(10px, 1.2vw, 14px); 
+			color: #aaa; 
+			letter-spacing: 1px; 
+			display: inline; 
+		}
 
         .hidden { opacity: 0 !important; pointer-events: none; }
         .display-none { display: none !important; }
         
-        #loading-status { color: #0ff; margin-top: 20px; font-family: monospace; font-size: 12px; height: 20px; }
+		#loading-status { color: #0ff; margin-top: 20px; font-size: 12px; height: 20px; }
 
         /* Quick Radio Button (Top-right) */
         #radio-quick {
@@ -402,8 +432,8 @@
 <body>
 
     <!-- START SCREEN -->
-    <div id="overlay">
-        <h1>OmnI</h1>
+	<div id="overlay">
+		<h1 id="logo-omni">OMNI</h1>
         
         <div class="control-group">
             <!-- DEFAULT RADIO URL: BigFM Tomorrowland -->
@@ -618,6 +648,23 @@
         // WebM auto-random toggle
         let webmAutoOn = false;
         let webmAutoTimer = null;
+		// Bottom text color history (avoid immediate repeats)
+		let recentBottomColors = [];
+		function setBottomTextRandomColor() {
+			const titleEl = document.getElementById('mode-title');
+			const subEl = document.getElementById('mode-sub');
+			if(!titleEl && !subEl) return;
+			let hex = '#ffffff';
+			let attempts = 0;
+			do {
+				hex = '#' + Math.floor(Math.random()*0xFFFFFF).toString(16).padStart(6,'0');
+				attempts++;
+			} while (recentBottomColors.includes(hex) && attempts < 10);
+			if (titleEl) titleEl.style.color = hex;
+			if (subEl) subEl.style.color = hex;
+			recentBottomColors.push(hex);
+			if (recentBottomColors.length > 16) recentBottomColors.shift();
+		}
         let modeShuffleOn = false;
         let modeShuffleTimer = null;
         
@@ -731,18 +778,44 @@
                 }
             });
         }
-        function showOverlay() {
+		function applyOverlayGlowAndLogo() {
             const overlay = document.getElementById('overlay');
-            overlay.classList.remove('hidden');
-            overlay.style.display = 'flex';
+			// Randomize overlay glow and OMNI shimmer color
+			const glowHex = '#' + Math.floor(Math.random()*0xFFFFFF).toString(16).padStart(6,'0');
+			overlay.style.setProperty('--glowColor', glowHex);
+			overlay.classList.add('glow-on');
+			const logo = document.getElementById('logo-omni');
+			if (logo) {
+				const omniHex = '#' + Math.floor(Math.random()*0xFFFFFF).toString(16).padStart(6,'0');
+				logo.style.setProperty('--omniColor', omniHex);
+				// retrigger animation
+				logo.classList.remove('logo-animate');
+				// force reflow
+				void logo.offsetWidth;
+				logo.classList.add('logo-animate');
+			}
+		}
+		function showOverlay() {
+			const overlay = document.getElementById('overlay');
+			overlay.classList.remove('hidden');
+			overlay.style.display = 'flex';
+			applyOverlayGlowAndLogo();
             setStartControlsEnabled(true);
         }
         function hideOverlay() {
             const overlay = document.getElementById('overlay');
             overlay.classList.add('hidden');
             overlay.style.display = 'none';
+			overlay.classList.remove('glow-on');
             setStartControlsEnabled(false);
         }
+		// Apply initial glow/shimmer on first startup if overlay is visible
+		(() => {
+			const overlay = document.getElementById('overlay');
+			if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') {
+				applyOverlayGlowAndLogo();
+			}
+		})();
 
         function playRadio() {
             initAudio();
@@ -910,6 +983,8 @@ function stopAllAndShowStart() {
                 const key = this.presetKeys[idx];
                 this.visualizer.loadPreset(this.presets[key], 2.7); 
                 document.getElementById('mode-sub').innerText = key;
+				// Change bottom HUD color on each preset load
+				try { setBottomTextRandomColor(); } catch(e) {}
             }
 
             nextPreset() {
@@ -947,6 +1022,7 @@ function stopAllAndShowStart() {
                     this.visualizer.loadPreset(preset, 1.0);
                     document.getElementById('mode-sub').innerText = "CUSTOM PRESET";
                     if(this.cycleTimeout) clearTimeout(this.cycleTimeout);
+					try { setBottomTextRandomColor(); } catch(e) {}
                 } catch(e) { alert("Invalid JSON"); }
             }
 
@@ -1014,6 +1090,8 @@ function stopAllAndShowStart() {
                 const transition = Number(visualSettings.transitionSec) || this.transitionSec || 2.7;
                 this.visualizer.loadPreset(this.presets[key], transition);
                 document.getElementById('mode-sub').innerText = key;
+				// Change bottom HUD color on each preset load
+				try { setBottomTextRandomColor(); } catch(e) {}
             }
 
             loadCustomMilk(jsonTxt) {
@@ -1022,6 +1100,7 @@ function stopAllAndShowStart() {
                     this.visualizer.loadPreset(preset, Number(visualSettings.transitionSec) || 1.0);
                     document.getElementById('mode-sub').innerText = "CUSTOM PRESET";
                     if(this.cycleTimeout) clearTimeout(this.cycleTimeout);
+					try { setBottomTextRandomColor(); } catch(e) {}
                 } catch(e) { alert("Invalid JSON"); }
             }
 
@@ -1292,33 +1371,45 @@ function stopAllAndShowStart() {
 
         const scenePulseOrb = (scene, camera) => {
             const layers = [];
-            for(let i=0;i<3;i++){
-                const geo = new THREE.SphereGeometry(1.5 + i*0.2, 64, 64);
-                const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
-                mat.blending = THREE.AdditiveBlending;
-                mat.depthWrite = false;
+            const layerCount = 5;
+            for(let i=0;i<layerCount;i++){
+                const radius = 1.2 + i*0.22;
+                const geo = new THREE.SphereGeometry(radius, 96, 96);
+                const mat = new THREE.MeshStandardMaterial({
+                    color: 0x55ccff,
+                    metalness: 0.4,
+                    roughness: 0.6,
+                    transparent: true,
+                    opacity: 0.18 + i*0.08,
+                    emissive: new THREE.Color(0x113355),
+                    emissiveIntensity: 0.25 + i*0.05
+                });
                 const mesh = new THREE.Mesh(geo, mat);
                 layers.push(mesh);
                 scene.add(mesh);
             }
-            const light = new THREE.PointLight(0xffffff, 1.2, 60);
-            light.position.set(0, 0, 8);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.25), light);
-            camera.position.z = 7;
+            // Dimmer, colored lighting to reduce central white clipping
+            const ambient = new THREE.AmbientLight(0x223344, 0.18);
+            const light = new THREE.PointLight(0x66ccff, 0.7, 60);
+            light.position.set(1.5, 2.0, 6.0);
+            scene.add(ambient, light);
+            camera.position.z = 7.5;
             return (data, time) => {
                 const t = time*0.001;
                 const bass = data[6]/255;
                 const mid = data[24]/255;
                 layers.forEach((m, i) => {
-                    const hue = (t*0.15 + i*0.15) % 1;
-                    m.material.color.setHSL(hue, 1, 0.6);
-                    const s = 1.0 + bass*(0.6 + i*0.2) + Math.sin(t*2 + i)*0.05;
+                    const hue = (0.55 + 0.08*i + t*0.06) % 1;
+                    m.material.color.setHSL(hue, 0.85, 0.55 - i*0.04);
+                    const s = 1.0 + bass*(0.35 + i*0.1) + Math.sin(t*1.6 + i)*0.03;
                     m.scale.setScalar(s);
-                    m.rotation.y += 0.003 + mid*0.02 + i*0.002;
-                    m.rotation.x += 0.002 + i*0.001;
-                    m.material.opacity = 0.25 + bass*(0.3 + i*0.15);
+                    m.rotation.y += 0.002 + mid*0.015 + i*0.0015;
+                    m.rotation.x += 0.0015 + i*0.001;
+                    m.material.opacity = 0.18 + i*0.08 + bass*0.08;
                 });
-                light.intensity = 1.0 + bass*3.0;
+                light.intensity = 0.6 + bass*1.2;
+                light.position.x = 1.5 + Math.sin(t*0.7)*1.0;
+                light.position.y = 2.0 + Math.cos(t*0.5)*0.6;
             };
         };
 
@@ -2410,15 +2501,15 @@ function stopAllAndShowStart() {
             const rings = [];
             for(let r=0;r<5;r++){
                 const ringGroup = new THREE.Group();
-                const num = 18 + r*6;
-                const radius = 2.0 + r*1.2;
+                const num = 14 + r*5;
+                const radius = 2.2 + r*1.4;
                 for(let i=0;i<num;i++){
-                    const tex = textures[(i+r) % textures.length];
+                    const tex = textures[Math.floor(Math.random()*textures.length)];
                     const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
                     const spr = new THREE.Sprite(mat);
                     const a = (i/num)*Math.PI*2;
                     spr.position.set(Math.cos(a)*radius, Math.sin(a)*radius, -r*0.4);
-                    const s = 0.25 + r*0.08;
+                    const s = 0.22 + r*0.09;
                     spr.scale.set(s, s, 1);
                     ringGroup.add(spr);
                 }
@@ -2426,19 +2517,31 @@ function stopAllAndShowStart() {
                 rings.push({ group: ringGroup, radius });
             }
             camera.position.z = 8;
+            let lastSwapMs = 0;
             return (data, time) => {
                 const bass = data[8]/255;
                 const mid = data[24]/255;
                 rings.forEach((r, i) => {
-                    r.group.rotation.z += 0.002 + bass*0.02 + i*0.0005;
-                    r.group.position.z = Math.sin(time*0.0006 + i)*0.6;
+                    r.group.rotation.z += 0.0006 + bass*0.006 + i*0.00025;
+                    r.group.position.z = Math.sin(time*0.00025 + i)*0.8;
                     r.group.children.forEach((spr, j) => {
-                        spr.material.rotation = time*0.0004 + j*0.05;
-                        const s = spr.scale.x;
-                        const pulse = s * (1.0 + mid*0.8*Math.sin(time*0.004 + j));
+                        spr.material.rotation = time*0.0002 + j*0.03;
+                        const s0 = spr.scale.x;
+                        const pulse = s0 * (0.96 + mid*0.25*Math.sin(time*0.003 + j));
                         spr.scale.set(pulse, pulse, 1);
                     });
                 });
+                if (time - lastSwapMs > 4000) {
+                    lastSwapMs = time;
+                    const ring = rings[Math.floor(Math.random()*rings.length)];
+                    if (ring && ring.group.children.length > 0) {
+                        const idx = Math.floor(Math.random()*ring.group.children.length);
+                        const spr = ring.group.children[idx];
+                        const tex = textures[Math.floor(Math.random()*textures.length)];
+                        spr.material.map = tex;
+                        spr.material.needsUpdate = true;
+                    }
+                }
                 group.rotation.x = Math.sin(time*0.0004)*0.2;
                 group.rotation.y = Math.cos(time*0.0003)*0.2;
             };
@@ -2451,9 +2554,8 @@ function stopAllAndShowStart() {
             new ThreeEngine("Neon Sphere", sceneSphere),
             new ThreeEngine("Electro Sphere", sceneElectroSphere),
             new ThreeEngine("Photon Shell", scenePhotonShell),
-            new ThreeEngine("Pulse Orb", scenePulseOrb),
+			new ThreeEngine("Pulse Orb", scenePulseOrb),
             new ThreeEngine("Cyber Tunnel", sceneTunnel),
-            new ThreeEngine("Audio Bars", sceneBars),
             new ThreeEngine("Starfield", sceneStarfield),
             new ThreeEngine("Wave Grid", sceneWaveGrid),
             new ThreeEngine("Particles", sceneParticles),
@@ -2463,7 +2565,6 @@ function stopAllAndShowStart() {
             new ThreeEngine("Twist Tunnel", sceneTwistTunnel),
             new ThreeEngine("Particle Tunnel", sceneParticleTunnel),
             new ThreeEngine("Galaxy", sceneGalaxy),
-            new ThreeEngine("Kaleido Rings", sceneKaleidoRings),
             new ThreeEngine("Terrain", sceneTerrain),
             new ThreeEngine("Hex Grid", sceneHexGrid),
             new ThreeEngine("Ribbons", sceneRibbons),
@@ -2474,12 +2575,9 @@ function stopAllAndShowStart() {
             new ThreeEngine("Sierpinski Carpet", sceneSierpinskiCarpet),
             new ThreeEngine("Emoji Swarm", sceneEmojiSwarm),
             new ThreeEngine("Emoji Orbits", sceneEmojiOrbits),
-            new ThreeEngine("Kaleidoscope 6", sceneKaleido(6)),
-            new ThreeEngine("Kaleidoscope 8", sceneKaleido(8)),
-            new ThreeEngine("Kaleidoscope 12", sceneKaleido(12)),
-            new ThreeEngine("Kaleidoscope Spiral", sceneKaleidoSpiral),
             new ThreeEngine("Kaleidoscope Layered", sceneKaleidoLayered),
-            new ThreeEngine("Kaleidoscope Zoom", sceneKaleidoZoom)
+			new ThreeEngine("Kaleidoscope Zoom", sceneKaleidoZoom),
+			new ThreeEngine("Audio Bars", sceneBars)
         ];
 
         function loadMode(index) {
@@ -2502,6 +2600,8 @@ function stopAllAndShowStart() {
             else skipBtn.classList.add('display-none');
 
             state.activeVisualizer.init();
+            // Randomize bottom text color each time a mode loads
+            setBottomTextRandomColor();
         }
         
         // Allow opening overlay by clicking the title area
