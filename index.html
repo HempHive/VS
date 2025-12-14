@@ -28,7 +28,7 @@
         
 		/* UI Overlays */
         #overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+			position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.95);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 100; transition: opacity 0.5s; backdrop-filter: blur(10px);
@@ -38,6 +38,84 @@
 		#overlay.glow-on {
 			box-shadow: inset 0 0 60px var(--glowColor, #66ccff), 0 0 120px var(--glowColor, #66ccff);
 			animation: borderGlow 2400ms ease-in-out infinite alternate;
+			position: relative; /* allow border frame layering */
+			border-radius: 70px; /* more rounded corners as requested */
+		}
+		/* Full-screen rounded border frame over everything */
+		#border-frame {
+			/* Offset by half the stroke so it extends inside and outside evenly */
+			/* Push slightly further to ensure full edge coverage */
+			position: fixed; top: -22.5px; left: -22.5px; right: -22.5px; bottom: -22.5px;
+			border: 45px solid #000000;
+			border-radius: 55px;
+			/* variables for curved dissolve */
+			--frameOuter: 55px;       /* matches border-radius */
+			--frameStroke: 45px;      /* matches border width */
+			--dissolve: 10px;         /* inner fade thickness */
+			--innerR: calc(var(--frameOuter) - var(--frameStroke)); /* inner corner radius */
+			--overlap: 10px;          /* push dissolve outward by a few more pixels */
+			--cornerSpan: calc(var(--innerR) + var(--dissolve) + var(--overlap)); /* span consumed by corner */
+			box-sizing: border-box;
+			pointer-events: none;
+			z-index: 100000; /* ensure frame sits above overlay glow */
+			opacity: 0;
+			transition: opacity 600ms ease;
+		}
+		#border-frame.visible { opacity: 1; }
+		/* Curved inner dissolve at the inside edge of the frame */
+		#border-frame::after {
+			content: ""; position: absolute; inset: 0;
+			border-radius: inherit;
+			pointer-events: none;
+			/* draw dissolve along edges with curved corners using radial + linear gradients */
+			z-index: 1;
+			background:
+				/* corners */
+				radial-gradient(circle at top left,
+					rgba(0,0,0,1) var(--innerR),
+					rgba(0,0,0,0) calc(var(--innerR) + var(--dissolve) + var(--overlap))
+				) top left / calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) no-repeat,
+				radial-gradient(circle at top right,
+					rgba(0,0,0,1) var(--innerR),
+					rgba(0,0,0,0) calc(var(--innerR) + var(--dissolve) + var(--overlap))
+				) top right / calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) no-repeat,
+				radial-gradient(circle at bottom left,
+					rgba(0,0,0,1) var(--innerR),
+					rgba(0,0,0,0) calc(var(--innerR) + var(--dissolve) + var(--overlap))
+				) bottom left / calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) no-repeat,
+				radial-gradient(circle at bottom right,
+					rgba(0,0,0,1) var(--innerR),
+					rgba(0,0,0,0) calc(var(--innerR) + var(--dissolve) + var(--overlap))
+				) bottom right / calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) no-repeat,
+				/* edges */
+				linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0)) top center / calc(100% - (2 * var(--cornerSpan))) calc(10px + var(--overlap)) no-repeat,
+				linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0)) bottom center / calc(100% - (2 * var(--cornerSpan))) calc(10px + var(--overlap)) no-repeat,
+				linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0)) center left / calc(10px + var(--overlap)) calc(100% - (2 * var(--cornerSpan))) no-repeat,
+				linear-gradient(to left, rgba(0,0,0,1), rgba(0,0,0,0)) center right / calc(10px + var(--overlap)) calc(100% - (2 * var(--cornerSpan))) no-repeat;
+		}
+		/* Corner seam cover: solid black caps to guarantee no color gap shows */
+		#border-frame::before {
+			content: ""; position: absolute; inset: 0;
+			border-radius: inherit;
+			pointer-events: none;
+			z-index: 2; /* above ::after and any glow below */
+			background:
+				radial-gradient(circle at top left,
+					#000 calc(var(--innerR) + var(--dissolve) + var(--overlap)),
+					transparent calc(var(--innerR) + var(--dissolve) + var(--overlap) + 1px)
+				) top left / calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) no-repeat,
+				radial-gradient(circle at top right,
+					#000 calc(var(--innerR) + var(--dissolve) + var(--overlap)),
+					transparent calc(var(--innerR) + var(--dissolve) + var(--overlap) + 1px)
+				) top right / calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) no-repeat,
+				radial-gradient(circle at bottom left,
+					#000 calc(var(--innerR) + var(--dissolve) + var(--overlap)),
+					transparent calc(var(--innerR) + var(--dissolve) + var(--overlap) + 1px)
+				) bottom left / calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) no-repeat,
+				radial-gradient(circle at bottom right,
+					#000 calc(var(--innerR) + var(--dissolve) + var(--overlap)),
+					transparent calc(var(--innerR) + var(--dissolve) + var(--overlap) + 1px)
+				) bottom right / calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) calc((var(--innerR) + var(--dissolve) + var(--overlap))*2) no-repeat;
 		}
 		@keyframes borderGlow {
 			0% { box-shadow: inset 0 0 24px var(--glowColor, #66ccff), 0 0 40px var(--glowColor, #66ccff); }
@@ -45,12 +123,26 @@
 		}
 		/* OMNI logo shimmer */
 		#logo-omni {
+			color: transparent !important; /* ensure background-clip shows through */
+			position: relative; display: inline-block;
 			font-weight: 700;
 			letter-spacing: 10px;
 			text-transform: uppercase;
 			margin-bottom: 30px;
 			font-size: clamp(48px, 9vw, 140px);
 			text-shadow: 0 0 20px rgba(255,255,255,0.15), 0 0 24px var(--glowColor, rgba(102,204,255,0.6)), 0 0 48px var(--glowColor, rgba(102,204,255,0.35));
+		}
+		/* Per-letter pattern fill */
+		#logo-omni .logo-letter {
+			display: inline-block;
+			color: transparent;
+			-webkit-text-fill-color: transparent;
+			-webkit-background-clip: text;
+			background-clip: text;
+			background-image: url('pat.gif');
+			background-repeat: no-repeat; /* reuse but do not tile */
+			background-position: center center;
+			background-size: cover; /* fill the glyph area */
 		}
 		#logo-omni.logo-animate {
 			animation: omniShimmer 1400ms ease forwards;
@@ -442,7 +534,7 @@
 
     <!-- START SCREEN -->
 	<div id="overlay">
-		<h1 id="logo-omni">OMNI</h1>
+		<h1 id="logo-omni" data-text="OMNI"><span class="logo-letter">O</span><span class="logo-letter">M</span><span class="logo-letter">N</span><span class="logo-letter">I</span></h1>
         
         <div class="control-group">
             <!-- DEFAULT RADIO URL: BigFM Tomorrowland -->
@@ -849,6 +941,9 @@
 			overlay.classList.remove('hidden');
 			overlay.style.display = 'flex';
 			applyOverlayGlowAndLogo();
+			// Show full-screen border frame
+			const border = document.getElementById('border-frame');
+			if (border) border.classList.add('visible');
 			// Type the current status line on start screen
 			if (statusEl) {
 				typeStatus(statusEl.innerText || 'Select a source to begin');
@@ -860,6 +955,9 @@
             overlay.classList.add('hidden');
             overlay.style.display = 'none';
 			overlay.classList.remove('glow-on');
+			// Hide full-screen border frame
+			const border = document.getElementById('border-frame');
+			if (border) border.classList.remove('visible');
             setStartControlsEnabled(false);
         }
 		// Apply initial glow/shimmer on first startup if overlay is visible
@@ -867,6 +965,9 @@
 			const overlay = document.getElementById('overlay');
 			if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') {
 				applyOverlayGlowAndLogo();
+				// Show border frame on first load
+				const border = document.getElementById('border-frame');
+				if (border) border.classList.add('visible');
 				// Type initial status if present
 				const s = document.getElementById('loading-status');
 				if (s && s.innerText && s.innerText.trim().length > 0) {
@@ -3264,6 +3365,7 @@ function stopAllAndShowStart() {
             }, 30000);
         }
 
-    </script>
+	</script>
+	<div id="border-frame"></div>
 </body>
 </html>
