@@ -249,6 +249,10 @@
         #radio-quick:hover {
             filter: brightness(1.15);
         }
+		/* Hide the radio quick button whenever the start overlay is visible */
+		#overlay:not(.hidden) ~ #radio-quick { 
+			display: none !important; 
+		}
         
         /* Shuffle Toggle (Top-left) */
         #shuffle-toggle {
@@ -933,6 +937,11 @@
 			const overlay = document.getElementById('overlay');
 			if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') {
 				applyOverlayGlowAndLogo();
+				// Ensure radio quick button is hidden on the start screen
+				try {
+					const rq = document.getElementById('radio-quick');
+					if (rq) rq.style.display = 'none';
+				} catch(e) {}
 				// Show border frame on first load
 				const border = document.getElementById('border-frame');
 				if (border) border.classList.add('visible');
