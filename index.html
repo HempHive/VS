@@ -46,7 +46,11 @@
 			/* Offset by half the stroke so it extends inside and outside evenly */
 			/* Push slightly further to ensure full edge coverage */
 			position: fixed; top: -22.5px; left: -22.5px; right: -22.5px; bottom: -22.5px;
-			border: 45px solid #000000;
+			/* Use a repeating GIF around the edge instead of solid black */
+			border: 45px solid transparent;
+			border-image-source: url('tap.gif');
+			border-image-slice: 45;
+			border-image-repeat: round;
 			border-radius: 55px;
 			/* variables for curved dissolve */
 			--frameOuter: 55px;       /* matches border-radius */
