@@ -940,6 +940,11 @@
             const v = Math.max(0, Math.min(1, Number(value) || 0));
             if (state && state.gainNode && state.gainNode.gain) {
                 state.gainNode.gain.value = v;
+                // Also toggle media element mute to guarantee silence at 0
+                try {
+                    const el = document.getElementById('radio-element');
+                    if (el) el.muted = (v === 0);
+                } catch(e) {}
             }
         }
 
@@ -3173,6 +3178,12 @@ function stopAllAndShowStart() {
                 if (webmOn) prevWebm();
             } else if (e.key === 'ArrowRight' || e.key === 'Arrow Right') {
                 if (webmOn) nextWebm();
+            } else if (e.key === 'r' || e.key === 'R') {
+                e.preventDefault();
+                if (stations && stations.length > 0) {
+                    pickRandomStation();
+                }
+                resetIdleTimer();
             } else if (e.key === 'w' || e.key === 'W') {
                 e.preventDefault();
                 if(!webmOn) {
