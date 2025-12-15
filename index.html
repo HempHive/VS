@@ -1111,6 +1111,12 @@
                 state.analyserNode.connect(state.gainNode);
                 try { state.gainNode.disconnect(); } catch(e) {}
                 state.gainNode.connect(state.audioCtx.destination);
+                // Ensure active visualizer (e.g., ProjectM) is connected to the current analyser
+                try {
+                    if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
+                        state.activeVisualizer.visualizer.connectAudio(state.analyserNode);
+                    }
+                } catch(e) { /* ignore */ }
                 if(!state.isPlaying) startGame();
                 // success: reset retry attempts
                 radioRetryAttempts = 0;
@@ -1146,6 +1152,12 @@
                 state.analyserNode.connect(state.gainNode);
                 try { state.gainNode.disconnect(); } catch(e) {}
                 state.gainNode.connect(state.audioCtx.destination);
+                // Ensure active visualizer (e.g., ProjectM) is connected to the current analyser
+                try {
+                    if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
+                        state.activeVisualizer.visualizer.connectAudio(state.analyserNode);
+                    }
+                } catch(e) { /* ignore */ }
                 startGame();
             } catch(e) { statusEl.innerText = "Error: " + e.message; }
         }
@@ -1168,6 +1180,12 @@
                     try { state.gainNode.disconnect(); } catch(e) {}
                     state.gainNode.connect(state.audioCtx.destination);
                     state.sourceNode.start(0);
+                    // Ensure active visualizer (e.g., ProjectM) is connected to the current analyser
+                    try {
+                        if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
+                            state.activeVisualizer.visualizer.connectAudio(state.analyserNode);
+                        }
+                    } catch(e) { /* ignore */ }
                     startGame();
                 });
             };
