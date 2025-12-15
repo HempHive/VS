@@ -69,3 +69,4 @@ Electrick|http://stream.zeno.fm/gocfnmkdsmttv
 Skyline|http://stream.zeno.fm/7p1muuht9c0uv
 DanceRid|http://stream.zeno.fm/mdy3ew7n1p8uv
 Voodoo|http://stream.zeno.fm/pez1mg0fnxhvv
+On-dance|https://0n-dance.radionetz.de/0n-dance.aac
