@@ -933,7 +933,38 @@
             applyWebmSettings();
         }
         function adjustWebmSpeed(delta) {
-            setWebmSpeed((Number(webmSettings.playbackRate) || 1) + delta);
+            setWebmSpeed((Number(webmSettings.playbackRate) || 1) + (delta || 0));
+        }
+        // WebM position/size/opacity helpers
+        function adjustWebmPosition(dxVw, dyVh) {
+            if (!webmOn) return;
+            var x = Number(webmSettings.posXvw) || 50;
+            var y = Number(webmSettings.posYvh) || 50;
+            var nx = Math.max(0, Math.min(100, x + (dxVw || 0)));
+            var ny = Math.max(0, Math.min(100, y + (dyVh || 0)));
+            webmSettings.posXvw = nx;
+            webmSettings.posYvh = ny;
+            if (typeof inpWebmX !== 'undefined' && inpWebmX) inpWebmX.value = String(nx);
+            if (typeof inpWebmY !== 'undefined' && inpWebmY) inpWebmY.value = String(ny);
+            applyWebmSettings();
+        }
+        function adjustWebmScale(deltaVw) {
+            if (!webmOn) return;
+            var min = Number((typeof inpWebmScale !== 'undefined' && inpWebmScale && inpWebmScale.min) ? inpWebmScale.min : 10);
+            var max = Number((typeof inpWebmScale !== 'undefined' && inpWebmScale && inpWebmScale.max) ? inpWebmScale.max : 100);
+            var cur = Number(webmSettings.scaleVw) || min;
+            var nv = Math.max(min, Math.min(max, cur + (deltaVw || 0)));
+            webmSettings.scaleVw = nv;
+            if (typeof inpWebmScale !== 'undefined' && inpWebmScale) inpWebmScale.value = String(nv);
+            applyWebmSettings();
+        }
+        function adjustWebmOpacity(delta) {
+            if (!webmOn) return;
+            var cur = Number(webmSettings.opacity) || 0;
+            var nv = Math.max(0, Math.min(1, cur + (delta || 0)));
+            webmSettings.opacity = nv;
+            if (typeof inpWebmOpacity !== 'undefined' && inpWebmOpacity) inpWebmOpacity.value = String(nv);
+            applyWebmSettings();
         }
         // Volume control handling (no boost above 1.0)
         function setVolume(value) {
@@ -3187,15 +3218,20 @@ function stopAllAndShowStart() {
             if (e.key === 'f' || e.key === 'F') {
                 toggleFullscreen();
             } else if (e.key === 's' || e.key === 'S') {
-                if (state.activeVisualizer?.nextPreset) {
-                    state.activeVisualizer.nextPreset();
-                }
+                e.preventDefault();
+                var resetBtn = document.getElementById('btn-webm-reset');
+                if (resetBtn) { resetBtn.click(); }
+                resetIdleTimer();
             } else if (e.key === 'Escape') {
                 stopAllAndShowStart();
-            } else if (e.key === 'Arrow Left' || e.key === 'ArrowLeft') {
-                if (webmOn) prevWebm();
-            } else if (e.key === 'ArrowRight' || e.key === 'Arrow Right') {
-                if (webmOn) nextWebm();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                adjustWebmPosition(-2, 0);
+                resetIdleTimer();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                adjustWebmPosition(2, 0);
+                resetIdleTimer();
             } else if (e.key === 'r' || e.key === 'R') {
                 e.preventDefault();
                 if (stations && stations.length > 0) {
@@ -3226,17 +3262,33 @@ function stopAllAndShowStart() {
                 resetIdleTimer();
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                const current = (state && state.gainNode && state.gainNode.gain) ? Number(state.gainNode.gain.value) : 1.0;
-                const nextVol = Math.min(1, (isFinite(current) ? current : 1.0) + 0.05);
-                setVolume(nextVol);
-                if (volumeSlider) volumeSlider.value = String(nextVol);
+                adjustWebmPosition(0, -2);
                 resetIdleTimer();
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                const current = (state && state.gainNode && state.gainNode.gain) ? Number(state.gainNode.gain.value) : 1.0;
-                const nextVol = Math.max(0, (isFinite(current) ? current : 1.0) - 0.05);
-                setVolume(nextVol);
-                if (volumeSlider) volumeSlider.value = String(nextVol);
+                adjustWebmPosition(0, 2);
+                resetIdleTimer();
+            } else if (e.key === 'a' || e.key === 'A') {
+                e.preventDefault();
+                if (webmOn) prevWebm();
+            } else if (e.key === 'd' || e.key === 'D') {
+                e.preventDefault();
+                if (webmOn) nextWebm();
+            } else if (e.key === 'z' || e.key === 'Z') {
+                e.preventDefault();
+                adjustWebmOpacity(-0.05);
+                resetIdleTimer();
+            } else if (e.key === 'x' || e.key === 'X') {
+                e.preventDefault();
+                adjustWebmOpacity(0.05);
+                resetIdleTimer();
+            } else if (e.key === '+' || (e.key === '=' && e.shiftKey)) {
+                e.preventDefault();
+                adjustWebmScale(2);
+                resetIdleTimer();
+            } else if (e.key === '-' || e.key === '_') {
+                e.preventDefault();
+                adjustWebmScale(-2);
                 resetIdleTimer();
             }
         });
