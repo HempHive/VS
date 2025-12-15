@@ -608,7 +608,7 @@
 	<div id="top-bar" class="display-none"></div>
 	<!-- Volume Slider -->
 	<div id="volume-slider-container" class="interactive">
-		<input id="volume-slider" type="range" min="0" max="1" step="0.01" value="1">
+		<input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.5">
 	</div>
     <!-- Quick Radio Button and Panel -->
     <div id="radio-quick" class="interactive" role="button" aria-label="Radio control" title="Left-click: random station • Right-click: choose"></div>
@@ -956,7 +956,7 @@
                 state.analyserNode.fftSize = 2048; 
 				// Master gain (no boost above 1.0 to avoid amplification)
 				state.gainNode = state.audioCtx.createGain();
-				state.gainNode.gain.value = 1.0;
+				state.gainNode.gain.value = 0.5;
 				// Bind volume slider if present
 				if (volumeSlider) {
 					volumeSlider.value = String(state.gainNode.gain.value);
