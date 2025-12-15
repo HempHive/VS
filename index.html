@@ -50,6 +50,31 @@
 			position: relative; /* allow border frame layering */
 			border-radius: 70px; /* more rounded corners as requested */
 		}
+		/* Volume slider (top-center, fades like other overlays) */
+		#volume-slider-container {
+			position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+			width: 80vw; height: 32px;
+			display: none; /* hidden on start overlay; shown after playback starts */
+			align-items: center; justify-content: center; z-index: 80;
+			pointer-events: auto; opacity: 1; transition: opacity 1s ease-in-out;
+		}
+		#volume-slider {
+			-webkit-appearance: none; appearance: none; width: 100%; height: 10px;
+			background: rgba(255,255,255,0.45); cursor: pointer; border-radius: 6px;
+		}
+		/* Thumb */
+		#volume-slider::-webkit-slider-thumb {
+			-webkit-appearance: none; appearance: none;
+			width: 28px; height: 28px; border-radius: 50%;
+			background: transparent url('vol.png') center center / 100% 100% no-repeat;
+			border: none;
+			margin-top: -9px;
+		}
+		#volume-slider::-moz-range-thumb {
+			width: 28px; height: 28px; border-radius: 50%;
+			background: transparent url('vol.png') center center / 100% 100% no-repeat;
+			border: none;
+		}
 		/* Full-screen rounded border frame over everything */
 		#border-frame {
 			/* Offset by half the stroke so it extends inside and outside evenly */
@@ -253,6 +278,26 @@
 		#overlay:not(.hidden) ~ #radio-quick { 
 			display: none !important; 
 		}
+		/* Top bar container to align shuffle, volume, and radio buttons */
+		#top-bar {
+			position: fixed; top: 10px; left: 14px; right: 14px;
+			display: none; z-index: 80;
+			display: flex; align-items: center; gap: 12px;
+			pointer-events: auto; opacity: 1; transition: opacity 1s ease-in-out;
+		}
+		/* Normalize children inside the top bar */
+		#top-bar #shuffle-toggle,
+		#top-bar #radio-quick {
+			position: static !important;
+			margin: 0;
+			border: none;
+			box-shadow: none;
+		}
+		#top-bar #volume-slider-container {
+			position: static; width: auto; height: 32px;
+			flex: 1 1 auto; display: flex;
+			min-width: 120px; /* prevent collapsing under buttons */
+		}
         
         /* Shuffle Toggle (Top-left) */
         #shuffle-toggle {
@@ -324,7 +369,7 @@
             background: rgba(0,0,0,0.55);
             border: 1px solid rgba(255,255,255,0.18);
             color: #fff;
-            font-size: 13px;
+            font-size: 18px;
             letter-spacing: 0.5px;
             pointer-events: auto;
             transition: opacity 1s ease-in-out;
@@ -549,6 +594,12 @@
 
     <div id="canvas-container"></div>
     <audio id="radio-element" crossorigin="anonymous"></audio>
+	<!-- Top bar aligns shuffle, volume, and radio controls -->
+	<div id="top-bar" class="display-none"></div>
+	<!-- Volume Slider -->
+	<div id="volume-slider-container" class="interactive">
+		<input id="volume-slider" type="range" min="0" max="1" step="0.01" value="1">
+	</div>
     <!-- Quick Radio Button and Panel -->
     <div id="radio-quick" class="interactive" role="button" aria-label="Radio control" title="Left-click: random station • Right-click: choose"></div>
     <div id="radio-panel" class="display-none">
@@ -693,6 +744,10 @@
         const inpWebmOpacity = document.getElementById('inp-webm-opacity');
         const inpWebmDup = document.getElementById('inp-webm-dup');
         const stations = [];
+        // Volume slider
+        const volumeSlider = document.getElementById('volume-slider');
+        const topBar = document.getElementById('top-bar');
+        const shuffleToggle = document.getElementById('shuffle-toggle');
         let currentStationIndex = -1;
         let panelIdleTimer = null;
         let webmList = [];
@@ -778,6 +833,11 @@
             uiLayer.style.opacity = '1';
             radioQuickBtn.style.opacity = '1';
             radioQuickBtn.style.pointerEvents = 'auto';
+            // Show volume slider on interaction
+            const vs = document.getElementById('volume-slider-container');
+            if (vs && state.isPlaying) { vs.style.opacity = '1'; vs.style.pointerEvents = 'auto'; }
+            // Show top bar on interaction
+            if (topBar && state.isPlaying) { topBar.style.opacity = '1'; topBar.style.pointerEvents = 'auto'; }
             if(!stationBanner.classList.contains('display-none')) {
                 stationBanner.style.opacity = '1';
                 stationBanner.style.pointerEvents = 'auto';
@@ -807,6 +867,11 @@
                         radioQuickBtn.style.opacity = '0';
                         radioQuickBtn.style.pointerEvents = 'none';
                     }
+                    // Hide volume slider on idle
+                    const vs = document.getElementById('volume-slider-container');
+                    if (vs) { vs.style.opacity = '0'; vs.style.pointerEvents = 'none'; }
+                    // Hide top bar on idle
+                    if (topBar) { topBar.style.opacity = '0'; topBar.style.pointerEvents = 'none'; }
                     if(!stationBanner.classList.contains('display-none')) {
                         stationBanner.style.opacity = '0';
                         stationBanner.style.pointerEvents = 'none';
@@ -847,6 +912,13 @@
                 state.activeVisualizer.onResize();
             }
         }
+        // Volume control handling (no boost above 1.0)
+        function setVolume(value) {
+            const v = Math.max(0, Math.min(1, Number(value) || 0));
+            if (state && state.gainNode && state.gainNode.gain) {
+                state.gainNode.gain.value = v;
+            }
+        }
 
         // --- AUDIO ENGINE ---
         function initAudio() {
@@ -854,6 +926,14 @@
                 state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 state.analyserNode = state.audioCtx.createAnalyser();
                 state.analyserNode.fftSize = 2048; 
+				// Master gain (no boost above 1.0 to avoid amplification)
+				state.gainNode = state.audioCtx.createGain();
+				state.gainNode.gain.value = 1.0;
+				// Bind volume slider if present
+				if (volumeSlider) {
+					volumeSlider.value = String(state.gainNode.gain.value);
+					volumeSlider.addEventListener('input', (e) => setVolume(volumeSlider.value));
+				}
             }
             if(state.audioCtx.state === 'suspended') state.audioCtx.resume();
         }
@@ -912,6 +992,8 @@
 			if (typeof radioQuickBtn !== 'undefined' && radioQuickBtn) {
 				radioQuickBtn.style.display = 'none';
 			}
+			// Hide volume slider on start overlay
+			(() => { const vs = document.getElementById('volume-slider-container'); if (vs) vs.style.display = 'none'; })();
 			// Show full-screen border frame
 			const border = document.getElementById('border-frame');
 			if (border) border.classList.add('visible');
@@ -965,6 +1047,13 @@
 						ov.classList.add('no-blur');
 						ov.classList.add('bg-lite'); // lighten overlay so GIF isn't overly darkened
 					}
+					// Hide quick radio button and volume on start overlay
+					try {
+						const rq = document.getElementById('radio-quick');
+						if (rq) rq.style.display = 'none';
+						const vs = document.getElementById('volume-slider-container');
+						if (vs) vs.style.display = 'none';
+					} catch(e) {}
 				};
 				testImg.onerror = () => { /* leave black background */ };
 				testImg.src = 'pta.gif';
@@ -990,7 +1079,10 @@
                 if(state.sourceNode) state.sourceNode.disconnect();
                 state.sourceNode = state.audioCtx.createMediaElementSource(audioEl);
                 state.sourceNode.connect(state.analyserNode);
-                state.analyserNode.connect(state.audioCtx.destination);
+                try { state.analyserNode.disconnect(); } catch(e) {}
+                state.analyserNode.connect(state.gainNode);
+                try { state.gainNode.disconnect(); } catch(e) {}
+                state.gainNode.connect(state.audioCtx.destination);
                 if(!state.isPlaying) startGame();
                 // success: reset retry attempts
                 radioRetryAttempts = 0;
@@ -1022,6 +1114,10 @@
                 state.sourceNode = state.audioCtx.createMediaStreamSource(stream);
                 state.mediaStream = stream;
                 state.sourceNode.connect(state.analyserNode);
+                try { state.analyserNode.disconnect(); } catch(e) {}
+                state.analyserNode.connect(state.gainNode);
+                try { state.gainNode.disconnect(); } catch(e) {}
+                state.gainNode.connect(state.audioCtx.destination);
                 startGame();
             } catch(e) { statusEl.innerText = "Error: " + e.message; }
         }
@@ -1039,7 +1135,10 @@
                     state.sourceNode.buffer = buffer;
                     state.sourceNode.loop = true;
                     state.sourceNode.connect(state.analyserNode);
-                    state.analyserNode.connect(state.audioCtx.destination);
+                    try { state.analyserNode.disconnect(); } catch(e) {}
+                    state.analyserNode.connect(state.gainNode);
+                    try { state.gainNode.disconnect(); } catch(e) {}
+                    state.gainNode.connect(state.audioCtx.destination);
                     state.sourceNode.start(0);
                     startGame();
                 });
@@ -1061,6 +1160,18 @@
                 if (typeof radioQuickBtn !== 'undefined' && radioQuickBtn) {
                     radioQuickBtn.style.display = '';
                 }
+                // Show volume slider after starting
+                (() => { const vs = document.getElementById('volume-slider-container'); if (vs) vs.style.display = 'flex'; })();
+                // Build top bar: shuffle | volume | radio
+                try {
+                    if (topBar && shuffleToggle && volumeSlider && radioQuickBtn) {
+                        topBar.innerHTML = '';
+                        topBar.appendChild(shuffleToggle);
+                        topBar.appendChild(document.getElementById('volume-slider-container'));
+                        topBar.appendChild(radioQuickBtn);
+                        topBar.style.display = 'flex';
+                    }
+                } catch(e) {}
                 resetIdleTimer();
             }, 520);
         }
