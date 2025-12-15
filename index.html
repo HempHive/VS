@@ -929,6 +929,25 @@
                 state.gainNode.gain.value = v;
             }
         }
+        // WebM speed helpers
+        function setWebmSpeed(newRate) {
+            const clamped = Math.max(0.1, Math.min(4, Number(newRate) || 1));
+            webmSettings.playbackRate = clamped;
+            if (typeof inpWebmSpeed !== 'undefined' && inpWebmSpeed) {
+                inpWebmSpeed.value = String(clamped);
+            }
+            applyWebmSettings();
+        }
+        function adjustWebmSpeed(delta) {
+            setWebmSpeed((Number(webmSettings.playbackRate) || 1) + delta);
+        }
+        // Volume control handling (no boost above 1.0)
+        function setVolume(value) {
+            const v = Math.max(0, Math.min(1, Number(value) || 0));
+            if (state && state.gainNode && state.gainNode.gain) {
+                state.gainNode.gain.value = v;
+            }
+        }
 
         // --- AUDIO ENGINE ---
         function initAudio() {
@@ -3160,6 +3179,42 @@ function stopAllAndShowStart() {
                 if (webmOn) prevWebm();
             } else if (e.key === 'ArrowRight' || e.key === 'Arrow Right') {
                 if (webmOn) nextWebm();
+            } else if (e.key === 'w' || e.key === 'W') {
+                e.preventDefault();
+                if(!webmOn) {
+                    if(webmList.length === 0) {
+                        loadWebmList().finally(() => {
+                            if(webmList.length > 0) showWebm();
+                        });
+                    } else {
+                        showWebm();
+                    }
+                } else {
+                    hideWebm();
+                }
+                resetIdleTimer();
+            } else if (e.key === 'q' || e.key === 'Q') {
+                e.preventDefault();
+                adjustWebmSpeed(-0.1);
+                resetIdleTimer();
+            } else if (e.key === 'e' || e.key === 'E') {
+                e.preventDefault();
+                adjustWebmSpeed(+0.1);
+                resetIdleTimer();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const current = (state && state.gainNode && state.gainNode.gain) ? Number(state.gainNode.gain.value) : 1.0;
+                const nextVol = Math.min(1, (isFinite(current) ? current : 1.0) + 0.05);
+                setVolume(nextVol);
+                if (volumeSlider) volumeSlider.value = String(nextVol);
+                resetIdleTimer();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const current = (state && state.gainNode && state.gainNode.gain) ? Number(state.gainNode.gain.value) : 1.0;
+                const nextVol = Math.max(0, (isFinite(current) ? current : 1.0) - 0.05);
+                setVolume(nextVol);
+                if (volumeSlider) volumeSlider.value = String(nextVol);
+                resetIdleTimer();
             }
         });
 
