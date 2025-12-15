@@ -3222,6 +3222,13 @@ function stopAllAndShowStart() {
                 var resetBtn = document.getElementById('btn-webm-reset');
                 if (resetBtn) { resetBtn.click(); }
                 resetIdleTimer();
+            } else if (e.key === 'c' || e.key === 'C') {
+                // ProjectM: next visual preset
+                if (state && state.activeVisualizer && typeof state.activeVisualizer.nextPreset === 'function') {
+                    e.preventDefault();
+                    state.activeVisualizer.nextPreset();
+                    resetIdleTimer();
+                }
             } else if (e.key === 'Escape') {
                 stopAllAndShowStart();
             } else if (e.key === 'ArrowLeft') {
