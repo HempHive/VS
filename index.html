@@ -922,13 +922,7 @@
                 state.activeVisualizer.onResize();
             }
         }
-        // Volume control handling (no boost above 1.0)
-        function setVolume(value) {
-            const v = Math.max(0, Math.min(1, Number(value) || 0));
-            if (state && state.gainNode && state.gainNode.gain) {
-                state.gainNode.gain.value = v;
-            }
-        }
+        
         // WebM speed helpers
         function setWebmSpeed(newRate) {
             const clamped = Math.max(0.1, Math.min(4, Number(newRate) || 1));
