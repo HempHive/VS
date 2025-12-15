@@ -59,19 +59,20 @@
 			pointer-events: auto; opacity: 1; transition: opacity 1s ease-in-out;
 		}
 		#volume-slider {
-			-webkit-appearance: none; appearance: none; width: 100%; height: 10px;
-			background: rgba(255,255,255,0.45); cursor: pointer; border-radius: 6px;
+			-webkit-appearance: none; appearance: none; width: 100%; height: 14px;
+			background: rgba(255,255,255,0.08); /* almost transparent track */
+			cursor: pointer; border-radius: 7px;
 		}
 		/* Thumb */
 		#volume-slider::-webkit-slider-thumb {
 			-webkit-appearance: none; appearance: none;
-			width: 28px; height: 28px; border-radius: 50%;
+			width: 56px; height: 56px; border-radius: 50%;
 			background: transparent url('vol.png') center center / 100% 100% no-repeat;
 			border: none;
-			margin-top: -9px;
+			margin-top: -21px;
 		}
 		#volume-slider::-moz-range-thumb {
-			width: 28px; height: 28px; border-radius: 50%;
+			width: 56px; height: 56px; border-radius: 50%;
 			background: transparent url('vol.png') center center / 100% 100% no-repeat;
 			border: none;
 		}
@@ -293,10 +294,19 @@
 			border: none;
 			box-shadow: none;
 		}
+		/* Scale down buttons within the top bar to prevent overlap */
+		#top-bar #shuffle-toggle {
+			width: 40px !important; height: 40px !important;
+			font-size: 24px !important;
+		}
+		#top-bar #radio-quick {
+			width: 40px !important; height: 40px !important;
+			background-size: contain !important;
+		}
 		#top-bar #volume-slider-container {
-			position: static; width: auto; height: 32px;
+			position: static; width: auto; height: 64px;
 			flex: 1 1 auto; display: flex;
-			min-width: 120px; /* prevent collapsing under buttons */
+			min-width: 360px; /* ensure space between buttons */
 		}
         
         /* Shuffle Toggle (Top-left) */
