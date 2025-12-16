@@ -1328,7 +1328,9 @@ function stopAllAndShowStart() {
             loadPreset(idx) {
                 const key = this.presetKeys[idx];
                 this.visualizer.loadPreset(this.presets[key], 2.7); 
-                document.getElementById('mode-sub').innerText = key;
+                if (state.activeVisualizer === this) {
+                    document.getElementById('mode-sub').innerText = key;
+                }
 				// Change bottom HUD color on each preset load
 				try { setBottomTextRandomColor(); } catch(e) {}
             }
@@ -1435,7 +1437,9 @@ function stopAllAndShowStart() {
                 const key = this.presetKeys[idx];
                 const transition = Number(visualSettings.transitionSec) || this.transitionSec || 2.7;
                 this.visualizer.loadPreset(this.presets[key], transition);
-                document.getElementById('mode-sub').innerText = key;
+                if (state.activeVisualizer === this) {
+                    document.getElementById('mode-sub').innerText = key;
+                }
 				// Change bottom HUD color on each preset load
 				try { setBottomTextRandomColor(); } catch(e) {}
             }
@@ -1508,6 +1512,169 @@ function stopAllAndShowStart() {
             }
         }
 
+        // --- ENGINE: ProjectM v3 with Bars Overlay ---
+        class MilkdropEngineV3 {
+            constructor() {
+                this.name = "ProjectM v3 (Bars Overlay)";
+                this.resizeHandler = this.onResize.bind(this);
+                this.pmCanvas = null;
+                this.overlayRenderer = null;
+                this.overlayScene = null;
+                this.overlayCamera = null;
+                this.bars = [];
+                this.dataArray = null;
+                this.transitionSec = visualSettings.transitionSec;
+                this.presets = butterchurnPresets.getPresets?.() || {};
+                this.presetKeys = Object.keys(this.presets);
+                this.currentPresetIdx = Math.floor(Math.random() * Math.max(1, this.presetKeys.length));
+            }
+
+            init() {
+                container.innerHTML = '';
+                // ProjectM canvas (background)
+                this.pmCanvas = document.createElement('canvas');
+                this.pmCanvas.width = window.innerWidth;
+                this.pmCanvas.height = window.innerHeight;
+                container.appendChild(this.pmCanvas);
+
+                const pxRatio = Number(visualSettings.pixelRatio) || (window.devicePixelRatio || 1);
+                this.visualizer = butterchurn.createVisualizer(state.audioCtx, this.pmCanvas, {
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                    pixelRatio: pxRatio
+                });
+                this.visualizer.connectAudio(state.analyserNode);
+                this.loadPreset(this.currentPresetIdx);
+
+                // Overlay bars (transparent WebGL)
+                this.overlayScene = new THREE.Scene();
+                this.overlayCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.overlayCamera.position.z = 8;
+                this.overlayRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                this.overlayRenderer.setSize(window.innerWidth, window.innerHeight);
+                this.overlayRenderer.setPixelRatio(window.devicePixelRatio || 1);
+                this.overlayRenderer.domElement.style.position = 'absolute';
+                this.overlayRenderer.domElement.style.top = '0';
+                this.overlayRenderer.domElement.style.left = '0';
+                this.overlayRenderer.domElement.style.pointerEvents = 'none';
+                container.appendChild(this.overlayRenderer.domElement);
+
+                // Build bars similar to sceneBars
+                const group = new THREE.Group();
+                this.bars = [];
+                const numBars = 64;
+                const spacing = 0.25;
+                for (let i = 0; i < numBars; i++) {
+                    const geo = new THREE.BoxGeometry(0.18, 0.5, 0.18);
+                    const mat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x001f1f, metalness: 0.1, roughness: 0.6 });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.x = (i - numBars / 2) * spacing;
+                    group.add(mesh);
+                    this.bars.push(mesh);
+                }
+                const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+                const point = new THREE.PointLight(0x00ffff, 1.2, 50);
+                point.position.set(0, 5, 5);
+                this.overlayScene.add(ambient, point, group);
+
+                this.dataArray = new Uint8Array(state.analyserNode.frequencyBinCount);
+
+                window.addEventListener('resize', this.resizeHandler);
+                this.animate = this.animate.bind(this);
+                this.animate();
+                this.restartCycle();
+            }
+
+            loadPreset(idx) {
+                if (this.presetKeys.length === 0) return;
+                const key = this.presetKeys[idx];
+                const transition = Number(visualSettings.transitionSec) || this.transitionSec || 2.7;
+                this.visualizer.loadPreset(this.presets[key], transition);
+                if (state.activeVisualizer === this) {
+                    document.getElementById('mode-sub').innerText = key;
+                }
+                try { setBottomTextRandomColor(); } catch (e) {}
+            }
+
+            nextPreset() {
+                if (this.presetKeys.length === 0) return;
+                let next = this.currentPresetIdx;
+                if (this.presetKeys.length > 1) {
+                    while (next === this.currentPresetIdx) {
+                        next = Math.floor(Math.random() * this.presetKeys.length);
+                    }
+                }
+                this.currentPresetIdx = next;
+                this.loadPreset(this.currentPresetIdx);
+                this.restartCycle();
+            }
+
+            restartCycle() {
+                if (this.cycleTimeout) clearTimeout(this.cycleTimeout);
+                const schedule = () => {
+                    const minS = Number(visualSettings.shuffleMinSec) || 12;
+                    const maxS = Number(visualSettings.shuffleMaxSec) || 25;
+                    const lo = Math.min(minS, maxS);
+                    const hi = Math.max(minS, maxS);
+                    const delay = (lo + Math.random() * (hi - lo)) * 1000;
+                    this.cycleTimeout = setTimeout(() => {
+                        this.nextPreset();
+                        schedule();
+                    }, delay);
+                };
+                schedule();
+            }
+
+            onResize() {
+                // PM
+                if (this.visualizer && this.pmCanvas) {
+                    const w = window.innerWidth;
+                    const h = window.innerHeight;
+                    this.pmCanvas.width = w;
+                    this.pmCanvas.height = h;
+                    this.visualizer.setRendererSize(w, h);
+                }
+                // Overlay
+                if (this.overlayRenderer && this.overlayCamera) {
+                    this.overlayCamera.aspect = window.innerWidth / window.innerHeight;
+                    this.overlayCamera.updateProjectionMatrix();
+                    this.overlayRenderer.setSize(window.innerWidth, window.innerHeight);
+                }
+            }
+
+            animate() {
+                this.animId = requestAnimationFrame(this.animate);
+                // ProjectM draws itself internally
+                // Update bars overlay
+                if (state && state.analyserNode && this.dataArray) {
+                    state.analyserNode.getByteFrequencyData(this.dataArray);
+                    const step = Math.floor(this.dataArray.length / Math.max(1, this.bars.length));
+                    const t = performance.now() * 0.0008;
+                    for (let i = 0; i < this.bars.length; i++) {
+                        const v = this.dataArray[i * step] / 255;
+                        const h = 0.2 + v * 3.0;
+                        this.bars[i].scale.y = h;
+                        this.bars[i].position.y = h * 0.25;
+                        const hue = (i / this.bars.length + t) % 1;
+                        this.bars[i].material.color.setHSL(hue, 1, 0.5);
+                        this.bars[i].material.emissive.setHSL(hue, 1, 0.2);
+                    }
+                }
+                if (this.overlayRenderer && this.overlayScene && this.overlayCamera) {
+                    this.overlayRenderer.render(this.overlayScene, this.overlayCamera);
+                }
+            }
+
+            destroy() {
+                cancelAnimationFrame(this.animId);
+                if (this.cycleTimeout) clearTimeout(this.cycleTimeout);
+                window.removeEventListener('resize', this.resizeHandler);
+                if (this.overlayRenderer) {
+                    try { this.overlayRenderer.dispose(); } catch(e) {}
+                }
+                container.innerHTML = '';
+            }
+        }
         // --- ENGINE: THREE.JS ---
         class ThreeEngine {
             constructor(name, sceneFn) {
@@ -1637,6 +1804,77 @@ function stopAllAndShowStart() {
             };
         };
 
+        // Circular Audio Bars
+        const sceneBarsCircle = (scene, camera) => {
+            const group = new THREE.Group();
+            const bars = [];
+            const num = 72;
+            const radius = 3.0;
+            for (let i = 0; i < num; i++) {
+                const geo = new THREE.BoxGeometry(0.15, 0.4, 0.15);
+                const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x101010, metalness: 0.2, roughness: 0.5 });
+                const m = new THREE.Mesh(geo, mat);
+                const a = (i / num) * Math.PI * 2;
+                m.position.set(Math.cos(a) * radius, Math.sin(a) * radius, 0);
+                m.lookAt(0, 0, 0);
+                group.add(m); bars.push(m);
+            }
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const pl = new THREE.PointLight(0x88bbff, 1.2, 40); pl.position.set(0, 0, 6); scene.add(pl, group);
+            camera.position.z = 8;
+            return (data, time) => {
+                const step = Math.floor(data.length / bars.length);
+                const t = time * 0.0005;
+                bars.forEach((b, i) => {
+                    const v = data[i * step] / 255;
+                    const h = 0.2 + v * 2.8;
+                    b.scale.y = h;
+                    const hue = (i / bars.length + t) % 1;
+                    b.material.color.setHSL(hue, 1, 0.55);
+                    b.material.emissive.setHSL(hue, 1, 0.2);
+                });
+                group.rotation.z += 0.002;
+            };
+        };
+
+        // 3D Audio Bars (radial tiers)
+        const sceneBars3D = (scene, camera) => {
+            const group = new THREE.Group();
+            const tiers = 4;
+            const perTier = 48;
+            const bars = [];
+            for (let t = 0; t < tiers; t++) {
+                const r = 1.5 + t * 0.9;
+                for (let i = 0; i < perTier; i++) {
+                    const a = (i / perTier) * Math.PI * 2;
+                    const geo = new THREE.BoxGeometry(0.12 + t*0.02, 0.5, 0.12 + t*0.02);
+                    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.3, roughness: 0.5, emissive: 0x000000 });
+                    const m = new THREE.Mesh(geo, mat);
+                    m.position.set(Math.cos(a) * r, Math.sin(a) * r, -t * 0.6);
+                    m.lookAt(0, 0, -t * 0.6 - 1);
+                    group.add(m); bars.push(m);
+                }
+            }
+            const amb = new THREE.AmbientLight(0xffffff, 0.35);
+            const pl = new THREE.PointLight(0xff88cc, 1.4, 60); pl.position.set(0, 0, 8);
+            scene.add(amb, pl, group);
+            camera.position.z = 10;
+            return (data, time) => {
+                const step = Math.floor(data.length / bars.length);
+                const t = time * 0.0006;
+                bars.forEach((b, i) => {
+                    const v = data[(i * step) % data.length] / 255;
+                    const h = 0.2 + v * 3.2;
+                    b.scale.y = h;
+                    b.position.z = -Math.floor(i / perTier) * 0.6 - v * 0.8;
+                    const hue = (i / bars.length + t) % 1;
+                    b.material.color.setHSL(hue, 1, 0.55);
+                    b.material.emissive.setHSL(hue, 1, 0.15);
+                });
+                group.rotation.z = Math.sin(t * 0.8) * 0.2;
+                group.rotation.x = Math.cos(t * 0.6) * 0.15;
+            };
+        };
         // High-energy neon sphere variants
         const sceneElectroSphere = (scene, camera) => {
             const geo = new THREE.IcosahedronGeometry(1.6, 64);
@@ -2897,6 +3135,10 @@ function stopAllAndShowStart() {
         const modes = [
             new MilkdropEngine(),
             new MilkdropEngineV2(),
+            new MilkdropEngineV3(),
+            new ThreeEngine("Audio Bars", sceneBars),
+            new ThreeEngine("Audio Bars (Circle)", sceneBarsCircle),
+            new ThreeEngine("Audio Bars 3D", sceneBars3D),
             new ThreeEngine("Neon Sphere", sceneSphere),
             new ThreeEngine("Electro Sphere", sceneElectroSphere),
             new ThreeEngine("Photon Shell", scenePhotonShell),
@@ -2922,8 +3164,7 @@ function stopAllAndShowStart() {
             new ThreeEngine("Emoji Swarm", sceneEmojiSwarm),
             new ThreeEngine("Emoji Orbits", sceneEmojiOrbits),
             new ThreeEngine("Kaleidoscope Layered", sceneKaleidoLayered),
-			new ThreeEngine("Kaleidoscope Zoom", sceneKaleidoZoom),
-			new ThreeEngine("Audio Bars", sceneBars)
+			new ThreeEngine("Kaleidoscope Zoom", sceneKaleidoZoom)
         ];
 
         function loadMode(index) {
