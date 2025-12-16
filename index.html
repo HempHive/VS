@@ -766,6 +766,7 @@
         let radioPanelTimer = null;
         let settingsPanelTimer = null;
         let webmSettingsTimer = null;
+        let stationBannerTimer = null;
         // Hold the radio button visible after right-click random selection
         let radioQuickHoldUntil = 0;
         let radioQuickHoldTimeout = null;
@@ -3446,6 +3447,17 @@ function stopAllAndShowStart() {
             if(!text) return;
             stationBanner.classList.remove('display-none');
             stationBanner.style.opacity = '1';
+            stationBanner.style.pointerEvents = 'auto';
+            // Auto-hide after a short display even if no mouse movement occurs
+            if (stationBannerTimer) { clearTimeout(stationBannerTimer); stationBannerTimer = null; }
+            stationBannerTimer = setTimeout(() => {
+                stationBanner.style.opacity = '0';
+                stationBanner.style.pointerEvents = 'none';
+                // Give CSS transition time to finish before hiding completely
+                setTimeout(() => {
+                    stationBanner.classList.add('display-none');
+                }, 800);
+            }, 3000);
         }
 
         function deriveTitleFromUrl(url) {
