@@ -1737,54 +1737,49 @@ function stopAllAndShowStart() {
 
         // --- SCENES ---
         const sceneSphere = (scene) => {
-            // Use SphereGeometry for clean UVs
-            const geo = new THREE.SphereGeometry(1.8, 64, 64);
+            // Use SphereGeometry for clean UVs and per-vertex coloring
+            const geo = new THREE.SphereGeometry(0.9, 64, 64);
             const base = geo.attributes.position.array.slice();
-            const mat = new THREE.MeshStandardMaterial({
-                color: 0xffffff,
-                metalness: 0.25,
-                roughness: 0.65,
-                emissive: 0x000000
-            });
+            // Allocate vertex colors
+            const colorAttr = new THREE.Float32BufferAttribute(geo.attributes.position.count * 3, 3);
+            geo.setAttribute('color', colorAttr);
+            const mat = new THREE.MeshBasicMaterial({ vertexColors: true });
             const mesh = new THREE.Mesh(geo, mat);
             scene.add(mesh);
-            // Load tiled GIF texture
-            try {
-                const tl = new THREE.TextureLoader();
-                tl.load('spr.gif', (tex) => {
-                    tex.wrapS = THREE.RepeatWrapping;
-                    tex.wrapT = THREE.RepeatWrapping;
-                    tex.repeat.set(4, 4); // replicate over the sphere
-                    // three r160 uses colorSpace instead of encoding
-                    if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
-                    tex.anisotropy = 8;
-                    mat.map = tex;
-                    mat.needsUpdate = true;
-                });
-            } catch(e) { /* ignore texture load errors */ }
             return (data, time) => {
-                const bass = data[8]/255;
-                const mid = data[32]/255;
-                const tre = data[64]/255;
-                const t = time*0.001;
+                const bass = data[8] / 255;
+                const mid = data[32] / 255;
+                const tre = data[64] / 255;
+                const t = time * 0.001;
                 // Audio-driven subtle vertex displacement
                 const arr = geo.attributes.position.array;
                 for (let i = 0; i < arr.length; i += 3) {
-                    const bx = base[i], by = base[i+1], bz = base[i+2];
-                    const n = Math.sin(bx*1.1 + t*1.8) * 0.015 + Math.cos(by*1.3 - t*1.6) * 0.015;
-                    const a = (i/3) % data.length;
+                    const bx = base[i], by = base[i + 1], bz = base[i + 2];
+                    const n = Math.sin(bx * 1.1 + t * 1.8) * 0.015 + Math.cos(by * 1.3 - t * 1.6) * 0.015;
+                    const a = (i / 3) % data.length;
                     const v = data[a] / 255;
-                    const push = 0.04 + bass*0.22 + mid*0.12 + v*0.06;
-                    const s = 1.0 + n + push*0.02;
-                    arr[i] = bx * s; arr[i+1] = by * s; arr[i+2] = bz * s;
+                    const push = 0.04 + bass * 0.22 + mid * 0.12 + v * 0.06;
+                    const s = 1.0 + n + push * 0.02;
+                    arr[i] = bx * s; arr[i + 1] = by * s; arr[i + 2] = bz * s;
                 }
                 geo.attributes.position.needsUpdate = true;
+                // Radiating multi-colour effect based on spherical coords + time + audio
+                const cols = colorAttr.array;
+                for (let i = 0, vi = 0; i < arr.length; i += 3, vi += 3) {
+                    const x = arr[i], y = arr[i + 1], z = arr[i + 2];
+                    const ang = Math.atan2(y, x);              // [-PI, PI]
+                    const r = Math.sqrt(x * x + y * y + z * z);
+                    const hue = ((ang / (Math.PI * 2)) + 0.5 + t * 0.25 + bass * 0.15) % 1;
+                    const sat = 0.9;
+                    const lig = 0.45 + 0.25 * (mid + tre * 0.5);
+                    const c = new THREE.Color().setHSL(hue, sat, lig);
+                    cols[vi] = c.r; cols[vi + 1] = c.g; cols[vi + 2] = c.b;
+                }
+                colorAttr.needsUpdate = true;
                 // Rotation and scale breathing
-                mesh.rotation.y += 0.004 + mid*0.02;
-                mesh.rotation.x += 0.002 + tre*0.01;
-                mesh.scale.setScalar(1 + bass*0.3 + mid*0.12);
-                // Emissive reacts to spectrum; keep map colors intact
-                mat.emissiveIntensity = 0.2 + bass*0.8;
+                mesh.rotation.y += 0.004 + mid * 0.02;
+                mesh.rotation.x += 0.002 + tre * 0.01;
+                mesh.scale.setScalar(1 + bass * 0.3 + mid * 0.12);
             };
         };
 
@@ -2616,19 +2611,43 @@ function stopAllAndShowStart() {
             composer.addPass(k1);
             composer.addPass(k2);
             camera.position.z = 5;
+            // Smoothed, time-integrated rotations to avoid jitter
+            let rot1 = 0, rot2 = 0, rotY = 0, rotX = 0;
+            let speed1 = 0.00022, speed2 = -0.00026, speedY = 0.00028, speedX = 0.00018;
+            let gSmooth = 0;
+            let lastTime = 0;
             return (data, time) => {
-                const bass = data[10]/255;
-                group.rotation.x = time*0.0005;
-                group.rotation.y = Math.sin(time*0.0003)*0.4;
-                k1.uniforms.rotation.value = time*0.0002 + bass*0.5;
-                k2.uniforms.rotation.value = -time*0.00025 + bass*0.7;
-                k1.uniforms.angle.value = Math.sin(time*0.0004)*0.6;
-                k2.uniforms.angle.value = Math.cos(time*0.00045)*0.6;
-                k1.uniforms.time.value = time*0.001;
-                k2.uniforms.time.value = time*0.001;
-                const g = (data[6]+data[12]+data[24])/(3.0*255.0);
-                k1.uniforms.gain.value = g;
-                k2.uniforms.gain.value = g*0.8;
+                const gRaw = (data[6] + data[10] + data[12] + data[24]) / (4.0 * 255.0);
+                gSmooth = gSmooth + (gRaw - gSmooth) * 0.08; // low-pass filter
+                const dt = lastTime ? (time - lastTime) : 16.0; // ms
+                lastTime = time;
+                // Gently modulate speeds with smoothed gain
+                const target1 = 0.00022 + gSmooth * 0.00040;
+                const target2 = -0.00026 - gSmooth * 0.00035;
+                const targetY = 0.00028 + gSmooth * 0.00025;
+                const targetX = 0.00018 + gSmooth * 0.00010;
+                speed1 += (target1 - speed1) * 0.05;
+                speed2 += (target2 - speed2) * 0.05;
+                speedY += (targetY - speedY) * 0.05;
+                speedX += (targetX - speedX) * 0.05;
+                // Integrate rotations (smooth)
+                rot1 += speed1 * dt;
+                rot2 += speed2 * dt;
+                rotY += speedY * dt;
+                rotX += speedX * dt;
+                group.rotation.x = rotX;
+                group.rotation.y = rotY;
+                k1.uniforms.rotation.value = rot1;
+                k2.uniforms.rotation.value = rot2;
+                // Slow, continuous angle sweep
+                k1.uniforms.angle.value = Math.sin(time * 0.00025) * 0.55;
+                k2.uniforms.angle.value = Math.cos(time * 0.00023) * 0.55;
+                // Pass time/gain to shaders
+                const tSec = time * 0.001;
+                k1.uniforms.time.value = tSec;
+                k2.uniforms.time.value = tSec;
+                k1.uniforms.gain.value = gSmooth;
+                k2.uniforms.gain.value = gSmooth * 0.85;
             };
         };
 
