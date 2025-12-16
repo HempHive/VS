@@ -849,7 +849,9 @@
             if (vs && state.isPlaying) { vs.style.opacity = '1'; vs.style.pointerEvents = 'auto'; }
             // Show top bar on interaction
             if (topBar && state.isPlaying) { topBar.style.opacity = '1'; topBar.style.pointerEvents = 'auto'; }
-            if(!stationBanner.classList.contains('display-none')) {
+            // Always reveal station banner on interaction if it exists
+            if (stationBanner) {
+                if (stationBannerTimer) { clearTimeout(stationBannerTimer); stationBannerTimer = null; }
                 stationBanner.style.opacity = '1';
                 stationBanner.style.pointerEvents = 'auto';
             }
@@ -3453,10 +3455,6 @@ function stopAllAndShowStart() {
             stationBannerTimer = setTimeout(() => {
                 stationBanner.style.opacity = '0';
                 stationBanner.style.pointerEvents = 'none';
-                // Give CSS transition time to finish before hiding completely
-                setTimeout(() => {
-                    stationBanner.classList.add('display-none');
-                }, 800);
             }, 3000);
         }
 
