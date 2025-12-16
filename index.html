@@ -3524,30 +3524,25 @@ function stopAllAndShowStart() {
                 e.preventDefault();
                 var resetBtn = document.getElementById('btn-webm-reset');
                 if (resetBtn) { resetBtn.click(); }
-                resetIdleTimer();
             } else if (e.key === 'c' || e.key === 'C') {
                 // ProjectM: next visual preset
                 if (state && state.activeVisualizer && typeof state.activeVisualizer.nextPreset === 'function') {
                     e.preventDefault();
                     state.activeVisualizer.nextPreset();
-                    resetIdleTimer();
                 }
             } else if (e.key === 'Escape') {
                 stopAllAndShowStart();
             } else if (e.key === 'ArrowLeft') {
                 e.preventDefault();
                 adjustWebmPosition(-2, 0);
-                resetIdleTimer();
             } else if (e.key === 'ArrowRight') {
                 e.preventDefault();
                 adjustWebmPosition(2, 0);
-                resetIdleTimer();
             } else if (e.key === 'r' || e.key === 'R') {
                 e.preventDefault();
                 if (stations && stations.length > 0) {
                     pickRandomStation();
                 }
-                resetIdleTimer();
             } else if (e.key === 'w' || e.key === 'W') {
                 e.preventDefault();
                 if(!webmOn) {
@@ -3561,23 +3556,18 @@ function stopAllAndShowStart() {
                 } else {
                     hideWebm();
                 }
-                resetIdleTimer();
             } else if (e.key === 'q' || e.key === 'Q') {
                 e.preventDefault();
                 adjustWebmSpeed(-0.1);
-                resetIdleTimer();
             } else if (e.key === 'e' || e.key === 'E') {
                 e.preventDefault();
                 adjustWebmSpeed(+0.1);
-                resetIdleTimer();
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 adjustWebmPosition(0, -2);
-                resetIdleTimer();
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 adjustWebmPosition(0, 2);
-                resetIdleTimer();
             } else if (e.key === 'a' || e.key === 'A') {
                 e.preventDefault();
                 if (webmOn) prevWebm();
@@ -3587,19 +3577,15 @@ function stopAllAndShowStart() {
             } else if (e.key === 'z' || e.key === 'Z') {
                 e.preventDefault();
                 adjustWebmOpacity(-0.05);
-                resetIdleTimer();
             } else if (e.key === 'x' || e.key === 'X') {
                 e.preventDefault();
                 adjustWebmOpacity(0.05);
-                resetIdleTimer();
             } else if (e.key === '=') {
                 e.preventDefault();
                 adjustWebmScale(2);
-                resetIdleTimer();
             } else if (e.key === '-' || e.key === '_') {
                 e.preventDefault();
                 adjustWebmScale(-2);
-                resetIdleTimer();
             }
         });
 
