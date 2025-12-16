@@ -1644,7 +1644,12 @@ function stopAllAndShowStart() {
 
             animate() {
                 this.animId = requestAnimationFrame(this.animate);
-                // ProjectM draws itself internally
+                // Render ProjectM (background)
+                try {
+                    if (this.visualizer && typeof this.visualizer.render === 'function') {
+                        this.visualizer.render();
+                    }
+                } catch(e) { /* ignore */ }
                 // Update bars overlay
                 if (state && state.analyserNode && this.dataArray) {
                     state.analyserNode.getByteFrequencyData(this.dataArray);
@@ -1732,16 +1737,54 @@ function stopAllAndShowStart() {
 
         // --- SCENES ---
         const sceneSphere = (scene) => {
-            const geo = new THREE.IcosahedronGeometry(1.8, 30);
-            const mat = new THREE.MeshPhysicalMaterial({ wireframe: true, color: 0x00ff00, emissive: 0x004400 });
+            // Use SphereGeometry for clean UVs
+            const geo = new THREE.SphereGeometry(1.8, 64, 64);
+            const base = geo.attributes.position.array.slice();
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.25,
+                roughness: 0.65,
+                emissive: 0x000000
+            });
             const mesh = new THREE.Mesh(geo, mat);
             scene.add(mesh);
+            // Load tiled GIF texture
+            try {
+                const tl = new THREE.TextureLoader();
+                tl.load('spr.gif', (tex) => {
+                    tex.wrapS = THREE.RepeatWrapping;
+                    tex.wrapT = THREE.RepeatWrapping;
+                    tex.repeat.set(4, 4); // replicate over the sphere
+                    // three r160 uses colorSpace instead of encoding
+                    if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+                    tex.anisotropy = 8;
+                    mat.map = tex;
+                    mat.needsUpdate = true;
+                });
+            } catch(e) { /* ignore texture load errors */ }
             return (data, time) => {
-                const bass = data[20]/255; 
-                const t = time*0.0005;
-                mesh.rotation.y += 0.005; 
-                mesh.scale.setScalar(1 + bass*0.5); 
-                mesh.material.color.setHSL(t%1, 1, 0.5);
+                const bass = data[8]/255;
+                const mid = data[32]/255;
+                const tre = data[64]/255;
+                const t = time*0.001;
+                // Audio-driven subtle vertex displacement
+                const arr = geo.attributes.position.array;
+                for (let i = 0; i < arr.length; i += 3) {
+                    const bx = base[i], by = base[i+1], bz = base[i+2];
+                    const n = Math.sin(bx*1.1 + t*1.8) * 0.015 + Math.cos(by*1.3 - t*1.6) * 0.015;
+                    const a = (i/3) % data.length;
+                    const v = data[a] / 255;
+                    const push = 0.04 + bass*0.22 + mid*0.12 + v*0.06;
+                    const s = 1.0 + n + push*0.02;
+                    arr[i] = bx * s; arr[i+1] = by * s; arr[i+2] = bz * s;
+                }
+                geo.attributes.position.needsUpdate = true;
+                // Rotation and scale breathing
+                mesh.rotation.y += 0.004 + mid*0.02;
+                mesh.rotation.x += 0.002 + tre*0.01;
+                mesh.scale.setScalar(1 + bass*0.3 + mid*0.12);
+                // Emissive reacts to spectrum; keep map colors intact
+                mat.emissiveIntensity = 0.2 + bass*0.8;
             };
         };
 
