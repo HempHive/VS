@@ -258,13 +258,14 @@
         .hidden { opacity: 0 !important; pointer-events: none; }
         .display-none { display: none !important; }
         
-		#loading-status { color: #39ff14; margin-top: 6px; font-size: 12px; height: 20px; }
+		#loading-status { color: #39ff14; margin-top: 6px; font-size: 12px; height: 20px; transition: opacity 0.6s ease; }
 		#shortcuts-status { 
 			color: #ff1493; margin-top: 8px; font-size: 12px; min-height: 18px; 
 			white-space: pre-line; text-align: center;
 			position: absolute; left: 50%; transform: translateX(-50%);
 			pointer-events: none; width: 86vw; max-width: 1200px; line-height: 1.35;
 			overflow: hidden; /* ensure at most 3 lines visible */
+			transition: opacity 0.6s ease;
 		}
 		/* Toggleable URL input (now sits below the title, reserves space) */
 		#url-flyover {
@@ -993,6 +994,47 @@
                 state.activeVisualizer.onResize();
             }
 			try { layoutOverlayElements(); } catch(e) {}
+		}
+		// Start screen text loop (fade out after 30s, retype after 30s) until playing
+		let startTextLoopTimer = null;
+		function cancelStartTextLoop() {
+			if (startTextLoopTimer) { try { clearTimeout(startTextLoopTimer); } catch(e) {} startTextLoopTimer = null; }
+		}
+		function scheduleStartTextLoop() {
+			try { cancelStartTextLoop(); } catch(e) {}
+			if (state.isPlaying) return;
+			const l = document.getElementById('loading-status');
+			const sh = document.getElementById('shortcuts-status');
+			if (!l || !sh) return;
+			l.style.opacity = '1'; sh.style.opacity = '1';
+			const defaultLine = 'Select a source to begin';
+			const shortcuts = [
+				'F Fullscreen  •  C Next Visual  •  R Random Station',
+				'W Toggle Avatar  •  Q/E Avatar Speed  •  Arrows Move Avatar',
+				'+/− Size  •  Z/X Opacity  •  Esc Back'
+			].join('\\n');
+			let phase = 'visible';
+			const loop = () => {
+				if (state.isPlaying) { cancelStartTextLoop(); return; }
+				if (phase === 'visible') {
+					startTextLoopTimer = setTimeout(() => {
+						l.style.opacity = '0';
+						sh.style.opacity = '0';
+						phase = 'hidden';
+						loop();
+					}, 30000);
+				} else {
+					startTextLoopTimer = setTimeout(() => {
+						l.style.opacity = '1';
+						sh.style.opacity = '1';
+						try { typeStatus(defaultLine); } catch(e) {}
+						try { typeStatusTo('shortcuts-status', shortcuts, 30); } catch(e) {}
+						phase = 'visible';
+						loop();
+					}, 30000);
+				}
+			};
+			loop();
         }
 		// Make the last two letters "I>" clickable to start radio
 		(() => {
@@ -1221,10 +1263,12 @@
 				typeStatus(statusEl.innerText || 'Select a source to begin', () => {
 					typeStatusTo('shortcuts-status', shortcuts, 30);
 					try { layoutOverlayElements(); } catch(e) {}
+					try { scheduleStartTextLoop(); } catch(e) {}
 				});
 			} else {
 				typeStatusTo('shortcuts-status', shortcuts, 30);
 				try { layoutOverlayElements(); } catch(e) {}
+				try { scheduleStartTextLoop(); } catch(e) {}
 			}
             setStartControlsEnabled(true);
         }
@@ -1233,6 +1277,7 @@
             overlay.classList.add('hidden');
             overlay.style.display = 'none';
 			overlay.classList.remove('glow-on');
+            try { cancelStartTextLoop(); } catch(e) {}
 			if (overlayGlowColorTimer) { try { clearInterval(overlayGlowColorTimer); } catch(e) {} overlayGlowColorTimer = null; }
 			// Hide full-screen border frame
 			const border = document.getElementById('border-frame');
@@ -1260,9 +1305,9 @@
 					'+/− Size  •  Z/X Opacity  •  Esc Back'
 				].join('\n');
 				if (s && s.innerText && s.innerText.trim().length > 0) {
-					typeStatus(s.innerText.trim(), () => { typeStatusTo('shortcuts-status', shortcuts, 30); try { layoutOverlayElements(); } catch(e) {} });
+					typeStatus(s.innerText.trim(), () => { typeStatusTo('shortcuts-status', shortcuts, 30); try { layoutOverlayElements(); } catch(e) {} try { scheduleStartTextLoop(); } catch(e) {} });
 				} else {
-					typeStatusTo('shortcuts-status', shortcuts, 30); try { layoutOverlayElements(); } catch(e) {}
+					typeStatusTo('shortcuts-status', shortcuts, 30); try { layoutOverlayElements(); } catch(e) {} try { scheduleStartTextLoop(); } catch(e) {}
 				}
 			}
 			// Try to apply tiled background from pta.gif if available
@@ -1416,6 +1461,7 @@
                 hideOverlay();
                 overlay.classList.remove('digital-out');
                 loadMode(0); // Start with ProjectM
+                try { cancelStartTextLoop(); } catch(e) {}
                 // Show quick radio button once the app has started
                 if (typeof radioQuickBtn !== 'undefined' && radioQuickBtn) {
                     radioQuickBtn.style.display = '';
@@ -2143,38 +2189,38 @@ function stopAllAndShowStart() {
                 const t = time * 0.0006;
                 const step = Math.max(1, Math.floor(data.length / bars.length));
                 // Smooth bass to avoid jerkiness in forward motion
-                const bassRaw = (data[8] || 0) / 255;
-                smoothedBass = smooth(smoothedBass, bassRaw, 0.12);
+            const bassRaw = (data[8] || 0) / 255;
+            smoothedBass = smooth(smoothedBass, bassRaw, 0.08);
                 // Create a forward motion through the tunnel (smoothed)
-                scrollZ += 0.03 + smoothedBass * 0.09;
+            scrollZ += 0.025 + smoothedBass * 0.06;
                 const baseZShift = scrollZ % depthStep;
                 bars.forEach((b, i) => {
                     const vRaw = (data[(i * step) % data.length] || 0) / 255;
-                    const v = smoothedVals[i] = smooth(smoothedVals[i], vRaw, 0.15);
-                    const h = 0.22 + v * 2.4; // reduced range for steadier bars
+                    const v = smoothedVals[i] = smooth(smoothedVals[i], vRaw, 0.08);
+                    const h = 0.22 + v * 2.0; // reduced range for steadier bars
                     b.scale.y = h;
                     // slight breathing of radius per ring by mids
                     const ringIdx = Math.floor(i / barsPerRing);
-                    const mid = smooth(0, (data[24] || 0) / 255, 0.15);
+                    const mid = smooth(0, (data[24] || 0) / 255, 0.08);
                     const ring = rings[ringIdx];
                     const frac = ringIdx / (ringCount - 1);
-                    const breathe = 0.06 * Math.sin(t * 2.2 + ringIdx * 0.35) * (0.5 + mid * 0.6);
-                    const angle = (i % barsPerRing) / barsPerRing * Math.PI * 2 + ringIdx * twistPerRing + t * 1.0;
+                    const breathe = 0.04 * Math.sin(t * 1.8 + ringIdx * 0.35) * (0.5 + mid * 0.5);
+                    const angle = (i % barsPerRing) / barsPerRing * Math.PI * 2 + ringIdx * twistPerRing + t * 0.8;
                     const cr = Math.max(0.1, ring.radius * (1.0 + breathe));
                     b.position.x = Math.cos(angle) * cr;
                     b.position.y = Math.sin(angle) * cr;
                     // continuous flow along z to simulate vortex pull
-                    const z = -ringIdx * depthStep + baseZShift - v * 0.42; // less aggressive z wobble
+                    const z = -ringIdx * depthStep + baseZShift - v * 0.35; // less aggressive z wobble
                     b.position.z = z;
                     b.lookAt(0, 0, z - 1);
                     // color cycle along tunnel
-                    const hue = (frac + t * 0.08 + v * 0.15) % 1;
+                    const hue = (frac + t * 0.06 + v * 0.12) % 1;
                     b.material.color.setHSL(hue, 1, 0.55);
                     b.material.emissive.setHSL(hue, 1, 0.15);
                 });
                 // gentle whole-tunnel rotation for a wormhole effect
-                group.rotation.z = Math.sin(t * 0.7) * 0.28;
-                group.rotation.x = Math.cos(t * 0.55) * 0.16;
+                group.rotation.z = Math.sin(t * 0.55) * 0.22;
+                group.rotation.x = Math.cos(t * 0.45) * 0.14;
             };
         };
         // High-energy neon sphere variants
@@ -3268,7 +3314,8 @@ function stopAllAndShowStart() {
         };
 
         // Sailing Ship (stylized low-poly with audio-reactive sea)
-        const sceneSailingShip = (scene, camera) => {
+        /* Removed Sailing Ship visualizer per request */
+        /* const sceneSailingShip = (scene, camera) => {
             const group = new THREE.Group();
             // Sea plane (dynamic wave via vertex displacement in JS)
             const seaSize = 40;
@@ -3356,7 +3403,7 @@ function stopAllAndShowStart() {
                 hullMat.emissive.setHSL(hue, 0.8, 0.2);
                 sun.intensity = 0.8 + bass*0.6;
             };
-        };
+        }; */
 
         // Lorenz Attractor (line)
         const sceneLorenz = (scene, camera) => {
@@ -3495,7 +3542,8 @@ function stopAllAndShowStart() {
             };
         };
 
-        const sceneEmojiOrbits = (scene, camera) => {
+        /* Removed Emoji Orbits visualizer per request */
+        /* const sceneEmojiOrbits = (scene, camera) => {
             const group = new THREE.Group();
             scene.add(group);
             const textures = EMOJIS.map(e => createEmojiTexture(e));
@@ -3546,7 +3594,7 @@ function stopAllAndShowStart() {
                 group.rotation.x = Math.sin(time*0.0004)*0.2;
                 group.rotation.y = Math.cos(time*0.0003)*0.2;
             };
-        };
+        }; */
 
         // --- ENGINE: ProjectM (Filtered Presets) ---
         class MilkdropPresetEngine {
@@ -3682,11 +3730,9 @@ function stopAllAndShowStart() {
             new ThreeEngine("Ribbons", sceneRibbons),
             new ThreeEngine("Mandelbrot", sceneMandelbrot),
             new ThreeEngine("Julia Set", sceneJulia),
-            new ThreeEngine("Sailing Ship", sceneSailingShip),
             new ThreeEngine("Lorenz Attractor", sceneLorenz),
             new ThreeEngine("Sierpinski Carpet", sceneSierpinskiCarpet),
             new ThreeEngine("Emoji Swarm", sceneEmojiSwarm),
-            new ThreeEngine("Emoji Orbits", sceneEmojiOrbits),
             new ThreeEngine("Kaleidoscope Layered", sceneKaleidoLayered),
 			new ThreeEngine("Kaleidoscope Zoom", sceneKaleidoZoom)
         ];
