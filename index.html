@@ -261,10 +261,16 @@
 			pointer-events: none; width: 86vw; max-width: 1200px; line-height: 1.35;
 			overflow: hidden; /* ensure at most 3 lines visible */
 		}
-		/* Toggleable URL input above the title (centered, absolute) */
+		/* Toggleable URL input (now sits below the title, reserves space) */
 		#url-flyover {
-			position: absolute; left: 50%; transform: translateX(-50%);
-			z-index: 81; /* top set dynamically via JS to keep fixed distance above title */
+			position: static; left: auto; transform: none;
+			z-index: auto;
+			margin-top: 8px;
+			display: flex; align-items: center; justify-content: center;
+			min-height: 56px; /* reserve space so title stays centered */
+		}
+		#url-flyover.is-hidden {
+			visibility: hidden; opacity: 0; pointer-events: none;
 		}
 
         /* Quick Radio Button (Top-right) */
@@ -571,12 +577,12 @@
 
     <!-- START SCREEN -->
 	<div id="overlay">
-		<!-- Toggle URL input (shown via clicking 'N' in OMNI>) -->
-		<div id="url-flyover" class="display-none">
-			<input type="text" id="radio-url" class="radio-input interactive" value="https://stream.bigfm.de/tomorrowland/mp3-128/" placeholder="Paste Stream URL">
-		</div>
 		<h1 id="logo-omni" data-text="OMNI&gt;"><span class="logo-letter logo-o">O</span><span class="logo-letter logo-m">M</span><span class="logo-letter">N</span><span class="logo-letter logo-start">I</span><span class="logo-letter logo-start">&gt;</span></h1>
-        
+		<!-- Toggle URL input (shown via clicking 'N' in OMNI>) -->
+		<div id="url-flyover" class="is-hidden">
+            <input type="text" id="radio-url" class="radio-input interactive" value="https://stream.bigfm.de/tomorrowland/mp3-128/" placeholder="Paste Stream URL">
+        </div>
+
         <div class="control-group">
             <input type="file" id="file-input" accept="audio/*" style="display:none">
         </div>
@@ -1007,7 +1013,7 @@
 						else if (typeof playRadio === 'function') playRadio();
 					});
 				});
-				// Make "N" toggle the URL input flyover
+				// Make "N" toggle the URL input flyover (reserve space via is-hidden)
 				const nEl = logo.querySelector('.logo-letter:nth-child(3)');
 				if (nEl) {
 					nEl.style.cursor = 'pointer';
@@ -1016,9 +1022,9 @@
 						e.stopPropagation();
 						const fly = document.getElementById('url-flyover');
 						if (!fly) return;
-						const hidden = fly.classList.contains('display-none');
-						if (hidden) fly.classList.remove('display-none');
-						else fly.classList.add('display-none');
+						const hidden = fly.classList.contains('is-hidden');
+						if (hidden) fly.classList.remove('is-hidden');
+						else fly.classList.add('is-hidden');
 						// focus/select input when showing
 						if (!hidden) return;
 						const inp = document.getElementById('radio-url');
