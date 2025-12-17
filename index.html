@@ -584,7 +584,7 @@
             <!-- SKIP PRESET BUTTON (Only for ProjectM) -->
             <button class="icon-btn interactive display-none" id="btn-skip-preset" title="Next Visual Preset">⏭</button>
             <!-- WEBM TOGGLE -->
-            <button class="icon-btn interactive" id="btn-webm" title="Toggle WebM Overlay">🪩</button>
+            <button class="icon-btn interactive" id="btn-webm" title="Toggle WebM Overlay">🎛️</button>
 
             <!-- TITLE INFO -->
             <div id="mode-info">
@@ -593,7 +593,7 @@
             </div>
 
             <!-- SETTINGS BUTTON -->
-            <button class="icon-btn interactive" id="btn-settings" title="Visualizer Settings">⚙️</button>
+            <button class="icon-btn interactive" id="btn-settings" title="Visualizer Settings">🎚️</button>
             
             <!-- FULLSCREEN BUTTON -->
             <button class="icon-btn interactive" id="btn-fullscreen" title="Toggle Fullscreen">⛶</button>
@@ -969,11 +969,29 @@
             if (typeof inpWebmOpacity !== 'undefined' && inpWebmOpacity) inpWebmOpacity.value = String(nv);
             applyWebmSettings();
         }
-        // Volume control handling (no boost above 1.0)
+        // Volume control handling (50% = 0 dB; below attenuate, above amplify)
         function setVolume(value) {
             const v = Math.max(0, Math.min(1, Number(value) || 0));
             if (state && state.gainNode && state.gainNode.gain) {
-                state.gainNode.gain.value = v;
+                // Map slider to dB curve:
+                // v = 0.5 -> 0 dB (1.0 linear)
+                // v < 0.5 -> -40 dB .. 0 dB
+                // v > 0.5 -> 0 dB .. +12 dB
+                let gainLinear = 1.0;
+                if (v === 0) {
+                    gainLinear = 0.0;
+                } else if (v < 0.5) {
+                    const t = v / 0.5;           // 0..1
+                    const dB = -40 * (1 - t);    // -40..0
+                    gainLinear = Math.pow(10, dB / 20);
+                } else if (v > 0.5) {
+                    const t = (v - 0.5) / 0.5;   // 0..1
+                    const dB = 12 * t;           // 0..+12
+                    gainLinear = Math.pow(10, dB / 20);
+                } else {
+                    gainLinear = 1.0;
+                }
+                state.gainNode.gain.value = gainLinear;
                 // Also toggle media element mute to guarantee silence at 0
                 try {
                     const el = document.getElementById('radio-element');
@@ -988,12 +1006,12 @@
                 state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 state.analyserNode = state.audioCtx.createAnalyser();
                 state.analyserNode.fftSize = 2048; 
-				// Master gain (no boost above 1.0 to avoid amplification)
+				// Master gain (dB curve centered at 0 dB = 0.5 slider)
 				state.gainNode = state.audioCtx.createGain();
-				state.gainNode.gain.value = 0.5;
+				state.gainNode.gain.value = 1.0;
 				// Bind volume slider if present
 				if (volumeSlider) {
-					volumeSlider.value = String(state.gainNode.gain.value);
+					volumeSlider.value = String(0.5);
 					volumeSlider.addEventListener('input', (e) => setVolume(volumeSlider.value));
 				}
             }
@@ -1914,6 +1932,76 @@ function stopAllAndShowStart() {
                 });
                 group.rotation.z = Math.sin(t * 0.8) * 0.2;
                 group.rotation.x = Math.cos(t * 0.6) * 0.15;
+            };
+        };
+
+        // Bars Vortex (wormhole made of bars)
+        const sceneBarsVortex = (scene, camera) => {
+            const group = new THREE.Group();
+            const rings = [];
+            const bars = [];
+            const ringCount = 24;      // depth of the tunnel
+            const barsPerRing = 56;    // bars around the ring
+            const startRadius = 3.0;
+            const endRadius = 0.6;     // taper to a small radius to form a wormhole
+            const depthStep = 0.4;     // spacing between rings along -Z
+            const twistPerRing = 0.18; // spiral twist down the tunnel
+            for (let r = 0; r < ringCount; r++) {
+                const radius = startRadius + (endRadius - startRadius) * (r / (ringCount - 1));
+                const ring = [];
+                for (let i = 0; i < barsPerRing; i++) {
+                    const angle = (i / barsPerRing) * Math.PI * 2 + r * twistPerRing;
+                    const geo = new THREE.BoxGeometry(0.08, 0.5, 0.08);
+                    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x000000, metalness: 0.35, roughness: 0.55 });
+                    const m = new THREE.Mesh(geo, mat);
+                    m.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, -r * depthStep);
+                    m.lookAt(0, 0, -r * depthStep - 1);
+                    group.add(m);
+                    bars.push(m);
+                    ring.push(m);
+                }
+                rings.push({ radius, meshes: ring });
+            }
+            // Lighting
+            const amb = new THREE.AmbientLight(0xffffff, 0.3);
+            const pl1 = new THREE.PointLight(0x66ccff, 1.3, 80); pl1.position.set(0, 0, 8);
+            const pl2 = new THREE.PointLight(0xff66aa, 1.1, 80); pl2.position.set(0, 0, -ringCount * depthStep * 0.5);
+            scene.add(amb, pl1, pl2, group);
+            camera.position.z = 8.5;
+            // Animation
+            let scrollZ = 0;
+            return (data, time) => {
+                const t = time * 0.0006;
+                const step = Math.max(1, Math.floor(data.length / bars.length));
+                // Create a forward motion through the tunnel
+                scrollZ += 0.035 + (data[8] / 255) * 0.12;
+                const baseZShift = scrollZ % depthStep;
+                bars.forEach((b, i) => {
+                    const v = data[(i * step) % data.length] / 255;
+                    const h = 0.18 + v * 3.0;
+                    b.scale.y = h;
+                    // slight breathing of radius per ring by mids
+                    const ringIdx = Math.floor(i / barsPerRing);
+                    const mid = data[24] / 255;
+                    const ring = rings[ringIdx];
+                    const frac = ringIdx / (ringCount - 1);
+                    const breathe = 0.08 * Math.sin(t * 3.0 + ringIdx * 0.35) * (0.6 + mid * 0.8);
+                    const angle = (i % barsPerRing) / barsPerRing * Math.PI * 2 + ringIdx * twistPerRing + t * 1.2;
+                    const cr = Math.max(0.1, ring.radius * (1.0 + breathe));
+                    b.position.x = Math.cos(angle) * cr;
+                    b.position.y = Math.sin(angle) * cr;
+                    // continuous flow along z to simulate vortex pull
+                    const z = -ringIdx * depthStep + baseZShift - v * 0.6;
+                    b.position.z = z;
+                    b.lookAt(0, 0, z - 1);
+                    // color cycle along tunnel
+                    const hue = (frac + t * 0.12 + v * 0.2) % 1;
+                    b.material.color.setHSL(hue, 1, 0.56);
+                    b.material.emissive.setHSL(hue, 1, 0.18);
+                });
+                // gentle whole-tunnel rotation for a wormhole effect
+                group.rotation.z = Math.sin(t * 0.9) * 0.35;
+                group.rotation.x = Math.cos(t * 0.7) * 0.18;
             };
         };
         // High-energy neon sphere variants
@@ -3006,6 +3094,97 @@ function stopAllAndShowStart() {
             };
         };
 
+        // Sailing Ship (stylized low-poly with audio-reactive sea)
+        const sceneSailingShip = (scene, camera) => {
+            const group = new THREE.Group();
+            // Sea plane (dynamic wave via vertex displacement in JS)
+            const seaSize = 40;
+            const seaSeg = 128;
+            const seaGeo = new THREE.PlaneGeometry(seaSize, seaSize, seaSeg, seaSeg);
+            const seaMat = new THREE.MeshStandardMaterial({ color: 0x115577, metalness: 0.0, roughness: 0.9, transparent: true, opacity: 0.95, side: THREE.DoubleSide });
+            const sea = new THREE.Mesh(seaGeo, seaMat);
+            sea.rotation.x = -Math.PI/2;
+            sea.position.y = -1.0;
+            group.add(sea);
+            // Ship: hull
+            const hullMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, metalness: 0.1, roughness: 0.8, emissive: 0x000000 });
+            const hull = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.6, 1.0), hullMat);
+            hull.position.y = -0.4;
+            group.add(hull);
+            // Prow and stern wedges
+            const prow = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.0, 4), hullMat);
+            prow.rotation.z = Math.PI/2;
+            prow.position.set(1.9, -0.4, 0);
+            group.add(prow);
+            const stern = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.8, 4), hullMat);
+            stern.rotation.z = -Math.PI/2;
+            stern.position.set(-1.9, -0.4, 0);
+            group.add(stern);
+            // Mast
+            const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.2, 12), new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.2, roughness: 0.6 }));
+            mast.position.y = 1.0;
+            group.add(mast);
+            // Sails
+            const sailMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.0, roughness: 0.9, side: THREE.DoubleSide, emissive: 0x101010, emissiveIntensity: 0.08 });
+            const sail1 = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.0), sailMat);
+            sail1.position.set(0.6, 1.1, 0);
+            sail1.rotation.y = Math.PI/10;
+            group.add(sail1);
+            const sail2 = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.6), sailMat);
+            sail2.position.set(-0.3, 0.9, 0);
+            sail2.rotation.y = Math.PI/12;
+            group.add(sail2);
+            // Flag
+            const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.25), new THREE.MeshStandardMaterial({ color: 0xff3366, side: THREE.DoubleSide, metalness: 0, roughness: 1 }));
+            flag.position.set(0, 2.0, 0);
+            flag.rotation.y = Math.PI/8;
+            group.add(flag);
+            // Lights
+            const amb = new THREE.AmbientLight(0xffffff, 0.45);
+            const sun = new THREE.DirectionalLight(0xffe0b0, 0.9);
+            sun.position.set(4, 6, 3);
+            scene.add(amb, sun, group);
+            camera.position.set(0, 1.6, 7.5);
+            camera.lookAt(0, 0.4, 0);
+            // Sea wave data
+            const basePos = sea.geometry.attributes.position.array.slice();
+            const pos = sea.geometry.attributes.position;
+            return (data, time) => {
+                const t = time * 0.001;
+                const bass = data[8] / 255;
+                const mid = data[18] / 255;
+                // Bobbing and slight roll with audio
+                const bob = Math.sin(t * 1.2) * (0.05 + bass * 0.12);
+                const roll = Math.sin(t * 0.9) * (0.03 + mid * 0.08);
+                group.position.y = bob;
+                group.rotation.z = roll;
+                group.rotation.y = Math.sin(t * 0.3) * 0.05;
+                // Flag flutter
+                flag.rotation.y = Math.PI/8 + Math.sin(t*6.0 + bass*4.0)*0.25;
+                // Sails subtle billow
+                sail1.position.z = Math.sin(t*1.5) * 0.08;
+                sail2.position.z = Math.cos(t*1.7) * 0.06;
+                // Sea waves (displace Y of plane)
+                for (let i = 0; i < pos.count; i++) {
+                    const ix = i*3;
+                    const x = basePos[ix+0];
+                    const z = basePos[ix+2];
+                    const w1 = Math.sin(x*0.6 + t*1.8) * 0.15;
+                    const w2 = Math.cos(z*0.55 - t*1.3) * 0.12;
+                    const w3 = Math.sin((x+z)*0.25 + t*2.2) * (0.08 + bass*0.22 + mid*0.1);
+                    pos.array[ix+1] = -1.0 + w1 + w2 + w3;
+                }
+                pos.needsUpdate = true;
+                sea.geometry.computeVertexNormals();
+                // Color tint by audio
+                const hue = (t*0.06 + bass*0.4) % 1;
+                seaMat.color.setHSL(0.55 + 0.05*Math.sin(t*0.2), 0.6, 0.35 + bass*0.15);
+                sailMat.emissiveIntensity = 0.08 + bass*0.35;
+                hullMat.emissive.setHSL(hue, 0.8, 0.2);
+                sun.intensity = 0.8 + bass*0.6;
+            };
+        };
+
         // Lorenz Attractor (line)
         const sceneLorenz = (scene, camera) => {
             const maxPts = 6000;
@@ -3196,14 +3375,118 @@ function stopAllAndShowStart() {
             };
         };
 
+        // --- ENGINE: ProjectM (Filtered Presets) ---
+        class MilkdropPresetEngine {
+            constructor(label, filterFn) {
+                this.name = `ProjectM: ${label}`;
+                this.filterFn = typeof filterFn === 'function' ? filterFn : (() => true);
+                this.resizeHandler = this.onResize.bind(this);
+                this.canvas = null;
+                this.transitionSec = visualSettings.transitionSec;
+                this.presets = butterchurnPresets.getPresets?.() || {};
+                const allKeys = Object.keys(this.presets);
+                this.filteredKeys = allKeys.filter(k => {
+                    try { return !!this.filterFn(k); } catch { return false; }
+                });
+                if (this.filteredKeys.length === 0) this.filteredKeys = allKeys;
+                this.currentPresetIdx = Math.floor(Math.random() * Math.max(1, this.filteredKeys.length));
+            }
+
+            init() {
+                container.innerHTML = '';
+                this.canvas = document.createElement('canvas');
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                container.appendChild(this.canvas);
+                const pxRatio = Number(visualSettings.pixelRatio) || (window.devicePixelRatio || 1);
+                this.visualizer = butterchurn.createVisualizer(state.audioCtx, this.canvas, {
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                    pixelRatio: pxRatio
+                });
+                this.visualizer.connectAudio(state.analyserNode);
+                this.loadPreset(this.currentPresetIdx);
+                window.addEventListener('resize', this.resizeHandler);
+                this.animate();
+                this.restartCycle();
+            }
+
+            loadPreset(idx) {
+                if(this.filteredKeys.length === 0) return;
+                const key = this.filteredKeys[idx];
+                const transition = Number(visualSettings.transitionSec) || this.transitionSec || 2.7;
+                this.visualizer.loadPreset(this.presets[key], transition);
+                if (state.activeVisualizer === this) {
+                    document.getElementById('mode-sub').innerText = key;
+                }
+                try { setBottomTextRandomColor(); } catch(e) {}
+            }
+
+            nextPreset() {
+                if(this.filteredKeys.length === 0) return;
+                let next = this.currentPresetIdx;
+                if(this.filteredKeys.length > 1) {
+                    while(next === this.currentPresetIdx) {
+                        next = Math.floor(Math.random() * this.filteredKeys.length);
+                    }
+                }
+                this.currentPresetIdx = next;
+                this.loadPreset(this.currentPresetIdx);
+                this.restartCycle();
+            }
+
+            restartCycle() {
+                if(this.cycleTimeout) clearTimeout(this.cycleTimeout);
+                const schedule = () => {
+                    const minS = Number(visualSettings.shuffleMinSec) || 18;
+                    const maxS = Number(visualSettings.shuffleMaxSec) || 36;
+                    const lo = Math.min(minS, maxS);
+                    const hi = Math.max(minS, maxS);
+                    const delay = (lo + Math.random() * (hi - lo)) * 1000;
+                    this.cycleTimeout = setTimeout(() => {
+                        this.nextPreset();
+                        schedule();
+                    }, delay);
+                };
+                schedule();
+            }
+
+            onResize() {
+                if(this.visualizer && this.canvas) {
+                    const w = window.innerWidth;
+                    const h = window.innerHeight;
+                    this.canvas.width = w;
+                    this.canvas.height = h;
+                    this.visualizer.setRendererSize(w, h);
+                }
+            }
+
+            animate() {
+                this.animId = requestAnimationFrame(this.animate.bind(this));
+                this.visualizer.render();
+            }
+
+            destroy() {
+                cancelAnimationFrame(this.animId);
+                if(this.cycleTimeout) clearTimeout(this.cycleTimeout);
+                window.removeEventListener('resize', this.resizeHandler);
+                container.innerHTML = '';
+            }
+        }
+
         // --- MASTER CONTROL ---
         const modes = [
             new MilkdropEngine(),
             new MilkdropEngineV2(),
             new MilkdropEngineV3(),
+            // Colorful Butterchurn sets
+            new MilkdropPresetEngine("Rainbow", (k) => /rainbow|color|colour|spectrum|palette/i.test(k)),
+            new MilkdropPresetEngine("Neon", (k) => /neon|glow|laser|lazer|beam|fluor/i.test(k)),
+            new MilkdropPresetEngine("Psychedelia", (k) => /psy|trippy|acid|fractal|plasma|kaleid|kaleido/i.test(k)),
             new ThreeEngine("Audio Bars", sceneBars),
             new ThreeEngine("Audio Bars (Circle)", sceneBarsCircle),
             new ThreeEngine("Audio Bars 3D", sceneBars3D),
+            new ThreeEngine("Audio Bars: Vortex", sceneBarsVortex),
             new ThreeEngine("Neon Sphere", sceneSphere),
             new ThreeEngine("Electro Sphere", sceneElectroSphere),
             new ThreeEngine("Photon Shell", scenePhotonShell),
@@ -3223,7 +3506,7 @@ function stopAllAndShowStart() {
             new ThreeEngine("Ribbons", sceneRibbons),
             new ThreeEngine("Mandelbrot", sceneMandelbrot),
             new ThreeEngine("Julia Set", sceneJulia),
-            new ThreeEngine("Barnsley Fern", sceneBarnsleyFern),
+            new ThreeEngine("Sailing Ship", sceneSailingShip),
             new ThreeEngine("Lorenz Attractor", sceneLorenz),
             new ThreeEngine("Sierpinski Carpet", sceneSierpinskiCarpet),
             new ThreeEngine("Emoji Swarm", sceneEmojiSwarm),
@@ -3491,11 +3774,11 @@ function stopAllAndShowStart() {
                 }
             }, 10000);
         });
-        // Station banner toggles shuffle
-        stationBanner.title = "Click: toggle visual shuffle";
+        // Station banner now triggers random station
+        stationBanner.title = "Click: random station";
         stationBanner.addEventListener('click', (e) => {
             e.stopPropagation();
-            setModeShuffle(!modeShuffleOn);
+            pickRandomStation();
         });
         document.addEventListener('click', (e) => {
             if(!radioPanel.classList.contains('display-none')) {
