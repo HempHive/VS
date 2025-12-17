@@ -3962,7 +3962,7 @@ function stopAllAndShowStart() {
         });
 
         // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
+        function handleGlobalKeydown(e) {
             if (e.key === 'f' || e.key === 'F') {
                 toggleFullscreen();
             } else if (e.key === 's' || e.key === 'S') {
@@ -4040,7 +4040,11 @@ function stopAllAndShowStart() {
                 e.preventDefault();
                 loadMode(state.currentModeIdx + 1);
             }
-        });
+        }
+        try {
+            document.addEventListener('keydown', handleGlobalKeydown, false);
+            window.addEventListener('keydown', handleGlobalKeydown, false);
+        } catch(e) {}
 
         // Bootstrap station list
         loadStations();
