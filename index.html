@@ -3695,12 +3695,15 @@ function stopAllAndShowStart() {
         });
 
         // --- BINDINGS ---
-        document.getElementById('btn-prev').addEventListener('click', () => { loadMode(state.currentModeIdx - 1); resetIdleTimer(); });
-        document.getElementById('btn-next').addEventListener('click', () => { loadMode(state.currentModeIdx + 1); resetIdleTimer(); });
-        document.getElementById('btn-radio').addEventListener('click', playRadio);
-        document.getElementById('btn-mic').addEventListener('click', useMic);
-        document.getElementById('file-input').addEventListener('change', useFile);
-        document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
+        document.getElementById('btn-prev')?.addEventListener('click', () => { loadMode(state.currentModeIdx - 1); resetIdleTimer(); });
+        document.getElementById('btn-next')?.addEventListener('click', () => { loadMode(state.currentModeIdx + 1); resetIdleTimer(); });
+        const btnRadioEl = document.getElementById('btn-radio');
+        if (btnRadioEl) btnRadioEl.addEventListener('click', playRadio);
+        const btnMicEl = document.getElementById('btn-mic');
+        if (btnMicEl) btnMicEl.addEventListener('click', useMic);
+        const fileInputEl = document.getElementById('file-input');
+        if (fileInputEl) fileInputEl.addEventListener('change', useFile);
+        document.getElementById('btn-fullscreen')?.addEventListener('click', toggleFullscreen);
         // WebM toggle and nav
         webmBtn.addEventListener('click', () => {
             if(!webmOn) {
