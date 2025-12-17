@@ -1294,12 +1294,22 @@
             const url = radioInputEl.value;
             
             statusEl.innerText = "Connecting to Stream...";
-            // Update banner title
-            if(currentStationIndex >= 0 && stations[currentStationIndex] && stations[currentStationIndex].url === url) {
-                showStationBanner(stations[currentStationIndex].name);
-            } else {
-                showStationBanner(deriveTitleFromUrl(url));
-            }
+            // Update banner title (prefer station name matching current URL)
+            (function updateInitialStationTitle() {
+                let nameToShow = null;
+                if (currentStationIndex >= 0 && stations[currentStationIndex] && stations[currentStationIndex].url === url) {
+                    nameToShow = stations[currentStationIndex].name;
+                } else if (stations && stations.length > 0) {
+                    // Find station by exact URL match and adopt its index for future consistency
+                    const foundIdx = stations.findIndex(s => s && s.url === url);
+                    if (foundIdx >= 0) {
+                        currentStationIndex = foundIdx;
+                        try { updateStationActiveHighlight(); } catch(e) {}
+                        nameToShow = stations[foundIdx].name;
+                    }
+                }
+                showStationBanner(nameToShow || deriveTitleFromUrl(url));
+            })();
             
             audioEl.crossOrigin = "anonymous"; 
             audioEl.src = url;
