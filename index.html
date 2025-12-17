@@ -1431,11 +1431,10 @@
                 }
                 // Show volume slider after starting
                 (() => { const vs = document.getElementById('volume-slider-container'); if (vs) vs.style.display = 'flex'; })();
-                // Build top bar: shuffle | volume | radio
+                // Build top bar: volume | radio (shuffle toggle optional)
                 try {
-                    if (topBar && shuffleToggle && volumeSlider && radioQuickBtn) {
+                    if (topBar && volumeSlider && radioQuickBtn) {
                         topBar.innerHTML = '';
-                        topBar.appendChild(shuffleToggle);
                         topBar.appendChild(document.getElementById('volume-slider-container'));
                         topBar.appendChild(radioQuickBtn);
                         topBar.style.display = 'flex';
@@ -3548,9 +3547,10 @@ function stopAllAndShowStart() {
 
         // --- ENGINE: ProjectM (Filtered Presets) ---
         class MilkdropPresetEngine {
-            constructor(label, filterFn) {
+            constructor(label, filterFn, options = {}) {
                 this.name = `ProjectM: ${label}`;
                 this.filterFn = typeof filterFn === 'function' ? filterFn : (() => true);
+                this.options = { invert: !!options.invert };
                 this.resizeHandler = this.onResize.bind(this);
                 this.canvas = null;
                 this.transitionSec = visualSettings.transitionSec;
@@ -3568,6 +3568,10 @@ function stopAllAndShowStart() {
                 this.canvas = document.createElement('canvas');
                 this.canvas.width = window.innerWidth;
                 this.canvas.height = window.innerHeight;
+                // Apply color inversion if requested
+                if (this.options.invert) {
+                    this.canvas.style.filter = 'invert(1)';
+                }
                 container.appendChild(this.canvas);
                 const pxRatio = Number(visualSettings.pixelRatio) || (window.devicePixelRatio || 1);
                 this.visualizer = butterchurn.createVisualizer(state.audioCtx, this.canvas, {
@@ -3650,10 +3654,8 @@ function stopAllAndShowStart() {
             new MilkdropEngine(),
             new MilkdropEngineV2(),
             new MilkdropEngineV3(),
-            // Colorful Butterchurn sets
-            new MilkdropPresetEngine("Rainbow", (k) => /rainbow|color|colour|spectrum|palette/i.test(k)),
-            new MilkdropPresetEngine("Neon", (k) => /neon|glow|laser|lazer|beam|fluor/i.test(k)),
-            new MilkdropPresetEngine("Psychedelia", (k) => /psy|trippy|acid|fractal|plasma|kaleid|kaleido/i.test(k)),
+            // Colorful Butterchurn set (inverted colors)
+            new MilkdropPresetEngine("Rainbow (Invert)", (k) => /rainbow|color|colour|spectrum|palette/i.test(k), { invert: true }),
             new ThreeEngine("Audio Bars", sceneBars),
             new ThreeEngine("Audio Bars (Circle)", sceneBarsCircle),
             new ThreeEngine("Audio Bars 3D", sceneBars3D),
