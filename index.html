@@ -303,34 +303,25 @@
 		#overlay:not(.hidden) ~ #radio-quick { 
 			display: none !important; 
 		}
-		/* Top bar container to align shuffle, volume, and radio buttons */
+		/* Top bar container to align volume and radio buttons */
 		#top-bar {
 			position: fixed; top: 10px; left: 14px; right: 14px;
 			display: none; z-index: 80;
-			display: flex; align-items: center; gap: 12px;
+			display: flex; align-items: center; justify-content: center;
 			pointer-events: auto; opacity: 1; transition: opacity 1s ease-in-out;
 		}
-		/* Normalize children inside the top bar */
-		#top-bar #shuffle-toggle,
+		/* Radio quick - large top-right button */
 		#top-bar #radio-quick {
-			position: static !important;
-			margin: 0;
-			border: none;
-			box-shadow: none;
-		}
-		/* Scale down buttons within the top bar to prevent overlap */
-		#top-bar #shuffle-toggle {
-			width: 40px !important; height: 40px !important;
-			font-size: 24px !important;
-		}
-		#top-bar #radio-quick {
-			width: 40px !important; height: 40px !important;
+			position: absolute !important; right: 14px; top: 0;
+			width: 80px !important; height: 80px !important;
 			background-size: contain !important;
 		}
+		/* Center the volume slider and ensure it doesn't overlap the right button */
 		#top-bar #volume-slider-container {
-			position: static; width: auto; height: 64px;
-			flex: 1 1 auto; display: flex;
-			min-width: 360px; /* ensure space between buttons */
+			position: absolute; left: 50%; transform: translateX(-50%);
+			width: calc(100% - 140px); max-width: 80vw; height: 64px;
+			display: flex; align-items: center; justify-content: center;
+			min-width: 360px;
 		}
         
         /* Shuffle Toggle (Top-left) */
@@ -1435,9 +1426,13 @@
                 try {
                     if (topBar && volumeSlider && radioQuickBtn) {
                         topBar.innerHTML = '';
+                        // Ensure the top bar is actually shown (remove class that forces display:none)
+                        topBar.classList.remove('display-none');
                         topBar.appendChild(document.getElementById('volume-slider-container'));
                         topBar.appendChild(radioQuickBtn);
                         topBar.style.display = 'flex';
+                        topBar.style.opacity = '1';
+                        topBar.style.pointerEvents = 'auto';
                     }
                 } catch(e) {}
                 resetIdleTimer();
@@ -2140,38 +2135,46 @@ function stopAllAndShowStart() {
             camera.position.z = 8.5;
             // Animation
             let scrollZ = 0;
+            // Smoothing buffers
+            const smoothedVals = new Array(ringCount * barsPerRing).fill(0);
+            let smoothedBass = 0;
+            const smooth = (prev, next, alpha) => prev + (next - prev) * alpha; // alpha ~ 0.15
             return (data, time) => {
                 const t = time * 0.0006;
                 const step = Math.max(1, Math.floor(data.length / bars.length));
-                // Create a forward motion through the tunnel
-                scrollZ += 0.035 + (data[8] / 255) * 0.12;
+                // Smooth bass to avoid jerkiness in forward motion
+                const bassRaw = (data[8] || 0) / 255;
+                smoothedBass = smooth(smoothedBass, bassRaw, 0.12);
+                // Create a forward motion through the tunnel (smoothed)
+                scrollZ += 0.03 + smoothedBass * 0.09;
                 const baseZShift = scrollZ % depthStep;
                 bars.forEach((b, i) => {
-                    const v = data[(i * step) % data.length] / 255;
-                    const h = 0.18 + v * 3.0;
+                    const vRaw = (data[(i * step) % data.length] || 0) / 255;
+                    const v = smoothedVals[i] = smooth(smoothedVals[i], vRaw, 0.15);
+                    const h = 0.22 + v * 2.4; // reduced range for steadier bars
                     b.scale.y = h;
                     // slight breathing of radius per ring by mids
                     const ringIdx = Math.floor(i / barsPerRing);
-                    const mid = data[24] / 255;
+                    const mid = smooth(0, (data[24] || 0) / 255, 0.15);
                     const ring = rings[ringIdx];
                     const frac = ringIdx / (ringCount - 1);
-                    const breathe = 0.08 * Math.sin(t * 3.0 + ringIdx * 0.35) * (0.6 + mid * 0.8);
-                    const angle = (i % barsPerRing) / barsPerRing * Math.PI * 2 + ringIdx * twistPerRing + t * 1.2;
+                    const breathe = 0.06 * Math.sin(t * 2.2 + ringIdx * 0.35) * (0.5 + mid * 0.6);
+                    const angle = (i % barsPerRing) / barsPerRing * Math.PI * 2 + ringIdx * twistPerRing + t * 1.0;
                     const cr = Math.max(0.1, ring.radius * (1.0 + breathe));
                     b.position.x = Math.cos(angle) * cr;
                     b.position.y = Math.sin(angle) * cr;
                     // continuous flow along z to simulate vortex pull
-                    const z = -ringIdx * depthStep + baseZShift - v * 0.6;
+                    const z = -ringIdx * depthStep + baseZShift - v * 0.42; // less aggressive z wobble
                     b.position.z = z;
                     b.lookAt(0, 0, z - 1);
                     // color cycle along tunnel
-                    const hue = (frac + t * 0.12 + v * 0.2) % 1;
-                    b.material.color.setHSL(hue, 1, 0.56);
-                    b.material.emissive.setHSL(hue, 1, 0.18);
+                    const hue = (frac + t * 0.08 + v * 0.15) % 1;
+                    b.material.color.setHSL(hue, 1, 0.55);
+                    b.material.emissive.setHSL(hue, 1, 0.15);
                 });
                 // gentle whole-tunnel rotation for a wormhole effect
-                group.rotation.z = Math.sin(t * 0.9) * 0.35;
-                group.rotation.x = Math.cos(t * 0.7) * 0.18;
+                group.rotation.z = Math.sin(t * 0.7) * 0.28;
+                group.rotation.x = Math.cos(t * 0.55) * 0.16;
             };
         };
         // High-energy neon sphere variants
