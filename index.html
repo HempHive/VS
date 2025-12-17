@@ -217,8 +217,13 @@
         }
 
 		.radio-input {
-			padding: 15px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #0f0; 
-			width: 320px;
+			padding: 15px; background: rgba(0,0,0,0.5); border: 2px solid rgba(255,20,147,1.0); color: #0f0; 
+			width: 320px; border-radius: 14px; box-shadow: 0 0 18px rgba(255,20,147,0.9), 0 0 3px rgba(255,20,147,0.85);
+			transition: box-shadow 220ms ease, border-color 220ms ease;
+		}
+		.radio-input:focus {
+			outline: none; border-color: rgba(255,20,147,1.0);
+			box-shadow: 0 0 24px rgba(255,20,147,0.95), 0 0 6px rgba(255,20,147,0.9);
 		}
 
         /* Navigation Arrows */
@@ -268,9 +273,10 @@
 			margin-top: 8px;
 			display: flex; align-items: center; justify-content: center;
 			min-height: 56px; /* reserve space so title stays centered */
+			opacity: 1; transition: opacity 260ms ease;
 		}
 		#url-flyover.is-hidden {
-			visibility: hidden; opacity: 0; pointer-events: none;
+			opacity: 0; pointer-events: none;
 		}
 
         /* Quick Radio Button (Top-right) */
