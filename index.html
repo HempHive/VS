@@ -120,8 +120,8 @@
 			font-weight: 700;
 			letter-spacing: 10px;
 			text-transform: uppercase;
-			margin-bottom: 30px;
-			font-size: clamp(48px, 9vw, 140px);
+			margin-bottom: 0px; /* minimal gap below title */
+			font-size: clamp(96px, 18vw, 280px); /* doubled size */
 			text-shadow: 0 0 20px rgba(255,255,255,0.15), 0 0 24px var(--glowColor, rgba(102,204,255,0.6)), 0 0 48px var(--glowColor, rgba(102,204,255,0.35));
 		}
 		/* Per-letter pattern fill */
@@ -253,7 +253,19 @@
         .hidden { opacity: 0 !important; pointer-events: none; }
         .display-none { display: none !important; }
         
-		#loading-status { color: #0ff; margin-top: 20px; font-size: 12px; height: 20px; }
+		#loading-status { color: #39ff14; margin-top: 6px; font-size: 12px; height: 20px; }
+		#shortcuts-status { 
+			color: #ff1493; margin-top: 8px; font-size: 12px; min-height: 18px; 
+			white-space: pre-line; text-align: center;
+			position: absolute; left: 50%; transform: translateX(-50%);
+			pointer-events: none; width: 86vw; max-width: 1200px; line-height: 1.35;
+			overflow: hidden; /* ensure at most 3 lines visible */
+		}
+		/* Toggleable URL input above the title (centered, absolute) */
+		#url-flyover {
+			position: absolute; left: 50%; transform: translateX(-50%);
+			z-index: 81; /* top set dynamically via JS to keep fixed distance above title */
+		}
 
         /* Quick Radio Button (Top-right) */
         #radio-quick {
@@ -559,21 +571,18 @@
 
     <!-- START SCREEN -->
 	<div id="overlay">
-		<h1 id="logo-omni" data-text="OMNI&gt;"><span class="logo-letter">O</span><span class="logo-letter">M</span><span class="logo-letter">N</span><span class="logo-letter">I</span><span class="logo-letter">&gt;</span></h1>
+		<!-- Toggle URL input (shown via clicking 'N' in OMNI>) -->
+		<div id="url-flyover" class="display-none">
+			<input type="text" id="radio-url" class="radio-input interactive" value="https://stream.bigfm.de/tomorrowland/mp3-128/" placeholder="Paste Stream URL">
+		</div>
+		<h1 id="logo-omni" data-text="OMNI&gt;"><span class="logo-letter logo-o">O</span><span class="logo-letter logo-m">M</span><span class="logo-letter">N</span><span class="logo-letter logo-start">I</span><span class="logo-letter logo-start">&gt;</span></h1>
         
         <div class="control-group">
-            <!-- DEFAULT RADIO URL: BigFM Tomorrowland -->
-            <input type="text" id="radio-url" class="radio-input interactive" value="https://stream.bigfm.de/tomorrowland/mp3-128/" placeholder="Paste Stream URL">
-            <button class="btn-main interactive" id="btn-radio">▶ Start Radio</button>
-        </div>
-
-        <div class="control-group">
-			<button class="btn-main interactive" id="btn-mic">USE MIC / MIDI</button>
-			<button class="btn-main interactive" id="btn-file" onclick="document.getElementById('file-input').click()">LOAD LOCAL AUDIO</button>
             <input type="file" id="file-input" accept="audio/*" style="display:none">
         </div>
 
         <div id="loading-status">Select a source to begin</div>
+        <div id="shortcuts-status"></div>
     </div>
 
     <!-- HUD (Fades out when idle) -->
@@ -797,7 +806,7 @@
 		}
 		// Typed status text effect
 		let statusTypeTimer = null;
-		function typeStatus(text) {
+		function typeStatus(text, onDone) {
 			const el = document.getElementById('loading-status');
 			if (!el) return;
 			if (statusTypeTimer) { try { clearTimeout(statusTypeTimer); } catch(e) {} statusTypeTimer = null; }
@@ -806,12 +815,67 @@
 			let i = 0;
 			const step = () => {
 				el.innerText = full.slice(0, i);
+				try { if (typeof layoutOverlayElements === 'function') layoutOverlayElements(); } catch(e) {}
 				i++;
 				if (i <= full.length) {
 					statusTypeTimer = setTimeout(step, 60);
+				} else {
+					try { if (typeof onDone === 'function') onDone(); } catch(e) {}
 				}
 			};
 			step();
+		}
+		// Generic typewriter for any element id
+		let shortcutsTypeTimer = null;
+		function typeStatusTo(elId, text, speed) {
+			const el = document.getElementById(elId);
+			if (!el) return;
+			const useSpeed = typeof speed === 'number' ? speed : 50;
+			// separate timer for shortcuts line to avoid interference
+			if (elId === 'shortcuts-status' && shortcutsTypeTimer) { try { clearTimeout(shortcutsTypeTimer); } catch(e) {} shortcutsTypeTimer = null; }
+			const full = String(text || '');
+			el.innerText = '';
+			let i = 0;
+			const step = () => {
+				el.innerText = full.slice(0, i);
+				try { if (typeof layoutOverlayElements === 'function') layoutOverlayElements(); } catch(e) {}
+				i++;
+				if (i <= full.length) {
+					if (elId === 'shortcuts-status') shortcutsTypeTimer = setTimeout(step, useSpeed);
+					else setTimeout(step, useSpeed);
+				}
+			};
+			step();
+		}
+		// Layout helper to keep URL and shortcuts a fixed distance from title/status
+		function layoutOverlayElements() {
+			const logo = document.getElementById('logo-omni');
+			const urlFly = document.getElementById('url-flyover');
+			const shortcuts = document.getElementById('shortcuts-status');
+			const status = document.getElementById('loading-status');
+			if (!logo) return;
+			const logoRect = logo.getBoundingClientRect();
+			// Tight, consistent gaps to avoid large spacing
+			const gapAbove = 69; // px above title (URL input offset)
+			const gapBelow = 10; // px below status/title
+			// Position URL flyover above title
+			if (urlFly) {
+				const y = Math.max(0, Math.round(logoRect.top - gapAbove));
+				urlFly.style.top = y + 'px';
+			}
+			// Position shortcuts below (under status if present, else under title)
+			if (shortcuts) {
+				let anchorBottom = logoRect.bottom;
+				if (status) {
+					const stRect = status.getBoundingClientRect();
+					anchorBottom = Math.max(anchorBottom, stRect.bottom);
+				}
+				const top = Math.round(anchorBottom + gapBelow);
+				shortcuts.style.top = top + 'px';
+				// Ensure max of 3 lines visible
+				const lineHeight = 1.35 * 12; // matches CSS font-size:12px; line-height:1.35
+				shortcuts.style.maxHeight = Math.round(lineHeight * 3) + 'px';
+			}
 		}
 		function setBottomTextRandomColor() {
 			const titleEl = document.getElementById('mode-title');
@@ -904,6 +968,7 @@
         }
         window.addEventListener('mousemove', resetIdleTimer);
         window.addEventListener('click', resetIdleTimer);
+        window.addEventListener('resize', () => { try { layoutOverlayElements(); } catch(e) {} });
 
         // Updated Fullscreen Logic with forced Resize Trigger
         function toggleFullscreen() {
@@ -924,7 +989,73 @@
             if(state.activeVisualizer && state.activeVisualizer.onResize) {
                 state.activeVisualizer.onResize();
             }
+			try { layoutOverlayElements(); } catch(e) {}
         }
+		// Make the last two letters "I>" clickable to start radio
+		(() => {
+			try {
+				const logo = document.getElementById('logo-omni');
+				if (!logo) return;
+				const starts = logo.querySelectorAll('.logo-start');
+				starts.forEach((el) => {
+					el.style.cursor = 'pointer';
+					el.title = 'Start Radio';
+					el.addEventListener('click', (e) => {
+						e.stopPropagation();
+						const btn = document.getElementById('btn-radio');
+						if (btn) btn.click();
+						else if (typeof playRadio === 'function') playRadio();
+					});
+				});
+				// Make "N" toggle the URL input flyover
+				const nEl = logo.querySelector('.logo-letter:nth-child(3)');
+				if (nEl) {
+					nEl.style.cursor = 'pointer';
+					nEl.title = 'Toggle Stream URL';
+					nEl.addEventListener('click', (e) => {
+						e.stopPropagation();
+						const fly = document.getElementById('url-flyover');
+						if (!fly) return;
+						const hidden = fly.classList.contains('display-none');
+						if (hidden) fly.classList.remove('display-none');
+						else fly.classList.add('display-none');
+						// focus/select input when showing
+						if (!hidden) return;
+						const inp = document.getElementById('radio-url');
+						if (inp) {
+							try { inp.focus(); inp.select(); } catch(e) {}
+						}
+					});
+				}
+				// Make "O" load local audio
+				const oEl = logo.querySelector('.logo-o');
+				if (oEl) {
+					oEl.style.cursor = 'pointer';
+					oEl.title = 'Load Local Audio';
+					oEl.addEventListener('click', (e) => {
+						e.stopPropagation();
+						const btn = document.getElementById('btn-file');
+						if (btn) btn.click();
+						else {
+							const input = document.getElementById('file-input');
+							if (input) input.click();
+						}
+					});
+				}
+				// Make "M" use mic
+				const mEl = logo.querySelector('.logo-m');
+				if (mEl) {
+					mEl.style.cursor = 'pointer';
+					mEl.title = 'Use Microphone';
+					mEl.addEventListener('click', (e) => {
+						e.stopPropagation();
+						const btn = document.getElementById('btn-mic');
+						if (btn) btn.click();
+						else if (typeof useMic === 'function') useMic();
+					});
+				}
+			} catch(e) {}
+		})();
         
         // WebM speed helpers
         function setWebmSpeed(newRate) {
@@ -1077,9 +1208,20 @@
 			// Show full-screen border frame
 			const border = document.getElementById('border-frame');
 			if (border) border.classList.add('visible');
-			// Type the current status line on start screen
+			// Type the current status line on start screen, then shortcuts
+			const shortcuts = [
+				'F Fullscreen  •  C Next Visual  •  R Random Station',
+				'W Toggle Avatar  •  Q/E Avatar Speed  •  Arrows Move Avatar',
+				'+/− Size  •  Z/X Opacity  •  Esc Back'
+			].join('\n');
 			if (statusEl) {
-				typeStatus(statusEl.innerText || 'Select a source to begin');
+				typeStatus(statusEl.innerText || 'Select a source to begin', () => {
+					typeStatusTo('shortcuts-status', shortcuts, 30);
+					try { layoutOverlayElements(); } catch(e) {}
+				});
+			} else {
+				typeStatusTo('shortcuts-status', shortcuts, 30);
+				try { layoutOverlayElements(); } catch(e) {}
 			}
             setStartControlsEnabled(true);
         }
@@ -1107,10 +1249,17 @@
 				// Show border frame on first load
 				const border = document.getElementById('border-frame');
 				if (border) border.classList.add('visible');
-				// Type initial status if present
+				// Type initial status then shortcuts (if text present)
 				const s = document.getElementById('loading-status');
+				const shortcuts = [
+					'F Fullscreen  •  C Next Visual  •  R Random Station',
+					'W Toggle Avatar  •  Q/E Avatar Speed  •  Arrows Move Avatar',
+					'+/− Size  •  Z/X Opacity  •  Esc Back'
+				].join('\n');
 				if (s && s.innerText && s.innerText.trim().length > 0) {
-					typeStatus(s.innerText.trim());
+					typeStatus(s.innerText.trim(), () => { typeStatusTo('shortcuts-status', shortcuts, 30); try { layoutOverlayElements(); } catch(e) {} });
+				} else {
+					typeStatusTo('shortcuts-status', shortcuts, 30); try { layoutOverlayElements(); } catch(e) {}
 				}
 			}
 			// Try to apply tiled background from pta.gif if available
