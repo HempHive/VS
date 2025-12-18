@@ -1325,7 +1325,7 @@
                         if (typeof hideWebm === 'function' && webmOn) hideWebm();
                     }, { passive: false });
                 }
-                // Wheel: scroll down opens top menu; scroll up closes (trackpads/mice)
+                // Wheel: scroll UP opens top menu; scroll DOWN closes (trackpads/mice)
                 let lastWheelAt = 0;
                 canvasEl.addEventListener('wheel', (e) => {
                     if (!state || !state.isPlaying) return;
@@ -1333,8 +1333,8 @@
                     if (now - lastWheelAt < 250) return;
                     lastWheelAt = now;
                     const dy = e.deltaY || 0;
-                    if (dy > 10) { try { openTopMenuPanel(); } catch(_) {} }
-                    else if (dy < -10) { try { closeTopMenuPanel(); } catch(_) {} }
+                    if (dy < 0) { try { openTopMenuPanel(); } catch(_) {} }
+                    else if (dy > 0) { try { closeTopMenuPanel(); } catch(_) {} }
                 }, { passive: true });
             } catch(e) {}
         })();
