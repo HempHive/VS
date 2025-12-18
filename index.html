@@ -568,6 +568,7 @@
 			transform: translateY(-100%);
 			transition: transform 0.35s ease-in-out, opacity 0.2s ease-in-out;
 			opacity: 0; pointer-events: none;
+			display: flex; flex-direction: column;
 		}
 		#top-menu-panel.open {
 			transform: translateY(0);
@@ -577,7 +578,7 @@
 			display: flex; align-items: center; justify-content: space-between;
 			padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.12);
 		}
-		#top-menu-content { padding: 12px; display: grid; gap: 10px; grid-template-columns: 1fr; }
+		#top-menu-content { padding: 12px; display: grid; gap: 10px; grid-template-columns: 1fr; flex: 1; overflow: auto; }
 		#top-menu-actions { display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 		#top-menu-webm { display: grid; gap: 8px; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; }
 		#top-menu-content .row { display: flex; gap: 8px; align-items: center; }
@@ -590,11 +591,9 @@
 			font-size: 12px; letter-spacing: 1px; border-radius: 6px; cursor: pointer;
 		}
 		#top-menu-content .btn:hover { background: #fff; color: #000; }
-		/* Volume slider inside panel */
-		#top-menu-panel #volume-slider-container {
-			position: static; width: 100%; height: 48px; display: flex; align-items: center; justify-content: center;
-			margin-top: 4px;
-		}
+		/* Footer with volume slider pinned to the bottom of the panel */
+		#top-menu-footer { padding: 8px 14px; border-top: 1px solid rgba(255,255,255,0.12); }
+		#top-menu-footer #volume-slider-container { display:flex; align-items:center; width:100%; height:48px; }
     </style>
 
     <!-- Import Map -->
@@ -707,6 +706,9 @@
 					<button class="btn" id="topmenu-webm-next" title="Next WebM">⟩</button>
 				</div>
 			</div>
+			<!-- footer with volume slider will be appended below -->
+		</div>
+		<div id="top-menu-footer">
 			<div id="volume-slider-container" class="interactive">
 				<input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.2">
 			</div>
@@ -1319,12 +1321,7 @@
                         }
                     }
                 }, { passive: false });
-                if (webmOverlay) {
-                    webmOverlay.addEventListener('dblclick', (e) => {
-                        try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
-                        if (typeof hideWebm === 'function' && webmOn) hideWebm();
-                    }, { passive: false });
-                }
+                // Note: double-click on WebM overlay no longer closes it
                 // Wheel: scroll UP opens top menu; scroll DOWN closes (trackpads/mice)
                 let lastWheelAt = 0;
                 canvasEl.addEventListener('wheel', (e) => {
@@ -1726,15 +1723,12 @@
                 if (typeof radioQuickBtn !== 'undefined' && radioQuickBtn) {
                     radioQuickBtn.style.display = '';
                 }
-                // Show volume slider after starting
-                (() => { const vs = document.getElementById('volume-slider-container'); if (vs) vs.style.display = 'flex'; })();
-                // Build top bar: volume | radio (shuffle toggle optional)
+                // Build top bar: show quick radio (volume slider lives in top menu)
                 try {
-                    if (topBar && volumeSlider && radioQuickBtn) {
+                    if (topBar && radioQuickBtn) {
                         topBar.innerHTML = '';
                         // Ensure the top bar is actually shown (remove class that forces display:none)
                         topBar.classList.remove('display-none');
-                        topBar.appendChild(document.getElementById('volume-slider-container'));
                         topBar.appendChild(radioQuickBtn);
                         topBar.style.display = 'flex';
                         topBar.style.opacity = '1';
