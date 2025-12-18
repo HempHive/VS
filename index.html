@@ -1307,6 +1307,35 @@
                     webmOverlay.addEventListener('pointerdown', onPointerDown, { passive: true });
                     webmOverlay.addEventListener('pointerup', onPointerUpWebm, { passive: false });
                 }
+                // Double click: open WebM on canvas, close WebM on overlay
+                canvasEl.addEventListener('dblclick', (e) => {
+                    if (!state || !state.isPlaying) return;
+                    try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                    if (!webmOn) {
+                        if (typeof webmList !== 'undefined' && webmList.length === 0) {
+                            try { loadWebmList().finally(() => { if (webmList.length > 0) showWebm(); }); } catch(_) {}
+                        } else {
+                            try { showWebm(); } catch(_) {}
+                        }
+                    }
+                }, { passive: false });
+                if (webmOverlay) {
+                    webmOverlay.addEventListener('dblclick', (e) => {
+                        try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                        if (typeof hideWebm === 'function' && webmOn) hideWebm();
+                    }, { passive: false });
+                }
+                // Wheel: scroll down opens top menu; scroll up closes (trackpads/mice)
+                let lastWheelAt = 0;
+                canvasEl.addEventListener('wheel', (e) => {
+                    if (!state || !state.isPlaying) return;
+                    const now = Date.now();
+                    if (now - lastWheelAt < 250) return;
+                    lastWheelAt = now;
+                    const dy = e.deltaY || 0;
+                    if (dy > 10) { try { openTopMenuPanel(); } catch(_) {} }
+                    else if (dy < -10) { try { closeTopMenuPanel(); } catch(_) {} }
+                }, { passive: true });
             } catch(e) {}
         })();
 
