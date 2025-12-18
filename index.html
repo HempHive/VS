@@ -1012,7 +1012,7 @@
 				'F Fullscreen  •  C Next Visual  •  R Random Station',
 				'W Toggle Avatar  •  Q/E Avatar Speed  •  Arrows Move Avatar',
 				'+/− Size  •  Z/X Opacity  •  Esc Back'
-			].join('\\n');
+			].join('\n');
 			let phase = 'visible';
 			const loop = () => {
 				if (state.isPlaying) { cancelStartTextLoop(); return; }
@@ -1027,8 +1027,11 @@
 					startTextLoopTimer = setTimeout(() => {
 						l.style.opacity = '1';
 						sh.style.opacity = '1';
-						try { typeStatus(defaultLine); } catch(e) {}
-						try { typeStatusTo('shortcuts-status', shortcuts, 30); } catch(e) {}
+						try { 
+							typeStatus(defaultLine, () => { 
+								try { typeStatusTo('shortcuts-status', shortcuts, 30); } catch(e) {}
+							}); 
+						} catch(e) {}
 						phase = 'visible';
 						loop();
 					}, 30000);
@@ -1102,6 +1105,25 @@
 			} catch(e) {}
 		})();
         
+        // Start radio when clicking anywhere on the start screen background (excluding title/inputs)
+        (function bindOverlayClickToStart() {
+            try {
+                const overlay = document.getElementById('overlay');
+                if (!overlay) return;
+                overlay.addEventListener('click', (e) => {
+                    if (state && state.isPlaying) return;
+                    const logo = document.getElementById('logo-omni');
+                    const urlFly = document.getElementById('url-flyover');
+                    // Ignore clicks on title (OMNI>) and URL input area
+                    if ((logo && logo.contains(e.target)) || (urlFly && urlFly.contains(e.target))) {
+                        return;
+                    }
+                    try { e.stopPropagation(); } catch(_) {}
+                    if (typeof playRadio === 'function') playRadio();
+                });
+            } catch(e) {}
+        })();
+
         // WebM speed helpers
         function setWebmSpeed(newRate) {
             const clamped = Math.max(0.1, Math.min(4, Number(newRate) || 1));
