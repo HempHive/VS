@@ -1104,9 +1104,11 @@
 			l.style.opacity = '1'; sh.style.opacity = '1';
 			const defaultLine = 'Select a source to begin';
 			const shortcuts = [
-				'F Fullscreen  •  C Next Visual  •  R Random Station',
+				'F Fullscreen  •  C Next Preset  •  ,/. Visual',
+				'R Random Station  •  T Previous Station',
 				'W Toggle Avatar  •  Q/E Avatar Speed  •  Arrows Move Avatar',
-				'+/− Size  •  Z/X Opacity  •  Esc Back'
+				'+/− Size  •  Z/X Opacity  •  Esc Back',
+				'A/D Avatar Prev/Next (when open)'
 			].join('\n');
 			let phase = 'visible';
 			const loop = () => {
@@ -4320,6 +4322,15 @@ function stopAllAndShowStart() {
                 if (stations && stations.length > 0) {
                     pickRandomStation();
                 }
+			} else if (e.key === 't' || e.key === 'T') {
+				// Previous station
+				e.preventDefault();
+				if (typeof setStation === 'function' && Array.isArray(stations) && stations.length > 0) {
+					try {
+						const prev = (currentStationIndex - 1 + stations.length) % stations.length;
+						setStation(prev);
+					} catch(_) {}
+				}
             } else if (e.key === 'w' || e.key === 'W') {
                 e.preventDefault();
                 if(!webmOn) {
