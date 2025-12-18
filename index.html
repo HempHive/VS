@@ -1124,6 +1124,34 @@
             } catch(e) {}
         })();
 
+        // When playing, clicking anywhere (except UI controls) picks a random station
+        (function bindGlobalRandomClickWhilePlaying() {
+            try {
+                document.addEventListener('click', (e) => {
+                    try {
+                        if (!state || !state.isPlaying) return;
+                        // If start overlay is visible, ignore (start overlay has its own behavior)
+                        const overlay = document.getElementById('overlay');
+                        if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') return;
+                        const t = e.target;
+                        // Ignore clicks on common UI controls
+                        const ignoreSelectors = [
+                            'button', 'input', 'select', 'textarea', 'a',
+                            '#top-bar', '#radio-quick', '#radio-panel',
+                            '#settings-panel', '#webm-settings-panel',
+                            '#webm-overlay', '#webm-prev', '#webm-next',
+                            '#mode-info'
+                        ];
+                        for (const sel of ignoreSelectors) {
+                            if (t && typeof t.closest === 'function' && t.closest(sel)) return;
+                        }
+                        // Otherwise, pick a new random station
+                        if (typeof pickRandomStation === 'function') pickRandomStation();
+                    } catch(_) {}
+                }, false);
+            } catch(e) {}
+        })();
+
         // WebM speed helpers
         function setWebmSpeed(newRate) {
             const clamped = Math.max(0.1, Math.min(4, Number(newRate) || 1));
