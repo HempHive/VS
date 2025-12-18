@@ -1124,12 +1124,98 @@
             } catch(e) {}
         })();
 
+        // Gesture handling: swipe to change visual, double-tap to open WebM; WebM overlay swipes to navigate videos
+        (function bindGestures() {
+            try {
+                const canvasEl = document.getElementById('canvas-container');
+                const webmOverlay = document.getElementById('webm-overlay');
+                if (!canvasEl) return;
+                const SWIPE_PX = 40;
+                const TAP_MAX_MOVE = 8;
+                const DOUBLE_TAP_MS = 300;
+                let pDownX = 0, pDownY = 0, pDownTime = 0;
+                let lastTapTime = 0;
+                let handledSwipe = false;
+                // Suppress random-station click when we just handled a swipe/double-tap
+                window.__suppressNextClick = false;
+                const onPointerDown = (e) => {
+                    pDownX = e.clientX || (e.touches && e.touches[0]?.clientX) || 0;
+                    pDownY = e.clientY || (e.touches && e.touches[0]?.clientY) || 0;
+                    pDownTime = Date.now();
+                    handledSwipe = false;
+                };
+                const onPointerUpCanvas = (e) => {
+                    if (!state || !state.isPlaying) return;
+                    // ignore if UI overlays present
+                    const overlay = document.getElementById('overlay');
+                    if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') return;
+                    const x = e.clientX || (e.changedTouches && e.changedTouches[0]?.clientX) || 0;
+                    const y = e.clientY || (e.changedTouches && e.changedTouches[0]?.clientY) || 0;
+                    const dx = x - pDownX;
+                    const dy = y - pDownY;
+                    const adx = Math.abs(dx), ady = Math.abs(dy);
+                    // Horizontal swipe changes visual
+                    if (adx > SWIPE_PX && adx > ady) {
+                        handledSwipe = true;
+                        window.__suppressNextClick = true;
+                        try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                        if (dx < 0) loadMode(state.currentModeIdx + 1);
+                        else loadMode(state.currentModeIdx - 1);
+                        return;
+                    }
+                    // Double tap opens WebM
+                    const moved = (adx > TAP_MAX_MOVE || ady > TAP_MAX_MOVE);
+                    const now = Date.now();
+                    if (!moved && (now - lastTapTime) < DOUBLE_TAP_MS) {
+                        window.__suppressNextClick = true;
+                        try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                        if (!webmOn) {
+                            // open webm overlay
+                            if (typeof webmList !== 'undefined' && webmList.length === 0) {
+                                try { loadWebmList().finally(() => { if (webmList.length > 0) showWebm(); }); } catch(_) {}
+                            } else {
+                                try { showWebm(); } catch(_) {}
+                            }
+                        }
+                        lastTapTime = 0; // reset
+                        return;
+                    }
+                    // Record tap time for double-tap detection
+                    if (!moved) lastTapTime = now;
+                };
+                const onPointerUpWebm = (e) => {
+                    if (!webmOn) return;
+                    const x = e.clientX || (e.changedTouches && e.changedTouches[0]?.clientX) || 0;
+                    const y = e.clientY || (e.changedTouches && e.changedTouches[0]?.clientY) || 0;
+                    const dx = x - pDownX;
+                    const dy = y - pDownY;
+                    const adx = Math.abs(dx), ady = Math.abs(dy);
+                    if (adx > SWIPE_PX && adx > ady) {
+                        // Only within overlay area: navigate webms
+                        handledSwipe = true;
+                        window.__suppressNextClick = true;
+                        try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                        if (dx < 0) nextWebm();
+                        else prevWebm();
+                    }
+                };
+                // Pointer listeners (mouse + touch via pointer events)
+                canvasEl.addEventListener('pointerdown', onPointerDown, { passive: true });
+                canvasEl.addEventListener('pointerup', onPointerUpCanvas, { passive: false });
+                if (webmOverlay) {
+                    webmOverlay.addEventListener('pointerdown', onPointerDown, { passive: true });
+                    webmOverlay.addEventListener('pointerup', onPointerUpWebm, { passive: false });
+                }
+            } catch(e) {}
+        })();
+
         // When playing, clicking anywhere (except UI controls) picks a random station
         (function bindGlobalRandomClickWhilePlaying() {
             try {
                 document.addEventListener('click', (e) => {
                     try {
                         if (!state || !state.isPlaying) return;
+                        if (window.__suppressNextClick) { window.__suppressNextClick = false; return; }
                         // If start overlay is visible, ignore (start overlay has its own behavior)
                         const overlay = document.getElementById('overlay');
                         if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') return;
