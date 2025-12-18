@@ -593,7 +593,11 @@
 		#top-menu-content .btn:hover { background: #fff; color: #000; }
 		/* Footer with volume slider pinned to the bottom of the panel */
 		#top-menu-footer { padding: 8px 14px; border-top: 1px solid rgba(255,255,255,0.12); }
-		#top-menu-footer #volume-slider-container { display:flex; align-items:center; width:100%; height:48px; }
+		#top-menu-footer #volume-slider-container {
+			/* Override global fixed/top styles so it lives inside the panel footer */
+			position: static; left: auto; top: auto; transform: none; z-index: auto;
+			display:flex; align-items:center; justify-content: center; width:100%; height:48px;
+		}
     </style>
 
     <!-- Import Map -->
@@ -4420,6 +4424,8 @@ function stopAllAndShowStart() {
             webmOn = true;
             setWebm(webmIndex);
             webmOverlayEl.classList.remove('display-none');
+            // Allow interaction on overlay (for dblclick/gestures)
+            try { webmOverlayEl.style.pointerEvents = 'auto'; } catch(_) {}
             webmPrevBtn.classList.remove('display-none');
             webmNextBtn.classList.remove('display-none');
             applyWebmSettings();
@@ -4430,6 +4436,8 @@ function stopAllAndShowStart() {
         function hideWebm() {
             webmOn = false;
             webmOverlayEl.classList.add('display-none');
+            // Disable overlay interaction when hidden
+            try { webmOverlayEl.style.pointerEvents = 'none'; } catch(_) {}
             webmPrevBtn.classList.add('display-none');
             webmNextBtn.classList.add('display-none');
             try { webmVideoEl.pause(); } catch {}
