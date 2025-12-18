@@ -1134,18 +1134,22 @@
                         const overlay = document.getElementById('overlay');
                         if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') return;
                         const t = e.target;
-                        // Ignore clicks on common UI controls
+                        // Only trigger when clicking on the 3D canvas area (avoid UI)
+                        const inCanvas = t && typeof t.closest === 'function' && t.closest('#canvas-container');
+                        if (!inCanvas) return;
+                        // Ignore if any overlay UI is under the click
                         const ignoreSelectors = [
-                            'button', 'input', 'select', 'textarea', 'a',
-                            '#top-bar', '#radio-quick', '#radio-panel',
-                            '#settings-panel', '#webm-settings-panel',
                             '#webm-overlay', '#webm-prev', '#webm-next',
-                            '#mode-info'
+                            '#radio-quick', '#radio-panel',
+                            '#settings-panel', '#webm-settings-panel',
+                            '#station-banner',
+                            'button', 'input', 'select', 'textarea', 'a',
+                            '.interactive', '[role="button"]'
                         ];
                         for (const sel of ignoreSelectors) {
-                            if (t && typeof t.closest === 'function' && t.closest(sel)) return;
+                            if (t.closest(sel)) return;
                         }
-                        // Otherwise, pick a new random station
+                        // Pick a new random station
                         if (typeof pickRandomStation === 'function') pickRandomStation();
                     } catch(_) {}
                 }, false);
