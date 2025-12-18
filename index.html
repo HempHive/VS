@@ -1309,7 +1309,7 @@
                     webmOverlay.addEventListener('pointerdown', onPointerDown, { passive: true });
                     webmOverlay.addEventListener('pointerup', onPointerUpWebm, { passive: false });
                 }
-                // Double click: open WebM on canvas, close WebM on overlay
+                // Double click: open WebM on canvas
                 canvasEl.addEventListener('dblclick', (e) => {
                     if (!state || !state.isPlaying) return;
                     try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
@@ -1321,7 +1321,13 @@
                         }
                     }
                 }, { passive: false });
-                // Note: double-click on WebM overlay no longer closes it
+                // Double click on WebM overlay closes it
+                if (webmOverlay) {
+                    webmOverlay.addEventListener('dblclick', (e) => {
+                        try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                        if (typeof hideWebm === 'function' && webmOn) hideWebm();
+                    }, { passive: false });
+                }
                 // Wheel: scroll UP opens top menu; scroll DOWN closes (trackpads/mice)
                 let lastWheelAt = 0;
                 canvasEl.addEventListener('wheel', (e) => {
@@ -1345,13 +1351,16 @@
                     try {
                         if (!state || !state.isPlaying) return;
                         if (window.__suppressNextClick) { window.__suppressNextClick = false; return; }
-                        // If start overlay, top menu, or webm overlay is visible, ignore
+                        // If start overlay or top menu is visible, ignore
                         const overlay = document.getElementById('overlay');
                         const menu = document.getElementById('top-menu-panel');
                         const webm = document.getElementById('webm-overlay');
                         if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') return;
                         if (menu && !menu.classList.contains('display-none') && menu.classList.contains('open')) return;
-                        if (webm && !webm.classList.contains('display-none')) return;
+                        // If WebM overlay is visible, allow clicks outside of it to change station
+                        if (webm && !webm.classList.contains('display-none')) {
+                            if (e.target && e.target.closest && e.target.closest('#webm-overlay')) return;
+                        }
                         if (typeof pickRandomStation === 'function') pickRandomStation();
                     } catch(_) {}
                 }, false);
@@ -4545,6 +4554,9 @@ function stopAllAndShowStart() {
                         sel.appendChild(opt);
                     }
                 }
+                // Ensure volume slider is visible when opening the panel
+                const vs = document.getElementById('volume-slider-container');
+                if (vs) vs.style.display = 'flex';
             } catch(_) {}
             p.classList.remove('display-none');
             requestAnimationFrame(() => { p.classList.add('open'); });
