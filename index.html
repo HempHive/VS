@@ -1742,7 +1742,20 @@
             setTimeout(() => {
                 hideOverlay();
                 overlay.classList.remove('digital-out');
-                loadMode(0); // Start with ProjectM
+                // Ensure background gif is not shown behind canvas once playing
+                try {
+                    document.body.style.backgroundImage = '';
+                    document.body.style.backgroundRepeat = '';
+                    document.body.style.backgroundPosition = '';
+                    document.body.style.backgroundSize = '';
+                } catch(e) {}
+                // Start with "Audio Bars" by default if available
+                try {
+                    const defaultIdx = Math.max(0, modes.findIndex(m => m && m.name === "Audio Bars"));
+                    loadMode(defaultIdx);
+                } catch(e) {
+                    loadMode(0);
+                }
                 try { cancelStartTextLoop(); } catch(e) {}
                 // Show quick radio button once the app has started
                 if (typeof radioQuickBtn !== 'undefined' && radioQuickBtn) {
@@ -3889,7 +3902,8 @@ function stopAllAndShowStart() {
                 this.filteredKeys = allKeys.filter(k => {
                     try { return !!this.filterFn(k); } catch { return false; }
                 });
-                if (this.filteredKeys.length === 0) this.filteredKeys = allKeys;
+                // If too few presets match, fall back to full set so it cycles
+                if (this.filteredKeys.length < 2) this.filteredKeys = allKeys;
                 this.currentPresetIdx = Math.floor(Math.random() * Math.max(1, this.filteredKeys.length));
             }
 
@@ -3984,8 +3998,6 @@ function stopAllAndShowStart() {
             new MilkdropEngine(),
             new MilkdropEngineV2(),
             new MilkdropEngineV3(),
-            // Colorful Butterchurn set (inverted colors)
-            new MilkdropPresetEngine("Rainbow (Invert)", (k) => /rainbow|color|colour|spectrum|palette/i.test(k), { invert: true }),
             new ThreeEngine("Audio Bars", sceneBars),
             new ThreeEngine("Audio Bars (Circle)", sceneBarsCircle),
             new ThreeEngine("Audio Bars 3D", sceneBars3D),
@@ -4013,7 +4025,9 @@ function stopAllAndShowStart() {
             new ThreeEngine("Sierpinski Carpet", sceneSierpinskiCarpet),
             new ThreeEngine("Emoji Swarm", sceneEmojiSwarm),
             new ThreeEngine("Kaleidoscope Layered", sceneKaleidoLayered),
-			new ThreeEngine("Kaleidoscope Zoom", sceneKaleidoZoom)
+			new ThreeEngine("Kaleidoscope Zoom", sceneKaleidoZoom),
+            // Colorful Butterchurn set (inverted colors) - moved after Kaleidoscope Zoom
+            new MilkdropPresetEngine("Rainbow (Invert)", (k) => /rainbow|color|colour|spectrum|palette/i.test(k), { invert: true })
         ];
 
         function loadMode(index) {
