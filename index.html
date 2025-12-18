@@ -1043,9 +1043,19 @@
                         radioQuickBtn.style.opacity = '0';
                         radioQuickBtn.style.pointerEvents = 'none';
                     }
-                    // Hide volume slider on idle
+                    // Hide volume slider on idle (but keep visible if top menu is open)
                     const vs = document.getElementById('volume-slider-container');
-                    if (vs) { vs.style.opacity = '0'; vs.style.pointerEvents = 'none'; }
+                    const menu = document.getElementById('top-menu-panel');
+                    const menuOpen = !!(menu && !menu.classList.contains('display-none') && menu.classList.contains('open'));
+                    if (vs) {
+                        if (menuOpen) {
+                            vs.style.opacity = '1';
+                            vs.style.pointerEvents = 'auto';
+                        } else {
+                            vs.style.opacity = '0';
+                            vs.style.pointerEvents = 'none';
+                        }
+                    }
                     // Hide top bar on idle
                     if (topBar) { topBar.style.opacity = '0'; topBar.style.pointerEvents = 'none'; }
                     if(!stationBanner.classList.contains('display-none')) {
