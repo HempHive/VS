@@ -556,6 +556,45 @@
         }
         #webm-settings-content { padding: 12px; }
         .settings-row input[type="range"] { flex: 1; }
+
+		/* Top Menu Panel (slides from top, 50vh) */
+		#top-menu-panel {
+			position: fixed; top: 0; left: 0; right: 0; height: 50vh;
+			z-index: 95;
+			background: rgba(0,0,0,0.8);
+			border-bottom: 1px solid rgba(255,255,255,0.2);
+			backdrop-filter: blur(10px);
+			box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+			transform: translateY(-100%);
+			transition: transform 0.35s ease-in-out, opacity 0.2s ease-in-out;
+			opacity: 0; pointer-events: none;
+		}
+		#top-menu-panel.open {
+			transform: translateY(0);
+			opacity: 1; pointer-events: auto;
+		}
+		#top-menu-header {
+			display: flex; align-items: center; justify-content: space-between;
+			padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.12);
+		}
+		#top-menu-content { padding: 12px; display: grid; gap: 10px; grid-template-columns: 1fr; }
+		#top-menu-actions { display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+		#top-menu-webm { display: grid; gap: 8px; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; }
+		#top-menu-content .row { display: flex; gap: 8px; align-items: center; }
+		#top-menu-content input[type="text"] {
+			flex: 1; padding: 10px 12px; background: rgba(255,255,255,0.06);
+			border: 1px solid rgba(255,255,255,0.25); color: #fff; border-radius: 8px;
+		}
+		#top-menu-content .btn {
+			padding: 8px 12px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: #fff;
+			font-size: 12px; letter-spacing: 1px; border-radius: 6px; cursor: pointer;
+		}
+		#top-menu-content .btn:hover { background: #fff; color: #000; }
+		/* Volume slider inside panel */
+		#top-menu-panel #volume-slider-container {
+			position: static; width: 100%; height: 48px; display: flex; align-items: center; justify-content: center;
+			margin-top: 4px;
+		}
     </style>
 
     <!-- Import Map -->
@@ -615,13 +654,39 @@
         <div class="nav-btn interactive" id="btn-next">❯</div>
     </div>
 
-    <div id="canvas-container"></div>
+	<div id="canvas-container"></div>
     <audio id="radio-element" crossorigin="anonymous"></audio>
 	<!-- Top bar aligns shuffle, volume, and radio controls -->
 	<div id="top-bar" class="display-none"></div>
-	<!-- Volume Slider -->
-	<div id="volume-slider-container" class="interactive">
-		<input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.5">
+	<!-- Top Menu Panel -->
+	<div id="top-menu-panel" class="display-none">
+		<div id="top-menu-header">
+			<h3>Now Playing & Controls</h3>
+			<button class="btn" id="btn-topmenu-close" title="Close">✕</button>
+		</div>
+		<div id="top-menu-content">
+			<div class="row">
+				<input id="station-url" type="text" placeholder="Stream URL">
+				<button class="btn" id="topmenu-play" title="Play URL">Play</button>
+			</div>
+			<div id="top-menu-actions">
+				<button class="btn" id="topmenu-prev-station" title="Previous Station">⟵ Station</button>
+				<button class="btn" id="topmenu-next-station" title="Next Station">Station ⟶</button>
+				<button class="btn" id="topmenu-prev-visual" title="Previous Visual">⟵ Visual</button>
+				<button class="btn" id="topmenu-next-visual" title="Next Visual">Visual ⟶</button>
+			</div>
+			<div id="top-menu-webm">
+				<select id="webm-select"></select>
+				<button class="btn" id="topmenu-webm-open" title="Open selected WebM">▶</button>
+				<div style="display:flex; gap:6px;">
+					<button class="btn" id="topmenu-webm-prev" title="Prev WebM">⟨</button>
+					<button class="btn" id="topmenu-webm-next" title="Next WebM">⟩</button>
+				</div>
+			</div>
+			<div id="volume-slider-container" class="interactive">
+				<input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.2">
+			</div>
+		</div>
 	</div>
     <!-- Quick Radio Button and Panel -->
     <div id="radio-quick" class="interactive" role="button" aria-label="Radio control" title="Left-click: random station • Right-click: choose"></div>
@@ -739,7 +804,7 @@
         const radioQuickBtn = document.getElementById('radio-quick');
         const radioPanel = document.getElementById('radio-panel');
         const radioListEl = document.getElementById('radio-list');
-        const radioInputEl = document.getElementById('radio-url');
+        const radioInputEl = document.getElementById('station-url');
         const audioEl = document.getElementById('radio-element');
         const stationBanner = document.getElementById('station-banner');
         const settingsPanel = document.getElementById('settings-panel');
@@ -1069,7 +1134,7 @@
 						else fly.classList.add('is-hidden');
 						// focus/select input when showing
 						if (!hidden) return;
-						const inp = document.getElementById('radio-url');
+					const inp = document.getElementById('station-url');
 						if (inp) {
 							try { inp.focus(); inp.select(); } catch(e) {}
 						}
@@ -1149,6 +1214,18 @@
                     // ignore if UI overlays present
                     const overlay = document.getElementById('overlay');
                     if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') return;
+                    // Vertical swipe toggles the top menu panel
+                    if (ady > SWIPE_PX && ady > adx) {
+                        handledSwipe = true;
+                        window.__suppressNextClick = true;
+                        try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                        if (dy < 0) {
+                            if (typeof openTopMenuPanel === 'function') openTopMenuPanel();
+                        } else {
+                            if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel();
+                        }
+                        return;
+                    }
                     const x = e.clientX || (e.changedTouches && e.changedTouches[0]?.clientX) || 0;
                     const y = e.clientY || (e.changedTouches && e.changedTouches[0]?.clientY) || 0;
                     const dx = x - pDownX;
@@ -1212,30 +1289,19 @@
         // When playing, clicking anywhere (except UI controls) picks a random station
         (function bindGlobalRandomClickWhilePlaying() {
             try {
-                document.addEventListener('click', (e) => {
+                const area = document.getElementById('canvas-container');
+                if (!area) return;
+                area.addEventListener('click', (e) => {
                     try {
                         if (!state || !state.isPlaying) return;
                         if (window.__suppressNextClick) { window.__suppressNextClick = false; return; }
-                        // If start overlay is visible, ignore (start overlay has its own behavior)
+                        // If start overlay, top menu, or webm overlay is visible, ignore
                         const overlay = document.getElementById('overlay');
+                        const menu = document.getElementById('top-menu-panel');
+                        const webm = document.getElementById('webm-overlay');
                         if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') return;
-                        const t = e.target;
-                        // Only trigger when clicking on the 3D canvas area (avoid UI)
-                        const inCanvas = t && typeof t.closest === 'function' && t.closest('#canvas-container');
-                        if (!inCanvas) return;
-                        // Ignore if any overlay UI is under the click
-                        const ignoreSelectors = [
-                            '#webm-overlay', '#webm-prev', '#webm-next',
-                            '#radio-quick', '#radio-panel',
-                            '#settings-panel', '#webm-settings-panel',
-                            '#station-banner',
-                            'button', 'input', 'select', 'textarea', 'a',
-                            '.interactive', '[role="button"]'
-                        ];
-                        for (const sel of ignoreSelectors) {
-                            if (t.closest(sel)) return;
-                        }
-                        // Pick a new random station
+                        if (menu && !menu.classList.contains('display-none') && menu.classList.contains('open')) return;
+                        if (webm && !webm.classList.contains('display-none')) return;
                         if (typeof pickRandomStation === 'function') pickRandomStation();
                     } catch(_) {}
                 }, false);
@@ -1327,8 +1393,9 @@
 				state.gainNode.gain.value = 1.0;
 				// Bind volume slider if present
 				if (volumeSlider) {
-					volumeSlider.value = String(0.5);
+					volumeSlider.value = String(0.2);
 					volumeSlider.addEventListener('input', (e) => setVolume(volumeSlider.value));
+					try { setVolume(0.2); } catch(e) {}
 				}
             }
             if(state.audioCtx.state === 'suspended') state.audioCtx.resume();
@@ -1339,7 +1406,7 @@
             const btnRadio = document.getElementById('btn-radio');
             const btnMic = document.getElementById('btn-mic');
             const btnFile = document.getElementById('btn-file');
-            const urlInput = document.getElementById('radio-url');
+            const urlInput = document.getElementById('station-url');
             [btnRadio, btnMic, btnFile, urlInput].forEach(el => {
                 if(!el) return;
                 if(enabled) {
@@ -3940,18 +4007,10 @@ function stopAllAndShowStart() {
         });
         webmPrevBtn.addEventListener('click', () => { prevWebm(); resetIdleTimer(); });
         webmNextBtn.addEventListener('click', () => { nextWebm(); resetIdleTimer(); });
-        settingsBtn.addEventListener('click', () => {
-            if(settingsPanel.classList.contains('display-none')) {
-                settingsPanel.classList.remove('display-none');
-                settingsPanel.style.opacity = '1';
-                settingsPanel.style.pointerEvents = 'auto';
-                scheduleSettingsPanelClose();
-            } else {
-                if (settingsPanelTimer) { clearTimeout(settingsPanelTimer); settingsPanelTimer = null; }
-                settingsPanel.classList.add('display-none');
-                settingsPanel.style.opacity = '';
-                settingsPanel.style.pointerEvents = '';
-            }
+        settingsBtn.addEventListener('click', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            try { toggleTopMenuPanel(); } catch(e) {}
+            resetIdleTimer();
         });
         settingsCloseBtn.addEventListener('click', () => { 
             if (settingsPanelTimer) { clearTimeout(settingsPanelTimer); settingsPanelTimer = null; }
@@ -4401,6 +4460,95 @@ function stopAllAndShowStart() {
             webmSettingsPanel.style.opacity = '';
             webmSettingsPanel.style.pointerEvents = '';
         }
+
+        // --- Top Menu Panel helpers ---
+        function isTopMenuOpen() {
+            const p = document.getElementById('top-menu-panel');
+            return !!(p && !p.classList.contains('display-none') && p.classList.contains('open'));
+        }
+        function openTopMenuPanel() {
+            const p = document.getElementById('top-menu-panel');
+            if (!p) return;
+            // Populate fields
+            try {
+                const urlEl = document.getElementById('station-url');
+                if (urlEl) {
+                    let current = '';
+                    try { current = audioEl?.src || ''; } catch(_) {}
+                    if (!current && typeof currentStationIndex === 'number' && currentStationIndex >= 0 && stations[currentStationIndex]) {
+                        current = stations[currentStationIndex].url || '';
+                    }
+                    urlEl.value = current || '';
+                }
+                const sel = document.getElementById('webm-select');
+                if (sel) {
+                    sel.innerHTML = '';
+                    if (Array.isArray(webmList) && webmList.length > 0) {
+                        webmList.forEach((pth, idx) => {
+                            const opt = document.createElement('option');
+                            opt.value = String(idx);
+                            opt.textContent = (pth || '').split('/').pop() || pth || ('Item ' + (idx+1));
+                            if (typeof webmIndex === 'number' && idx === webmIndex) opt.selected = true;
+                            sel.appendChild(opt);
+                        });
+                    } else {
+                        const opt = document.createElement('option');
+                        opt.value = '0';
+                        opt.textContent = '(load list)';
+                        sel.appendChild(opt);
+                    }
+                }
+            } catch(_) {}
+            p.classList.remove('display-none');
+            requestAnimationFrame(() => { p.classList.add('open'); });
+        }
+        function closeTopMenuPanel() {
+            const p = document.getElementById('top-menu-panel');
+            if (!p) return;
+            p.classList.remove('open');
+            setTimeout(() => { p.classList.add('display-none'); }, 350);
+        }
+        function toggleTopMenuPanel() {
+            if (isTopMenuOpen()) closeTopMenuPanel(); else openTopMenuPanel();
+        }
+        // Bind top menu controls
+        (function bindTopMenuControls(){
+            try {
+                const btnClose = document.getElementById('btn-topmenu-close');
+                if (btnClose) btnClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeTopMenuPanel(); });
+                const btnPlay = document.getElementById('topmenu-play');
+                if (btnPlay) btnPlay.addEventListener('click', (e)=>{ 
+                    e.stopPropagation();
+                    const urlEl = document.getElementById('station-url');
+                    if (urlEl && typeof playRadio === 'function') {
+                        if (typeof radioInputEl !== 'undefined' && radioInputEl) radioInputEl.value = urlEl.value;
+                        playRadio();
+                    }
+                });
+                const btnPrevSt = document.getElementById('topmenu-prev-station');
+                const btnNextSt = document.getElementById('topmenu-next-station');
+                if (btnPrevSt) btnPrevSt.addEventListener('click', (e)=>{ e.stopPropagation(); if (typeof setStation === 'function') setStation((currentStationIndex - 1 + stations.length) % stations.length); });
+                if (btnNextSt) btnNextSt.addEventListener('click', (e)=>{ e.stopPropagation(); if (typeof setStation === 'function') setStation((currentStationIndex + 1) % stations.length); });
+                const btnPrevVis = document.getElementById('topmenu-prev-visual');
+                const btnNextVis = document.getElementById('topmenu-next-visual');
+                if (btnPrevVis) btnPrevVis.addEventListener('click', (e)=>{ e.stopPropagation(); loadMode(state.currentModeIdx - 1); });
+                if (btnNextVis) btnNextVis.addEventListener('click', (e)=>{ e.stopPropagation(); loadMode(state.currentModeIdx + 1); });
+                const selWebm = document.getElementById('webm-select');
+                const btnOpenWebm = document.getElementById('topmenu-webm-open');
+                const btnPrevWebm = document.getElementById('topmenu-webm-prev');
+                const btnNextWebm = document.getElementById('topmenu-webm-next');
+                if (btnPrevWebm) btnPrevWebm.addEventListener('click', (e)=>{ e.stopPropagation(); prevWebm(); });
+                if (btnNextWebm) btnNextWebm.addEventListener('click', (e)=>{ e.stopPropagation(); nextWebm(); });
+                if (btnOpenWebm) btnOpenWebm.addEventListener('click', (e)=>{ 
+                    e.stopPropagation();
+                    if (typeof loadWebmList === 'function' && webmList.length === 0) {
+                        loadWebmList().finally(()=>{ try { const idx = Math.max(0, Math.min(webmList.length-1, parseInt((selWebm?.value)||'0',10)||0)); setWebm(idx); showWebm(); } catch(_){} });
+                    } else {
+                        try { const idx = Math.max(0, Math.min(webmList.length-1, parseInt((selWebm?.value)||'0',10)||0)); setWebm(idx); showWebm(); } catch(_){}
+                    }
+                });
+            } catch(e) {}
+        })();
         // expose for inline handlers
         window.hideWebmSettingsPanel = hideWebmSettingsPanel;
         function scheduleWebmSettingsClose() {
