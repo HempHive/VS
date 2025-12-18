@@ -867,6 +867,10 @@
         const topBar = document.getElementById('top-bar');
         const shuffleToggle = document.getElementById('shuffle-toggle');
         let currentStationIndex = -1;
+        // Keep up to 5 most recent stations to enable true "previous" navigation
+        let stationHistory = [];
+        // Guard to avoid pushing into history when navigating back
+        let suppressHistoryPush = false;
         let panelIdleTimer = null;
         let webmList = [];
         let webmIndex = 0;
@@ -1633,6 +1637,13 @@
                     // Find station by exact URL match and adopt its index for future consistency
                     const foundIdx = stations.findIndex(s => s && s.url === url);
                     if (foundIdx >= 0) {
+                        // Push previous into history when switching by URL match (if not suppressed)
+                        if (!suppressHistoryPush && currentStationIndex !== -1 && currentStationIndex !== foundIdx) {
+                            if (stationHistory.length === 0 || stationHistory[stationHistory.length - 1] !== currentStationIndex) {
+                                stationHistory.push(currentStationIndex);
+                                if (stationHistory.length > 5) stationHistory.shift();
+                            }
+                        }
                         currentStationIndex = foundIdx;
                         try { updateStationActiveHighlight(); } catch(e) {}
                         nameToShow = stations[foundIdx].name;
@@ -4183,6 +4194,15 @@ function stopAllAndShowStart() {
 
         function setStation(index) {
             if(index < 0 || index >= stations.length) return;
+            // Push current station into history if switching to a different one
+            if (!suppressHistoryPush && currentStationIndex !== -1 && currentStationIndex !== index) {
+                // Avoid consecutive duplicates
+                if (stationHistory.length === 0 || stationHistory[stationHistory.length - 1] !== currentStationIndex) {
+                    stationHistory.push(currentStationIndex);
+                    // Cap history size to the last 5 stations
+                    if (stationHistory.length > 5) stationHistory.shift();
+                }
+            }
             currentStationIndex = index;
             const s = stations[index];
             radioInputEl.value = s.url;
@@ -4217,6 +4237,24 @@ function stopAllAndShowStart() {
             radioPanel.style.opacity = '1';
             radioPanel.style.pointerEvents = 'auto';
             scheduleRadioPanelClose();
+        }
+        function goPreviousStation() {
+            // Pop from history; if empty, go random as a fail-safe
+            if (!Array.isArray(stationHistory) || stationHistory.length === 0) {
+                pickRandomStation();
+                return;
+            }
+            const prevIdx = stationHistory.pop();
+            if (typeof prevIdx === 'number' && prevIdx >= 0 && prevIdx < stations.length) {
+                suppressHistoryPush = true;
+                try {
+                    setStation(prevIdx);
+                } finally {
+                    suppressHistoryPush = false;
+                }
+            } else {
+                pickRandomStation();
+            }
         }
         function hideRadioPanel() { 
             if (radioPanelTimer) { clearTimeout(radioPanelTimer); radioPanelTimer = null; }
@@ -4347,14 +4385,9 @@ function stopAllAndShowStart() {
                     pickRandomStation();
                 }
 			} else if (e.key === 't' || e.key === 'T') {
-				// Previous station
+				// Previous station (true history up to 5, then random)
 				e.preventDefault();
-				if (typeof setStation === 'function' && Array.isArray(stations) && stations.length > 0) {
-					try {
-						const prev = (currentStationIndex - 1 + stations.length) % stations.length;
-						setStation(prev);
-					} catch(_) {}
-				}
+                goPreviousStation();
             } else if (e.key === 'w' || e.key === 'W') {
                 e.preventDefault();
                 if(!webmOn) {
