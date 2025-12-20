@@ -699,7 +699,10 @@
 	<div id="top-menu-panel" class="display-none">
 		<div id="top-menu-header">
 			<h3>Radio Controls</h3>
-			<button class="btn" id="btn-topmenu-close" title="Close">✕</button>
+			<div style="display:flex; gap:8px; align-items:center">
+				<button class="btn" id="tm-btn-apply" title="Apply">📲</button>
+				<button class="btn" id="btn-topmenu-close" title="Close">✕</button>
+			</div>
 		</div>
 		<div id="top-menu-content">
 			<!-- Actions Row -->
@@ -723,7 +726,6 @@
 				<input id="tm-inp-transition" type="range" min="0" max="10" step="0.1" value="2.7" style="flex:1; min-width:120px">
 				<label for="tm-inp-pixelratio" style="font-size:11px; color:#ccc; min-width:20px; text-align:right">PR</label>
 				<input id="tm-inp-pixelratio" type="range" min="0.5" max="3" step="0.1" value="1" style="flex:1; min-width:120px">
-				<button class="btn" id="tm-btn-apply" title="Apply">Apply</button>
 			</div>
 			<div id="top-menu-actions">
 				<button class="btn" id="topmenu-prev-station" title="Previous Station">⟵ Station</button>
@@ -1074,8 +1076,10 @@
         // --- UI UTILS ---
         function resetIdleTimer() {
             uiLayer.style.opacity = '1';
-            radioQuickBtn.style.opacity = '1';
-            radioQuickBtn.style.pointerEvents = 'auto';
+			if (radioQuickBtn) {
+				radioQuickBtn.style.opacity = '1';
+				radioQuickBtn.style.pointerEvents = 'auto';
+			}
             // Show volume slider on interaction
             const vs = document.getElementById('volume-slider-container');
             if (vs && state.isPlaying) { vs.style.opacity = '1'; vs.style.pointerEvents = 'auto'; }
@@ -1087,10 +1091,10 @@
                 stationBanner.style.opacity = '1';
                 stationBanner.style.pointerEvents = 'auto';
             }
-            if(!radioPanel.classList.contains('display-none')) {
-                radioPanel.style.opacity = '1';
-                radioPanel.style.pointerEvents = 'auto';
-            }
+			if(radioPanel && !radioPanel.classList.contains('display-none')) {
+				radioPanel.style.opacity = '1';
+				radioPanel.style.pointerEvents = 'auto';
+			}
             // Show webm nav when overlay is active
             if(webmOn && !webmOverlayEl.classList.contains('display-none')) {
                 webmPrevBtn.style.opacity = '1';
@@ -1107,11 +1111,11 @@
             if(state.isPlaying) {
                 state.idleTimer = setTimeout(() => {
                     uiLayer.style.opacity = '0';
-                    // Honor hold window after right-click
-                    if (Date.now() >= radioQuickHoldUntil) {
-                        radioQuickBtn.style.opacity = '0';
-                        radioQuickBtn.style.pointerEvents = 'none';
-                    }
+					// Honor hold window after right-click
+					if (Date.now() >= radioQuickHoldUntil && radioQuickBtn) {
+						radioQuickBtn.style.opacity = '0';
+						radioQuickBtn.style.pointerEvents = 'none';
+					}
                     // Hide volume slider on idle (but keep visible if top menu is open)
                     const vs = document.getElementById('volume-slider-container');
                     const menu = document.getElementById('top-menu-panel');
@@ -1138,8 +1142,8 @@
                     webmNextBtn.style.pointerEvents = 'none';
                     document.body.style.cursor = 'none';
                 }, 3000);
-                // Panels fade out and close after 30s if open
-                if(!radioPanel.classList.contains('display-none')) scheduleRadioPanelClose();
+				// Panels fade out and close after 30s if open
+				if(radioPanel && !radioPanel.classList.contains('display-none')) scheduleRadioPanelClose();
                 if(!settingsPanel.classList.contains('display-none')) scheduleSettingsPanelClose();
                 if(!webmSettingsPanel.classList.contains('display-none')) scheduleWebmSettingsClose();
             }
@@ -4512,6 +4516,9 @@ function stopAllAndShowStart() {
         }
 
         function showRadioPanel() { 
+            // Legacy panel removed: open top menu instead
+            try { openTopMenuPanel(); } catch(e) {}
+            if (!radioPanel) return;
             radioPanel.classList.remove('display-none'); 
             radioPanel.style.opacity = '1';
             radioPanel.style.pointerEvents = 'auto';
@@ -4537,19 +4544,26 @@ function stopAllAndShowStart() {
         }
         function hideRadioPanel() { 
             if (radioPanelTimer) { clearTimeout(radioPanelTimer); radioPanelTimer = null; }
+            try { closeTopMenuPanel(); } catch(e) {}
+            if (!radioPanel) return;
             radioPanel.classList.add('display-none'); 
             radioPanel.style.opacity = '';
             radioPanel.style.pointerEvents = '';
         }
         function toggleRadioPanel() {
+            // Toggle top menu now
+            try { toggleTopMenuPanel(); } catch(e) {}
+            if (!radioPanel) return;
             if(radioPanel.classList.contains('display-none')) showRadioPanel();
             else hideRadioPanel();
         }
         function scheduleRadioPanelClose() {
             if (radioPanelTimer) clearTimeout(radioPanelTimer);
             radioPanelTimer = setTimeout(() => {
-                radioPanel.style.opacity = '0';
-                radioPanel.style.pointerEvents = 'none';
+                if (radioPanel) {
+                    radioPanel.style.opacity = '0';
+                    radioPanel.style.pointerEvents = 'none';
+                }
                 setTimeout(() => { hideRadioPanel(); }, 1200);
             }, 30000);
         }
@@ -4577,30 +4591,32 @@ function stopAllAndShowStart() {
             }
         }
 
-        // Swap: left-click now opens panel; right-click picks random
-        radioQuickBtn.title = "Left-click: choose • Right-click: random station";
-        radioQuickBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleRadioPanel();
-        });
-        radioQuickBtn.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            pickRandomStation();
-            // Keep the radio button visible for 10s after right-click shuffle
-            radioQuickBtn.style.opacity = '1';
-            radioQuickBtn.style.pointerEvents = 'auto';
-            radioQuickHoldUntil = Date.now() + 10000;
-            if (radioQuickHoldTimeout) { clearTimeout(radioQuickHoldTimeout); radioQuickHoldTimeout = null; }
-            radioQuickHoldTimeout = setTimeout(() => {
-                radioQuickHoldUntil = 0;
-                // Only hide if UI is idle (layer opacity is 0)
-                if (uiLayer.style.opacity === '0') {
-                    radioQuickBtn.style.opacity = '0';
-                    radioQuickBtn.style.pointerEvents = 'none';
-                }
-            }, 10000);
-        });
+        // Swap: left-click now opens panel; right-click picks random (guard missing quick button)
+        if (radioQuickBtn) {
+            radioQuickBtn.title = "Left-click: choose • Right-click: random station";
+            radioQuickBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleRadioPanel();
+            });
+            radioQuickBtn.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                pickRandomStation();
+                // Keep the radio button visible for 10s after right-click shuffle
+                radioQuickBtn.style.opacity = '1';
+                radioQuickBtn.style.pointerEvents = 'auto';
+                radioQuickHoldUntil = Date.now() + 10000;
+                if (radioQuickHoldTimeout) { clearTimeout(radioQuickHoldTimeout); radioQuickHoldTimeout = null; }
+                radioQuickHoldTimeout = setTimeout(() => {
+                    radioQuickHoldUntil = 0;
+                    // Only hide if UI is idle (layer opacity is 0)
+                    if (uiLayer.style.opacity === '0') {
+                        radioQuickBtn.style.opacity = '0';
+                        radioQuickBtn.style.pointerEvents = 'none';
+                    }
+                }, 10000);
+            });
+        }
         // Station banner now triggers random station
         stationBanner.title = "Click: random station";
         stationBanner.addEventListener('click', (e) => {
@@ -4608,7 +4624,7 @@ function stopAllAndShowStart() {
             pickRandomStation();
         });
         document.addEventListener('click', (e) => {
-            if(!radioPanel.classList.contains('display-none')) {
+            if (radioPanel && !radioPanel.classList.contains('display-none')) {
                 if(!radioPanel.contains(e.target) && e.target !== radioQuickBtn) {
                     hideRadioPanel();
                 }
