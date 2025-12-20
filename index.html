@@ -1497,6 +1497,7 @@
                     if (!moved && (now - lastTapTime) < DOUBLE_TAP_MS) {
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                        try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch(_) {}
                         try { toggleFullscreen(); } catch(_) {}
                         lastTapTime = 0; // reset
                         return;
@@ -1531,12 +1532,14 @@
                 canvasEl.addEventListener('dblclick', (e) => {
                     if (!state || !state.isPlaying) return;
                     try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                    try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch(_) {}
                     try { toggleFullscreen(); } catch(_) {}
                 }, { passive: false });
                 // Double click on WebM overlay: toggle Fullscreen
                 if (webmOverlay) {
                     webmOverlay.addEventListener('dblclick', (e) => {
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                        try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch(_) {}
                         try { toggleFullscreen(); } catch(_) {}
                     }, { passive: false });
                 }
@@ -1575,20 +1578,30 @@
                 area.addEventListener('click', (e) => {
                     try {
                         if (!state || !state.isPlaying) return;
-                        // Ignore click if it's part of a double-click sequence
-                        if ((e && typeof e.detail === 'number' && e.detail > 1)) return;
+                        // Delay station change to detect potential double-click; cancel if dblclick fires
                         if (window.__suppressNextClick) { window.__suppressNextClick = false; return; }
+                        const delayMs = 280; // align with DOUBLE_TAP_MS window
+                        try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch(_) {}
+                        window.__randomClickTimer = setTimeout(() => {
+                            try {
+                                if (!state || !state.isPlaying) return;
+                                // If a panel is open or overlay visible, ignore
+                                const overlay = document.getElementById('overlay');
+                                const menu = document.getElementById('top-menu-panel');
+                                const webm = document.getElementById('webm-overlay');
+                                if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') return;
+                                if (menu && !menu.classList.contains('display-none') && menu.classList.contains('open')) return;
+                                // If WebM overlay is visible, allow clicks outside of it to change station
+                                if (webm && !webm.classList.contains('display-none')) {
+                                    if (e.target && e.target.closest && e.target.closest('#webm-overlay')) return;
+                                }
+                                if (typeof pickRandomStation === 'function') pickRandomStation();
+                            } catch(_) {} 
+                        }, delayMs);
                         // If start overlay or top menu is visible, ignore
                         const overlay = document.getElementById('overlay');
                         const menu = document.getElementById('top-menu-panel');
                         const webm = document.getElementById('webm-overlay');
-                        if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') return;
-                        if (menu && !menu.classList.contains('display-none') && menu.classList.contains('open')) return;
-                        // If WebM overlay is visible, allow clicks outside of it to change station
-                        if (webm && !webm.classList.contains('display-none')) {
-                            if (e.target && e.target.closest && e.target.closest('#webm-overlay')) return;
-                        }
-                        if (typeof pickRandomStation === 'function') pickRandomStation();
                     } catch(_) {}
                 }, false);
             } catch(e) {}
