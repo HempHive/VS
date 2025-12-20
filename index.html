@@ -705,27 +705,20 @@
 			</div>
 		</div>
 		<div id="top-menu-content">
-			<!-- Actions Row -->
-			<div id="top-menu-actions" style="margin-bottom:8px;">
-				<button class="btn" id="topmenu-prev-station" title="Previous Station">⟵ Station</button>
-				<button class="btn" id="topmenu-next-station" title="Next Station">Station ⟶</button>
-				<button class="btn" id="topmenu-prev-visual" title="Previous Visual">⟵ Visual</button>
-				<button class="btn" id="topmenu-next-visual" title="Next Visual">Visual ⟶</button>
-			</div>
 			<!-- Scrollable Radio Stations List (migrated from Radio Panel) -->
 			<div id="top-menu-stations" style="flex:1; overflow:auto; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px; background: rgba(255,255,255,0.04);">
 				<div id="radio-list"></div>
 			</div>
 			<!-- Single-row visualization sliders (minimal labels), above volume slider -->
-			<div class="row" style="gap:10px; align-items:center; margin-top:8px; flex-wrap:nowrap; overflow:auto">
+			<div class="row" style="display:grid; grid-template-columns: auto 1fr auto 1fr auto 1fr auto 1fr; gap:10px; align-items:center; margin-top:8px; width:100%;">
 				<label for="tm-inp-shuffle-min" style="font-size:11px; color:#ccc; min-width:28px; text-align:right">Min</label>
-				<input id="tm-inp-shuffle-min" type="range" min="3" max="120" step="1" value="30" style="flex:1; min-width:120px">
+				<input id="tm-inp-shuffle-min" type="range" min="3" max="120" step="1" value="30" style="width:100%;">
 				<label for="tm-inp-shuffle-max" style="font-size:11px; color:#ccc; min-width:28px; text-align:right">Max</label>
-				<input id="tm-inp-shuffle-max" type="range" min="5" max="180" step="1" value="60" style="flex:1; min-width:120px">
+				<input id="tm-inp-shuffle-max" type="range" min="5" max="180" step="1" value="60" style="width:100%;">
 				<label for="tm-inp-transition" style="font-size:11px; color:#ccc; min-width:36px; text-align:right">Trans</label>
-				<input id="tm-inp-transition" type="range" min="0" max="10" step="0.1" value="2.7" style="flex:1; min-width:120px">
+				<input id="tm-inp-transition" type="range" min="0" max="10" step="0.1" value="2.7" style="width:100%;">
 				<label for="tm-inp-pixelratio" style="font-size:11px; color:#ccc; min-width:20px; text-align:right">PR</label>
-				<input id="tm-inp-pixelratio" type="range" min="0.5" max="3" step="0.1" value="1" style="flex:1; min-width:120px">
+				<input id="tm-inp-pixelratio" type="range" min="0.5" max="3" step="0.1" value="1" style="width:100%;">
 			</div>
 			<div id="top-menu-actions">
 				<button class="btn" id="topmenu-prev-station" title="Previous Station">⟵ Station</button>
@@ -901,7 +894,7 @@
         const radioQuickBtn = document.getElementById('radio-quick');
         const radioPanel = document.getElementById('radio-panel');
         const radioListEl = document.getElementById('radio-list');
-        const radioInputEl = document.getElementById('station-url');
+        const radioInputEl = document.getElementById('radio-url') || document.getElementById('station-url');
         const audioEl = document.getElementById('radio-element');
         const stationBanner = document.getElementById('station-banner');
         const settingsPanel = document.getElementById('settings-panel');
@@ -1249,7 +1242,7 @@
 						else fly.classList.add('is-hidden');
 						// focus/select input when showing
 						if (!hidden) return;
-					const inp = document.getElementById('station-url');
+                    const inp = document.getElementById('radio-url') || document.getElementById('station-url');
 						if (inp) {
 							try { inp.focus(); inp.select(); } catch(e) {}
 						}
@@ -1356,6 +1349,7 @@
             const p = document.getElementById('bottom-avatar-panel');
             if (!p) return;
             p.classList.remove('open');
+            try { window.__panelGuardUntilMs = Date.now() + 600; } catch(_) {}
             setTimeout(() => { p.classList.add('display-none'); }, 350);
         }
         function toggleBottomMenuPanel() {
@@ -1464,6 +1458,10 @@
                         handledSwipe = true;
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                        // Guard against follow-up wheel/touch events opening the opposite panel
+                        const guardUntil = (typeof window !== 'undefined' && window.__panelGuardUntilMs) ? window.__panelGuardUntilMs : 0;
+                        const nowMs = Date.now();
+                        if (nowMs < guardUntil) return;
                         if (dy > 0) { // swipe down
                             if (typeof isBottomMenuOpen === 'function' && isBottomMenuOpen()) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
                             if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
@@ -1550,7 +1548,9 @@
                 let lastWheelAt = 0;
                 canvasEl.addEventListener('wheel', (e) => {
                     if (!state || !state.isPlaying) return;
+                    const guardUntil = (typeof window !== 'undefined' && window.__panelGuardUntilMs) ? window.__panelGuardUntilMs : 0;
                     const now = Date.now();
+                    if (now < guardUntil) return;
                     if (now - lastWheelAt < 250) return;
                     lastWheelAt = now;
                     const dy = e.deltaY || 0;
@@ -1694,7 +1694,7 @@
             const btnRadio = document.getElementById('btn-radio');
             const btnMic = document.getElementById('btn-mic');
             const btnFile = document.getElementById('btn-file');
-            const urlInput = document.getElementById('station-url');
+            const urlInput = document.getElementById('radio-url') || document.getElementById('station-url');
             [btnRadio, btnMic, btnFile, urlInput].forEach(el => {
                 if(!el) return;
                 if(enabled) {
@@ -1810,7 +1810,19 @@
 
         function playRadio() {
             initAudio();
-            const url = radioInputEl.value;
+            // Prefer explicit input if present, else use current/first station
+            let url = '';
+            try {
+                url = (radioInputEl && radioInputEl.value) ? radioInputEl.value : '';
+                if (!url && Array.isArray(stations) && stations.length > 0) {
+                    const idx = (typeof currentStationIndex === 'number' && currentStationIndex >= 0) ? currentStationIndex : 0;
+                    url = stations[idx]?.url || '';
+                }
+            } catch(_) {}
+            if (!url) {
+                try { statusEl.innerText = "No station selected. Choose one from Radio Controls."; } catch(_) {}
+                return;
+            }
             
             statusEl.innerText = "Connecting to Stream...";
             // Update banner title (prefer station name matching current URL)
@@ -4488,7 +4500,7 @@ function stopAllAndShowStart() {
             }
             currentStationIndex = index;
             const s = stations[index];
-            radioInputEl.value = s.url;
+            if (radioInputEl) radioInputEl.value = s.url;
             showStationBanner(s.name);
             updateStationActiveHighlight();
             playRadio();
@@ -4936,6 +4948,7 @@ function stopAllAndShowStart() {
             const p = document.getElementById('top-menu-panel');
             if (!p) return;
             p.classList.remove('open');
+            try { window.__panelGuardUntilMs = Date.now() + 600; } catch(_) {}
             setTimeout(() => { p.classList.add('display-none'); }, 350);
         }
         function toggleTopMenuPanel() {
