@@ -1351,7 +1351,7 @@
             const p = document.getElementById('bottom-avatar-panel');
             if (!p) return;
             p.classList.remove('open');
-            try { window.__panelGuardUntilMs = Date.now() + 800; } catch(_) {}
+            try { window.__panelGuardUntilMs = Date.now() + 1200; } catch(_) {}
             setTimeout(() => { p.classList.add('display-none'); }, 350);
         }
         function toggleBottomMenuPanel() {
@@ -1534,23 +1534,17 @@
                     webmOverlay.addEventListener('pointerdown', onPointerDown, { passive: true });
                     webmOverlay.addEventListener('pointerup', onPointerUpWebm, { passive: false });
                 }
-                // Double click: open WebM on canvas
+                // Double click: toggle Fullscreen
                 canvasEl.addEventListener('dblclick', (e) => {
                     if (!state || !state.isPlaying) return;
                     try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
-                    if (!webmOn) {
-                        if (typeof webmList !== 'undefined' && webmList.length === 0) {
-                            try { loadWebmList().finally(() => { if (webmList.length > 0) showWebm(); }); } catch(_) {}
-                        } else {
-                            try { showWebm(); } catch(_) {}
-                        }
-                    }
+                    try { toggleFullscreen(); } catch(_) {}
                 }, { passive: false });
-                // Double click on WebM overlay closes it
+                // Double click on WebM overlay: toggle Fullscreen
                 if (webmOverlay) {
                     webmOverlay.addEventListener('dblclick', (e) => {
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
-                        if (typeof hideWebm === 'function' && webmOn) hideWebm();
+                        try { toggleFullscreen(); } catch(_) {}
                     }, { passive: false });
                 }
                 // Wheel: scroll UP opens top menu; scroll DOWN opens bottom menu; never open the other when closing (trackpads/mice)
@@ -4959,7 +4953,7 @@ function stopAllAndShowStart() {
             const p = document.getElementById('top-menu-panel');
             if (!p) return;
             p.classList.remove('open');
-            try { window.__panelGuardUntilMs = Date.now() + 800; } catch(_) {}
+            try { window.__panelGuardUntilMs = Date.now() + 1200; } catch(_) {}
             setTimeout(() => { p.classList.add('display-none'); }, 350);
         }
         function toggleTopMenuPanel() {
