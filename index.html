@@ -5,10 +5,11 @@
     <title>OmnI: Tomorrow</title>
     <link href="favicon.ico" rel="icon" type="image/x-icon"/>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preload" href="pta.gif" as="image">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
     <style>
-		body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Quicksand', sans-serif; color: white; cursor: none; }
+		body { margin: 0; overflow: hidden; background-color: #000; background-image: url('pta.gif'); background-repeat: repeat; background-position: top left; background-size: auto; font-family: 'Quicksand', sans-serif; color: white; cursor: none; }
 		/* Ensure Quicksand applies across the UI */
 		*, *::before, *::after { font-family: 'Quicksand', sans-serif !important; }
         
@@ -598,6 +599,39 @@
 			position: static; left: auto; top: auto; transform: none; z-index: auto;
 			display:flex; align-items:center; justify-content: center; width:100%; height:48px;
 		}
+
+		/* Bottom Avatar Menu Panel (slides from bottom, 50vh) */
+		#bottom-avatar-panel {
+			position: fixed; left: 0; right: 0; bottom: 0; height: 50vh;
+			z-index: 95;
+			background: rgba(0,0,0,0.8);
+			border-top: 1px solid rgba(255,255,255,0.2);
+			backdrop-filter: blur(10px);
+			box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
+			transform: translateY(100%);
+			transition: transform 0.35s ease-in-out, opacity 0.2s ease-in-out;
+			opacity: 0; pointer-events: none;
+			display: flex; flex-direction: column;
+		}
+		#bottom-avatar-panel.open {
+			transform: translateY(0);
+			opacity: 1; pointer-events: auto;
+		}
+		#bottom-avatar-header {
+			display: flex; align-items: center; justify-content: space-between;
+			padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.12);
+		}
+		#bottom-avatar-content { padding: 12px; display: grid; gap: 10px; grid-template-columns: 1fr; flex: 1; overflow: auto; }
+		#bottom-avatar-actions { display: grid; gap: 8px; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; }
+		#bottom-avatar-content .row { display: flex; gap: 8px; align-items: center; }
+		#bottom-avatar-content input[type="range"] {
+			flex: 1; padding: 0; background: rgba(255,255,255,0.06);
+		}
+		#bottom-avatar-content .btn {
+			padding: 8px 12px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: #fff;
+			font-size: 12px; letter-spacing: 1px; border-radius: 6px; cursor: pointer;
+		}
+		#bottom-avatar-content .btn:hover { background: #fff; color: #000; }
     </style>
 
     <!-- Import Map -->
@@ -616,7 +650,7 @@
 <body>
 
     <!-- START SCREEN -->
-	<div id="overlay">
+	<div id="overlay" class="no-blur bg-lite">
 		<h1 id="logo-omni" data-text="OMNI&gt;"><span class="logo-letter logo-o">O</span><span class="logo-letter logo-m">M</span><span class="logo-letter">N</span><span class="logo-letter logo-start">I</span><span class="logo-letter logo-start">&gt;</span></h1>
 		<!-- Toggle URL input (shown via clicking 'N' in OMNI>) -->
 		<div id="url-flyover" class="is-hidden">
@@ -702,19 +736,60 @@
 				<button class="btn" id="topmenu-prev-visual" title="Previous Visual">⟵ Visual</button>
 				<button class="btn" id="topmenu-next-visual" title="Next Visual">Visual ⟶</button>
 			</div>
-			<div id="top-menu-webm">
-				<select id="webm-select"></select>
-				<button class="btn" id="topmenu-webm-open" title="Open selected WebM">▶</button>
-				<div style="display:flex; gap:6px;">
-					<button class="btn" id="topmenu-webm-prev" title="Prev WebM">⟨</button>
-					<button class="btn" id="topmenu-webm-next" title="Next WebM">⟩</button>
-				</div>
-			</div>
 			<!-- footer with volume slider will be appended below -->
 		</div>
 		<div id="top-menu-footer">
 			<div id="volume-slider-container" class="interactive">
 				<input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.2">
+			</div>
+		</div>
+	</div>
+	<!-- Bottom Avatar Menu Panel -->
+	<div id="bottom-avatar-panel" class="display-none">
+		<div id="bottom-avatar-header">
+			<h3>Avatar Settings</h3>
+			<div style="display:flex; gap:8px; align-items:center">
+				<button class="btn" id="avatar-btn-auto" title="Toggle random WebM (30-60s)">Auto: Off</button>
+				<button class="btn" id="avatar-btn-reset" title="Reset to defaults">⎋</button>
+				<button class="btn" id="btn-bottommenu-close" title="Close">✕</button>
+			</div>
+		</div>
+		<div id="bottom-avatar-content">
+			<div id="bottom-avatar-actions">
+				<select id="avatar-webm-select"></select>
+				<button class="btn" id="avatar-webm-open" title="Open selected WebM">▶</button>
+				<div style="display:flex; gap:6px;">
+					<button class="btn" id="avatar-webm-prev" title="Prev WebM">⟨</button>
+					<button class="btn" id="avatar-webm-next" title="Next WebM">⟩</button>
+				</div>
+			</div>
+			<div class="row">
+				<label for="avatar-inp-scale" style="min-width:120px; font-size:12px; color:#ccc">Size (vw)</label>
+				<input id="avatar-inp-scale" type="range" min="10" max="100" step="1" value="50">
+			</div>
+			<div class="row">
+				<label for="avatar-inp-x" style="min-width:120px; font-size:12px; color:#ccc">X (vw)</label>
+				<input id="avatar-inp-x" type="range" min="0" max="100" step="1" value="50">
+			</div>
+			<div class="row">
+				<label for="avatar-inp-y" style="min-width:120px; font-size:12px; color:#ccc">Y (vh)</label>
+				<input id="avatar-inp-y" type="range" min="0" max="100" step="1" value="50">
+			</div>
+			<div class="row">
+				<label for="avatar-inp-rot" style="min-width:120px; font-size:12px; color:#ccc">Rotate (deg)</label>
+				<input id="avatar-inp-rot" type="range" min="-180" max="180" step="1" value="0">
+			</div>
+			<div class="row">
+				<label for="avatar-inp-speed" style="min-width:120px; font-size:12px; color:#ccc">Speed</label>
+				<input id="avatar-inp-speed" type="range" min="0.1" max="4" step="0.1" value="1.0">
+			</div>
+			<div class="row">
+				<label for="avatar-inp-opacity" style="min-width:120px; font-size:12px; color:#ccc">Opacity</label>
+				<input id="avatar-inp-opacity" type="range" min="0" max="1" step="0.01" value="0.82">
+			</div>
+			<div class="row">
+				<label for="avatar-inp-dup" style="min-width:120px; font-size:12px; color:#ccc">Duplicates (0-2)</label>
+				<input id="avatar-inp-dup" type="range" min="0" max="2" step="1" value="0">
 			</div>
 		</div>
 	</div>
@@ -1234,6 +1309,126 @@
                 });
             } catch(e) {}
         })();
+        // --- Bottom Avatar Menu helpers ---
+        function isBottomMenuOpen() {
+            const p = document.getElementById('bottom-avatar-panel');
+            return !!(p && !p.classList.contains('display-none') && p.classList.contains('open'));
+        }
+        function openBottomMenuPanel() {
+            const p = document.getElementById('bottom-avatar-panel');
+            if (!p) return;
+            try {
+                // Populate WebM select
+                const sel = document.getElementById('avatar-webm-select');
+                if (sel) {
+                    sel.innerHTML = '';
+                    if (Array.isArray(webmList) && webmList.length > 0) {
+                        webmList.forEach((pth, idx) => {
+                            const opt = document.createElement('option');
+                            opt.value = String(idx);
+                            opt.textContent = (pth || '').split('/').pop() || pth || ('Item ' + (idx+1));
+                            if (typeof webmIndex === 'number' && idx === webmIndex) opt.selected = true;
+                            sel.appendChild(opt);
+                        });
+                    } else {
+                        const opt = document.createElement('option');
+                        opt.value = '0';
+                        opt.textContent = '(load list)';
+                        sel.appendChild(opt);
+                    }
+                }
+                // Sync inputs from current settings
+                const aScale = document.getElementById('avatar-inp-scale');
+                const aX = document.getElementById('avatar-inp-x');
+                const aY = document.getElementById('avatar-inp-y');
+                const aRot = document.getElementById('avatar-inp-rot');
+                const aSpeed = document.getElementById('avatar-inp-speed');
+                const aOpacity = document.getElementById('avatar-inp-opacity');
+                const aDup = document.getElementById('avatar-inp-dup');
+                if (aScale) aScale.value = String(webmSettings.scaleVw);
+                if (aX) aX.value = String(webmSettings.posXvw);
+                if (aY) aY.value = String(webmSettings.posYvh);
+                if (aRot) aRot.value = String(webmSettings.rotationDeg);
+                if (aSpeed) aSpeed.value = String(webmSettings.playbackRate);
+                if (aOpacity) aOpacity.value = String(webmSettings.opacity);
+                if (aDup) aDup.value = String(webmSettings.duplicates);
+                const autoBtn = document.getElementById('avatar-btn-auto');
+                if (autoBtn) autoBtn.textContent = webmAutoOn ? 'Auto: On' : 'Auto: Off';
+            } catch(_) {}
+            p.classList.remove('display-none');
+            requestAnimationFrame(() => { p.classList.add('open'); });
+        }
+        function closeBottomMenuPanel() {
+            const p = document.getElementById('bottom-avatar-panel');
+            if (!p) return;
+            p.classList.remove('open');
+            setTimeout(() => { p.classList.add('display-none'); }, 350);
+        }
+        function toggleBottomMenuPanel() {
+            if (isBottomMenuOpen()) closeBottomMenuPanel(); else openBottomMenuPanel();
+        }
+        // Bind bottom menu controls
+        (function bindBottomMenuControls(){
+            try {
+                const btnClose = document.getElementById('btn-bottommenu-close');
+                if (btnClose) btnClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeBottomMenuPanel(); });
+                const selWebm = document.getElementById('avatar-webm-select');
+                const btnOpenWebm = document.getElementById('avatar-webm-open');
+                const btnPrevWebm = document.getElementById('avatar-webm-prev');
+                const btnNextWebm = document.getElementById('avatar-webm-next');
+                if (btnPrevWebm) btnPrevWebm.addEventListener('click', (e)=>{ e.stopPropagation(); prevWebm(); });
+                if (btnNextWebm) btnNextWebm.addEventListener('click', (e)=>{ e.stopPropagation(); nextWebm(); });
+                if (btnOpenWebm) btnOpenWebm.addEventListener('click', (e)=>{ 
+                    e.stopPropagation();
+                    if (typeof loadWebmList === 'function' && webmList.length === 0) {
+                        loadWebmList().finally(()=>{ try { const idx = Math.max(0, Math.min(webmList.length-1, parseInt((selWebm?.value)||'0',10)||0)); setWebm(idx); showWebm(); } catch(_){} });
+                    } else {
+                        try { const idx = Math.max(0, Math.min(webmList.length-1, parseInt((selWebm?.value)||'0',10)||0)); setWebm(idx); showWebm(); } catch(_){}
+                    }
+                });
+                const aScale = document.getElementById('avatar-inp-scale');
+                const aX = document.getElementById('avatar-inp-x');
+                const aY = document.getElementById('avatar-inp-y');
+                const aRot = document.getElementById('avatar-inp-rot');
+                const aSpeed = document.getElementById('avatar-inp-speed');
+                const aOpacity = document.getElementById('avatar-inp-opacity');
+                const aDup = document.getElementById('avatar-inp-dup');
+                const updateFromAvatarInputs = () => {
+                    webmSettings.scaleVw = Number(aScale?.value) || 50;
+                    webmSettings.posXvw = Number(aX?.value) || 50;
+                    webmSettings.posYvh = Number(aY?.value) || 50;
+                    webmSettings.rotationDeg = Number(aRot?.value) || 0;
+                    webmSettings.playbackRate = Math.max(0.1, Math.min(4, Number(aSpeed?.value) || 1));
+                    webmSettings.opacity = Math.max(0, Math.min(1, Number(aOpacity?.value) || 1));
+                    webmSettings.duplicates = Math.max(0, Math.min(2, Math.floor(Number(aDup?.value) || 0)));
+                    applyWebmSettings();
+                };
+                [aScale, aX, aY, aRot, aSpeed, aOpacity, aDup].forEach(el => {
+                    if (el) el.addEventListener('input', updateFromAvatarInputs);
+                });
+                const btnAuto = document.getElementById('avatar-btn-auto');
+                if (btnAuto) btnAuto.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); setWebmAuto(!webmAutoOn); const autoBtn = document.getElementById('avatar-btn-auto'); if (autoBtn) autoBtn.textContent = webmAutoOn ? 'Auto: On' : 'Auto: Off'; });
+                const btnReset = document.getElementById('avatar-btn-reset');
+                if (btnReset) btnReset.addEventListener('click', (e)=>{ 
+                    e.preventDefault(); e.stopPropagation();
+                    webmSettings.scaleVw = 50;
+                    webmSettings.posXvw = 50;
+                    webmSettings.posYvh = 50;
+                    webmSettings.rotationDeg = 0;
+                    webmSettings.playbackRate = 1.0;
+                    webmSettings.opacity = 0.82;
+                    webmSettings.duplicates = 0;
+                    if (aScale) aScale.value = '50';
+                    if (aX) aX.value = '50';
+                    if (aY) aY.value = '50';
+                    if (aRot) aRot.value = '0';
+                    if (aSpeed) aSpeed.value = '1.0';
+                    if (aOpacity) aOpacity.value = '0.82';
+                    if (aDup) aDup.value = '0';
+                    applyWebmSettings();
+                });
+            } catch(e) {}
+        })();
 
         // Gesture handling: swipe to change visual, double-tap to open WebM; WebM overlay swipes to navigate videos
         (function bindGestures() {
@@ -1265,15 +1460,27 @@
                     const dx = x - pDownX;
                     const dy = y - pDownY;
                     const adx = Math.abs(dx), ady = Math.abs(dy);
-                    // Vertical swipe toggles the top menu panel (swipe down opens, up closes)
+                    // Vertical swipe: swipe down toggles top menu; swipe up toggles bottom avatar menu
                     if (ady > SWIPE_PX && ady > adx) {
                         handledSwipe = true;
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
                         if (dy > 0) {
-                            if (typeof openTopMenuPanel === 'function') openTopMenuPanel();
+                            // Downward swipe -> open/close top menu
+                            if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) {
+                                if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel();
+                            } else {
+                                if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel();
+                                if (typeof openTopMenuPanel === 'function') openTopMenuPanel();
+                            }
                         } else {
-                            if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel();
+                            // Upward swipe -> open/close bottom menu
+                            if (typeof isBottomMenuOpen === 'function' && isBottomMenuOpen()) {
+                                if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel();
+                            } else {
+                                if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel();
+                                if (typeof openBottomMenuPanel === 'function') openBottomMenuPanel();
+                            }
                         }
                         return;
                     }
@@ -1348,7 +1555,7 @@
                         if (typeof hideWebm === 'function' && webmOn) hideWebm();
                     }, { passive: false });
                 }
-                // Wheel: scroll UP opens top menu; scroll DOWN closes (trackpads/mice)
+                // Wheel: scroll UP opens top menu; scroll DOWN opens bottom avatar menu (trackpads/mice)
                 let lastWheelAt = 0;
                 canvasEl.addEventListener('wheel', (e) => {
                     if (!state || !state.isPlaying) return;
@@ -1356,8 +1563,14 @@
                     if (now - lastWheelAt < 250) return;
                     lastWheelAt = now;
                     const dy = e.deltaY || 0;
-                    if (dy < 0) { try { openTopMenuPanel(); } catch(_) {} }
-                    else if (dy > 0) { try { closeTopMenuPanel(); } catch(_) {} }
+                    if (dy < 0) {
+                        try { closeBottomMenuPanel(); } catch(_) {}
+                        try { openTopMenuPanel(); } catch(_) {}
+                    }
+                    else if (dy > 0) {
+                        try { closeTopMenuPanel(); } catch(_) {}
+                        try { openBottomMenuPanel(); } catch(_) {}
+                    }
                 }, { passive: true });
             } catch(e) {}
         })();
@@ -1596,31 +1809,7 @@
 					typeStatusTo('shortcuts-status', shortcuts, 30); try { layoutOverlayElements(); } catch(e) {} try { scheduleStartTextLoop(); } catch(e) {}
 				}
 			}
-			// Try to apply tiled background from pta.gif if available
-			try {
-				const testImg = new Image();
-				testImg.onload = () => {
-					document.body.style.backgroundImage = "url('pta.gif')";
-					document.body.style.backgroundRepeat = "repeat";
-					document.body.style.backgroundPosition = "top left";
-					document.body.style.backgroundSize = "auto";
-					// Ensure overlay doesn't blur the tiled background
-					const ov = document.getElementById('overlay');
-					if (ov) {
-						ov.classList.add('no-blur');
-						ov.classList.add('bg-lite'); // lighten overlay so GIF isn't overly darkened
-					}
-					// Hide quick radio button and volume on start overlay
-					try {
-						const rq = document.getElementById('radio-quick');
-						if (rq) rq.style.display = 'none';
-						const vs = document.getElementById('volume-slider-container');
-						if (vs) vs.style.display = 'none';
-					} catch(e) {}
-				};
-				testImg.onerror = () => { /* leave black background */ };
-				testImg.src = 'pta.gif';
-			} catch(e) { /* ignore */ }
+			// Background is now preloaded and applied via CSS for first-paint immediacy
 		})();
 
         function playRadio() {
@@ -2221,6 +2410,15 @@ function stopAllAndShowStart() {
                 this.name = name;
                 this.sceneFn = sceneFn;
                 this.resizeHandler = this.onResize.bind(this);
+				// Adaptive quality settings (auto-tune for stronger/weaker machines)
+				this.quality = {
+					mode: 'auto',
+					minPixelRatio: 1,
+					maxPixelRatio: 2.5,
+					adjustIntervalMs: 1000,
+					lastAdjustTs: 0,
+					frameTimesMs: []
+				};
             }
 
             init() {
@@ -2229,9 +2427,26 @@ function stopAllAndShowStart() {
                 this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
                 this.camera.position.z = 4;
                 
-                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(window.devicePixelRatio); // Sharpness
+				this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+				// Prefer physically-correct lighting and good tone mapping on capable devices
+				if (this.renderer) {
+					// Guard for different three.js versions
+					if ('outputColorSpace' in this.renderer) {
+						this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+					} else if ('outputEncoding' in this.renderer) {
+						this.renderer.outputEncoding = THREE.sRGBEncoding;
+					}
+					if ('toneMapping' in this.renderer && THREE.ACESFilmicToneMapping) {
+						this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+					}
+					if ('physicallyCorrectLights' in this.renderer) {
+						this.renderer.physicallyCorrectLights = true;
+					}
+				}
+				// Initial pixel ratio tuned for device; will auto-adjust at runtime
+				const initialPR = Math.min(window.devicePixelRatio || 1, this.quality.maxPixelRatio);
+				this.renderer.setPixelRatio(initialPR);
+				this.renderer.setSize(window.innerWidth, window.innerHeight);
                 container.appendChild(this.renderer.domElement);
 
                 this.composer = new EffectComposer(this.renderer);
@@ -2244,6 +2459,8 @@ function stopAllAndShowStart() {
                 this.updateFn = this.sceneFn(this.scene, this.camera, this.composer);
                 
                 window.addEventListener('resize', this.resizeHandler);
+				this._lastFrameTs = performance.now();
+				this.quality.lastAdjustTs = this._lastFrameTs;
                 this.animate();
             }
 
@@ -2257,6 +2474,31 @@ function stopAllAndShowStart() {
 
             animate() {
                 this.animId = requestAnimationFrame(this.animate.bind(this));
+				// Track frame time for adaptive quality
+				const now = performance.now();
+				const dt = now - (this._lastFrameTs || now);
+				this._lastFrameTs = now;
+				if (isFinite(dt) && dt > 0 && dt < 250) {
+					const q = this.quality;
+					q.frameTimesMs.push(dt);
+					if (q.frameTimesMs.length > 90) q.frameTimesMs.shift();
+					// Adjust roughly once per second
+					if (q.mode === 'auto' && (now - q.lastAdjustTs) >= q.adjustIntervalMs && q.frameTimesMs.length >= 30) {
+						const avg = q.frameTimesMs.reduce((a, b) => a + b, 0) / q.frameTimesMs.length;
+						const currentPR = this.renderer.getPixelRatio ? this.renderer.getPixelRatio() : 1;
+						let targetPR = currentPR;
+						// Targets ~60fps. If consistently faster, try increase detail; if slower, reduce.
+						if (avg < 14 && currentPR < q.maxPixelRatio) targetPR = Math.min(q.maxPixelRatio, currentPR + 0.25);
+						if (avg > 20 && currentPR > q.minPixelRatio) targetPR = Math.max(q.minPixelRatio, currentPR - 0.25);
+						if (Math.abs(targetPR - currentPR) >= 0.1) {
+							const w = window.innerWidth, h = window.innerHeight;
+							this.renderer.setPixelRatio(targetPR);
+							this.renderer.setSize(w, h, false);
+							this.composer.setSize(w, h);
+						}
+						q.lastAdjustTs = now;
+					}
+				}
                 state.analyserNode.getByteFrequencyData(this.dataArray);
                 if(this.updateFn) this.updateFn(this.dataArray, performance.now());
                 this.composer.render();
@@ -2374,6 +2616,52 @@ function stopAllAndShowStart() {
                     bars[i].material.emissive.setHSL(hue, 1, 0.2);
                 }
                 group.rotation.y = Math.sin(t * 0.5) * 0.2;
+            };
+        };
+
+        // Vertical Mirror Audio Bars (fills viewport height and resizes)
+        const sceneBarsVerticalMirror = (scene, camera) => {
+            const group = new THREE.Group();
+            const bars = [];
+            const numBars = 64;
+            const baseWidth = 0.2;
+            const baseHeight = 0.2;
+            for (let i = 0; i < numBars; i++) {
+                const geo = new THREE.BoxGeometry(baseWidth, baseHeight, 0.18);
+                const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x0a0a0a, metalness: 0.15, roughness: 0.55 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(0, 0, 0); // y will be set in update
+                group.add(mesh);
+                bars.push(mesh);
+            }
+            const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+            const point = new THREE.PointLight(0x88ccff, 1.1, 50);
+            point.position.set(0, 0, 6);
+            scene.add(ambient, point, group);
+            camera.position.z = 8;
+            return (data, time) => {
+                const t = time * 0.0006;
+                // Compute visible height for current camera for consistent vertical fit
+                const visibleHeight = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * Math.abs(camera.position.z);
+                const spacing = visibleHeight / (numBars + 2); // a small top/bottom margin
+                const targetBarHeight = spacing * 0.6;
+                const heightScale = targetBarHeight / baseHeight;
+                const step = Math.max(1, Math.floor(data.length / numBars));
+                for (let i = 0; i < numBars; i++) {
+                    const mesh = bars[i];
+                    // Position bars vertically, centered around y=0
+                    mesh.position.y = (i - (numBars - 1) / 2) * spacing;
+                    // Fixed bar height to align cleanly in the stack
+                    mesh.scale.y = heightScale;
+                    // Width responds to audio; centered so it extends both left and right
+                    const v = data[i * step] / 255;
+                    const width = baseWidth * (1 + v * 8.0); // responsive extent to both sides
+                    mesh.scale.x = width / baseWidth;
+                    // Color/emissive shift over time and index
+                    const hue = (i / numBars + t) % 1;
+                    mesh.material.color.setHSL(hue, 1, 0.55);
+                    mesh.material.emissive.setHSL(hue, 1, 0.18);
+                }
             };
         };
 
@@ -4010,6 +4298,7 @@ function stopAllAndShowStart() {
             new MilkdropEngineV2(),
             new MilkdropEngineV3(),
             new ThreeEngine("Audio Bars", sceneBars),
+            new ThreeEngine("Audio Bars (Vertical Mirror)", sceneBarsVerticalMirror),
             new ThreeEngine("Audio Bars (Circle)", sceneBarsCircle),
             new ThreeEngine("Audio Bars 3D", sceneBars3D),
             new ThreeEngine("Audio Bars: Vortex", sceneBarsVortex),
@@ -4022,14 +4311,12 @@ function stopAllAndShowStart() {
             new ThreeEngine("Wave Grid", sceneWaveGrid),
             new ThreeEngine("Particles", sceneParticles),
             new ThreeEngine("Infinity Tunnel", sceneInfinityTunnel),
-            new ThreeEngine("Infinity Mirror", sceneInfinityMirror),
             new ThreeEngine("Neon Tunnel", sceneNeonTunnel),
             new ThreeEngine("Twist Tunnel", sceneTwistTunnel),
             new ThreeEngine("Particle Tunnel", sceneParticleTunnel),
             new ThreeEngine("Galaxy", sceneGalaxy),
             new ThreeEngine("Terrain", sceneTerrain),
             new ThreeEngine("Hex Grid", sceneHexGrid),
-            new ThreeEngine("Ribbons", sceneRibbons),
             new ThreeEngine("Mandelbrot", sceneMandelbrot),
             new ThreeEngine("Julia Set", sceneJulia),
             new ThreeEngine("Lorenz Attractor", sceneLorenz),
@@ -4660,7 +4947,7 @@ function stopAllAndShowStart() {
                         playRadio();
                     }
                 });
-                // Visualization settings apply from top menu
+				// Visualization settings apply from top menu
                 const tmMin = document.getElementById('tm-inp-shuffle-min');
                 const tmMax = document.getElementById('tm-inp-shuffle-max');
                 const tmTrans = document.getElementById('tm-inp-transition');
@@ -4688,28 +4975,14 @@ function stopAllAndShowStart() {
                         }
                     } catch(e) {}
                 });
-                const btnPrevSt = document.getElementById('topmenu-prev-station');
+				const btnPrevSt = document.getElementById('topmenu-prev-station');
                 const btnNextSt = document.getElementById('topmenu-next-station');
                 if (btnPrevSt) btnPrevSt.addEventListener('click', (e)=>{ e.stopPropagation(); if (typeof setStation === 'function') setStation((currentStationIndex - 1 + stations.length) % stations.length); });
                 if (btnNextSt) btnNextSt.addEventListener('click', (e)=>{ e.stopPropagation(); if (typeof setStation === 'function') setStation((currentStationIndex + 1) % stations.length); });
-                const btnPrevVis = document.getElementById('topmenu-prev-visual');
+				const btnPrevVis = document.getElementById('topmenu-prev-visual');
                 const btnNextVis = document.getElementById('topmenu-next-visual');
                 if (btnPrevVis) btnPrevVis.addEventListener('click', (e)=>{ e.stopPropagation(); loadMode(state.currentModeIdx - 1); });
                 if (btnNextVis) btnNextVis.addEventListener('click', (e)=>{ e.stopPropagation(); loadMode(state.currentModeIdx + 1); });
-                const selWebm = document.getElementById('webm-select');
-                const btnOpenWebm = document.getElementById('topmenu-webm-open');
-                const btnPrevWebm = document.getElementById('topmenu-webm-prev');
-                const btnNextWebm = document.getElementById('topmenu-webm-next');
-                if (btnPrevWebm) btnPrevWebm.addEventListener('click', (e)=>{ e.stopPropagation(); prevWebm(); });
-                if (btnNextWebm) btnNextWebm.addEventListener('click', (e)=>{ e.stopPropagation(); nextWebm(); });
-                if (btnOpenWebm) btnOpenWebm.addEventListener('click', (e)=>{ 
-                    e.stopPropagation();
-                    if (typeof loadWebmList === 'function' && webmList.length === 0) {
-                        loadWebmList().finally(()=>{ try { const idx = Math.max(0, Math.min(webmList.length-1, parseInt((selWebm?.value)||'0',10)||0)); setWebm(idx); showWebm(); } catch(_){} });
-                    } else {
-                        try { const idx = Math.max(0, Math.min(webmList.length-1, parseInt((selWebm?.value)||'0',10)||0)); setWebm(idx); showWebm(); } catch(_){}
-                    }
-                });
             } catch(e) {}
         })();
         // expose for inline handlers
