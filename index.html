@@ -1491,20 +1491,13 @@
                         else loadMode(state.currentModeIdx - 1);
                         return;
                     }
-                    // Double tap opens WebM
+                    // Double tap toggles Fullscreen (no station change, no WebM)
                     const moved = (adx > TAP_MAX_MOVE || ady > TAP_MAX_MOVE);
                     const now = Date.now();
                     if (!moved && (now - lastTapTime) < DOUBLE_TAP_MS) {
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
-                        if (!webmOn) {
-                            // open webm overlay
-                            if (typeof webmList !== 'undefined' && webmList.length === 0) {
-                                try { loadWebmList().finally(() => { if (webmList.length > 0) showWebm(); }); } catch(_) {}
-                            } else {
-                                try { showWebm(); } catch(_) {}
-                            }
-                        }
+                        try { toggleFullscreen(); } catch(_) {}
                         lastTapTime = 0; // reset
                         return;
                     }
@@ -1582,6 +1575,8 @@
                 area.addEventListener('click', (e) => {
                     try {
                         if (!state || !state.isPlaying) return;
+                        // Ignore click if it's part of a double-click sequence
+                        if ((e && typeof e.detail === 'number' && e.detail > 1)) return;
                         if (window.__suppressNextClick) { window.__suppressNextClick = false; return; }
                         // If start overlay or top menu is visible, ignore
                         const overlay = document.getElementById('overlay');
