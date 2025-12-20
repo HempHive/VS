@@ -698,37 +698,32 @@
 	<!-- Top Menu Panel -->
 	<div id="top-menu-panel" class="display-none">
 		<div id="top-menu-header">
-			<h3>Now Playing & Controls</h3>
+			<h3>Radio Controls</h3>
 			<button class="btn" id="btn-topmenu-close" title="Close">✕</button>
 		</div>
 		<div id="top-menu-content">
-			<div class="row">
-				<input id="station-url" type="text" placeholder="Stream URL">
-				<button class="btn" id="topmenu-play" title="Play URL">Play</button>
+			<!-- Actions Row -->
+			<div id="top-menu-actions" style="margin-bottom:8px;">
+				<button class="btn" id="topmenu-prev-station" title="Previous Station">⟵ Station</button>
+				<button class="btn" id="topmenu-next-station" title="Next Station">Station ⟶</button>
+				<button class="btn" id="topmenu-prev-visual" title="Previous Visual">⟵ Visual</button>
+				<button class="btn" id="topmenu-next-visual" title="Next Visual">Visual ⟶</button>
 			</div>
-			<!-- Visualization Settings (moved from old Settings Panel) -->
-			<div class="row" style="gap:14px; flex-wrap:wrap">
-				<div style="display:flex; align-items:center; gap:8px; flex:1; min-width:260px;">
-					<label for="tm-inp-shuffle-min" style="min-width:120px; font-size:12px; color:#ccc">Shuffle min (s)</label>
-					<input id="tm-inp-shuffle-min" type="range" min="3" max="120" step="1" value="30" style="flex:1">
-				</div>
-				<div style="display:flex; align-items:center; gap:8px; flex:1; min-width:260px;">
-					<label for="tm-inp-shuffle-max" style="min-width:120px; font-size:12px; color:#ccc">Shuffle max (s)</label>
-					<input id="tm-inp-shuffle-max" type="range" min="5" max="180" step="1" value="60" style="flex:1">
-				</div>
+			<!-- Scrollable Radio Stations List (migrated from Radio Panel) -->
+			<div id="top-menu-stations" style="flex:1; overflow:auto; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px; background: rgba(255,255,255,0.04);">
+				<div id="radio-list"></div>
 			</div>
-			<div class="row" style="gap:14px; flex-wrap:wrap">
-				<div style="display:flex; align-items:center; gap:8px; flex:1; min-width:260px;">
-					<label for="tm-inp-transition" style="min-width:120px; font-size:12px; color:#ccc">Transition (s)</label>
-					<input id="tm-inp-transition" type="range" min="0" max="10" step="0.1" value="2.7" style="flex:1">
-				</div>
-				<div style="display:flex; align-items:center; gap:8px; flex:1; min-width:260px;">
-					<label for="tm-inp-pixelratio" style="min-width:120px; font-size:12px; color:#ccc">Pixel Ratio</label>
-					<input id="tm-inp-pixelratio" type="range" min="0.5" max="3" step="0.1" value="1" style="flex:1">
-				</div>
-			</div>
-			<div class="row" style="justify-content:flex-end">
-				<button class="btn" id="tm-btn-apply" title="Apply visualization settings">Apply</button>
+			<!-- Single-row visualization sliders (minimal labels), above volume slider -->
+			<div class="row" style="gap:10px; align-items:center; margin-top:8px; flex-wrap:nowrap; overflow:auto">
+				<label for="tm-inp-shuffle-min" style="font-size:11px; color:#ccc; min-width:28px; text-align:right">Min</label>
+				<input id="tm-inp-shuffle-min" type="range" min="3" max="120" step="1" value="30" style="flex:1; min-width:120px">
+				<label for="tm-inp-shuffle-max" style="font-size:11px; color:#ccc; min-width:28px; text-align:right">Max</label>
+				<input id="tm-inp-shuffle-max" type="range" min="5" max="180" step="1" value="60" style="flex:1; min-width:120px">
+				<label for="tm-inp-transition" style="font-size:11px; color:#ccc; min-width:36px; text-align:right">Trans</label>
+				<input id="tm-inp-transition" type="range" min="0" max="10" step="0.1" value="2.7" style="flex:1; min-width:120px">
+				<label for="tm-inp-pixelratio" style="font-size:11px; color:#ccc; min-width:20px; text-align:right">PR</label>
+				<input id="tm-inp-pixelratio" type="range" min="0.5" max="3" step="0.1" value="1" style="flex:1; min-width:120px">
+				<button class="btn" id="tm-btn-apply" title="Apply">Apply</button>
 			</div>
 			<div id="top-menu-actions">
 				<button class="btn" id="topmenu-prev-station" title="Previous Station">⟵ Station</button>
@@ -793,12 +788,7 @@
 			</div>
 		</div>
 	</div>
-    <!-- Quick Radio Button and Panel -->
-    <div id="radio-quick" class="interactive" role="button" aria-label="Radio control" title="Left-click: random station • Right-click: choose"></div>
-    <div id="radio-panel" class="display-none">
-        <h3>Radio Stations</h3>
-        <div id="radio-list"></div>
-    </div>
+    <!-- Quick Radio Button and old Radio Panel removed (assets retained) -->
     <div id="station-banner" class="display-none"></div>
     
     <!-- WebM Overlay + Nav -->
@@ -1380,6 +1370,11 @@
                 if (btnNextWebm) btnNextWebm.addEventListener('click', (e)=>{ e.stopPropagation(); nextWebm(); });
                 if (btnOpenWebm) btnOpenWebm.addEventListener('click', (e)=>{ 
                     e.stopPropagation();
+                    // Toggle behavior: if open, close; otherwise open selected
+                    if (typeof webmOn !== 'undefined' && webmOn) {
+                        try { hideWebm(); } catch(_) {}
+                        return;
+                    }
                     if (typeof loadWebmList === 'function' && webmList.length === 0) {
                         loadWebmList().finally(()=>{ try { const idx = Math.max(0, Math.min(webmList.length-1, parseInt((selWebm?.value)||'0',10)||0)); setWebm(idx); showWebm(); } catch(_){} });
                     } else {
