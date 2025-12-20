@@ -1302,6 +1302,8 @@
             return !!(p && !p.classList.contains('display-none') && p.classList.contains('open'));
         }
         function openBottomMenuPanel() {
+            // Prevent opening if a recent panel close just happened
+            try { if (window.__panelGuardUntilMs && Date.now() < window.__panelGuardUntilMs) return; } catch(_) {}
             const p = document.getElementById('bottom-avatar-panel');
             if (!p) return;
             try {
@@ -1349,7 +1351,7 @@
             const p = document.getElementById('bottom-avatar-panel');
             if (!p) return;
             p.classList.remove('open');
-            try { window.__panelGuardUntilMs = Date.now() + 600; } catch(_) {}
+            try { window.__panelGuardUntilMs = Date.now() + 800; } catch(_) {}
             setTimeout(() => { p.classList.add('display-none'); }, 350);
         }
         function toggleBottomMenuPanel() {
@@ -1462,6 +1464,13 @@
                         const guardUntil = (typeof window !== 'undefined' && window.__panelGuardUntilMs) ? window.__panelGuardUntilMs : 0;
                         const nowMs = Date.now();
                         if (nowMs < guardUntil) return;
+                        // If any panel is currently open, only close it and do not open others
+                        try {
+                            const topOpen = (typeof isTopMenuOpen === 'function') && isTopMenuOpen();
+                            const bottomOpen = (typeof isBottomMenuOpen === 'function') && isBottomMenuOpen();
+                            if (topOpen) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
+                            if (bottomOpen) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
+                        } catch(_) {}
                         if (dy > 0) { // swipe down
                             if (typeof isBottomMenuOpen === 'function' && isBottomMenuOpen()) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
                             if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
@@ -4906,6 +4915,8 @@ function stopAllAndShowStart() {
             return !!(p && !p.classList.contains('display-none') && p.classList.contains('open'));
         }
         function openTopMenuPanel() {
+            // Prevent opening if a recent panel close just happened
+            try { if (window.__panelGuardUntilMs && Date.now() < window.__panelGuardUntilMs) return; } catch(_) {}
             const p = document.getElementById('top-menu-panel');
             if (!p) return;
             // Populate fields
@@ -4948,7 +4959,7 @@ function stopAllAndShowStart() {
             const p = document.getElementById('top-menu-panel');
             if (!p) return;
             p.classList.remove('open');
-            try { window.__panelGuardUntilMs = Date.now() + 600; } catch(_) {}
+            try { window.__panelGuardUntilMs = Date.now() + 800; } catch(_) {}
             setTimeout(() => { p.classList.add('display-none'); }, 350);
         }
         function toggleTopMenuPanel() {
