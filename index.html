@@ -1749,6 +1749,13 @@
 			const overlay = document.getElementById('overlay');
 			overlay.classList.remove('hidden');
 			overlay.style.display = 'flex';
+            // Restore tiled background for start screen
+            try {
+                document.body.style.backgroundImage = "url('pta.gif')";
+                document.body.style.backgroundRepeat = "repeat";
+                document.body.style.backgroundPosition = "top left";
+                document.body.style.backgroundSize = "auto";
+            } catch(_) {}
 			applyOverlayGlowAndLogo();
 			// Hide quick radio button on start page
 			if (typeof radioQuickBtn !== 'undefined' && radioQuickBtn) {
@@ -1963,8 +1970,8 @@
                 overlay.classList.remove('digital-out');
                 // Ensure background gif is not shown behind canvas once playing
                 try {
-                    document.body.style.backgroundImage = '';
-                    document.body.style.backgroundRepeat = '';
+                    document.body.style.backgroundImage = 'none';
+                    document.body.style.backgroundRepeat = 'no-repeat';
                     document.body.style.backgroundPosition = '';
                     document.body.style.backgroundSize = '';
                 } catch(e) {}
