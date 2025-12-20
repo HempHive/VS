@@ -600,6 +600,15 @@
 			display:flex; align-items:center; justify-content: center; width:100%; height:48px;
 			opacity: 1 !important; pointer-events: auto;
 		}
+		/* Themed select (WebM dropdown) */
+		#avatar-webm-select {
+			appearance: none; -webkit-appearance: none; -moz-appearance: none;
+			padding: 8px 12px; min-width: 220px;
+			background: rgba(255,255,255,0.06);
+			border: 1px solid rgba(255,255,255,0.25);
+			color: #fff; border-radius: 8px;
+		}
+		#avatar-webm-select:focus { outline: none; border-color: rgba(255,255,255,0.45); }
 		/* Scrollbar styling for stations list */
 		#top-menu-stations {
 			scrollbar-color: rgba(255,255,255,0.35) rgba(255,255,255,0.08);
@@ -623,6 +632,52 @@
 		}
 		#top-menu-footer #volume-slider::-moz-range-progress {
 			height: 6px; background: rgba(212,175,55,0.35); border-radius: 6px 0 0 6px;
+		}
+		/* Unify slider style across panels to match volume theme (track color, thumb style) */
+		#top-menu-content input[type="range"],
+		#bottom-avatar-content input[type="range"],
+		#settings-panel input[type="range"],
+		#webm-settings-panel input[type="range"] {
+			-webkit-appearance: none; appearance: none;
+			height: 16px; background: transparent; cursor: pointer;
+		}
+		#top-menu-content input[type="range"]::-webkit-slider-runnable-track,
+		#bottom-avatar-content input[type="range"]::-webkit-slider-runnable-track,
+		#settings-panel input[type="range"]::-webkit-slider-runnable-track,
+		#webm-settings-panel input[type="range"]::-webkit-slider-runnable-track {
+			height: 6px; background: rgba(255,255,255,0.24); border-radius: 6px;
+		}
+		#top-menu-content input[type="range"]::-moz-range-track,
+		#bottom-avatar-content input[type="range"]::-moz-range-track,
+		#settings-panel input[type="range"]::-moz-range-track,
+		#webm-settings-panel input[type="range"]::-moz-range-track {
+			height: 6px; background: rgba(255,255,255,0.24); border-radius: 6px;
+		}
+		#top-menu-content input[type="range"]::-moz-range-progress,
+		#bottom-avatar-content input[type="range"]::-moz-range-progress,
+		#settings-panel input[type="range"]::-moz-range-progress,
+		#webm-settings-panel input[type="range"]::-moz-range-progress {
+			height: 6px; background: rgba(212,175,55,0.35); border-radius: 6px 0 0 6px;
+		}
+		#top-menu-content input[type="range"]::-webkit-slider-thumb,
+		#bottom-avatar-content input[type="range"]::-webkit-slider-thumb,
+		#settings-panel input[type="range"]::-webkit-slider-thumb,
+		#webm-settings-panel input[type="range"]::-webkit-slider-thumb {
+			-webkit-appearance: none; appearance: none;
+			width: 14px; height: 14px; border-radius: 50%;
+			background: rgba(255,255,255,0.9);
+			border: 1px solid rgba(0,0,0,0.25);
+			margin-top: -4px;
+			box-shadow: 0 0 8px rgba(0,0,0,0.25);
+		}
+		#top-menu-content input[type="range"]::-moz-range-thumb,
+		#bottom-avatar-content input[type="range"]::-moz-range-thumb,
+		#settings-panel input[type="range"]::-moz-range-thumb,
+		#webm-settings-panel input[type="range"]::-moz-range-thumb {
+			width: 14px; height: 14px; border-radius: 50%;
+			background: rgba(255,255,255,0.9);
+			border: 1px solid rgba(0,0,0,0.25);
+			box-shadow: 0 0 8px rgba(0,0,0,0.25);
 		}
 
 		/* Bottom Avatar Menu Panel (slides from bottom, 50vh) */
@@ -755,15 +810,8 @@
 	<!-- Bottom Avatar Menu Panel -->
 	<div id="bottom-avatar-panel" class="display-none">
 		<div id="bottom-avatar-header">
-			<h3>Avatar Settings</h3>
-			<div style="display:flex; gap:8px; align-items:center">
-				<button class="btn" id="avatar-btn-auto" title="Toggle random WebM (30-60s)">Auto: Off</button>
-				<button class="btn" id="avatar-btn-reset" title="Reset to defaults">⎋</button>
-				<button class="btn" id="btn-bottommenu-close" title="Close">✕</button>
-			</div>
-		</div>
-		<div id="bottom-avatar-content">
-			<div id="bottom-avatar-actions">
+			<div style="display:flex; gap:10px; align-items:center">
+				<h3>Avatar Settings</h3>
 				<select id="avatar-webm-select"></select>
 				<button class="btn" id="avatar-webm-open" title="Open selected WebM">▶</button>
 				<div style="display:flex; gap:6px;">
@@ -771,6 +819,13 @@
 					<button class="btn" id="avatar-webm-next" title="Next WebM">⟩</button>
 				</div>
 			</div>
+			<div style="display:flex; gap:8px; align-items:center">
+				<button class="btn" id="avatar-btn-auto" title="Toggle random WebM (30-60s)">Auto: Off</button>
+				<button class="btn" id="avatar-btn-reset" title="Reset to defaults">⎋</button>
+				<button class="btn" id="btn-bottommenu-close" title="Close">✕</button>
+			</div>
+		</div>
+		<div id="bottom-avatar-content">
 			<div class="row">
 				<label for="avatar-inp-scale" style="min-width:120px; font-size:12px; color:#ccc">Size (vw)</label>
 				<input id="avatar-inp-scale" type="range" min="10" max="100" step="1" value="50">
@@ -4454,6 +4509,21 @@ function stopAllAndShowStart() {
             try { toggleTopMenuPanel(); } catch(e) {}
             resetIdleTimer();
         });
+		// Horizontal scroll wheel changes visual left/right (ignore when interacting with panels)
+		document.addEventListener('wheel', (e) => {
+			try {
+				const horizIntent = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? Math.abs(e.deltaX) : (e.shiftKey ? Math.abs(e.deltaY) : 0));
+				if (horizIntent > 5) {
+					const inUi = !!(e.target && (e.target.closest('#top-menu-content') || e.target.closest('#settings-panel') || e.target.closest('#webm-settings-panel') || e.target.closest('#bottom-avatar-content')));
+					if (!inUi) {
+						if ((e.deltaX > 0) || (e.shiftKey && e.deltaY > 0)) loadMode(state.currentModeIdx + 1);
+						else loadMode(state.currentModeIdx - 1);
+						if (typeof resetIdleTimer === 'function') resetIdleTimer();
+						e.preventDefault();
+					}
+				}
+			} catch(_) {}
+		}, { passive: false });
         settingsCloseBtn.addEventListener('click', () => { 
             if (settingsPanelTimer) { clearTimeout(settingsPanelTimer); settingsPanelTimer = null; }
             settingsPanel.classList.add('display-none');
