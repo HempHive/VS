@@ -2641,6 +2641,8 @@ function stopAllAndShowStart() {
         // Vertical Mirror Audio Bars (fills viewport height and resizes)
         const sceneBarsVerticalMirror = (scene, camera) => {
             const group = new THREE.Group();
+            // Rotate 180 degrees
+            group.rotation.x = Math.PI;
             const bars = [];
             const numBars = 64;
             const baseWidth = 0.2;
