@@ -612,6 +612,23 @@
 		#avatar-webm-select:focus { outline: none; border-color: rgba(255,255,255,0.45); }
 		/* Allow left header group to expand, enabling the select to stretch */
 		#bottom-avatar-header > div:first-child { flex: 1; min-width: 0; }
+		/* Enlarge all buttons on the Avatar Settings top line by ~50% with rounded corners */
+		#bottom-avatar-header .btn {
+			font-size: 1.5em;
+			padding: 10px 16px;
+			border-radius: 10px;
+		}
+		/* Icon buttons after the WebM dropdown: make square with rounded corners */
+		#avatar-webm-open,
+		#avatar-webm-prev,
+		#avatar-webm-next,
+		#btn-bottommenu-close {
+			width: 42px; height: 42px;
+			padding: 0;
+			display: inline-flex; align-items: center; justify-content: center;
+			border-radius: 10px;
+			line-height: 1;
+		}
 		/* Scrollbar styling for stations list */
 		#top-menu-stations {
 			scrollbar-color: rgba(255,255,255,0.35) rgba(255,255,255,0.08);
@@ -4519,9 +4536,16 @@ function stopAllAndShowStart() {
 				if (horizIntent > 5) {
 					const inUi = !!(e.target && (e.target.closest('#top-menu-content') || e.target.closest('#settings-panel') || e.target.closest('#webm-settings-panel') || e.target.closest('#bottom-avatar-content')));
 					if (!inUi) {
-						if ((e.deltaX > 0) || (e.shiftKey && e.deltaY > 0)) loadMode(state.currentModeIdx + 1);
-						else loadMode(state.currentModeIdx - 1);
-						if (typeof resetIdleTimer === 'function') resetIdleTimer();
+						// One step per gesture: lock during momentum and unlock after wheel quiets down
+						if (!window.__wheelNavLocked) {
+							window.__wheelNavLocked = true;
+							if ((e.deltaX > 0) || (e.shiftKey && e.deltaY > 0)) loadMode(state.currentModeIdx + 1);
+							else loadMode(state.currentModeIdx - 1);
+							if (typeof resetIdleTimer === 'function') resetIdleTimer();
+						}
+						// Reset unlock timer to release lock shortly after wheel stops
+						if (window.__wheelNavUnlockId) clearTimeout(window.__wheelNavUnlockId);
+						window.__wheelNavUnlockId = setTimeout(() => { window.__wheelNavLocked = false; }, 220);
 						e.preventDefault();
 					}
 				}
