@@ -613,6 +613,8 @@
 		#avatar-webm-select:focus { outline: none; border-color: rgba(255,255,255,0.45); }
 		/* Allow left header group to expand, enabling the select to stretch */
 		#bottom-avatar-header > div:first-child { flex: 1; min-width: 0; }
+		/* Add a bit of spacing before the right-side controls group */
+		#bottom-avatar-header > div:last-child { margin-left: 10px; }
 		/* Enlarge all buttons on the Avatar Settings top line by ~50% with rounded corners */
 		#bottom-avatar-header .btn {
 			font-size: 1.5em;
@@ -710,8 +712,8 @@
 		#webm-settings-panel input[type="range"]::-webkit-slider-thumb {
 			-webkit-appearance: none; appearance: none;
 			width: 14px; height: 14px; border-radius: 50%;
-			background: rgba(255,255,255,0.9);
-			border: 1px solid rgba(0,0,0,0.25);
+			background: rgba(0,0,0,0.9); /* black thumb */
+			border: 2px solid rgba(212,175,55,0.9); /* gold border */
 			margin-top: -4px;
 			box-shadow: 0 0 8px rgba(0,0,0,0.25);
 		}
@@ -720,8 +722,8 @@
 		#settings-panel input[type="range"]::-moz-range-thumb,
 		#webm-settings-panel input[type="range"]::-moz-range-thumb {
 			width: 14px; height: 14px; border-radius: 50%;
-			background: rgba(255,255,255,0.9);
-			border: 1px solid rgba(0,0,0,0.25);
+			background: rgba(0,0,0,0.9); /* black thumb */
+			border: 2px solid rgba(212,175,55,0.9); /* gold border */
 			box-shadow: 0 0 8px rgba(0,0,0,0.25);
 		}
 
