@@ -1499,7 +1499,25 @@
                     if (el) el.addEventListener('input', updateFromAvatarInputs);
                 });
                 const btnAuto = document.getElementById('avatar-btn-auto');
-                if (btnAuto) btnAuto.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); setWebmAuto(!webmAutoOn); const autoBtn = document.getElementById('avatar-btn-auto'); if (autoBtn) autoBtn.textContent = webmAutoOn ? 'Auto: On' : 'Auto: Off'; });
+                if (btnAuto) btnAuto.addEventListener('click', (e)=>{ 
+                    e.preventDefault(); 
+                    e.stopPropagation(); 
+                    setWebmAuto(!webmAutoOn); 
+                    const autoBtn = document.getElementById('avatar-btn-auto'); 
+                    if (autoBtn) autoBtn.textContent = webmAutoOn ? 'Auto: On' : 'Auto: Off'; 
+                    // If auto just turned on and no WebM is playing, start the first WebM
+                    try {
+                        if (webmAutoOn && !webmOn) {
+                            if (webmList.length === 0 && typeof loadWebmList === 'function') {
+                                loadWebmList().finally(() => {
+                                    if (webmList.length > 0) { setWebm(0); showWebm(); }
+                                });
+                            } else if (webmList.length > 0) {
+                                setWebm(0); showWebm();
+                            }
+                        }
+                    } catch(_) {}
+                });
                 const btnReset = document.getElementById('avatar-btn-reset');
                 if (btnReset) btnReset.addEventListener('click', (e)=>{ 
                     e.preventDefault(); e.stopPropagation();
@@ -4520,11 +4538,6 @@ function stopAllAndShowStart() {
             } else {
                 hideWebm();
             }
-        });
-        webmBtn.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleWebmSettingsPanel();
         });
         webmPrevBtn.addEventListener('click', () => { prevWebm(); resetIdleTimer(); });
         webmNextBtn.addEventListener('click', () => { nextWebm(); resetIdleTimer(); });
