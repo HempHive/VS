@@ -1460,27 +1460,19 @@
                     const dx = x - pDownX;
                     const dy = y - pDownY;
                     const adx = Math.abs(dx), ady = Math.abs(dy);
-                    // Vertical swipe: swipe down toggles top menu; swipe up toggles bottom avatar menu
+                    // Vertical swipe: down/up closes open panel first; only opens target if none open
                     if (ady > SWIPE_PX && ady > adx) {
                         handledSwipe = true;
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
-                        if (dy > 0) {
-                            // Downward swipe -> open/close top menu
-                            if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) {
-                                if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel();
-                            } else {
-                                if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel();
-                                if (typeof openTopMenuPanel === 'function') openTopMenuPanel();
-                            }
-                        } else {
-                            // Upward swipe -> open/close bottom menu
-                            if (typeof isBottomMenuOpen === 'function' && isBottomMenuOpen()) {
-                                if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel();
-                            } else {
-                                if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel();
-                                if (typeof openBottomMenuPanel === 'function') openBottomMenuPanel();
-                            }
+                        if (dy > 0) { // swipe down
+                            if (typeof isBottomMenuOpen === 'function' && isBottomMenuOpen()) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
+                            if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
+                            if (typeof openTopMenuPanel === 'function') openTopMenuPanel();
+                        } else { // swipe up
+                            if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
+                            if (typeof isBottomMenuOpen === 'function' && isBottomMenuOpen()) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
+                            if (typeof openBottomMenuPanel === 'function') openBottomMenuPanel();
                         }
                         return;
                     }
@@ -1555,7 +1547,7 @@
                         if (typeof hideWebm === 'function' && webmOn) hideWebm();
                     }, { passive: false });
                 }
-                // Wheel: scroll UP opens top menu; scroll DOWN opens bottom avatar menu (trackpads/mice)
+                // Wheel: scroll UP opens top menu; scroll DOWN opens bottom menu; never open the other when closing (trackpads/mice)
                 let lastWheelAt = 0;
                 canvasEl.addEventListener('wheel', (e) => {
                     if (!state || !state.isPlaying) return;
@@ -1564,12 +1556,17 @@
                     lastWheelAt = now;
                     const dy = e.deltaY || 0;
                     if (dy < 0) {
-                        try { closeBottomMenuPanel(); } catch(_) {}
-                        try { openTopMenuPanel(); } catch(_) {}
-                    }
-                    else if (dy > 0) {
-                        try { closeTopMenuPanel(); } catch(_) {}
-                        try { openBottomMenuPanel(); } catch(_) {}
+                        // scrolling up
+                        try {
+                            if (typeof isBottomMenuOpen === 'function' && isBottomMenuOpen()) { closeBottomMenuPanel(); return; }
+                            if (typeof isTopMenuOpen === 'function' && !isTopMenuOpen()) { openTopMenuPanel(); }
+                        } catch(_) {}
+                    } else if (dy > 0) {
+                        // scrolling down
+                        try {
+                            if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) { closeTopMenuPanel(); return; }
+                            if (typeof isBottomMenuOpen === 'function' && !isBottomMenuOpen()) { openBottomMenuPanel(); }
+                        } catch(_) {}
                     }
                 }, { passive: true });
             } catch(e) {}
