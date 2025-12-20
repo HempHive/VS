@@ -621,7 +621,14 @@
 			border-radius: 10px;
 			display: inline-flex; align-items: center; justify-content: center;
 			line-height: 1; box-sizing: border-box;
+			/* Theme colors (avoid white buttons) */
+			background: rgba(255,255,255,0.08);
+			border: 1px solid rgba(255,255,255,0.25);
+			color: #fff;
+			cursor: pointer;
+			transition: background 160ms ease;
 		}
+		#bottom-avatar-header .btn:hover { background: rgba(212,175,55,0.28); color: #fff; }
 		/* Icon buttons after the WebM dropdown: make square with rounded corners */
 		#avatar-webm-open,
 		#avatar-webm-prev,
@@ -632,6 +639,20 @@
 			display: inline-flex; align-items: center; justify-content: center;
 			border-radius: 10px;
 			line-height: 1;
+		}
+		/* Ensure right-side header buttons use the same theme */
+		#avatar-btn-auto,
+		#avatar-btn-reset,
+		#btn-bottommenu-close {
+			background: rgba(255,255,255,0.08);
+			border: 1px solid rgba(255,255,255,0.25);
+			color: #fff;
+		}
+		#avatar-btn-auto:hover,
+		#avatar-btn-reset:hover,
+		#btn-bottommenu-close:hover {
+			background: rgba(212,175,55,0.28);
+			color: #fff;
 		}
 		/* Scrollbar styling for stations list */
 		#top-menu-stations {
