@@ -2116,9 +2116,9 @@
                     document.body.style.backgroundPosition = '';
                     document.body.style.backgroundSize = '';
                 } catch(e) {}
-                // Start with "Audio Bars" by default if available
+                // Start with "Audio Bars (Vertical Mirror)" by default if available
                 try {
-                    const defaultIdx = Math.max(0, modes.findIndex(m => m && m.name === "Audio Bars"));
+                    const defaultIdx = Math.max(0, modes.findIndex(m => m && m.name === "Audio Bars (Vertical Mirror)"));
                     loadMode(defaultIdx);
                 } catch(e) {
                     loadMode(0);
@@ -4478,8 +4478,8 @@ function stopAllAndShowStart() {
             new MilkdropEngine(),
             new MilkdropEngineV2(),
             new MilkdropEngineV3(),
-            new ThreeEngine("Audio Bars", sceneBars),
             new ThreeEngine("Audio Bars (Vertical Mirror)", sceneBarsVerticalMirror),
+            new ThreeEngine("Audio Bars", sceneBars),
             new ThreeEngine("Audio Bars (Circle)", sceneBarsCircle),
             new ThreeEngine("Audio Bars 3D", sceneBars3D),
             new ThreeEngine("Audio Bars: Vortex", sceneBarsVortex),
@@ -4651,6 +4651,11 @@ function stopAllAndShowStart() {
                         stations.push({ name, url });
                     }
                 });
+                // Make the first station the default selection if none chosen yet
+                if ((typeof currentStationIndex !== 'number' || currentStationIndex < 0) && stations.length > 0) {
+                    currentStationIndex = 0;
+                    if (radioInputEl) radioInputEl.value = stations[0].url;
+                }
                 renderStationList();
             } catch(e) {
                 console.warn('Failed to load radio.txt', e);
