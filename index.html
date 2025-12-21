@@ -614,7 +614,7 @@
 		/* Allow left header group to expand, enabling the select to stretch */
 		#bottom-avatar-header > div:first-child { flex: 1; min-width: 0; }
 		/* Add a bit of spacing before the right-side controls group */
-		#bottom-avatar-header > div:last-child { margin-left: 10px; }
+		#bottom-avatar-header > div:last-child { margin-left: 10px; flex-shrink: 0; }
 		/* Enlarge all buttons on the Avatar Settings top line by ~50% with rounded corners */
 		#bottom-avatar-header .btn {
 			font-size: 1.5em;
@@ -649,6 +649,11 @@
 			background: rgba(255,255,255,0.08);
 			border: 1px solid rgba(255,255,255,0.25);
 			color: #fff;
+		}
+		/* Auto toggle "on" state uses text color only */
+		#avatar-btn-auto.on,
+		#btn-webm-auto.on {
+			color: #ffd700;
 		}
 		#avatar-btn-auto:hover,
 		#avatar-btn-reset:hover,
@@ -865,7 +870,7 @@
 				</div>
 			</div>
 			<div style="display:flex; gap:8px; align-items:center">
-				<button class="btn" id="avatar-btn-auto" title="Toggle random WebM (30-60s)">Auto: Off</button>
+				<button class="btn" id="avatar-btn-auto" title="Toggle random WebM (30-60s)">Auto</button>
 				<button class="btn" id="avatar-btn-reset" title="Reset to defaults">⎋</button>
 				<button class="btn" id="btn-bottommenu-close" title="Close">✕</button>
 			</div>
@@ -873,7 +878,7 @@
 		<div id="bottom-avatar-content">
 			<div class="row">
 				<label for="avatar-inp-scale" style="min-width:120px; font-size:12px; color:#ccc">Size (vw)</label>
-				<input id="avatar-inp-scale" type="range" min="10" max="100" step="1" value="50">
+				<input id="avatar-inp-scale" type="range" min="10" max="200" step="1" value="50">
 			</div>
 			<div class="row">
 				<label for="avatar-inp-x" style="min-width:120px; font-size:12px; color:#ccc">X (vw)</label>
@@ -946,7 +951,7 @@
         <div class="panel-head">
             <h3>AVATAR SETTINGS</h3>
             <div style="display:flex; gap:8px; align-items:center">
-                <button class="btn-small" id="btn-webm-auto" title="Toggle random WebM (30-60s)">Auto: Off</button>
+                <button class="btn-small" id="btn-webm-auto" title="Toggle random WebM (30-60s)">Auto</button>
                 <button class="btn-small" id="btn-webm-reset" title="Reset to defaults">⎋</button>
                 <button class="icon-btn interactive" id="btn-webm-close" title="Close" aria-label="Close" onclick="hideWebmSettingsPanel && hideWebmSettingsPanel()">✕</button>
             </div>
@@ -954,7 +959,7 @@
         <div id="webm-settings-content">
             <div class="settings-row">
                 <label for="inp-webm-scale">Size (vw)</label>
-                <input id="inp-webm-scale" type="range" min="10" max="100" step="1" value="50">
+                <input id="inp-webm-scale" type="range" min="10" max="200" step="1" value="50">
             </div>
             <div class="settings-row">
                 <label for="inp-webm-x">X (vw)</label>
@@ -1460,7 +1465,7 @@
                 if (aOpacity) aOpacity.value = String(webmSettings.opacity);
                 if (aDup) aDup.value = String(webmSettings.duplicates);
                 const autoBtn = document.getElementById('avatar-btn-auto');
-                if (autoBtn) autoBtn.textContent = webmAutoOn ? 'Auto: On' : 'Auto: Off';
+                if (autoBtn) { autoBtn.textContent = 'Auto'; autoBtn.classList.toggle('on', webmAutoOn); }
             } catch(_) {}
             p.classList.remove('display-none');
             requestAnimationFrame(() => { p.classList.add('open'); });
@@ -1525,7 +1530,7 @@
                     e.stopPropagation(); 
                     setWebmAuto(!webmAutoOn); 
                     const autoBtn = document.getElementById('avatar-btn-auto'); 
-                    if (autoBtn) autoBtn.textContent = webmAutoOn ? 'Auto: On' : 'Auto: Off'; 
+                    if (autoBtn) { autoBtn.textContent = 'Auto'; autoBtn.classList.toggle('on', webmAutoOn); }
                     // If auto just turned on and no WebM is playing, start the first WebM
                     try {
                         if (webmAutoOn && !webmOn) {
@@ -5054,7 +5059,9 @@ function stopAllAndShowStart() {
         function setWebmAuto(on) {
             webmAutoOn = !!on;
             const autoBtn = document.getElementById('btn-webm-auto');
-            if (autoBtn) autoBtn.textContent = webmAutoOn ? 'Auto: On' : 'Auto: Off';
+            if (autoBtn) { autoBtn.textContent = 'Auto'; autoBtn.classList.toggle('on', webmAutoOn); }
+            const autoBtn2 = document.getElementById('avatar-btn-auto');
+            if (autoBtn2) { autoBtn2.textContent = 'Auto'; autoBtn2.classList.toggle('on', webmAutoOn); }
             if (webmAutoOn) scheduleWebmAuto(); else cancelWebmAuto();
         }
         
