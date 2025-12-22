@@ -51,7 +51,7 @@ BigFM🗺️World|http://streams.bigfm.de/bigfm-worldbeats-128-mp3
 Dance🎶Hits|http://stream.104.6rtl.com/dance-hits/mp3-192/
 Plym💚FM|https://media-ssl.musicradio.com/HeartPlymouthMP3
 Plym🏥Radio|https://hospitalradioplymouth.radioca.st/stream
-Cross🎶Rhythm|https://stream.crossrhythms.co.uk/plymouth/hq.mp3
+Cross🏃‍Rhythm|https://stream.crossrhythms.co.uk/plymouth/hq.mp3
 Janner🍀Radio|https://stream.radio.co/s14d3725f1/listen
 Ferndale📟|https://streams.radio.co/sde86bbbbf/listen
 Ocean🌊City|https://s3.radio.co/se9877d32a/listen
