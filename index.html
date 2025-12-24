@@ -2075,10 +2075,36 @@
             const file = e.target.files[0];
             if(!file) return;
             statusEl.innerText = "Decoding...";
+            // Ensure any radio/media element playback is stopped before using a local file
+            try {
+                if (audioEl && !audioEl.paused) {
+                    audioEl.pause();
+                }
+                if (audioEl) {
+                    audioEl.removeAttribute('src');
+                    audioEl.load();
+                }
+            } catch(e) { /* ignore */ }
+            // Safely disconnect any existing source node (MediaElementSource or BufferSource)
+            try {
+                if (state.sourceNode) {
+                    if (typeof state.sourceNode.stop === 'function') {
+                        try { state.sourceNode.stop(); } catch(_) {}
+                    }
+                    state.sourceNode.disconnect();
+                }
+            } catch(e) { /* ignore */ }
             const reader = new FileReader();
             reader.onload = (ev) => {
                 state.audioCtx.decodeAudioData(ev.target.result, (buffer) => {
-                    if(state.sourceNode) state.sourceNode.stop();
+                    if(state.sourceNode) {
+                        try {
+                            if (typeof state.sourceNode.stop === 'function') {
+                                state.sourceNode.stop();
+                            }
+                            state.sourceNode.disconnect();
+                        } catch(e) { /* ignore */ }
+                    }
                     state.sourceNode = state.audioCtx.createBufferSource();
                     state.sourceNode.buffer = buffer;
                     state.sourceNode.loop = true;
