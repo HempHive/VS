@@ -27,7 +27,7 @@
             height: 100%;
         }
         
-		/* UI Overlays */
+        /* UI Overlays */
         #overlay {
 			position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.95);
@@ -217,7 +217,7 @@
             cursor: pointer; user-select: none;
         }
 
-		.radio-input {
+        .radio-input {
 			padding: 15px; background: rgba(0,0,0,0.5); border: 2px solid rgba(255,20,147,1.0); color: #0f0; 
 			width: 320px; border-radius: 14px; box-shadow: 0 0 18px rgba(255,20,147,0.9), 0 0 3px rgba(255,20,147,0.85);
 			transition: box-shadow 220ms ease, border-color 220ms ease;
@@ -225,7 +225,7 @@
 		.radio-input:focus {
 			outline: none; border-color: rgba(255,20,147,1.0);
 			box-shadow: 0 0 24px rgba(255,20,147,0.95), 0 0 6px rgba(255,20,147,0.9);
-		}
+        }
 
         /* Navigation Arrows */
         .nav-btn {
@@ -884,7 +884,7 @@
         <div class="nav-btn interactive" id="btn-next">❯</div>
     </div>
 
-	<div id="canvas-container"></div>
+    <div id="canvas-container"></div>
     <audio id="radio-element" crossorigin="anonymous"></audio>
 	<!-- Top bar aligns shuffle, volume, and radio controls -->
 	<div id="top-bar" class="display-none"></div>
@@ -1203,6 +1203,8 @@
         // Hold the radio button visible after right-click random selection
         let radioQuickHoldUntil = 0;
         let radioQuickHoldTimeout = null;
+        // Guard to suppress unintended overlay-start when opening local file via "O"
+        let suppressNextOverlayStartUntil = 0;
         const webmSettings = {
             scaleVw: 50,
             posXvw: 50,
@@ -1516,6 +1518,8 @@
 					oEl.title = 'Load Local Audio';
 					oEl.addEventListener('click', (e) => {
 						e.stopPropagation();
+                        // Suppress overlay click-to-start shortly after opening file dialog
+                        try { suppressNextOverlayStartUntil = Date.now() + 1200; } catch(_) {}
 						const btn = document.getElementById('btn-file');
 						if (btn) btn.click();
 						else {
@@ -1546,6 +1550,8 @@
                 if (!overlay) return;
                 overlay.addEventListener('click', (e) => {
                     if (state && state.isPlaying) return;
+                    // If a recent "O" triggered file dialog, do not start radio
+                    try { if (Date.now() < suppressNextOverlayStartUntil) return; } catch(_) {}
                     const logo = document.getElementById('logo-omni');
                     const urlFly = document.getElementById('url-flyover');
                     // Ignore clicks on title (OMNI>) and URL input area
@@ -2304,7 +2310,7 @@
                         topBar.style.pointerEvents = 'auto';
                     }
                 } catch(e) {}
-                resetIdleTimer();
+            resetIdleTimer();
             }, 520);
         }
 
@@ -2384,7 +2390,7 @@ function stopAllAndShowStart() {
                 const key = this.presetKeys[idx];
                 this.visualizer.loadPreset(this.presets[key], 2.7); 
                 if (state.activeVisualizer === this) {
-                    document.getElementById('mode-sub').innerText = key;
+                document.getElementById('mode-sub').innerText = key;
                 }
 				// Change bottom HUD color on each preset load
 				try { setBottomTextRandomColor(); } catch(e) {}
@@ -2758,7 +2764,7 @@ function stopAllAndShowStart() {
                 this.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
                 this.camera.position.z = 4;
                 
-				this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 				// Prefer physically-correct lighting and good tone mapping on capable devices
 				if (this.renderer) {
 					// Guard for different three.js versions
@@ -2777,7 +2783,7 @@ function stopAllAndShowStart() {
 				// Initial pixel ratio tuned for device; will auto-adjust at runtime
 				const initialPR = Math.min(window.devicePixelRatio || 1, this.quality.maxPixelRatio);
 				this.renderer.setPixelRatio(initialPR);
-				this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
                 container.appendChild(this.renderer.domElement);
 
                 this.composer = new EffectComposer(this.renderer);
@@ -5640,7 +5646,7 @@ function stopAllAndShowStart() {
             }, 30000);
         }
 
-	</script>
+    </script>
 	<div id="border-frame"></div>
 </body>
 </html>
