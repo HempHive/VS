@@ -387,6 +387,69 @@
             background: rgba(212,175,55,0.08);
         }
 
+        /* Text-In sliding panel (left) */
+        #textin-panel {
+            position: absolute; top: 14px; left: 14px;
+            width: 380px; max-width: 90vw; max-height: 80vh; overflow: auto;
+            z-index: 90;
+            background: rgba(0,0,0,0.85);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            transform: translateX(-110%);
+            transition: transform 0.35s ease, opacity 0.4s ease;
+            opacity: 0;
+        }
+        #textin-panel.open {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        #textin-panel h3 {
+            margin: 0; padding: 12px 14px; font-weight: 500; font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            letter-spacing: 1px; text-transform: uppercase; color: #ddd;
+            display:flex; align-items:center; justify-content:space-between;
+        }
+        #textin-content { padding: 12px; display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .textin-row { display:flex; gap:10px; align-items:center; }
+        .textin-col { display:flex; gap:10px; }
+        .textin-label { width: 88px; font-size:12px; color:#bbb; }
+        .textin-input, .textin-select, .textin-color, .textin-range {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; border-radius: 6px; padding: 10px 12px; font-size: 13px;
+        }
+        .textin-input { width: 100%; }
+        .textin-select { min-width: 160px; }
+        .textin-color { padding: 4px; height: 36px; width: 48px; }
+        .textin-range { width: 100%; height: 36px; }
+        .textin-btn {
+            padding: 10px 16px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); color: #fff;
+            font-size: 12px; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s;
+            border-radius: 6px;
+        }
+        .textin-btn:hover { background: #fff; color: #000; }
+        #textin-preview-wrap {
+            border: 1px dashed rgba(255,255,255,0.2);
+            border-radius: 8px; padding: 14px; min-height: 80px;
+            display:flex; align-items:center; justify-content:center;
+            background: rgba(0,0,0,0.3);
+        }
+        #textin-preview {
+            pointer-events: none; user-select: none;
+            white-space: pre-wrap; text-align: center;
+        }
+        /* Overlay layer for rising texts */
+        #text-overlay-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 45; pointer-events: none;
+        }
+        .rising-text {
+            position: absolute; left: 50%; transform: translate(-50%, 0);
+            will-change: transform, opacity, text-shadow, filter;
+            white-space: pre;
+        }
         /* Station Banner (Top-left) */
         #station-banner {
             position: absolute; top: 14px; left: 14px;
@@ -908,6 +971,63 @@
 	</div>
     <!-- Quick Radio Button and old Radio Panel removed (assets retained) -->
     <div id="station-banner" class="display-none"></div>
+    <!-- Rising text overlay layer -->
+    <div id="text-overlay-layer"></div>
+    <!-- Text-In Panel -->
+    <div id="textin-panel" class="display-none" aria-label="Text-In Panel">
+        <h3>
+            <span>TEXT-IN</span>
+            <button class="icon-btn interactive" id="btn-textin-close" title="Close" aria-label="Close">✕</button>
+        </h3>
+        <div id="textin-content">
+            <div class="textin-row">
+                <div class="textin-label">Text</div>
+                <input type="text" id="ti-text" class="textin-input" placeholder="Your message...">
+            </div>
+            <div class="textin-row">
+                <div class="textin-label">Font</div>
+                <select id="ti-font" class="textin-select">
+                    <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                    <option value="Arial, Helvetica, sans-serif">Arial</option>
+                    <option value="'Courier New', Courier, monospace">Courier New</option>
+                    <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                    <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+                    <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                </select>
+            </div>
+            <div class="textin-row">
+                <div class="textin-label">Color</div>
+                <input type="color" id="ti-color" class="textin-color" value="#ffffff">
+                <div class="textin-label">Size</div>
+                <input type="range" id="ti-size" class="textin-range" min="16" max="200" value="64">
+            </div>
+            <div class="textin-row">
+                <div class="textin-label">Border</div>
+                <input type="range" id="ti-border" class="textin-range" min="0" max="10" value="2">
+                <input type="color" id="ti-border-color" class="textin-color" value="#000000">
+            </div>
+            <div class="textin-row">
+                <div class="textin-label">Glow</div>
+                <input type="range" id="ti-glow" class="textin-range" min="0" max="50" value="12">
+            </div>
+            <div class="textin-row">
+                <div class="textin-label">Flashing</div>
+                <input type="checkbox" id="ti-flash">
+                <div class="textin-label">Flash Speed</div>
+                <input type="range" id="ti-flash-speed" class="textin-range" min="0" max="5" value="1" step="0.1">
+            </div>
+            <div class="textin-row">
+                <div class="textin-label">Rise Speed</div>
+                <input type="range" id="ti-speed" class="textin-range" min="50" max="1200" value="250">
+            </div>
+            <div id="textin-preview-wrap">
+                <div id="textin-preview">Preview</div>
+            </div>
+            <div class="textin-row" style="justify-content:flex-end">
+                <button class="textin-btn interactive" id="ti-send">Send</button>
+            </div>
+        </div>
+    </div>
     
     <!-- WebM Overlay + Nav -->
     <div id="webm-overlay" class="display-none">
@@ -1024,6 +1144,24 @@
         const settingsBtn = document.getElementById('btn-settings');
         const settingsApplyBtn = document.getElementById('btn-settings-apply');
         const settingsCloseBtn = document.getElementById('btn-settings-close');
+        // Text-In refs/state
+        const textInPanel = document.getElementById('textin-panel');
+        const textOverlayLayer = document.getElementById('text-overlay-layer');
+        const tiText = document.getElementById('ti-text');
+        const tiFont = document.getElementById('ti-font');
+        const tiColor = document.getElementById('ti-color');
+        const tiSize = document.getElementById('ti-size');
+        const tiBorder = document.getElementById('ti-border');
+        const tiBorderColor = document.getElementById('ti-border-color');
+        const tiGlow = document.getElementById('ti-glow');
+        const tiFlash = document.getElementById('ti-flash');
+        const tiFlashSpeed = document.getElementById('ti-flash-speed');
+        const tiSpeed = document.getElementById('ti-speed');
+        const tiPreview = document.getElementById('textin-preview');
+        const tiSend = document.getElementById('ti-send');
+        const tiClose = document.getElementById('btn-textin-close');
+        let textOverlayAnimId = null;
+        const activeTextOverlays = [];
         const inpShuffleMin = document.getElementById('inp-shuffle-min');
         const inpShuffleMax = document.getElementById('inp-shuffle-max');
         const inpTransition = document.getElementById('inp-transition');
@@ -4575,22 +4713,16 @@ function stopAllAndShowStart() {
         const fileInputEl = document.getElementById('file-input');
         if (fileInputEl) fileInputEl.addEventListener('change', useFile);
         document.getElementById('btn-fullscreen')?.addEventListener('click', toggleFullscreen);
-        // WebM toggle and nav
-        webmBtn.addEventListener('click', () => {
-            if(!webmOn) {
-                if(webmList.length === 0) {
-                    // Ensure list is loaded then show
-                    loadWebmList().finally(() => {
-                        if(webmList.length > 0) showWebm();
-                        else alert('No WebM files found in webm/.');
-                    });
-                } else {
-                    showWebm();
-                }
-            } else {
-                hideWebm();
-            }
-        });
+        // Repurpose: WebM button opens Text-In panel instead of toggling WebM overlay
+        if (webmBtn) {
+            webmBtn.title = "Open Text-In Panel";
+            webmBtn.addEventListener('click', (e) => { 
+                e.preventDefault(); 
+                e.stopPropagation(); 
+                try { toggleTextInPanel(); } catch(_) {}
+                resetIdleTimer(); 
+            });
+        }
         webmPrevBtn.addEventListener('click', () => { prevWebm(); resetIdleTimer(); });
         webmNextBtn.addEventListener('click', () => { nextWebm(); resetIdleTimer(); });
         settingsBtn.addEventListener('click', (e) => {
@@ -4801,6 +4933,104 @@ function stopAllAndShowStart() {
             }, 30000);
         }
 
+        // --- TEXT-IN PANEL & OVERLAY ---
+        function showTextInPanel() {
+            if (!textInPanel) return;
+            textInPanel.classList.remove('display-none');
+            void textInPanel.offsetWidth;
+            textInPanel.classList.add('open');
+        }
+        function hideTextInPanel() {
+            if (!textInPanel) return;
+            textInPanel.classList.remove('open');
+            setTimeout(() => { textInPanel.classList.add('display-none'); }, 350);
+        }
+        function toggleTextInPanel() {
+            if (!textInPanel) return;
+            if (textInPanel.classList.contains('display-none') || !textInPanel.classList.contains('open')) showTextInPanel();
+            else hideTextInPanel();
+        }
+        function applyTextStyles(el, cfg) {
+            if (!el || !cfg) return;
+            el.style.fontFamily = cfg.font;
+            el.style.color = cfg.color;
+            el.style.fontSize = cfg.size + 'px';
+            el.style.webkitTextStroke = (cfg.border > 0 ? (cfg.border + 'px ' + cfg.borderColor) : '0px transparent');
+            const glowPx = Math.max(0, cfg.glow|0);
+            const glow = glowPx > 0 ? `0 0 ${glowPx}px ${cfg.color}` : '';
+            const strokeShadow = (cfg.border > 0) ? `0 0 ${Math.max(1,cfg.border)}px ${cfg.borderColor}` : '';
+            el.style.textShadow = [glow, strokeShadow].filter(Boolean).join(', ');
+            el.style.filter = '';
+        }
+        function getTextConfigFromUi() {
+            return {
+                text: (tiText?.value || '').trim() || ' ',
+                font: tiFont?.value || "'Segoe UI', sans-serif",
+                color: tiColor?.value || '#ffffff',
+                size: Math.max(16, Math.min(200, Number(tiSize?.value)||64)),
+                border: Math.max(0, Math.min(10, Number(tiBorder?.value)||0)),
+                borderColor: tiBorderColor?.value || '#000000',
+                glow: Math.max(0, Math.min(50, Number(tiGlow?.value)||0)),
+                flash: !!(tiFlash?.checked),
+                flashSpeed: Math.max(0, Math.min(5, Number(tiFlashSpeed?.value)||1)),
+                speed: Math.max(50, Math.min(1200, Number(tiSpeed?.value)||250))
+            };
+        }
+        function updateTextInPreview() {
+            const cfg = getTextConfigFromUi();
+            if (tiPreview) {
+                tiPreview.textContent = cfg.text;
+                applyTextStyles(tiPreview, cfg);
+            }
+        }
+        function spawnRisingText(cfg) {
+            const layer = textOverlayLayer;
+            if (!layer) return;
+            const el = document.createElement('div');
+            el.className = 'rising-text';
+            el.textContent = cfg.text;
+            applyTextStyles(el, cfg);
+            const startY = window.innerHeight + 20;
+            el.style.top = startY + 'px';
+            layer.appendChild(el);
+            const item = { el, cfg, y: startY, start: performance.now(), last: performance.now() };
+            activeTextOverlays.push(item);
+            if (!textOverlayAnimId) requestTextOverlayFrame();
+        }
+        function requestTextOverlayFrame() {
+            textOverlayAnimId = requestAnimationFrame(stepTextOverlays);
+        }
+        function stepTextOverlays(ts) {
+            for (let i = activeTextOverlays.length - 1; i >= 0; i--) {
+                const it = activeTextOverlays[i];
+                const dt = Math.max(0, (ts - it.last) / 1000);
+                it.last = ts;
+                it.y -= it.cfg.speed * dt;
+                it.el.style.transform = `translate(-50%, 0)`;
+                it.el.style.top = it.y + 'px';
+                const progress = Math.max(0, Math.min(1, ( (window.innerHeight + 20) - it.y ) / window.innerHeight ));
+                let opacity = 1 - progress;
+                if (it.cfg.flash && it.cfg.flashSpeed > 0) {
+                    const phase = (ts - it.start) / 1000 * it.cfg.flashSpeed * Math.PI * 2;
+                    const mod = 0.5 + 0.5 * Math.sin(phase);
+                    opacity *= (0.6 + 0.4 * mod);
+                }
+                it.el.style.opacity = String(Math.max(0, Math.min(1, opacity)));
+                if (it.y + 100 < 0 || opacity <= 0.02) {
+                    try { it.el.remove(); } catch(_) {}
+                    activeTextOverlays.splice(i, 1);
+                }
+            }
+            if (activeTextOverlays.length > 0) requestTextOverlayFrame();
+            else { cancelAnimationFrame(textOverlayAnimId); textOverlayAnimId = null; }
+        }
+        // bind preview updates
+        [tiText, tiFont, tiColor, tiSize, tiBorder, tiBorderColor, tiGlow, tiFlash, tiFlashSpeed, tiSpeed].forEach(el => {
+            if (el) el.addEventListener('input', updateTextInPreview);
+        });
+        if (tiSend) tiSend.addEventListener('click', () => { const cfg = getTextConfigFromUi(); spawnRisingText(cfg); });
+        if (tiClose) tiClose.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); hideTextInPanel(); });
+        updateTextInPreview();
         function showStationBanner(text) {
             stationBanner.textContent = text || '';
             if(!text) return;
