@@ -5,6 +5,7 @@
     <title>OmnI: Tomorrow</title>
     <link href="favicon.ico" rel="icon" type="image/x-icon"/>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Montserrat:wght@400;700&family=Raleway:wght@400;700&family=Poppins:wght@400;700&family=Orbitron:wght@400;700&family=Playfair+Display:wght@400;700&family=Lobster&family=Open+Sans:wght@400;700&family=Nunito:wght@400;700&family=Merriweather:wght@400;700&family=Rubik:wght@400;700&family=Inter:wght@400;700&family=Fira+Sans:wght@400;700&family=Fira+Mono:wght@400;700&family=Inconsolata:wght@400;700&family=Source+Code+Pro:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
 		<link rel="preload" href="pta.gif" as="image">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
@@ -389,12 +390,12 @@
 
         /* Text-In sliding panel (left) */
         #textin-panel {
-            position: absolute; top: 14px; left: 14px;
-            width: 380px; max-width: 90vw; max-height: 80vh; overflow: auto;
+            position: absolute; top: 0; left: 0;
+            width: 420px; max-width: 90vw; height: 100vh; overflow: hidden;
             z-index: 90;
             background: rgba(0,0,0,0.85);
             border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 10px;
+            border-radius: 0 10px 10px 0;
             box-shadow: 0 10px 30px rgba(0,0,0,0.6);
             backdrop-filter: blur(8px);
             transform: translateX(-110%);
@@ -411,7 +412,7 @@
             letter-spacing: 1px; text-transform: uppercase; color: #ddd;
             display:flex; align-items:center; justify-content:space-between;
         }
-        #textin-content { padding: 12px; display: grid; grid-template-columns: 1fr; gap: 10px; }
+        #textin-content { padding: 12px; display: grid; grid-template-columns: 1fr; gap: 10px; height: calc(100vh - 56px); overflow: auto; }
         .textin-row { display:flex; gap:10px; align-items:center; }
         .textin-col { display:flex; gap:10px; }
         .textin-label { width: 88px; font-size:12px; color:#bbb; }
@@ -977,6 +978,7 @@
     <div id="textin-panel" class="display-none" aria-label="Text-In Panel">
         <h3>
             <span>TEXT-IN</span>
+            <button class="textin-btn interactive" id="ti-send" style="margin-left:auto; margin-right:8px">Send</button>
             <button class="icon-btn interactive" id="btn-textin-close" title="Close" aria-label="Close">✕</button>
         </h3>
         <div id="textin-content">
@@ -993,6 +995,24 @@
                     <option value="'Times New Roman', Times, serif">Times New Roman</option>
                     <option value="Georgia, 'Times New Roman', serif">Georgia</option>
                     <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                    <option value="Roboto, sans-serif">Roboto</option>
+                    <option value="Oswald, sans-serif">Oswald</option>
+                    <option value="Montserrat, sans-serif">Montserrat</option>
+                    <option value="Raleway, sans-serif">Raleway</option>
+                    <option value="Poppins, sans-serif">Poppins</option>
+                    <option value="Orbitron, sans-serif">Orbitron</option>
+                    <option value="'Playfair Display', serif">Playfair Display</option>
+                    <option value="Lobster, cursive">Lobster</option>
+                    <option value="'Open Sans', sans-serif">Open Sans</option>
+                    <option value="Nunito, sans-serif">Nunito</option>
+                    <option value="Merriweather, serif">Merriweather</option>
+                    <option value="Rubik, sans-serif">Rubik</option>
+                    <option value="Inter, sans-serif">Inter</option>
+                    <option value="'Fira Sans', sans-serif">Fira Sans</option>
+                    <option value="'Fira Mono', monospace">Fira Mono</option>
+                    <option value="Inconsolata, monospace">Inconsolata</option>
+                    <option value="'Source Code Pro', monospace">Source Code Pro</option>
+                    <option value="'Press Start 2P', cursive">Press Start 2P</option>
                 </select>
             </div>
             <div class="textin-row">
@@ -1018,13 +1038,10 @@
             </div>
             <div class="textin-row">
                 <div class="textin-label">Rise Speed</div>
-                <input type="range" id="ti-speed" class="textin-range" min="50" max="1200" value="250">
+                <input type="range" id="ti-speed" class="textin-range" min="50" max="1200" value="50">
             </div>
             <div id="textin-preview-wrap">
                 <div id="textin-preview">Preview</div>
-            </div>
-            <div class="textin-row" style="justify-content:flex-end">
-                <button class="textin-btn interactive" id="ti-send">Send</button>
             </div>
         </div>
     </div>
@@ -1162,6 +1179,7 @@
         const tiClose = document.getElementById('btn-textin-close');
         let textOverlayAnimId = null;
         const activeTextOverlays = [];
+        let shortcutsLocked = false;
         const inpShuffleMin = document.getElementById('inp-shuffle-min');
         const inpShuffleMax = document.getElementById('inp-shuffle-max');
         const inpTransition = document.getElementById('inp-transition');
@@ -4989,6 +5007,21 @@ function stopAllAndShowStart() {
                 applyTextStyles(tiPreview, cfg);
             }
         }
+        // lock/unlock shortcuts when focusing inside Text-In
+        if (textInPanel) {
+            textInPanel.addEventListener('focusin', () => { shortcutsLocked = true; }, true);
+            textInPanel.addEventListener('focusout', (e) => {
+                try {
+                    const next = e.relatedTarget;
+                    if (!(textInPanel.contains(next))) shortcutsLocked = false;
+                } catch(_) { shortcutsLocked = false; }
+            }, true);
+        }
+        // stop bubbling of keydown events from inputs inside panel
+        [tiText, tiFont, tiColor, tiSize, tiBorder, tiBorderColor, tiGlow, tiFlashSpeed, tiSpeed].forEach(el => {
+            if (el) el.addEventListener('keydown', (ev) => ev.stopPropagation());
+        });
+        if (tiFont) tiFont.addEventListener('change', updateTextInPreview);
         function spawnRisingText(cfg) {
             const layer = textOverlayLayer;
             if (!layer) return;
@@ -5123,6 +5156,13 @@ function stopAllAndShowStart() {
 
         // Keyboard shortcuts
         function handleGlobalKeydown(e) {
+            try {
+                if (shortcutsLocked) return;
+                const ae = document.activeElement;
+                if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable || (ae.closest && ae.closest('#textin-panel')))) {
+                    return;
+                }
+            } catch(_) {}
             if (e.key === 'f' || e.key === 'F') {
                 toggleFullscreen();
             } else if (e.key === 's' || e.key === 'S') {
