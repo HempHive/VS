@@ -1098,6 +1098,9 @@
                     <option value="'Source Code Pro', monospace">Source Code Pro</option>
                     <option value="'Press Start 2P', cursive">Press Start 2P</option>
                 </select>
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
+                    <input type="checkbox" id="ti-font-rand"> Random
+                </label>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Color</div>
@@ -1121,14 +1124,23 @@
                 <input type="range" id="ti-border" class="textin-range" min="0" max="10" value="2">
                 <input type="color" id="ti-border-color" class="textin-color" value="#000000">
                 <button id="ti-border-color-rand" class="btn-mini" title="Random border color">🎲</button>
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
+                    <input type="checkbox" id="ti-border-rand"> Random
+                </label>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Glow</div>
                 <input type="range" id="ti-glow" class="textin-range" min="0" max="50" value="12">
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
+                    <input type="checkbox" id="ti-glow-rand"> Random
+                </label>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Flashing</div>
                 <input type="checkbox" id="ti-flash">
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
+                    <input type="checkbox" id="ti-flash-rand"> Random
+                </label>
                 <div class="textin-label">Flash Speed</div>
                 <input type="range" id="ti-flash-speed" class="textin-range" min="0" max="5" value="1" step="0.1">
             </div>
@@ -1310,6 +1322,7 @@
         const textOverlayLayer = document.getElementById('text-overlay-layer');
         const tiText = document.getElementById('ti-text');
         const tiFont = document.getElementById('ti-font');
+        const tiFontRand = document.getElementById('ti-font-rand');
         const tiColor = document.getElementById('ti-color');
         const tiColorRandBtn = document.getElementById('ti-color-rand');
         const tiSize = document.getElementById('ti-size');
@@ -1319,6 +1332,9 @@
         const tiBorder = document.getElementById('ti-border');
         const tiBorderColor = document.getElementById('ti-border-color');
         const tiBorderColorRandBtn = document.getElementById('ti-border-color-rand');
+        const tiBorderRand = document.getElementById('ti-border-rand');
+        const tiGlowRand = document.getElementById('ti-glow-rand');
+        const tiFlashRand = document.getElementById('ti-flash-rand');
         const tiGlow = document.getElementById('ti-glow');
         const tiFlash = document.getElementById('ti-flash');
         const tiFlashSpeed = document.getElementById('ti-flash-speed');
@@ -5480,9 +5496,13 @@ function stopAllAndShowStart() {
                 xPercent: Math.max(0, Math.min(100, Number(tiX?.value)||50)),
                 xRandom: !!(tiXRand?.checked),
                 border: Math.max(0, Math.min(10, Number(tiBorder?.value)||0)),
+                borderRandom: !!(tiBorderRand?.checked),
                 borderColor: tiBorderColor?.value || '#000000',
                 glow: Math.max(0, Math.min(50, Number(tiGlow?.value)||0)),
+                glowRandom: !!(tiGlowRand?.checked),
+                fontRandom: !!(tiFontRand?.checked),
                 flash: !!(tiFlash?.checked),
+                flashRandom: !!(tiFlashRand?.checked),
                 flashSpeed: Math.max(0, Math.min(5, Number(tiFlashSpeed?.value)||1)),
                 speed: Math.max(25, Math.min(1200, Number(tiSpeed?.value)||25))
             };
@@ -5495,6 +5515,13 @@ function stopAllAndShowStart() {
                 try { tiPreview.style.setProperty('font-family', cfg.font, 'important'); } catch(_) {}
                 // Reflect selected font in the input so the user types in the chosen style
                 try { if (tiText) tiText.style.setProperty('font-family', cfg.font, 'important'); } catch(_) {}
+                // Disable inputs when random toggles are on
+                if (tiSize && tiSizeRand) tiSize.disabled = !!tiSizeRand.checked;
+                if (tiX && tiXRand) tiX.disabled = !!tiXRand.checked;
+                if (tiBorder && tiBorderRand) tiBorder.disabled = !!tiBorderRand.checked;
+                if (tiGlow && tiGlowRand) tiGlow.disabled = !!tiGlowRand.checked;
+                if (tiFont && tiFontRand) tiFont.disabled = !!tiFontRand.checked;
+                if (tiFlash && tiFlashRand) tiFlash.disabled = !!tiFlashRand.checked;
             }
         }
         // lock/unlock shortcuts when focusing inside Text-In
@@ -5512,6 +5539,12 @@ function stopAllAndShowStart() {
             if (el) el.addEventListener('keydown', (ev) => ev.stopPropagation());
         });
         if (tiFont) tiFont.addEventListener('change', updateTextInPreview);
+        // Auto-disable random when user adjusts specific controls
+        if (tiSize) tiSize.addEventListener('input', () => { if (tiSizeRand && tiSizeRand.checked) { tiSizeRand.checked = false; updateTextInPreview(); } });
+        if (tiX) tiX.addEventListener('input', () => { if (tiXRand && tiXRand.checked) { tiXRand.checked = false; updateTextInPreview(); } });
+        if (tiBorder) tiBorder.addEventListener('input', () => { if (tiBorderRand && tiBorderRand.checked) { tiBorderRand.checked = false; updateTextInPreview(); } });
+        if (tiGlow) tiGlow.addEventListener('input', () => { if (tiGlowRand && tiGlowRand.checked) { tiGlowRand.checked = false; updateTextInPreview(); } });
+        if (tiFont) tiFont.addEventListener('input', () => { if (tiFontRand && tiFontRand.checked) { tiFontRand.checked = false; updateTextInPreview(); } });
         // Enter to send while in text field
         if (tiText) {
             tiText.addEventListener('keydown', (e) => {
@@ -5540,6 +5573,26 @@ function stopAllAndShowStart() {
         function spawnRisingText(cfg) {
             const layer = textOverlayLayer;
             if (!layer) return;
+            // Apply randomizations
+            try {
+                if (cfg.fontRandom && tiFont && tiFont.options && tiFont.options.length > 0) {
+                    const idx = Math.floor(Math.random() * tiFont.options.length);
+                    cfg.font = tiFont.options[idx].value || cfg.font;
+                }
+                if (cfg.borderRandom && tiBorder) {
+                    const min = Number(tiBorder.min) || 0;
+                    const max = Number(tiBorder.max) || 10;
+                    cfg.border = Math.floor(min + Math.random() * (max - min + 1));
+                }
+                if (cfg.glowRandom && tiGlow) {
+                    const minG = Number(tiGlow.min) || 0;
+                    const maxG = Number(tiGlow.max) || 50;
+                    cfg.glow = Math.floor(minG + Math.random() * (maxG - minG + 1));
+                }
+                if (cfg.flashRandom) {
+                    cfg.flash = Math.random() < 0.5;
+                }
+            } catch(_) {}
             const el = document.createElement('div');
             el.className = 'rising-text';
             el.textContent = cfg.text;
@@ -5709,7 +5762,41 @@ function stopAllAndShowStart() {
                     state.activeVisualizer.nextPreset();
                 }
             } else if (e.key === 'Escape') {
-                stopAllAndShowStart();
+                // Close any open panels first; if none open, return to start
+                e.preventDefault();
+                let closed = false;
+                try {
+                    // Mix panel
+                    if (mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open')) {
+                        toggleMixPanel();
+                        closed = true;
+                    }
+                    // Text-In panel
+                    if (!closed && textInPanel && !textInPanel.classList.contains('display-none') && textInPanel.classList.contains('open')) {
+                        hideTextInPanel();
+                        closed = true;
+                    }
+                    // Top menu
+                    if (!closed && typeof isTopMenuOpen === 'function' && isTopMenuOpen()) {
+                        try { closeTopMenuPanel(); } catch(_) {}
+                        closed = true;
+                    }
+                    // WebM settings
+                    if (!closed && webmSettingsPanel && !webmSettingsPanel.classList.contains('display-none')) {
+                        try { hideWebmSettingsPanel(); } catch(_) {}
+                        closed = true;
+                    }
+                    // Visualizer settings panel
+                    if (!closed && settingsPanel && !settingsPanel.classList.contains('display-none')) {
+                        settingsPanel.classList.add('display-none');
+                        settingsPanel.style.opacity = '';
+                        settingsPanel.style.pointerEvents = '';
+                        closed = true;
+                    }
+                } catch(_) {}
+                if (!closed) {
+                    stopAllAndShowStart();
+                }
             } else if (e.key === 'ArrowLeft') {
                 e.preventDefault();
                 adjustWebmPosition(-2, 0);
