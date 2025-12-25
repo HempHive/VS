@@ -526,7 +526,14 @@
         #mix-content { padding: 12px; display: grid; gap: 12px; grid-template-columns: 1fr; flex: 1; overflow: auto; }
         #mix-effects { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
         #mix-effects .btn {
-            padding: 10px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.05); color: #fff; border-radius: 6px; font-size: 12px;
+            position: relative;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.25);
+            background: rgba(0,0,0,0.25) url('btn.png') center center / cover no-repeat;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 12px;
+            text-shadow: 0 0 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.6);
         }
         #mix-effects .btn.on {
             border-color: rgba(212,175,55,0.8);
@@ -1260,7 +1267,7 @@
     <!-- Mix Settings Panel (right) -->
     <div id="mix-panel" class="display-none" aria-label="Mix Settings">
         <h3>
-            <span>Mix Settings</span>
+            <span>MIXER SETTINGS 🎚️</span>
             <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
         </h3>
         <div id="mix-content">
