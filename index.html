@@ -453,6 +453,44 @@
             will-change: transform, opacity, text-shadow, filter;
             white-space: pre;
         }
+
+        /* Mix Settings Panel (right) */
+        #mix-panel {
+            position: absolute; top: 0; right: 0;
+            width: 28vw; min-width: 340px; max-width: 540px; height: 100vh; overflow: hidden;
+            z-index: 92;
+            background: rgba(0,0,0,0.85);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px 0 0 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            transform: translateX(110%);
+            transition: transform 0.35s ease, opacity 0.4s ease;
+            opacity: 0; display:flex; flex-direction:column;
+        }
+        #mix-panel.open { transform: translateX(0); opacity: 1; }
+        #mix-panel h3 {
+            margin: 0; padding: 12px 14px; font-weight: 500; font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            letter-spacing: 1px; text-transform: uppercase; color: #ddd;
+            display:flex; align-items:center; justify-content:space-between;
+        }
+        #mix-content { padding: 12px; display: grid; gap: 12px; grid-template-columns: 1fr; flex: 1; overflow: auto; }
+        #mix-effects { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+        #mix-effects .btn {
+            padding: 10px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.05); color: #fff; border-radius: 6px; font-size: 12px;
+        }
+        #mix-effects .btn.on {
+            border-color: rgba(212,175,55,0.8);
+            box-shadow: 0 0 12px rgba(212,175,55,0.25) inset;
+            background: rgba(212,175,55,0.12);
+        }
+        .vertical-range {
+            writing-mode: bt-lr; /* IE/Edge */
+            -webkit-appearance: slider-vertical; /* WebKit */
+            appearance: slider-vertical;
+            width: 26px; height: 220px;
+        }
         /* Station Banner (Top-left) */
         #station-banner {
             position: absolute; top: 14px; left: 14px;
@@ -895,6 +933,7 @@
 
     <div id="canvas-container"></div>
     <audio id="radio-element" crossorigin="anonymous"></audio>
+    <audio id="radio-element-b" crossorigin="anonymous"></audio>
 	<!-- Top bar aligns shuffle, volume, and radio controls -->
 	<div id="top-bar" class="display-none"></div>
 	<!-- Top Menu Panel -->
@@ -994,6 +1033,43 @@
                 <div class="textin-label">Text</div>
                 <input type="text" id="ti-text" class="textin-input" placeholder="Your message...">
             </div>
+    <!-- Mix Settings Panel (right) -->
+    <div id="mix-panel" class="display-none" aria-label="Mix Settings">
+        <h3>
+            <span>Mix Settings</span>
+            <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
+        </h3>
+        <div id="mix-content">
+            <div>
+                <div style="font-size:12px; color:#bbb; margin-bottom:6px">Effects</div>
+                <div id="mix-effects">
+                    <button class="btn" id="fx-lowpass">Lowpass</button>
+                    <button class="btn" id="fx-highpass">Highpass</button>
+                    <button class="btn" id="fx-bass">Bass Boost</button>
+                    <button class="btn" id="fx-treble">Treble Boost</button>
+                    <button class="btn" id="fx-echo">Echo</button>
+                    <button class="btn" id="fx-distort">Distortion</button>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr auto; gap: 12px; align-items:center">
+                <div>
+                    <div style="font-size:12px; color:#bbb; margin-bottom:6px">Second Station</div>
+                    <select id="mix-station-b" class="textin-select" style="width: 100%"></select>
+                    <div style="display:flex; gap:8px; margin-top:8px">
+                        <button class="btn" id="mix-b-play">Play B</button>
+                        <button class="btn" id="mix-b-stop">Stop B</button>
+                    </div>
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:6px">
+                    <div style="font-size:12px; color:#bbb">Crossfade</div>
+                    <input type="range" id="mix-crossfader" class="vertical-range" min="0" max="1" step="0.01" value="0.5">
+                    <div style="display:flex; width:100%; justify-content:space-between; font-size:11px; color:#888">
+                        <span>A</span><span>B</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
             <div class="textin-row">
                 <div class="textin-label">Font</div>
                 <select id="ti-font" class="textin-select">
@@ -1188,6 +1264,7 @@
         const radioListEl = document.getElementById('radio-list');
         const radioInputEl = document.getElementById('radio-url') || document.getElementById('station-url');
         const audioEl = document.getElementById('radio-element');
+        const audioElB = document.getElementById('radio-element-b');
         const stationBanner = document.getElementById('station-banner');
         const settingsPanel = document.getElementById('settings-panel');
         const settingsBtn = document.getElementById('btn-settings');
@@ -1215,6 +1292,19 @@
         let textOverlayAnimId = null;
         const activeTextOverlays = [];
         let shortcutsLocked = false;
+        // Mix panel refs
+        const mixPanel = document.getElementById('mix-panel');
+        const mixClose = document.getElementById('btn-mix-close');
+        const fxLow = document.getElementById('fx-lowpass');
+        const fxHigh = document.getElementById('fx-highpass');
+        const fxBass = document.getElementById('fx-bass');
+        const fxTreble = document.getElementById('fx-treble');
+        const fxEcho = document.getElementById('fx-echo');
+        const fxDist = document.getElementById('fx-distort');
+        const mixStationB = document.getElementById('mix-station-b');
+        const mixPlayB = document.getElementById('mix-b-play');
+        const mixStopB = document.getElementById('mix-b-stop');
+        const mixCross = document.getElementById('mix-crossfader');
         const inpShuffleMin = document.getElementById('inp-shuffle-min');
         const inpShuffleMax = document.getElementById('inp-shuffle-max');
         const inpTransition = document.getElementById('inp-transition');
@@ -2028,6 +2118,47 @@
 				// Master gain (dB curve centered at 0 dB = 0.5 slider)
 				state.gainNode = state.audioCtx.createGain();
 				state.gainNode.gain.value = 1.0;
+                // Mix bus and per-stream gains
+                state.streamAGain = state.audioCtx.createGain();
+                state.streamBGain = state.audioCtx.createGain();
+                state.streamAGain.gain.value = Math.cos(0.5 * Math.PI/2); // init equal-power midpoint
+                state.streamBGain.gain.value = Math.sin(0.5 * Math.PI/2);
+                state.mixInput = state.audioCtx.createGain();
+                // Effect nodes
+                state.fx = {
+                    low: { node: state.audioCtx.createBiquadFilter(), on: false },
+                    high: { node: state.audioCtx.createBiquadFilter(), on: false },
+                    bass: { node: state.audioCtx.createBiquadFilter(), on: false },
+                    treble: { node: state.audioCtx.createBiquadFilter(), on: false },
+                    echoDelay: { node: state.audioCtx.createDelay(5.0), on: false },
+                    echoFeedback: { node: state.audioCtx.createGain(), on: false },
+                    distort: { node: state.audioCtx.createWaveShaper(), on: false }
+                };
+                // Configure filters
+                state.fx.low.node.type = 'lowpass'; state.fx.low.node.frequency.value = 1800;
+                state.fx.high.node.type = 'highpass'; state.fx.high.node.frequency.value = 200;
+                state.fx.bass.node.type = 'peaking'; state.fx.bass.node.frequency.value = 100; state.fx.bass.node.Q.value = 1.0; state.fx.bass.node.gain.value = 6;
+                state.fx.treble.node.type = 'peaking'; state.fx.treble.node.frequency.value = 4000; state.fx.treble.node.Q.value = 0.7; state.fx.treble.node.gain.value = 6;
+                state.fx.echoDelay.node.delayTime.value = 0.28;
+                state.fx.echoFeedback.node.gain.value = 0.35;
+                // Distortion curve
+                const curveLen = 44100;
+                const curve = new Float32Array(curveLen);
+                const amount = 120;
+                for (let i=0;i<curveLen;i++){ const x = i/curveLen*2-1; curve[i] = ((3+amount)*x*20*Math.PI/180)/(Math.PI+amount*Math.abs(x)); }
+                state.fx.distort.node.curve = curve; state.fx.distort.node.oversample = '4x';
+                // Wire streams to mix input
+                try { state.streamAGain.disconnect(); } catch(_) {}
+                try { state.streamBGain.disconnect(); } catch(_) {}
+                state.streamAGain.connect(state.mixInput);
+                state.streamBGain.connect(state.mixInput);
+                // Build initial chain: mixInput -> analyser -> gain -> destination
+                try { state.mixInput.disconnect(); } catch(_) {}
+                state.mixInput.connect(state.analyserNode);
+                try { state.analyserNode.disconnect(); } catch(_) {}
+                state.analyserNode.connect(state.gainNode);
+                try { state.gainNode.disconnect(); } catch(_) {}
+                state.gainNode.connect(state.audioCtx.destination);
 				// Bind volume slider if present
 				if (volumeSlider) {
 					volumeSlider.value = String(0.2);
@@ -2036,6 +2167,45 @@
 				}
             }
             if(state.audioCtx.state === 'suspended') state.audioCtx.resume();
+        }
+        function rebuildEffectsChain() {
+            if (!state.audioCtx) return;
+            // Disconnect everything from mixInput forward
+            try { state.mixInput.disconnect(); } catch(_) {}
+            const enabled = [];
+            if (state.fx.low.on) enabled.push(state.fx.low.node);
+            if (state.fx.high.on) enabled.push(state.fx.high.node);
+            if (state.fx.bass.on) enabled.push(state.fx.bass.node);
+            if (state.fx.treble.on) enabled.push(state.fx.treble.node);
+            if (state.fx.echoDelay.on) {
+                // echo network: mix -> delay -> feedback -> delay
+                try { state.fx.echoDelay.node.disconnect(); } catch(_) {}
+                try { state.fx.echoFeedback.node.disconnect(); } catch(_) {}
+                state.fx.echoDelay.node.connect(state.fx.echoFeedback.node);
+                state.fx.echoFeedback.node.connect(state.fx.echoDelay.node);
+                enabled.push(state.fx.echoDelay.node);
+            }
+            if (state.fx.distort.on) enabled.push(state.fx.distort.node);
+            // Chain: mixInput -> ...enabled... -> analyser
+            let last = state.mixInput;
+            for (const node of enabled) {
+                try { last.disconnect(); } catch(_) {}
+                last.connect(node);
+                last = node;
+            }
+            try { last.disconnect(); } catch(_) {}
+            last.connect(state.analyserNode);
+            // Ensure analyser -> master gain -> dest remains
+            try { state.analyserNode.disconnect(); } catch(_) {}
+            state.analyserNode.connect(state.gainNode);
+            try { state.gainNode.disconnect(); } catch(_) {}
+            state.gainNode.connect(state.audioCtx.destination);
+            // Reconnect visualizer if needed
+            try {
+                if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
+                    state.activeVisualizer.visualizer.connectAudio(state.analyserNode);
+                }
+            } catch(_) {}
         }
         
         // Enable/disable start controls (radio/mic/file/url)
@@ -2211,11 +2381,10 @@
             audioEl.play().then(() => {
                 if(state.sourceNode) state.sourceNode.disconnect();
                 state.sourceNode = state.audioCtx.createMediaElementSource(audioEl);
-                state.sourceNode.connect(state.analyserNode);
-                try { state.analyserNode.disconnect(); } catch(e) {}
-                state.analyserNode.connect(state.gainNode);
-                try { state.gainNode.disconnect(); } catch(e) {}
-                state.gainNode.connect(state.audioCtx.destination);
+                // Route to Stream A gain -> mix/effects -> analyser
+                try { state.sourceNode.disconnect(); } catch(_) {}
+                state.sourceNode.connect(state.streamAGain);
+                rebuildEffectsChain();
                 // Ensure active visualizer (e.g., ProjectM) is connected to the current analyser
                 try {
                     if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
@@ -2252,11 +2421,9 @@
                 if(state.sourceNode) state.sourceNode.disconnect();
                 state.sourceNode = state.audioCtx.createMediaStreamSource(stream);
                 state.mediaStream = stream;
-                state.sourceNode.connect(state.analyserNode);
-                try { state.analyserNode.disconnect(); } catch(e) {}
-                state.analyserNode.connect(state.gainNode);
-                try { state.gainNode.disconnect(); } catch(e) {}
-                state.gainNode.connect(state.audioCtx.destination);
+                try { state.sourceNode.disconnect(); } catch(_) {}
+                state.sourceNode.connect(state.streamAGain);
+                rebuildEffectsChain();
                 // Ensure active visualizer (e.g., ProjectM) is connected to the current analyser
                 try {
                     if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
@@ -2305,11 +2472,9 @@
                     state.sourceNode = state.audioCtx.createBufferSource();
                     state.sourceNode.buffer = buffer;
                     state.sourceNode.loop = true;
-                    state.sourceNode.connect(state.analyserNode);
-                    try { state.analyserNode.disconnect(); } catch(e) {}
-                    state.analyserNode.connect(state.gainNode);
-                    try { state.gainNode.disconnect(); } catch(e) {}
-                    state.gainNode.connect(state.audioCtx.destination);
+                    try { state.sourceNode.disconnect(); } catch(_) {}
+                    state.sourceNode.connect(state.streamAGain);
+                    rebuildEffectsChain();
                     state.sourceNode.start(0);
                     // Ensure active visualizer (e.g., ProjectM) is connected to the current analyser
                     try {
@@ -4782,6 +4947,103 @@ function stopAllAndShowStart() {
                 resetIdleTimer(); 
             });
         }
+        // Settings button now opens Mix Settings (right panel)
+        if (settingsBtn) {
+            settingsBtn.title = "Mix Settings";
+            settingsBtn.addEventListener('click', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                try {
+                    if (mixPanel.classList.contains('display-none') || !mixPanel.classList.contains('open')) {
+                        mixPanel.classList.remove('display-none');
+                        requestAnimationFrame(() => { mixPanel.classList.add('open'); });
+                    } else {
+                        mixPanel.classList.remove('open');
+                        setTimeout(() => { mixPanel.classList.add('display-none'); }, 350);
+                    }
+                } catch(_) {}
+                resetIdleTimer();
+            });
+        }
+        if (mixClose) {
+            mixClose.addEventListener('click', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                mixPanel.classList.remove('open');
+                setTimeout(() => { mixPanel.classList.add('display-none'); }, 350);
+            });
+        }
+        // Populate second station select
+        function refreshMixStationB() {
+            if (!mixStationB) return;
+            mixStationB.innerHTML = '';
+            if (Array.isArray(stations) && stations.length > 0) {
+                stations.forEach((s, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = String(i);
+                    opt.textContent = s.name || ('Station ' + (i+1));
+                    mixStationB.appendChild(opt);
+                });
+            }
+        }
+        refreshMixStationB();
+        // Crossfader handler (equal-power)
+        function applyCrossfade(val) {
+            const x = Math.max(0, Math.min(1, Number(val)||0));
+            const ga = Math.cos(x * Math.PI * 0.5);
+            const gb = Math.sin(x * Math.PI * 0.5);
+            if (state && state.streamAGain && state.streamBGain) {
+                state.streamAGain.gain.value = ga;
+                state.streamBGain.gain.value = gb;
+            }
+        }
+        if (mixCross) {
+            mixCross.addEventListener('input', () => applyCrossfade(mixCross.value));
+            try { applyCrossfade(mixCross.value); } catch(_) {}
+        }
+        // Effect toggles
+        function toggleFx(key, btn) {
+            if (!state || !state.fx || !state.fx[key]) return;
+            state.fx[key].on = !state.fx[key].on;
+            if (btn) btn.classList.toggle('on', state.fx[key].on);
+            rebuildEffectsChain();
+        }
+        if (fxLow) fxLow.addEventListener('click', () => toggleFx('low', fxLow));
+        if (fxHigh) fxHigh.addEventListener('click', () => toggleFx('high', fxHigh));
+        if (fxBass) fxBass.addEventListener('click', () => toggleFx('bass', fxBass));
+        if (fxTreble) fxTreble.addEventListener('click', () => toggleFx('treble', fxTreble));
+        if (fxEcho) {
+            fxEcho.addEventListener('click', () => {
+                // echo uses two nodes; we key off delay node's .on flag
+                state.fx.echoDelay.on = !state.fx.echoDelay.on;
+                state.fx.echoFeedback.on = state.fx.echoDelay.on;
+                fxEcho.classList.toggle('on', state.fx.echoDelay.on);
+                rebuildEffectsChain();
+            });
+        }
+        if (fxDist) fxDist.addEventListener('click', () => toggleFx('distort', fxDist));
+        // Play/Stop B
+        function playRadioB() {
+            initAudio();
+            const idx = Math.max(0, Math.min(stations.length - 1, parseInt((mixStationB?.value)||'0', 10) || 0));
+            const sel = stations[idx];
+            if (!sel || !sel.url) return;
+            audioElB.crossOrigin = "anonymous";
+            audioElB.src = sel.url;
+            audioElB.play().then(() => {
+                // disconnect old B source
+                try { if (state.sourceNodeB) state.sourceNodeB.disconnect(); } catch(_) {}
+                state.sourceNodeB = state.audioCtx.createMediaElementSource(audioElB);
+                try { state.sourceNodeB.disconnect(); } catch(_) {}
+                state.sourceNodeB.connect(state.streamBGain);
+                rebuildEffectsChain();
+            }).catch(()=>{});
+        }
+        function stopRadioB() {
+            try { audioElB.pause(); } catch(_) {}
+            try { audioElB.removeAttribute('src'); audioElB.load(); } catch(_) {}
+            try { if (state.sourceNodeB) state.sourceNodeB.disconnect(); } catch(_) {}
+        }
+        if (mixPlayB) mixPlayB.addEventListener('click', playRadioB);
+        if (mixStopB) mixStopB.addEventListener('click', stopRadioB);
         webmPrevBtn.addEventListener('click', () => { prevWebm(); resetIdleTimer(); });
         webmNextBtn.addEventListener('click', () => { nextWebm(); resetIdleTimer(); });
         settingsBtn.addEventListener('click', (e) => {
