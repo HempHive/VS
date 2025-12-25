@@ -4990,6 +4990,7 @@ function stopAllAndShowStart() {
                 e.preventDefault(); e.stopPropagation();
                 try {
                     if (mixPanel.classList.contains('display-none') || !mixPanel.classList.contains('open')) {
+                        try { refreshMixStationB(); } catch(_) {}
                         mixPanel.classList.remove('display-none');
                         requestAnimationFrame(() => { mixPanel.classList.add('open'); });
                     } else {
@@ -5206,6 +5207,7 @@ function stopAllAndShowStart() {
                     if (radioInputEl) radioInputEl.value = stations[0].url;
                 }
                 renderStationList();
+                try { refreshMixStationB(); } catch(_) {}
             } catch(e) {
                 console.warn('Failed to load radio.txt', e);
             }
