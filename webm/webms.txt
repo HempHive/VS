@@ -1,3 +1,6 @@
+jr3.webm
+gwo.webm
+jr.webm
 snc.webm
 bfg.webm
 fr.webm
@@ -5,7 +8,4 @@ tr.webm
 gd.webm
 grn.webm
 pme.webm
-jr3.webm
-gwo.webm
-jr.webm
 red.webm
