@@ -459,6 +459,37 @@
             will-change: transform, opacity, text-shadow, filter;
             white-space: pre;
         }
+        /* Mic confirm modal */
+        #mic-confirm {
+            position: fixed; inset: 0; z-index: 140;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(6px);
+        }
+        #mic-confirm .panel {
+            background: rgba(0,0,0,0.9);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            min-width: 320px; max-width: 90vw;
+            padding: 18px;
+            color: #fff;
+            text-align: center;
+        }
+        #mic-confirm .title {
+            font-size: 16px; margin-bottom: 10px; letter-spacing: 1px;
+        }
+        #mic-confirm .desc {
+            font-size: 12px; color: #bbb; margin-bottom: 14px;
+        }
+        #mic-confirm .actions { display: flex; gap: 10px; justify-content: center; }
+        #mic-confirm .btn {
+            padding: 10px 16px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); color: #fff;
+            font-size: 12px; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s;
+            border-radius: 6px; cursor: pointer;
+        }
+        #mic-confirm .btn:hover { background: #fff; color: #000; }
 
         /* Mix Settings Panel (right) */
         #mix-panel {
@@ -929,6 +960,17 @@
         <div id="loading-status">Select a source to begin</div>
         <div id="shortcuts-status"></div>
     </div>
+    <!-- Mic confirmation modal -->
+    <div id="mic-confirm">
+        <div class="panel">
+            <div class="title">Microphone Audio Input?</div>
+            <div class="desc">This will request access to your microphone and use it as the audio source.</div>
+            <div class="actions">
+                <button id="btn-mic-ok" class="btn">Okay</button>
+                <button id="btn-mic-cancel" class="btn">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <!-- HUD (Fades out when idle) -->
     <div id="ui-layer" class="hidden">
@@ -1106,6 +1148,9 @@
                 <div class="textin-label">Color</div>
                 <input type="color" id="ti-color" class="textin-color" value="#ffffff">
                 <button id="ti-color-rand" class="btn-mini" title="Random color">🎲</button>
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
+                    <input type="checkbox" id="ti-color-rand-check"> Random
+                </label>
                 <div class="textin-label">Size</div>
                 <input type="range" id="ti-size" class="textin-range" min="16" max="200" value="64">
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
@@ -1325,6 +1370,7 @@
         const tiFontRand = document.getElementById('ti-font-rand');
         const tiColor = document.getElementById('ti-color');
         const tiColorRandBtn = document.getElementById('ti-color-rand');
+        const tiColorRandCheck = document.getElementById('ti-color-rand-check');
         const tiSize = document.getElementById('ti-size');
         const tiSizeRand = document.getElementById('ti-size-rand');
         const tiX = document.getElementById('ti-x');
@@ -1346,6 +1392,9 @@
         const activeTextOverlays = [];
         let shortcutsLocked = false;
         // Mix panel refs
+        const micConfirm = document.getElementById('mic-confirm');
+        const micOk = document.getElementById('btn-mic-ok');
+        const micCancel = document.getElementById('btn-mic-cancel');
         const mixPanel = document.getElementById('mix-panel');
         const mixClose = document.getElementById('btn-mix-close');
         const fxLow = document.getElementById('fx-lowpass');
@@ -1772,16 +1821,18 @@
 						}
 					});
 				}
-				// Make "M" use mic
+				// Make "M" use mic (with confirm)
 				const mEl = logo.querySelector('.logo-m');
 				if (mEl) {
 					mEl.style.cursor = 'pointer';
 					mEl.title = 'Use Microphone';
 					mEl.addEventListener('click', (e) => {
 						e.stopPropagation();
-						const btn = document.getElementById('btn-mic');
-						if (btn) btn.click();
-						else if (typeof useMic === 'function') useMic();
+						try { showMicConfirm(); } catch(_) {
+							const btn = document.getElementById('btn-mic');
+							if (btn) btn.click();
+							else if (typeof useMic === 'function') useMic();
+						}
 					});
 				}
 			} catch(e) {}
@@ -5087,6 +5138,23 @@ function stopAllAndShowStart() {
                 }
             } catch(_) {}
         }
+        function showMicConfirm() {
+            if (!micConfirm) { if (typeof useMic === 'function') useMic(); return; }
+            micConfirm.style.display = 'flex';
+        }
+        function hideMicConfirm() {
+            if (!micConfirm) return;
+            micConfirm.style.display = 'none';
+        }
+        if (micOk) micOk.addEventListener('click', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            hideMicConfirm();
+            try { useMic(); } catch(_) {}
+        });
+        if (micCancel) micCancel.addEventListener('click', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            hideMicConfirm();
+        });
         if (settingsBtn) {
             settingsBtn.title = "Mix Settings";
             settingsBtn.addEventListener('click', (e) => {
@@ -5491,6 +5559,7 @@ function stopAllAndShowStart() {
                 text: (tiText?.value || '').trim() || ' ',
                 font: tiFont?.value || "'Segoe UI', sans-serif",
                 color: tiColor?.value || '#ffffff',
+                colorRandom: !!(tiColorRandCheck?.checked),
                 size: Math.max(16, Math.min(200, Number(tiSize?.value)||64)),
                 sizeRandom: !!(tiSizeRand?.checked),
                 xPercent: Math.max(0, Math.min(100, Number(tiX?.value)||50)),
@@ -5522,6 +5591,7 @@ function stopAllAndShowStart() {
                 if (tiGlow && tiGlowRand) tiGlow.disabled = !!tiGlowRand.checked;
                 if (tiFont && tiFontRand) tiFont.disabled = !!tiFontRand.checked;
                 if (tiFlash && tiFlashRand) tiFlash.disabled = !!tiFlashRand.checked;
+                if (tiColor && tiColorRandCheck) tiColor.disabled = !!tiColorRandCheck.checked;
             }
         }
         // lock/unlock shortcuts when focusing inside Text-In
@@ -5545,6 +5615,7 @@ function stopAllAndShowStart() {
         if (tiBorder) tiBorder.addEventListener('input', () => { if (tiBorderRand && tiBorderRand.checked) { tiBorderRand.checked = false; updateTextInPreview(); } });
         if (tiGlow) tiGlow.addEventListener('input', () => { if (tiGlowRand && tiGlowRand.checked) { tiGlowRand.checked = false; updateTextInPreview(); } });
         if (tiFont) tiFont.addEventListener('input', () => { if (tiFontRand && tiFontRand.checked) { tiFontRand.checked = false; updateTextInPreview(); } });
+        if (tiColor) tiColor.addEventListener('input', () => { if (tiColorRandCheck && tiColorRandCheck.checked) { tiColorRandCheck.checked = false; updateTextInPreview(); } });
         // Enter to send while in text field
         if (tiText) {
             tiText.addEventListener('keydown', (e) => {
@@ -5575,6 +5646,9 @@ function stopAllAndShowStart() {
             if (!layer) return;
             // Apply randomizations
             try {
+                if (cfg.colorRandom) {
+                    cfg.color = randomHexColor();
+                }
                 if (cfg.fontRandom && tiFont && tiFont.options && tiFont.options.length > 0) {
                     const idx = Math.floor(Math.random() * tiFont.options.length);
                     cfg.font = tiFont.options[idx].value || cfg.font;
@@ -5766,6 +5840,11 @@ function stopAllAndShowStart() {
                 e.preventDefault();
                 let closed = false;
                 try {
+                    // Mic confirm
+                    if (!closed && micConfirm && micConfirm.style.display === 'flex') {
+                        hideMicConfirm();
+                        closed = true;
+                    }
                     // Mix panel
                     if (mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open')) {
                         toggleMixPanel();
