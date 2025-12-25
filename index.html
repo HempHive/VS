@@ -1156,6 +1156,8 @@
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
                     <input type="checkbox" id="ti-size-rand" checked title="Random Size">
                 </label>
+                <input type="number" id="ti-size-min" class="textin-input" style="width:70px" placeholder="Min" title="Min Size">
+                <input type="number" id="ti-size-max" class="textin-input" style="width:70px" placeholder="Max" title="Max Size">
             </div>
             <div class="textin-row">
                 <div class="textin-label">X Position</div>
@@ -1163,6 +1165,8 @@
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
                     <input type="checkbox" id="ti-x-rand" checked title="Random X">
                 </label>
+                <input type="number" id="ti-x-min" class="textin-input" style="width:70px" placeholder="Min" title="Min X (%)">
+                <input type="number" id="ti-x-max" class="textin-input" style="width:70px" placeholder="Max" title="Max X (%)">
             </div>
             <div class="textin-row">
                 <div class="textin-label">Border</div>
@@ -1170,8 +1174,13 @@
                 <input type="color" id="ti-border-color" class="textin-color" value="#000000">
                 <button id="ti-border-color-rand" class="btn-mini" title="Random border color">🎲</button>
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
+                    <input type="checkbox" id="ti-border-color-rand-check" title="Random Border Color" checked>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
                     <input type="checkbox" id="ti-border-rand" title="Random Border">
                 </label>
+                <input type="number" id="ti-border-min" class="textin-input" style="width:70px" placeholder="Min" title="Min Border">
+                <input type="number" id="ti-border-max" class="textin-input" style="width:70px" placeholder="Max" title="Max Border">
             </div>
             <div class="textin-row">
                 <div class="textin-label">Glow</div>
@@ -1179,15 +1188,19 @@
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
                     <input type="checkbox" id="ti-glow-rand" title="Random Glow">
                 </label>
+                <input type="number" id="ti-glow-min" class="textin-input" style="width:70px" placeholder="Min" title="Min Glow">
+                <input type="number" id="ti-glow-max" class="textin-input" style="width:70px" placeholder="Max" title="Max Glow">
             </div>
             <div class="textin-row">
                 <div class="textin-label">Flashing</div>
                 <input type="checkbox" id="ti-flash">
-                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
-                    <input type="checkbox" id="ti-flash-rand" title="Random Flash">
-                </label>
                 <div class="textin-label">Flash Speed</div>
                 <input type="range" id="ti-flash-speed" class="textin-range" min="0" max="5" value="1" step="0.1">
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
+                    <input type="checkbox" id="ti-flashspeed-rand" title="Random Flash Speed">
+                </label>
+                <input type="number" id="ti-flashspeed-min" class="textin-input" style="width:70px" placeholder="Min" title="Min Flash Speed" step="0.1">
+                <input type="number" id="ti-flashspeed-max" class="textin-input" style="width:70px" placeholder="Max" title="Max Flash Speed" step="0.1">
             </div>
             <div class="textin-row">
                 <div class="textin-label">Rise Speed</div>
@@ -1195,6 +1208,8 @@
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
                     <input type="checkbox" id="ti-speed-rand" title="Random Speed">
                 </label>
+                <input type="number" id="ti-speed-min" class="textin-input" style="width:70px" placeholder="Min" title="Min Rise Speed">
+                <input type="number" id="ti-speed-max" class="textin-input" style="width:70px" placeholder="Max" title="Max Rise Speed">
             </div>
             <div id="textin-preview-wrap">
                 <div id="textin-preview">Preview</div>
@@ -1376,15 +1391,28 @@
         const tiColorRandCheck = document.getElementById('ti-color-rand-check');
         const tiSize = document.getElementById('ti-size');
         const tiSizeRand = document.getElementById('ti-size-rand');
+        const tiSizeMin = document.getElementById('ti-size-min');
+        const tiSizeMax = document.getElementById('ti-size-max');
         const tiX = document.getElementById('ti-x');
         const tiXRand = document.getElementById('ti-x-rand');
+        const tiXMin = document.getElementById('ti-x-min');
+        const tiXMax = document.getElementById('ti-x-max');
         const tiBorder = document.getElementById('ti-border');
         const tiBorderColor = document.getElementById('ti-border-color');
         const tiBorderColorRandBtn = document.getElementById('ti-border-color-rand');
+        const tiBorderColorRandCheck = document.getElementById('ti-border-color-rand-check');
         const tiBorderRand = document.getElementById('ti-border-rand');
+        const tiBorderMin = document.getElementById('ti-border-min');
+        const tiBorderMax = document.getElementById('ti-border-max');
         const tiGlowRand = document.getElementById('ti-glow-rand');
-        const tiFlashRand = document.getElementById('ti-flash-rand');
+        const tiGlowMin = document.getElementById('ti-glow-min');
+        const tiGlowMax = document.getElementById('ti-glow-max');
+        const tiFlashSpeedRand = document.getElementById('ti-flashspeed-rand');
+        const tiFlashSpeedMin = document.getElementById('ti-flashspeed-min');
+        const tiFlashSpeedMax = document.getElementById('ti-flashspeed-max');
         const tiSpeedRand = document.getElementById('ti-speed-rand');
+        const tiSpeedMin = document.getElementById('ti-speed-min');
+        const tiSpeedMax = document.getElementById('ti-speed-max');
         const tiGlow = document.getElementById('ti-glow');
         const tiFlash = document.getElementById('ti-flash');
         const tiFlashSpeed = document.getElementById('ti-flash-speed');
@@ -2778,6 +2806,8 @@ function stopAllAndShowStart() {
                     pixelRatio: window.devicePixelRatio || 1
                 });
                 this.visualizer.connectAudio(state.analyserNode);
+                // Randomize preset on each init/selection
+                this.currentPresetIdx = Math.floor(Math.random() * this.presetKeys.length);
                 this.loadPreset(this.currentPresetIdx);
 
                 window.addEventListener('resize', this.resizeHandler);
@@ -2886,6 +2916,8 @@ function stopAllAndShowStart() {
                     pixelRatio: pxRatio
                 });
                 this.visualizer.connectAudio(state.analyserNode);
+                // Randomize preset on each init/selection
+                this.currentPresetIdx = Math.floor(Math.random() * Math.max(1, this.presetKeys.length));
                 this.loadPreset(this.currentPresetIdx);
 
                 window.addEventListener('resize', this.resizeHandler);
@@ -3005,6 +3037,8 @@ function stopAllAndShowStart() {
                     pixelRatio: pxRatio
                 });
                 this.visualizer.connectAudio(state.analyserNode);
+                // Randomize preset on each init/selection
+                this.currentPresetIdx = Math.floor(Math.random() * Math.max(1, this.presetKeys.length));
                 this.loadPreset(this.currentPresetIdx);
 
                 // Overlay bars (transparent WebGL)
@@ -5565,19 +5599,32 @@ function stopAllAndShowStart() {
                 color: tiColor?.value || '#ffffff',
                 colorRandom: !!(tiColorRandCheck?.checked),
                 size: Math.max(16, Math.min(200, Number(tiSize?.value)||64)),
+                sizeMin: Math.max(0, Number(tiSizeMin?.value) || Number(tiSize?.min) || 16),
+                sizeMax: Math.max(0, Number(tiSizeMax?.value) || Number(tiSize?.max) || 200),
                 sizeRandom: !!(tiSizeRand?.checked),
                 xPercent: Math.max(0, Math.min(100, Number(tiX?.value)||50)),
+                xMin: Math.max(0, Number(tiXMin?.value) || Number(tiX?.min) || 0),
+                xMax: Math.max(0, Number(tiXMax?.value) || Number(tiX?.max) || 100),
                 xRandom: !!(tiXRand?.checked),
                 border: Math.max(0, Math.min(10, Number(tiBorder?.value)||0)),
+                borderMin: Math.max(0, Number(tiBorderMin?.value) || Number(tiBorder?.min) || 0),
+                borderMax: Math.max(0, Number(tiBorderMax?.value) || Number(tiBorder?.max) || 10),
                 borderRandom: !!(tiBorderRand?.checked),
                 borderColor: tiBorderColor?.value || '#000000',
+                borderColorRandom: !!(tiBorderColorRandCheck?.checked),
                 glow: Math.max(0, Math.min(50, Number(tiGlow?.value)||0)),
+                glowMin: Math.max(0, Number(tiGlowMin?.value) || Number(tiGlow?.min) || 0),
+                glowMax: Math.max(0, Number(tiGlowMax?.value) || Number(tiGlow?.max) || 50),
                 glowRandom: !!(tiGlowRand?.checked),
                 fontRandom: !!(tiFontRand?.checked),
                 flash: !!(tiFlash?.checked),
-                flashRandom: !!(tiFlashRand?.checked),
                 flashSpeed: Math.max(0, Math.min(5, Number(tiFlashSpeed?.value)||1)),
+                flashSpeedMin: Math.max(0, Number(tiFlashSpeedMin?.value) || Number(tiFlashSpeed?.min) || 0),
+                flashSpeedMax: Math.max(0, Number(tiFlashSpeedMax?.value) || Number(tiFlashSpeed?.max) || 5),
+                flashSpeedRandom: !!(tiFlashSpeedRand?.checked),
                 speed: Math.max(25, Math.min(1200, Number(tiSpeed?.value)||25)),
+                speedMin: Math.max(0, Number(tiSpeedMin?.value) || Number(tiSpeed?.min) || 25),
+                speedMax: Math.max(0, Number(tiSpeedMax?.value) || Number(tiSpeed?.max) || 1200),
                 speedRandom: !!(tiSpeedRand?.checked)
             };
         }
@@ -5593,12 +5640,13 @@ function stopAllAndShowStart() {
                 if (tiSize && tiSizeRand) tiSize.disabled = !!tiSizeRand.checked;
                 if (tiX && tiXRand) tiX.disabled = !!tiXRand.checked;
                 if (tiBorder && tiBorderRand) tiBorder.disabled = !!tiBorderRand.checked;
+                if (tiBorderColor && tiBorderColorRandCheck) tiBorderColor.disabled = !!tiBorderColorRandCheck.checked;
                 if (tiGlow && tiGlowRand) tiGlow.disabled = !!tiGlowRand.checked;
                 if (tiFont && tiFontRand) tiFont.disabled = !!tiFontRand.checked;
-                if (tiFlash && tiFlashRand) tiFlash.disabled = !!tiFlashRand.checked;
                 if (tiColor && tiColorRandCheck) tiColor.disabled = !!tiColorRandCheck.checked;
                 const tiSpeed = document.getElementById('ti-speed');
                 if (tiSpeed && tiSpeedRand) tiSpeed.disabled = !!tiSpeedRand.checked;
+                if (tiFlashSpeed && tiFlashSpeedRand) tiFlashSpeed.disabled = !!tiFlashSpeedRand.checked;
             }
         }
         // lock/unlock shortcuts when focusing inside Text-In
@@ -5621,9 +5669,39 @@ function stopAllAndShowStart() {
         if (tiX) tiX.addEventListener('input', () => { if (tiXRand && tiXRand.checked) { tiXRand.checked = false; updateTextInPreview(); } });
         if (tiBorder) tiBorder.addEventListener('input', () => { if (tiBorderRand && tiBorderRand.checked) { tiBorderRand.checked = false; updateTextInPreview(); } });
         if (tiGlow) tiGlow.addEventListener('input', () => { if (tiGlowRand && tiGlowRand.checked) { tiGlowRand.checked = false; updateTextInPreview(); } });
+        if (tiBorderColor) tiBorderColor.addEventListener('input', () => { if (tiBorderColorRandCheck && tiBorderColorRandCheck.checked) { tiBorderColorRandCheck.checked = false; updateTextInPreview(); } });
+        if (tiFlashSpeed) tiFlashSpeed.addEventListener('input', () => { if (tiFlashSpeedRand && tiFlashSpeedRand.checked) { tiFlashSpeedRand.checked = false; updateTextInPreview(); } });
         if (tiFont) tiFont.addEventListener('input', () => { if (tiFontRand && tiFontRand.checked) { tiFontRand.checked = false; updateTextInPreview(); } });
         const tiSpeedEl = document.getElementById('ti-speed');
         if (tiSpeedEl) tiSpeedEl.addEventListener('input', () => { if (tiSpeedRand && tiSpeedRand.checked) { tiSpeedRand.checked = false; updateTextInPreview(); } });
+        // Sync slider min/max to inputs (and clamp current value)
+        function bindMinMax(minEl, maxEl, sliderEl) {
+            if (!minEl || !maxEl || !sliderEl) return;
+            const apply = () => {
+                let minV = Number(minEl.value); let maxV = Number(maxEl.value);
+                if (isNaN(minV)) minV = Number(sliderEl.min) || 0;
+                if (isNaN(maxV)) maxV = Number(sliderEl.max) || 100;
+                if (maxV < minV) { const t = minV; minV = maxV; maxV = t; }
+                sliderEl.min = String(minV);
+                sliderEl.max = String(maxV);
+                let cur = Number(sliderEl.value);
+                if (cur < minV) cur = minV;
+                if (cur > maxV) cur = maxV;
+                sliderEl.value = String(cur);
+                updateTextInPreview();
+            };
+            minEl.addEventListener('input', apply);
+            maxEl.addEventListener('input', apply);
+            // initialize values if blank
+            if (!minEl.value) minEl.value = sliderEl.min || '';
+            if (!maxEl.value) maxEl.value = sliderEl.max || '';
+        }
+        bindMinMax(tiSizeMin, tiSizeMax, tiSize);
+        bindMinMax(tiXMin, tiXMax, tiX);
+        bindMinMax(tiBorderMin, tiBorderMax, tiBorder);
+        bindMinMax(tiGlowMin, tiGlowMax, tiGlow);
+        bindMinMax(tiFlashSpeedMin, tiFlashSpeedMax, tiFlashSpeed);
+        bindMinMax(tiSpeedMin, tiSpeedMax, document.getElementById('ti-speed'));
         if (tiColor) tiColor.addEventListener('input', () => { if (tiColorRandCheck && tiColorRandCheck.checked) { tiColorRandCheck.checked = false; updateTextInPreview(); } });
         // Enter to send while in text field
         if (tiText) {
@@ -5663,23 +5741,28 @@ function stopAllAndShowStart() {
                     cfg.font = tiFont.options[idx].value || cfg.font;
                 }
                 if (cfg.borderRandom && tiBorder) {
-                    const min = Number(tiBorder.min) || 0;
-                    const max = Number(tiBorder.max) || 10;
+                    const min = Math.max(0, Number(cfg.borderMin) || Number(tiBorder.min) || 0);
+                    const max = Math.max(min, Number(cfg.borderMax) || Number(tiBorder.max) || 10);
                     cfg.border = Math.floor(min + Math.random() * (max - min + 1));
                 }
+                if (cfg.borderColorRandom) {
+                    cfg.borderColor = randomHexColor();
+                }
                 if (cfg.glowRandom && tiGlow) {
-                    const minG = Number(tiGlow.min) || 0;
-                    const maxG = Number(tiGlow.max) || 50;
+                    const minG = Math.max(0, Number(cfg.glowMin) || Number(tiGlow.min) || 0);
+                    const maxG = Math.max(minG, Number(cfg.glowMax) || Number(tiGlow.max) || 50);
                     cfg.glow = Math.floor(minG + Math.random() * (maxG - minG + 1));
                 }
-                if (cfg.flashRandom) {
-                    cfg.flash = Math.random() < 0.5;
-                }
+                // Flash on/off random removed per new request; only speed random here
                 if (cfg.speedRandom) {
-                    const tiSpeedEl = document.getElementById('ti-speed');
-                    const minS = Number(tiSpeedEl?.min) || 25;
-                    const maxS = Number(tiSpeedEl?.max) || 1200;
+                    const minS = Math.max(0, Number(cfg.speedMin) || 25);
+                    const maxS = Math.max(minS, Number(cfg.speedMax) || 1200);
                     cfg.speed = Math.floor(minS + Math.random() * (maxS - minS + 1));
+                }
+                if (cfg.flashSpeedRandom && tiFlashSpeed) {
+                    const minFS = Math.max(0, Number(cfg.flashSpeedMin) || Number(tiFlashSpeed.min) || 0);
+                    const maxFS = Math.max(minFS, Number(cfg.flashSpeedMax) || Number(tiFlashSpeed.max) || 5);
+                    cfg.flashSpeed = (minFS + Math.random() * (maxFS - minFS));
                 }
             } catch(_) {}
             const el = document.createElement('div');
