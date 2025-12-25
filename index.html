@@ -1128,7 +1128,7 @@
                     <option value="Monoton, cursive">Monoton</option>
                     <option value="Quicksilver, cursive">Quicksilver</option>
                     <option value="'Playfair Display', serif">Playfair Display</option>
-                    <option value="Lobster, cursive">Lobster</option>
+                    <option value="Lobster, cursive" selected>Lobster</option>
                     <option value="'Open Sans', sans-serif">Open Sans</option>
                     <option value="Nunito, sans-serif">Nunito</option>
                     <option value="Merriweather, serif">Merriweather</option>
@@ -1141,7 +1141,7 @@
                     <option value="'Press Start 2P', cursive">Press Start 2P</option>
                 </select>
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
-                    <input type="checkbox" id="ti-font-rand"> Random
+                    <input type="checkbox" id="ti-font-rand" title="Random Font">
                 </label>
             </div>
             <div class="textin-row">
@@ -1149,19 +1149,19 @@
                 <input type="color" id="ti-color" class="textin-color" value="#ffffff">
                 <button id="ti-color-rand" class="btn-mini" title="Random color">🎲</button>
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
-                    <input type="checkbox" id="ti-color-rand-check"> Random
+                    <input type="checkbox" id="ti-color-rand-check" title="Random Color">
                 </label>
                 <div class="textin-label">Size</div>
                 <input type="range" id="ti-size" class="textin-range" min="16" max="200" value="64">
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
-                    <input type="checkbox" id="ti-size-rand" checked> Random
+                    <input type="checkbox" id="ti-size-rand" checked title="Random Size">
                 </label>
             </div>
             <div class="textin-row">
                 <div class="textin-label">X Position</div>
                 <input type="range" id="ti-x" class="textin-range" min="0" max="100" value="50">
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
-                    <input type="checkbox" id="ti-x-rand" checked> Random
+                    <input type="checkbox" id="ti-x-rand" checked title="Random X">
                 </label>
             </div>
             <div class="textin-row">
@@ -1170,21 +1170,21 @@
                 <input type="color" id="ti-border-color" class="textin-color" value="#000000">
                 <button id="ti-border-color-rand" class="btn-mini" title="Random border color">🎲</button>
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
-                    <input type="checkbox" id="ti-border-rand"> Random
+                    <input type="checkbox" id="ti-border-rand" title="Random Border">
                 </label>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Glow</div>
                 <input type="range" id="ti-glow" class="textin-range" min="0" max="50" value="12">
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
-                    <input type="checkbox" id="ti-glow-rand"> Random
+                    <input type="checkbox" id="ti-glow-rand" title="Random Glow">
                 </label>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Flashing</div>
                 <input type="checkbox" id="ti-flash">
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
-                    <input type="checkbox" id="ti-flash-rand"> Random
+                    <input type="checkbox" id="ti-flash-rand" title="Random Flash">
                 </label>
                 <div class="textin-label">Flash Speed</div>
                 <input type="range" id="ti-flash-speed" class="textin-range" min="0" max="5" value="1" step="0.1">
