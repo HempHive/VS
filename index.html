@@ -529,7 +529,11 @@
             position: relative;
             padding: 10px;
             border: 1px solid rgba(255,255,255,0.25);
-            background: rgba(0,0,0,0.25) url('btn.png') center center / cover no-repeat;
+            background-color: rgba(0,0,0,0.25);
+            background-image: url('btn.png');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: 100% 100%; /* stretch to fill entire button */
             color: #fff;
             border-radius: 6px;
             font-size: 12px;
@@ -538,7 +542,11 @@
         #mix-effects .btn.on {
             border-color: rgba(212,175,55,0.8);
             box-shadow: 0 0 12px rgba(212,175,55,0.25) inset;
-            background: rgba(212,175,55,0.12);
+            background-color: rgba(212,175,55,0.12);
+            background-image: url('btn.png');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
         }
         .status-row { display:flex; align-items:center; gap:8px; font-size:12px; color:#bbb; }
         .status-dot {
