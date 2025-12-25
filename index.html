@@ -1152,6 +1152,9 @@
                     <button class="btn" id="fx-arp">Arpitagor</button>
                     <button class="btn" id="fx-tk">TK Filter</button>
                     <button class="btn" id="fx-wav" title="Left-click: play once • Right-click: loop">Wav</button>
+                    <button class="btn" id="fx-wav1" title="Left-click: play once • Right-click: loop">Wav1</button>
+                    <button class="btn" id="fx-wav2" title="Left-click: play once • Right-click: loop">Wav2</button>
+                    <button class="btn" id="fx-wav3" title="Left-click: play once • Right-click: loop">Wav3</button>
                 </div>
             </div>
             <div style="display:grid; grid-template-columns: 1fr; gap: 12px; align-items:flex-start">
@@ -1328,6 +1331,9 @@
         const fxArp = document.getElementById('fx-arp');
         const fxTk = document.getElementById('fx-tk');
         const fxWav = document.getElementById('fx-wav');
+        const fxWav1 = document.getElementById('fx-wav1');
+        const fxWav2 = document.getElementById('fx-wav2');
+        const fxWav3 = document.getElementById('fx-wav3');
         const mixStationB = document.getElementById('mix-station-b');
         const mixPlayB = document.getElementById('mix-b-play');
         const mixStopB = document.getElementById('mix-b-stop');
@@ -1336,20 +1342,41 @@
         const audioElSample = new Audio();
         audioElSample.preload = 'auto';
         audioElSample.src = 'wav.mp3';
-        let sampleLoop = false;
+        const audioElSample1 = new Audio();
+        audioElSample1.preload = 'auto';
+        audioElSample1.src = 'wav1.mp3';
+        const audioElSample2 = new Audio();
+        audioElSample2.preload = 'auto';
+        audioElSample2.src = 'wav2.mp3';
+        const audioElSample3 = new Audio();
+        audioElSample3.preload = 'auto';
+        audioElSample3.src = 'wav3.mp3';
+        let sampleLoop = false, sampleLoop1 = false, sampleLoop2 = false, sampleLoop3 = false;
         // Ensure media elements don't double-play outside the WebAudio graph
-        // Mute HTML elements to prevent parallel DOM audio; WebAudio graph carries the sound
-        try { audioEl.muted = true; } catch(_) {}
-        try { audioElB.muted = true; } catch(_) {}
-        try { audioElSample.muted = true; } catch(_) {}
+        // Allow HTML elements to output so MediaElementSource has signal; mixing is controlled in WebAudio
+        try { audioEl.muted = false; } catch(_) {}
+        try { audioElB.muted = false; } catch(_) {}
+        try { audioElSample.muted = false; } catch(_) {}
+        try { audioElSample1.muted = false; } catch(_) {}
+        try { audioElSample2.muted = false; } catch(_) {}
+        try { audioElSample3.muted = false; } catch(_) {}
         // Element volume at 1 so MediaElementSourceNode receives full-strength signal
         try { audioEl.volume = 1; } catch(_) {}
         try { audioElB.volume = 1; } catch(_) {}
         try { audioElSample.volume = 1; } catch(_) {}
+        try { audioElSample1.volume = 1; } catch(_) {}
+        try { audioElSample2.volume = 1; } catch(_) {}
+        try { audioElSample3.volume = 1; } catch(_) {}
         const mixBStatusDot = document.getElementById('mix-b-status-dot');
         const mixBStatusText = document.getElementById('mix-b-status-text');
         function updateMixBStatus() {
-            const playing = !!(audioElB && !audioElB.paused && !audioElB.ended);
+            const playing = !!(
+                (audioElB && !audioElB.paused && !audioElB.ended) ||
+                (audioElSample && !audioElSample.paused && !audioElSample.ended) ||
+                (audioElSample1 && !audioElSample1.paused && !audioElSample1.ended) ||
+                (audioElSample2 && !audioElSample2.paused && !audioElSample2.ended) ||
+                (audioElSample3 && !audioElSample3.paused && !audioElSample3.ended)
+            );
             if (mixBStatusDot) mixBStatusDot.classList.toggle('on', playing);
             if (mixBStatusText) mixBStatusText.textContent = playing ? 'B: Playing' : 'B: Stopped';
         }
@@ -5113,7 +5140,7 @@ function stopAllAndShowStart() {
                 e.preventDefault();
                 try { audioElSample.loop = !!sampleLoop; } catch(_) {}
                 try { audioElSample.currentTime = 0; } catch(_) {}
-                audioElSample.play().catch(()=>{});
+                audioElSample.play().then(()=>{ fxWav.classList.add('on'); setTimeout(()=>fxWav.classList.remove('on'), 300); }).catch(()=>{});
                 // Route to B stream so crossfader controls it
                 try {
                     if (!state.sourceNodeSample && state.audioCtx) {
@@ -5130,6 +5157,32 @@ function stopAllAndShowStart() {
                 fxWav.classList.toggle('on', sampleLoop);
             });
         }
+        function bindSample(btn, media, loopFlagKey, sourceKey) {
+            if (!btn || !media) return;
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                try { media.loop = !!window[loopFlagKey]; } catch(_) {}
+                try { media.currentTime = 0; } catch(_) {}
+                media.play().then(()=>{ btn.classList.add('on'); setTimeout(()=>btn.classList.remove('on'), 300); }).catch(()=>{});
+                try {
+                    if (!state[sourceKey] && state.audioCtx) {
+                        state[sourceKey] = state.audioCtx.createMediaElementSource(media);
+                        state[sourceKey].connect(state.streamBGain);
+                        rebuildEffectsChain();
+                    }
+                } catch(_) {}
+            });
+            btn.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                const nv = !window[loopFlagKey];
+                window[loopFlagKey] = nv;
+                try { media.loop = !!nv; } catch(_) {}
+                btn.classList.toggle('on', nv);
+            });
+        }
+        bindSample(fxWav1, audioElSample1, 'sampleLoop1', 'sourceNodeSample1');
+        bindSample(fxWav2, audioElSample2, 'sampleLoop2', 'sourceNodeSample2');
+        bindSample(fxWav3, audioElSample3, 'sampleLoop3', 'sourceNodeSample3');
         // Play/Stop B
         function playRadioB() {
             initAudio();
@@ -5138,6 +5191,7 @@ function stopAllAndShowStart() {
             if (!sel || !sel.url) return;
             audioElB.crossOrigin = "anonymous";
             audioElB.src = sel.url;
+            try { audioElB.load(); } catch(_) {}
             audioElB.play().then(() => {
                 // disconnect old B source
                 try { if (state.sourceNodeB) state.sourceNodeB.disconnect(); } catch(_) {}
