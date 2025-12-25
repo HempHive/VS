@@ -1033,43 +1033,6 @@
                 <div class="textin-label">Text</div>
                 <input type="text" id="ti-text" class="textin-input" placeholder="Your message...">
             </div>
-    <!-- Mix Settings Panel (right) -->
-    <div id="mix-panel" class="display-none" aria-label="Mix Settings">
-        <h3>
-            <span>Mix Settings</span>
-            <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
-        </h3>
-        <div id="mix-content">
-            <div>
-                <div style="font-size:12px; color:#bbb; margin-bottom:6px">Effects</div>
-                <div id="mix-effects">
-                    <button class="btn" id="fx-lowpass">Lowpass</button>
-                    <button class="btn" id="fx-highpass">Highpass</button>
-                    <button class="btn" id="fx-bass">Bass Boost</button>
-                    <button class="btn" id="fx-treble">Treble Boost</button>
-                    <button class="btn" id="fx-echo">Echo</button>
-                    <button class="btn" id="fx-distort">Distortion</button>
-                </div>
-            </div>
-            <div style="display:grid; grid-template-columns: 1fr auto; gap: 12px; align-items:center">
-                <div>
-                    <div style="font-size:12px; color:#bbb; margin-bottom:6px">Second Station</div>
-                    <select id="mix-station-b" class="textin-select" style="width: 100%"></select>
-                    <div style="display:flex; gap:8px; margin-top:8px">
-                        <button class="btn" id="mix-b-play">Play B</button>
-                        <button class="btn" id="mix-b-stop">Stop B</button>
-                    </div>
-                </div>
-                <div style="display:flex; flex-direction:column; align-items:center; gap:6px">
-                    <div style="font-size:12px; color:#bbb">Crossfade</div>
-                    <input type="range" id="mix-crossfader" class="vertical-range" min="0" max="1" step="0.01" value="0.5">
-                    <div style="display:flex; width:100%; justify-content:space-between; font-size:11px; color:#888">
-                        <span>A</span><span>B</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
             <div class="textin-row">
                 <div class="textin-label">Font</div>
                 <select id="ti-font" class="textin-select">
@@ -1150,6 +1113,48 @@
             </div>
             <div id="textin-preview-wrap">
                 <div id="textin-preview">Preview</div>
+            </div>
+        </div>
+    </div>
+    <!-- Mix Settings Panel (right) -->
+    <div id="mix-panel" class="display-none" aria-label="Mix Settings">
+        <h3>
+            <span>Mix Settings</span>
+            <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
+        </h3>
+        <div id="mix-content">
+            <div>
+                <div style="font-size:12px; color:#bbb; margin-bottom:6px">Effects</div>
+                <div id="mix-effects">
+                    <button class="btn" id="fx-lowpass">Lowpass</button>
+                    <button class="btn" id="fx-highpass">Highpass</button>
+                    <button class="btn" id="fx-bass">Bass Boost</button>
+                    <button class="btn" id="fx-treble">Treble Boost</button>
+                    <button class="btn" id="fx-echo">Echo</button>
+                    <button class="btn" id="fx-distort">Distortion</button>
+                    <button class="btn" id="fx-arp">Arpitagor</button>
+                    <button class="btn" id="fx-tk">TK Filter</button>
+                    <button class="btn" id="fx-wav" title="Left-click: play once • Right-click: loop">Wav</button>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr; gap: 12px; align-items:flex-start">
+                <div>
+                    <div style="font-size:12px; color:#bbb; margin-bottom:6px">Second Station</div>
+                    <select id="mix-station-b" class="textin-select" style="width: 100%"></select>
+                    <div style="display:flex; gap:8px; margin-top:8px">
+                        <button class="btn" id="mix-b-play">Play B</button>
+                        <button class="btn" id="mix-b-stop">Stop B</button>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:center; margin-top:6px; gap:12px">
+                <div style="display:flex; flex-direction:column; align-items:center; gap:6px">
+                    <div style="font-size:12px; color:#bbb">Crossfade</div>
+                    <input type="range" id="mix-crossfader" class="vertical-range" min="0" max="1" step="0.01" value="0.5">
+                    <div style="display:flex; width:100%; justify-content:space-between; font-size:11px; color:#888">
+                        <span>A</span><span>B</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1301,10 +1306,18 @@
         const fxTreble = document.getElementById('fx-treble');
         const fxEcho = document.getElementById('fx-echo');
         const fxDist = document.getElementById('fx-distort');
+        const fxArp = document.getElementById('fx-arp');
+        const fxTk = document.getElementById('fx-tk');
+        const fxWav = document.getElementById('fx-wav');
         const mixStationB = document.getElementById('mix-station-b');
         const mixPlayB = document.getElementById('mix-b-play');
         const mixStopB = document.getElementById('mix-b-stop');
         const mixCross = document.getElementById('mix-crossfader');
+        // Sample player
+        const audioElSample = new Audio();
+        audioElSample.preload = 'auto';
+        audioElSample.src = 'wav.mp3';
+        let sampleLoop = false;
         const inpShuffleMin = document.getElementById('inp-shuffle-min');
         const inpShuffleMax = document.getElementById('inp-shuffle-max');
         const inpTransition = document.getElementById('inp-transition');
@@ -2130,6 +2143,8 @@
                     high: { node: state.audioCtx.createBiquadFilter(), on: false },
                     bass: { node: state.audioCtx.createBiquadFilter(), on: false },
                     treble: { node: state.audioCtx.createBiquadFilter(), on: false },
+                    arp: { filter: state.audioCtx.createBiquadFilter(), lfo: state.audioCtx.createOscillator(), lfoGain: state.audioCtx.createGain(), on: false },
+                    tk: { node: state.audioCtx.createBiquadFilter(), on: false },
                     echoDelay: { node: state.audioCtx.createDelay(5.0), on: false },
                     echoFeedback: { node: state.audioCtx.createGain(), on: false },
                     distort: { node: state.audioCtx.createWaveShaper(), on: false }
@@ -2139,6 +2154,21 @@
                 state.fx.high.node.type = 'highpass'; state.fx.high.node.frequency.value = 200;
                 state.fx.bass.node.type = 'peaking'; state.fx.bass.node.frequency.value = 100; state.fx.bass.node.Q.value = 1.0; state.fx.bass.node.gain.value = 6;
                 state.fx.treble.node.type = 'peaking'; state.fx.treble.node.frequency.value = 4000; state.fx.treble.node.Q.value = 0.7; state.fx.treble.node.gain.value = 6;
+                // Arpitagor: LFO-modulated bandpass
+                state.fx.arp.filter.type = 'bandpass';
+                state.fx.arp.filter.frequency.value = 800;
+                state.fx.arp.filter.Q.value = 2.0;
+                state.fx.arp.lfo.type = 'square';
+                state.fx.arp.lfo.frequency.value = 4.0;
+                state.fx.arp.lfoGain.gain.value = 0; // off until enabled
+                // Connect LFO -> gain -> filter.frequency (AudioParam)
+                state.fx.arp.lfo.connect(state.fx.arp.lfoGain);
+                try { state.fx.arp.lfoGain.connect(state.fx.arp.filter.frequency); } catch(_) {}
+                try { state.fx.arp.lfo.start(); } catch(_) {}
+                // TK filter: bandpass with tighter Q
+                state.fx.tk.node.type = 'bandpass';
+                state.fx.tk.node.frequency.value = 1200;
+                state.fx.tk.node.Q.value = 4.0;
                 state.fx.echoDelay.node.delayTime.value = 0.28;
                 state.fx.echoFeedback.node.gain.value = 0.35;
                 // Distortion curve
@@ -2177,6 +2207,8 @@
             if (state.fx.high.on) enabled.push(state.fx.high.node);
             if (state.fx.bass.on) enabled.push(state.fx.bass.node);
             if (state.fx.treble.on) enabled.push(state.fx.treble.node);
+            if (state.fx.arp.on) enabled.push(state.fx.arp.filter);
+            if (state.fx.tk.on) enabled.push(state.fx.tk.node);
             if (state.fx.echoDelay.on) {
                 // echo network: mix -> delay -> feedback -> delay
                 try { state.fx.echoDelay.node.disconnect(); } catch(_) {}
@@ -5020,6 +5052,44 @@ function stopAllAndShowStart() {
             });
         }
         if (fxDist) fxDist.addEventListener('click', () => toggleFx('distort', fxDist));
+        if (fxArp) {
+            fxArp.addEventListener('click', () => {
+                state.fx.arp.on = !state.fx.arp.on;
+                fxArp.classList.toggle('on', state.fx.arp.on);
+                // Enable/disable modulation depth (map to +/- 600 Hz)
+                state.fx.arp.lfoGain.gain.value = state.fx.arp.on ? 600 : 0;
+                rebuildEffectsChain();
+            });
+        }
+        if (fxTk) {
+            fxTk.addEventListener('click', () => {
+                state.fx.tk.on = !state.fx.tk.on;
+                fxTk.classList.toggle('on', state.fx.tk.on);
+                rebuildEffectsChain();
+            });
+        }
+        if (fxWav) {
+            fxWav.addEventListener('click', (e) => {
+                e.preventDefault();
+                try { audioElSample.loop = !!sampleLoop; } catch(_) {}
+                try { audioElSample.currentTime = 0; } catch(_) {}
+                audioElSample.play().catch(()=>{});
+                // Route to B stream so crossfader controls it
+                try {
+                    if (!state.sourceNodeSample && state.audioCtx) {
+                        state.sourceNodeSample = state.audioCtx.createMediaElementSource(audioElSample);
+                        state.sourceNodeSample.connect(state.streamBGain);
+                        rebuildEffectsChain();
+                    }
+                } catch(_) {}
+            });
+            fxWav.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                sampleLoop = !sampleLoop;
+                try { audioElSample.loop = !!sampleLoop; } catch(_) {}
+                fxWav.classList.toggle('on', sampleLoop);
+            });
+        }
         // Play/Stop B
         function playRadioB() {
             initAudio();
