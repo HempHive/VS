@@ -432,6 +432,12 @@
             border-radius: 6px;
         }
         .textin-btn:hover { background: #fff; color: #000; }
+        .btn-mini {
+            padding: 4px 8px; border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.06); color: #fff; border-radius: 6px;
+            font-size: 11px; line-height: 1; cursor: pointer;
+        }
+        .btn-mini:hover { background: rgba(255,255,255,0.18); }
         #textin-preview-wrap {
             border: 1px dashed rgba(255,255,255,0.2);
             border-radius: 8px; padding: 14px; min-height: 80px;
@@ -1048,7 +1054,7 @@
         <div id="textin-content">
             <div class="textin-row">
                 <div class="textin-label">Text</div>
-                <input type="text" id="ti-text" class="textin-input" placeholder="Your message...">
+                <input type="text" id="ti-text" class="textin-input" value="Lucky🍀Days" placeholder="Your message...">
             </div>
             <div class="textin-row">
                 <div class="textin-label">Font</div>
@@ -1096,6 +1102,7 @@
             <div class="textin-row">
                 <div class="textin-label">Color</div>
                 <input type="color" id="ti-color" class="textin-color" value="#ffffff">
+                <button id="ti-color-rand" class="btn-mini" title="Random color">🎲</button>
                 <div class="textin-label">Size</div>
                 <input type="range" id="ti-size" class="textin-range" min="16" max="200" value="64">
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
@@ -1113,6 +1120,7 @@
                 <div class="textin-label">Border</div>
                 <input type="range" id="ti-border" class="textin-range" min="0" max="10" value="2">
                 <input type="color" id="ti-border-color" class="textin-color" value="#000000">
+                <button id="ti-border-color-rand" class="btn-mini" title="Random border color">🎲</button>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Glow</div>
@@ -1303,12 +1311,14 @@
         const tiText = document.getElementById('ti-text');
         const tiFont = document.getElementById('ti-font');
         const tiColor = document.getElementById('ti-color');
+        const tiColorRandBtn = document.getElementById('ti-color-rand');
         const tiSize = document.getElementById('ti-size');
         const tiSizeRand = document.getElementById('ti-size-rand');
         const tiX = document.getElementById('ti-x');
         const tiXRand = document.getElementById('ti-x-rand');
         const tiBorder = document.getElementById('ti-border');
         const tiBorderColor = document.getElementById('ti-border-color');
+        const tiBorderColorRandBtn = document.getElementById('ti-border-color-rand');
         const tiGlow = document.getElementById('ti-glow');
         const tiFlash = document.getElementById('ti-flash');
         const tiFlashSpeed = document.getElementById('ti-flash-speed');
@@ -5495,6 +5505,31 @@ function stopAllAndShowStart() {
             if (el) el.addEventListener('keydown', (ev) => ev.stopPropagation());
         });
         if (tiFont) tiFont.addEventListener('change', updateTextInPreview);
+        // Enter to send while in text field
+        if (tiText) {
+            tiText.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const cfg = getTextConfigFromUi();
+                    spawnRisingText(cfg);
+                }
+            });
+        }
+        // Randomize colors via small buttons
+        if (tiColorRandBtn) {
+            tiColorRandBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                try { tiColor.value = randomHexColor(); } catch(_) {}
+                updateTextInPreview();
+            });
+        }
+        if (tiBorderColorRandBtn) {
+            tiBorderColorRandBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                try { tiBorderColor.value = randomHexColor(); } catch(_) {}
+                updateTextInPreview();
+            });
+        }
         function spawnRisingText(cfg) {
             const layer = textOverlayLayer;
             if (!layer) return;
