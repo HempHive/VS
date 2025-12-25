@@ -2776,10 +2776,26 @@
                     document.body.style.backgroundPosition = '';
                     document.body.style.backgroundSize = '';
                 } catch(e) {}
-                // Start with "Audio Bars (Vertical Mirror)" by default if available
+                // Start with last visual if saved, else "ProjectM v2" if available
                 try {
-                    const defaultIdx = Math.max(0, modes.findIndex(m => m && m.name === "ProjectM v2"));
-                    loadMode(defaultIdx);
+                    let idxToLoad = -1;
+                    try {
+                        const savedName = localStorage.getItem('lastModeName');
+                        if (savedName) {
+                            const savedIdx = modes.findIndex(m => m && m.name === savedName);
+                            if (savedIdx >= 0) idxToLoad = savedIdx;
+                        } else {
+                            const savedIdxStr = localStorage.getItem('lastModeIndex');
+                            const savedIdxNum = savedIdxStr != null ? parseInt(savedIdxStr, 10) : -1;
+                            if (!isNaN(savedIdxNum) && savedIdxNum >= 0 && savedIdxNum < modes.length) {
+                                idxToLoad = savedIdxNum;
+                            }
+                        }
+                    } catch(_) {}
+                    if (idxToLoad < 0) {
+                        idxToLoad = Math.max(0, modes.findIndex(m => m && m.name === "ProjectM v2"));
+                    }
+                    loadMode(idxToLoad);
                 } catch(e) {
                     loadMode(0);
                 }
@@ -5182,6 +5198,13 @@ function stopAllAndShowStart() {
             if(idx >= modes.length) idx = 0;
             state.currentModeIdx = idx;
             state.activeVisualizer = modes[idx];
+            // Persist last selected visualizer
+            try {
+                localStorage.setItem('lastModeIndex', String(idx));
+                if (state.activeVisualizer && state.activeVisualizer.name) {
+                    localStorage.setItem('lastModeName', state.activeVisualizer.name);
+                }
+            } catch(_) {}
             
             // UI Updates
             document.getElementById('mode-title').innerText = state.activeVisualizer.name;
