@@ -432,12 +432,14 @@
             border-radius: 6px;
         }
         .textin-btn:hover { background: #fff; color: #000; }
-        .range-sub { position: relative; height: 22px; margin-top: 4px; }
-        .range-sub input[type="range"] {
-            position: absolute; left: 0; right: 0; width: 100%;
-            background: transparent;
-            height: 16px;
-        }
+        .slider-col { position: relative; flex: 1; height: 40px; }
+        /* Sub-ranges: one sits at the top edge, the other at the bottom edge */
+        .slider-col .range-sub { position: absolute; inset: 0; pointer-events: auto; }
+        .slider-col .range-sub .sub-range { position: absolute; left: 0; right: 0; background: transparent; }
+        .slider-col .range-sub .sub-range:first-child { top: 0; height: 10px; z-index: 2; }
+        .slider-col .range-sub .sub-range:last-child { bottom: 0; height: 10px; z-index: 2; }
+        /* Main range sits centered between the two sub-ranges for a clear handle */
+        .slider-col .main-range { position: absolute; left: 0; right: 0; top: 12px; height: 16px; z-index: 3; }
         .btn-mini {
             padding: 4px 8px; border: 1px solid rgba(255,255,255,0.3);
             background: rgba(255,255,255,0.06); color: #fff; border-radius: 6px;
@@ -1158,29 +1160,39 @@
                     <input type="checkbox" id="ti-color-rand-check" title="Random Color">
                 </label>
                 <div class="textin-label">Size</div>
-                <input type="range" id="ti-size" class="textin-range" min="16" max="200" value="64">
+                <div class="slider-col">
+                    <input type="range" id="ti-size" class="textin-range main-range" min="16" max="200" value="64">
+                    <div class="range-sub">
+                        <input type="range" id="ti-size-rmin" class="textin-range sub-range" min="16" max="200" value="16" step="1" title="Min Size">
+                        <input type="range" id="ti-size-rmax" class="textin-range sub-range" min="16" max="200" value="200" step="1" title="Max Size">
+                    </div>
+                </div>
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
                     <input type="checkbox" id="ti-size-rand" checked title="Random Size">
                 </label>
-                <div class="range-sub">
-                    <input type="range" id="ti-size-rmin" min="16" max="200" value="16" step="1" title="Min Size">
-                    <input type="range" id="ti-size-rmax" min="16" max="200" value="200" step="1" title="Max Size">
-                </div>
             </div>
             <div class="textin-row">
                 <div class="textin-label">X Position</div>
-                <input type="range" id="ti-x" class="textin-range" min="0" max="100" value="50">
+                <div class="slider-col">
+                    <input type="range" id="ti-x" class="textin-range main-range" min="0" max="100" value="50">
+                    <div class="range-sub">
+                        <input type="range" id="ti-x-rmin" class="textin-range sub-range" min="0" max="100" value="0" step="1" title="Min X (%)">
+                        <input type="range" id="ti-x-rmax" class="textin-range sub-range" min="0" max="100" value="100" step="1" title="Max X (%)">
+                    </div>
+                </div>
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
                     <input type="checkbox" id="ti-x-rand" checked title="Random X">
                 </label>
-                <div class="range-sub">
-                    <input type="range" id="ti-x-rmin" min="0" max="100" value="0" step="1" title="Min X (%)">
-                    <input type="range" id="ti-x-rmax" min="0" max="100" value="100" step="1" title="Max X (%)">
-                </div>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Border</div>
-                <input type="range" id="ti-border" class="textin-range" min="0" max="10" value="2">
+                <div class="slider-col">
+                    <input type="range" id="ti-border" class="textin-range main-range" min="0" max="10" value="2">
+                    <div class="range-sub">
+                        <input type="range" id="ti-border-rmin" class="textin-range sub-range" min="0" max="10" value="0" step="1" title="Min Border">
+                        <input type="range" id="ti-border-rmax" class="textin-range sub-range" min="0" max="10" value="10" step="1" title="Max Border">
+                    </div>
+                </div>
                 <input type="color" id="ti-border-color" class="textin-color" value="#000000">
                 <button id="ti-border-color-rand" class="btn-mini" title="Random border color">🎲</button>
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
@@ -1189,45 +1201,49 @@
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
                     <input type="checkbox" id="ti-border-rand" title="Random Border">
                 </label>
-                <div class="range-sub">
-                    <input type="range" id="ti-border-rmin" min="0" max="10" value="0" step="1" title="Min Border">
-                    <input type="range" id="ti-border-rmax" min="0" max="10" value="10" step="1" title="Max Border">
-                </div>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Glow</div>
-                <input type="range" id="ti-glow" class="textin-range" min="0" max="50" value="12">
+                <div class="slider-col">
+                    <input type="range" id="ti-glow" class="textin-range main-range" min="0" max="50" value="12">
+                    <div class="range-sub">
+                        <input type="range" id="ti-glow-rmin" class="textin-range sub-range" min="0" max="50" value="0" step="1" title="Min Glow">
+                        <input type="range" id="ti-glow-rmax" class="textin-range sub-range" min="0" max="50" value="50" step="1" title="Max Glow">
+                    </div>
+                </div>
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
                     <input type="checkbox" id="ti-glow-rand" title="Random Glow">
                 </label>
-                <div class="range-sub">
-                    <input type="range" id="ti-glow-rmin" min="0" max="50" value="0" step="1" title="Min Glow">
-                    <input type="range" id="ti-glow-rmax" min="0" max="50" value="50" step="1" title="Max Glow">
-                </div>
+                <input type="color" id="ti-glow-color" class="textin-color" value="#00ffff" title="Glow Color">
+                <button id="ti-glow-color-rand" class="btn-mini" title="Random glow color">🎲</button>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Flashing</div>
                 <input type="checkbox" id="ti-flash">
                 <div class="textin-label">Flash Speed</div>
-                <input type="range" id="ti-flash-speed" class="textin-range" min="0" max="5" value="1" step="0.1">
+                <div class="slider-col">
+                    <input type="range" id="ti-flash-speed" class="textin-range main-range" min="0" max="5" value="1" step="0.1">
+                    <div class="range-sub">
+                        <input type="range" id="ti-flashspeed-rmin" class="textin-range sub-range" min="0" max="5" value="0" step="0.1" title="Min Flash Speed">
+                        <input type="range" id="ti-flashspeed-rmax" class="textin-range sub-range" min="0" max="5" value="5" step="0.1" title="Max Flash Speed">
+                    </div>
+                </div>
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
                     <input type="checkbox" id="ti-flashspeed-rand" title="Random Flash Speed">
                 </label>
-                <div class="range-sub">
-                    <input type="range" id="ti-flashspeed-rmin" min="0" max="5" value="0" step="0.1" title="Min Flash Speed">
-                    <input type="range" id="ti-flashspeed-rmax" min="0" max="5" value="5" step="0.1" title="Max Flash Speed">
-                </div>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Rise Speed</div>
-                <input type="range" id="ti-speed" class="textin-range" min="25" max="1200" value="25">
+                <div class="slider-col">
+                    <input type="range" id="ti-speed" class="textin-range main-range" min="25" max="1200" value="25">
+                    <div class="range-sub">
+                        <input type="range" id="ti-speed-rmin" class="textin-range sub-range" min="25" max="1200" value="25" step="1" title="Min Rise Speed">
+                        <input type="range" id="ti-speed-rmax" class="textin-range sub-range" min="25" max="1200" value="1200" step="1" title="Max Rise Speed">
+                    </div>
+                </div>
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
                     <input type="checkbox" id="ti-speed-rand" title="Random Speed">
                 </label>
-                <div class="range-sub">
-                    <input type="range" id="ti-speed-rmin" min="25" max="1200" value="25" step="1" title="Min Rise Speed">
-                    <input type="range" id="ti-speed-rmax" min="25" max="1200" value="1200" step="1" title="Max Rise Speed">
-                </div>
             </div>
             <div id="textin-preview-wrap">
                 <div id="textin-preview">Preview</div>
@@ -1423,6 +1439,8 @@
         const tiBorderRMin = document.getElementById('ti-border-rmin');
         const tiBorderRMax = document.getElementById('ti-border-rmax');
         const tiGlowRand = document.getElementById('ti-glow-rand');
+        const tiGlowColor = document.getElementById('ti-glow-color');
+        const tiGlowColorRandBtn = document.getElementById('ti-glow-color-rand');
         const tiGlowRMin = document.getElementById('ti-glow-rmin');
         const tiGlowRMax = document.getElementById('ti-glow-rmax');
         const tiFlashSpeedRand = document.getElementById('ti-flashspeed-rand');
@@ -5605,7 +5623,8 @@ function stopAllAndShowStart() {
             el.style.fontSize = cfg.size + 'px';
             el.style.webkitTextStroke = (cfg.border > 0 ? (cfg.border + 'px ' + cfg.borderColor) : '0px transparent');
             const glowPx = Math.max(0, cfg.glow|0);
-            const glow = glowPx > 0 ? `0 0 ${glowPx}px ${cfg.color}` : '';
+            const glowColor = cfg.glowColor && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(cfg.glowColor) ? cfg.glowColor : cfg.color;
+            const glow = glowPx > 0 ? `0 0 ${glowPx}px ${glowColor}` : '';
             const strokeShadow = (cfg.border > 0) ? `0 0 ${Math.max(1,cfg.border)}px ${cfg.borderColor}` : '';
             el.style.textShadow = [glow, strokeShadow].filter(Boolean).join(', ');
             el.style.filter = '';
@@ -5634,6 +5653,7 @@ function stopAllAndShowStart() {
                 glowMin: Math.max(0, Number(tiGlowRMin?.value) || Number(tiGlow?.min) || 0),
                 glowMax: Math.max(0, Number(tiGlowRMax?.value) || Number(tiGlow?.max) || 50),
                 glowRandom: !!(tiGlowRand?.checked),
+                glowColor: tiGlowColor?.value || '',
                 fontRandom: !!(tiFontRand?.checked),
                 flash: !!(tiFlash?.checked),
                 flashSpeed: Math.max(0, Math.min(5, Number(tiFlashSpeed?.value)||1)),
@@ -5665,6 +5685,18 @@ function stopAllAndShowStart() {
                 const tiSpeed = document.getElementById('ti-speed');
                 if (tiSpeed && tiSpeedRand) tiSpeed.disabled = !!tiSpeedRand.checked;
                 if (tiFlashSpeed && tiFlashSpeedRand) tiFlashSpeed.disabled = !!tiFlashSpeedRand.checked;
+                // Toggle sub-range visibility based on Random checkboxes
+                const toggleSub = (rmin, rmax, on) => {
+                    if (!rmin || !rmax) return;
+                    const container = rmin.closest('.range-sub');
+                    if (container) container.style.display = on ? 'block' : 'none';
+                };
+                toggleSub(tiSizeRMin, tiSizeRMax, !!(tiSizeRand && tiSizeRand.checked));
+                toggleSub(tiXRMin, tiXRMax, !!(tiXRand && tiXRand.checked));
+                toggleSub(tiBorderRMin, tiBorderRMax, !!(tiBorderRand && tiBorderRand.checked));
+                toggleSub(tiGlowRMin, tiGlowRMax, !!(tiGlowRand && tiGlowRand.checked));
+                toggleSub(tiFlashSpeedRMin, tiFlashSpeedRMax, !!(tiFlashSpeedRand && tiFlashSpeedRand.checked));
+                toggleSub(tiSpeedRMin, tiSpeedRMax, !!(tiSpeedRand && tiSpeedRand.checked));
             }
         }
         // lock/unlock shortcuts when focusing inside Text-In
@@ -5687,6 +5719,8 @@ function stopAllAndShowStart() {
         if (tiX) tiX.addEventListener('input', () => { if (tiXRand && tiXRand.checked) { tiXRand.checked = false; updateTextInPreview(); } });
         if (tiBorder) tiBorder.addEventListener('input', () => { if (tiBorderRand && tiBorderRand.checked) { tiBorderRand.checked = false; updateTextInPreview(); } });
         if (tiGlow) tiGlow.addEventListener('input', () => { if (tiGlowRand && tiGlowRand.checked) { tiGlowRand.checked = false; updateTextInPreview(); } });
+        if (tiGlowColorRandBtn) tiGlowColorRandBtn.addEventListener('click', (e) => { e.preventDefault(); if (tiGlowColor) { tiGlowColor.value = randomHexColor(); updateTextInPreview(); } });
+        if (tiGlowColor) tiGlowColor.addEventListener('input', updateTextInPreview);
         if (tiBorderColor) tiBorderColor.addEventListener('input', () => { if (tiBorderColorRandCheck && tiBorderColorRandCheck.checked) { tiBorderColorRandCheck.checked = false; updateTextInPreview(); } });
         if (tiFlashSpeed) tiFlashSpeed.addEventListener('input', () => { if (tiFlashSpeedRand && tiFlashSpeedRand.checked) { tiFlashSpeedRand.checked = false; updateTextInPreview(); } });
         if (tiFont) tiFont.addEventListener('input', () => { if (tiFontRand && tiFontRand.checked) { tiFontRand.checked = false; updateTextInPreview(); } });
