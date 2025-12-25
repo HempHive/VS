@@ -1338,11 +1338,11 @@
         audioElSample.src = 'wav.mp3';
         let sampleLoop = false;
         // Ensure media elements don't double-play outside the WebAudio graph
-        // Keep media elements muted to avoid parallel DOM audio; WebAudio path carries sound
-        try { audioEl.muted = true; } catch(_) {}
-        try { audioElB.muted = true; } catch(_) {}
-        try { audioElSample.muted = true; } catch(_) {}
-        // Element volume at 1 so MediaElementSourceNode receives full-strength signal
+        // Allow media elements to produce audio for WebAudio; audio routing is controlled by the graph
+        try { audioEl.muted = false; } catch(_) {}
+        try { audioElB.muted = false; } catch(_) {}
+        try { audioElSample.muted = false; } catch(_) {}
+        // Element volume at 1 so MediaElementSourceNode receives full-strength signal (no parallel DOM audio path occurs)
         try { audioEl.volume = 1; } catch(_) {}
         try { audioElB.volume = 1; } catch(_) {}
         try { audioElSample.volume = 1; } catch(_) {}
@@ -5146,6 +5146,7 @@ function stopAllAndShowStart() {
                 state.sourceNodeB.connect(state.streamBGain);
                 rebuildEffectsChain();
                 updateMixBStatus();
+                try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
             }).catch(()=>{});
         }
         function stopRadioB() {
