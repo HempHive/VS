@@ -485,6 +485,17 @@
             box-shadow: 0 0 12px rgba(212,175,55,0.25) inset;
             background: rgba(212,175,55,0.12);
         }
+        .status-row { display:flex; align-items:center; gap:8px; font-size:12px; color:#bbb; }
+        .status-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            box-shadow: 0 0 0 0 rgba(0,0,0,0);
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .status-dot.on {
+            background: #22cc66;
+            box-shadow: 0 0 10px rgba(34,204,102,0.8);
+        }
         .vertical-range {
             writing-mode: bt-lr; /* IE/Edge */
             -webkit-appearance: slider-vertical; /* WebKit */
@@ -1151,6 +1162,10 @@
                         <button class="btn" id="mix-b-play">Play B</button>
                         <button class="btn" id="mix-b-stop">Stop B</button>
                     </div>
+                    <div class="status-row" style="margin-top:6px">
+                        <div id="mix-b-status-dot" class="status-dot"></div>
+                        <div id="mix-b-status-text">B: Stopped</div>
+                    </div>
                 </div>
             </div>
             <div id="mix-cross-row" style="display:grid; grid-template-columns: 1fr; gap:6px; margin-top:6px">
@@ -1322,6 +1337,17 @@
         audioElSample.preload = 'auto';
         audioElSample.src = 'wav.mp3';
         let sampleLoop = false;
+        // Ensure media elements don't double-play outside the WebAudio graph
+        try { audioEl.muted = true; } catch(_) {}
+        try { audioElB.muted = true; } catch(_) {}
+        try { audioElSample.muted = true; } catch(_) {}
+        const mixBStatusDot = document.getElementById('mix-b-status-dot');
+        const mixBStatusText = document.getElementById('mix-b-status-text');
+        function updateMixBStatus() {
+            const playing = !!(audioElB && !audioElB.paused && !audioElB.ended);
+            if (mixBStatusDot) mixBStatusDot.classList.toggle('on', playing);
+            if (mixBStatusText) mixBStatusText.textContent = playing ? 'B: Playing' : 'B: Stopped';
+        }
         const inpShuffleMin = document.getElementById('inp-shuffle-min');
         const inpShuffleMax = document.getElementById('inp-shuffle-max');
         const inpTransition = document.getElementById('inp-transition');
@@ -5025,8 +5051,14 @@ function stopAllAndShowStart() {
         // Crossfader handler (equal-power)
         function applyCrossfade(val) {
             const x = Math.max(0, Math.min(1, Number(val)||0));
-            const ga = Math.cos(x * Math.PI * 0.5);
-            const gb = Math.sin(x * Math.PI * 0.5);
+            let ga, gb;
+            if (x <= 0) { ga = 1; gb = 0; }
+            else if (x >= 1) { ga = 0; gb = 1; }
+            else {
+                // equal-power law in between
+                ga = Math.cos(x * Math.PI * 0.5);
+                gb = Math.sin(x * Math.PI * 0.5);
+            }
             if (state && state.streamAGain && state.streamBGain) {
                 state.streamAGain.gain.value = ga;
                 state.streamBGain.gain.value = gb;
@@ -5110,15 +5142,23 @@ function stopAllAndShowStart() {
                 try { state.sourceNodeB.disconnect(); } catch(_) {}
                 state.sourceNodeB.connect(state.streamBGain);
                 rebuildEffectsChain();
+                updateMixBStatus();
             }).catch(()=>{});
         }
         function stopRadioB() {
             try { audioElB.pause(); } catch(_) {}
             try { audioElB.removeAttribute('src'); audioElB.load(); } catch(_) {}
             try { if (state.sourceNodeB) state.sourceNodeB.disconnect(); } catch(_) {}
+            updateMixBStatus();
         }
         if (mixPlayB) mixPlayB.addEventListener('click', playRadioB);
         if (mixStopB) mixStopB.addEventListener('click', stopRadioB);
+        // Monitor B status
+        try {
+            ['play','pause','ended','stalled','error','suspend','abort'].forEach(ev => {
+                audioElB.addEventListener(ev, updateMixBStatus);
+            });
+        } catch(_) {}
         webmPrevBtn.addEventListener('click', () => { prevWebm(); resetIdleTimer(); });
         webmNextBtn.addEventListener('click', () => { nextWebm(); resetIdleTimer(); });
         // Remove legacy binding that opened the top menu; Mix Settings supersedes it.
