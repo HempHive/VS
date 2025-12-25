@@ -5046,9 +5046,6 @@ function stopAllAndShowStart() {
                 try { tiPreview.style.setProperty('font-family', cfg.font, 'important'); } catch(_) {}
                 // Reflect selected font in the input so the user types in the chosen style
                 try { if (tiText) tiText.style.setProperty('font-family', cfg.font, 'important'); } catch(_) {}
-                // Disable sliders when random toggles are on
-                if (tiSize && tiSizeRand) tiSize.disabled = !!tiSizeRand.checked;
-                if (tiX && tiXRand) tiX.disabled = !!tiXRand.checked;
             }
         }
         // lock/unlock shortcuts when focusing inside Text-In
@@ -5073,6 +5070,7 @@ function stopAllAndShowStart() {
             el.className = 'rising-text';
             el.textContent = cfg.text;
             applyTextStyles(el, cfg);
+            try { el.style.setProperty('font-family', cfg.font, 'important'); } catch(_) {}
             // compute horizontal origin
             let xPct = Number(cfg.xPercent || 50);
             if (cfg.xRandom) {
@@ -5125,6 +5123,9 @@ function stopAllAndShowStart() {
             if (el) el.addEventListener('input', updateTextInPreview);
         });
         if (tiFont) tiFont.addEventListener('change', updateTextInPreview);
+        // If user touches size/x sliders, turn off random check automatically
+        if (tiSize) tiSize.addEventListener('input', () => { if (tiSizeRand && tiSizeRand.checked) { tiSizeRand.checked = false; updateTextInPreview(); } });
+        if (tiX) tiX.addEventListener('input', () => { if (tiXRand && tiXRand.checked) { tiXRand.checked = false; updateTextInPreview(); } });
         if (tiSend) tiSend.addEventListener('click', () => { const cfg = getTextConfigFromUi(); spawnRisingText(cfg); });
         if (tiClose) tiClose.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); hideTextInPanel(); });
         updateTextInPreview();
