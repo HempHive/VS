@@ -432,6 +432,12 @@
             border-radius: 6px;
         }
         .textin-btn:hover { background: #fff; color: #000; }
+        .range-sub { position: relative; height: 22px; margin-top: 4px; }
+        .range-sub input[type="range"] {
+            position: absolute; left: 0; right: 0; width: 100%;
+            background: transparent;
+            height: 16px;
+        }
         .btn-mini {
             padding: 4px 8px; border: 1px solid rgba(255,255,255,0.3);
             background: rgba(255,255,255,0.06); color: #fff; border-radius: 6px;
@@ -1156,8 +1162,10 @@
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
                     <input type="checkbox" id="ti-size-rand" checked title="Random Size">
                 </label>
-                <input type="number" id="ti-size-min" class="textin-input" style="width:70px" placeholder="Min" title="Min Size">
-                <input type="number" id="ti-size-max" class="textin-input" style="width:70px" placeholder="Max" title="Max Size">
+                <div class="range-sub">
+                    <input type="range" id="ti-size-rmin" min="16" max="200" value="16" step="1" title="Min Size">
+                    <input type="range" id="ti-size-rmax" min="16" max="200" value="200" step="1" title="Max Size">
+                </div>
             </div>
             <div class="textin-row">
                 <div class="textin-label">X Position</div>
@@ -1165,8 +1173,10 @@
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
                     <input type="checkbox" id="ti-x-rand" checked title="Random X">
                 </label>
-                <input type="number" id="ti-x-min" class="textin-input" style="width:70px" placeholder="Min" title="Min X (%)">
-                <input type="number" id="ti-x-max" class="textin-input" style="width:70px" placeholder="Max" title="Max X (%)">
+                <div class="range-sub">
+                    <input type="range" id="ti-x-rmin" min="0" max="100" value="0" step="1" title="Min X (%)">
+                    <input type="range" id="ti-x-rmax" min="0" max="100" value="100" step="1" title="Max X (%)">
+                </div>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Border</div>
@@ -1179,8 +1189,10 @@
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
                     <input type="checkbox" id="ti-border-rand" title="Random Border">
                 </label>
-                <input type="number" id="ti-border-min" class="textin-input" style="width:70px" placeholder="Min" title="Min Border">
-                <input type="number" id="ti-border-max" class="textin-input" style="width:70px" placeholder="Max" title="Max Border">
+                <div class="range-sub">
+                    <input type="range" id="ti-border-rmin" min="0" max="10" value="0" step="1" title="Min Border">
+                    <input type="range" id="ti-border-rmax" min="0" max="10" value="10" step="1" title="Max Border">
+                </div>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Glow</div>
@@ -1188,8 +1200,10 @@
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
                     <input type="checkbox" id="ti-glow-rand" title="Random Glow">
                 </label>
-                <input type="number" id="ti-glow-min" class="textin-input" style="width:70px" placeholder="Min" title="Min Glow">
-                <input type="number" id="ti-glow-max" class="textin-input" style="width:70px" placeholder="Max" title="Max Glow">
+                <div class="range-sub">
+                    <input type="range" id="ti-glow-rmin" min="0" max="50" value="0" step="1" title="Min Glow">
+                    <input type="range" id="ti-glow-rmax" min="0" max="50" value="50" step="1" title="Max Glow">
+                </div>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Flashing</div>
@@ -1199,8 +1213,10 @@
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
                     <input type="checkbox" id="ti-flashspeed-rand" title="Random Flash Speed">
                 </label>
-                <input type="number" id="ti-flashspeed-min" class="textin-input" style="width:70px" placeholder="Min" title="Min Flash Speed" step="0.1">
-                <input type="number" id="ti-flashspeed-max" class="textin-input" style="width:70px" placeholder="Max" title="Max Flash Speed" step="0.1">
+                <div class="range-sub">
+                    <input type="range" id="ti-flashspeed-rmin" min="0" max="5" value="0" step="0.1" title="Min Flash Speed">
+                    <input type="range" id="ti-flashspeed-rmax" min="0" max="5" value="5" step="0.1" title="Max Flash Speed">
+                </div>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Rise Speed</div>
@@ -1208,8 +1224,10 @@
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
                     <input type="checkbox" id="ti-speed-rand" title="Random Speed">
                 </label>
-                <input type="number" id="ti-speed-min" class="textin-input" style="width:70px" placeholder="Min" title="Min Rise Speed">
-                <input type="number" id="ti-speed-max" class="textin-input" style="width:70px" placeholder="Max" title="Max Rise Speed">
+                <div class="range-sub">
+                    <input type="range" id="ti-speed-rmin" min="25" max="1200" value="25" step="1" title="Min Rise Speed">
+                    <input type="range" id="ti-speed-rmax" min="25" max="1200" value="1200" step="1" title="Max Rise Speed">
+                </div>
             </div>
             <div id="textin-preview-wrap">
                 <div id="textin-preview">Preview</div>
@@ -1391,28 +1409,28 @@
         const tiColorRandCheck = document.getElementById('ti-color-rand-check');
         const tiSize = document.getElementById('ti-size');
         const tiSizeRand = document.getElementById('ti-size-rand');
-        const tiSizeMin = document.getElementById('ti-size-min');
-        const tiSizeMax = document.getElementById('ti-size-max');
+        const tiSizeRMin = document.getElementById('ti-size-rmin');
+        const tiSizeRMax = document.getElementById('ti-size-rmax');
         const tiX = document.getElementById('ti-x');
         const tiXRand = document.getElementById('ti-x-rand');
-        const tiXMin = document.getElementById('ti-x-min');
-        const tiXMax = document.getElementById('ti-x-max');
+        const tiXRMin = document.getElementById('ti-x-rmin');
+        const tiXRMax = document.getElementById('ti-x-rmax');
         const tiBorder = document.getElementById('ti-border');
         const tiBorderColor = document.getElementById('ti-border-color');
         const tiBorderColorRandBtn = document.getElementById('ti-border-color-rand');
         const tiBorderColorRandCheck = document.getElementById('ti-border-color-rand-check');
         const tiBorderRand = document.getElementById('ti-border-rand');
-        const tiBorderMin = document.getElementById('ti-border-min');
-        const tiBorderMax = document.getElementById('ti-border-max');
+        const tiBorderRMin = document.getElementById('ti-border-rmin');
+        const tiBorderRMax = document.getElementById('ti-border-rmax');
         const tiGlowRand = document.getElementById('ti-glow-rand');
-        const tiGlowMin = document.getElementById('ti-glow-min');
-        const tiGlowMax = document.getElementById('ti-glow-max');
+        const tiGlowRMin = document.getElementById('ti-glow-rmin');
+        const tiGlowRMax = document.getElementById('ti-glow-rmax');
         const tiFlashSpeedRand = document.getElementById('ti-flashspeed-rand');
-        const tiFlashSpeedMin = document.getElementById('ti-flashspeed-min');
-        const tiFlashSpeedMax = document.getElementById('ti-flashspeed-max');
+        const tiFlashSpeedRMin = document.getElementById('ti-flashspeed-rmin');
+        const tiFlashSpeedRMax = document.getElementById('ti-flashspeed-rmax');
         const tiSpeedRand = document.getElementById('ti-speed-rand');
-        const tiSpeedMin = document.getElementById('ti-speed-min');
-        const tiSpeedMax = document.getElementById('ti-speed-max');
+        const tiSpeedRMin = document.getElementById('ti-speed-rmin');
+        const tiSpeedRMax = document.getElementById('ti-speed-rmax');
         const tiGlow = document.getElementById('ti-glow');
         const tiFlash = document.getElementById('ti-flash');
         const tiFlashSpeed = document.getElementById('ti-flash-speed');
@@ -5599,32 +5617,32 @@ function stopAllAndShowStart() {
                 color: tiColor?.value || '#ffffff',
                 colorRandom: !!(tiColorRandCheck?.checked),
                 size: Math.max(16, Math.min(200, Number(tiSize?.value)||64)),
-                sizeMin: Math.max(0, Number(tiSizeMin?.value) || Number(tiSize?.min) || 16),
-                sizeMax: Math.max(0, Number(tiSizeMax?.value) || Number(tiSize?.max) || 200),
+                sizeMin: Math.max(0, Number(tiSizeRMin?.value) || Number(tiSize?.min) || 16),
+                sizeMax: Math.max(0, Number(tiSizeRMax?.value) || Number(tiSize?.max) || 200),
                 sizeRandom: !!(tiSizeRand?.checked),
                 xPercent: Math.max(0, Math.min(100, Number(tiX?.value)||50)),
-                xMin: Math.max(0, Number(tiXMin?.value) || Number(tiX?.min) || 0),
-                xMax: Math.max(0, Number(tiXMax?.value) || Number(tiX?.max) || 100),
+                xMin: Math.max(0, Number(tiXRMin?.value) || Number(tiX?.min) || 0),
+                xMax: Math.max(0, Number(tiXRMax?.value) || Number(tiX?.max) || 100),
                 xRandom: !!(tiXRand?.checked),
                 border: Math.max(0, Math.min(10, Number(tiBorder?.value)||0)),
-                borderMin: Math.max(0, Number(tiBorderMin?.value) || Number(tiBorder?.min) || 0),
-                borderMax: Math.max(0, Number(tiBorderMax?.value) || Number(tiBorder?.max) || 10),
+                borderMin: Math.max(0, Number(tiBorderRMin?.value) || Number(tiBorder?.min) || 0),
+                borderMax: Math.max(0, Number(tiBorderRMax?.value) || Number(tiBorder?.max) || 10),
                 borderRandom: !!(tiBorderRand?.checked),
                 borderColor: tiBorderColor?.value || '#000000',
                 borderColorRandom: !!(tiBorderColorRandCheck?.checked),
                 glow: Math.max(0, Math.min(50, Number(tiGlow?.value)||0)),
-                glowMin: Math.max(0, Number(tiGlowMin?.value) || Number(tiGlow?.min) || 0),
-                glowMax: Math.max(0, Number(tiGlowMax?.value) || Number(tiGlow?.max) || 50),
+                glowMin: Math.max(0, Number(tiGlowRMin?.value) || Number(tiGlow?.min) || 0),
+                glowMax: Math.max(0, Number(tiGlowRMax?.value) || Number(tiGlow?.max) || 50),
                 glowRandom: !!(tiGlowRand?.checked),
                 fontRandom: !!(tiFontRand?.checked),
                 flash: !!(tiFlash?.checked),
                 flashSpeed: Math.max(0, Math.min(5, Number(tiFlashSpeed?.value)||1)),
-                flashSpeedMin: Math.max(0, Number(tiFlashSpeedMin?.value) || Number(tiFlashSpeed?.min) || 0),
-                flashSpeedMax: Math.max(0, Number(tiFlashSpeedMax?.value) || Number(tiFlashSpeed?.max) || 5),
+                flashSpeedMin: Math.max(0, Number(tiFlashSpeedRMin?.value) || Number(tiFlashSpeed?.min) || 0),
+                flashSpeedMax: Math.max(0, Number(tiFlashSpeedRMax?.value) || Number(tiFlashSpeed?.max) || 5),
                 flashSpeedRandom: !!(tiFlashSpeedRand?.checked),
                 speed: Math.max(25, Math.min(1200, Number(tiSpeed?.value)||25)),
-                speedMin: Math.max(0, Number(tiSpeedMin?.value) || Number(tiSpeed?.min) || 25),
-                speedMax: Math.max(0, Number(tiSpeedMax?.value) || Number(tiSpeed?.max) || 1200),
+                speedMin: Math.max(0, Number(tiSpeedRMin?.value) || Number(tiSpeed?.min) || 25),
+                speedMax: Math.max(0, Number(tiSpeedRMax?.value) || Number(tiSpeed?.max) || 1200),
                 speedRandom: !!(tiSpeedRand?.checked)
             };
         }
@@ -5674,34 +5692,29 @@ function stopAllAndShowStart() {
         if (tiFont) tiFont.addEventListener('input', () => { if (tiFontRand && tiFontRand.checked) { tiFontRand.checked = false; updateTextInPreview(); } });
         const tiSpeedEl = document.getElementById('ti-speed');
         if (tiSpeedEl) tiSpeedEl.addEventListener('input', () => { if (tiSpeedRand && tiSpeedRand.checked) { tiSpeedRand.checked = false; updateTextInPreview(); } });
-        // Sync slider min/max to inputs (and clamp current value)
-        function bindMinMax(minEl, maxEl, sliderEl) {
-            if (!minEl || !maxEl || !sliderEl) return;
-            const apply = () => {
-                let minV = Number(minEl.value); let maxV = Number(maxEl.value);
-                if (isNaN(minV)) minV = Number(sliderEl.min) || 0;
-                if (isNaN(maxV)) maxV = Number(sliderEl.max) || 100;
-                if (maxV < minV) { const t = minV; minV = maxV; maxV = t; }
-                sliderEl.min = String(minV);
-                sliderEl.max = String(maxV);
-                let cur = Number(sliderEl.value);
-                if (cur < minV) cur = minV;
-                if (cur > maxV) cur = maxV;
-                sliderEl.value = String(cur);
+        // Dual-range helpers for random bounds
+        function bindDualRange(minEl, maxEl, overallMin, overallMax, step) {
+            if (!minEl || !maxEl) return;
+            const clamp = () => {
+                let a = Number(minEl.value), b = Number(maxEl.value);
+                if (isNaN(a)) a = overallMin; if (isNaN(b)) b = overallMax;
+                a = Math.max(overallMin, Math.min(overallMax, a));
+                b = Math.max(overallMin, Math.min(overallMax, b));
+                if (a > b) { const t = a; a = b; b = t; }
+                minEl.value = String(a);
+                maxEl.value = String(b);
                 updateTextInPreview();
             };
-            minEl.addEventListener('input', apply);
-            maxEl.addEventListener('input', apply);
-            // initialize values if blank
-            if (!minEl.value) minEl.value = sliderEl.min || '';
-            if (!maxEl.value) maxEl.value = sliderEl.max || '';
+            minEl.addEventListener('input', clamp);
+            maxEl.addEventListener('input', clamp);
+            clamp();
         }
-        bindMinMax(tiSizeMin, tiSizeMax, tiSize);
-        bindMinMax(tiXMin, tiXMax, tiX);
-        bindMinMax(tiBorderMin, tiBorderMax, tiBorder);
-        bindMinMax(tiGlowMin, tiGlowMax, tiGlow);
-        bindMinMax(tiFlashSpeedMin, tiFlashSpeedMax, tiFlashSpeed);
-        bindMinMax(tiSpeedMin, tiSpeedMax, document.getElementById('ti-speed'));
+        bindDualRange(tiSizeRMin, tiSizeRMax, 16, 200, 1);
+        bindDualRange(tiXRMin, tiXRMax, 0, 100, 1);
+        bindDualRange(tiBorderRMin, tiBorderRMax, 0, 10, 1);
+        bindDualRange(tiGlowRMin, tiGlowRMax, 0, 50, 1);
+        bindDualRange(tiFlashSpeedRMin, tiFlashSpeedRMax, 0, 5, 0.1);
+        bindDualRange(tiSpeedRMin, tiSpeedRMax, 25, 1200, 1);
         if (tiColor) tiColor.addEventListener('input', () => { if (tiColorRandCheck && tiColorRandCheck.checked) { tiColorRandCheck.checked = false; updateTextInPreview(); } });
         // Enter to send while in text field
         if (tiText) {
