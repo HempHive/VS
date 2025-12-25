@@ -1338,12 +1338,14 @@
         audioElSample.src = 'wav.mp3';
         let sampleLoop = false;
         // Ensure media elements don't double-play outside the WebAudio graph
-        try { audioEl.muted = false; } catch(_) {}
-        try { audioElB.muted = false; } catch(_) {}
-        try { audioElSample.muted = false; } catch(_) {}
-        try { audioEl.volume = 0; } catch(_) {}
-        try { audioElB.volume = 0; } catch(_) {}
-        try { audioElSample.volume = 0; } catch(_) {}
+        // Keep media elements muted to avoid parallel DOM audio; WebAudio path carries sound
+        try { audioEl.muted = true; } catch(_) {}
+        try { audioElB.muted = true; } catch(_) {}
+        try { audioElSample.muted = true; } catch(_) {}
+        // Element volume at 1 so MediaElementSourceNode receives full-strength signal
+        try { audioEl.volume = 1; } catch(_) {}
+        try { audioElB.volume = 1; } catch(_) {}
+        try { audioElSample.volume = 1; } catch(_) {}
         const mixBStatusDot = document.getElementById('mix-b-status-dot');
         const mixBStatusText = document.getElementById('mix-b-status-text');
         function updateMixBStatus() {
@@ -2452,6 +2454,7 @@
                 try { state.sourceNode.disconnect(); } catch(_) {}
                 state.sourceNode.connect(state.streamAGain);
                 rebuildEffectsChain();
+                try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
                 // Ensure active visualizer (e.g., ProjectM) is connected to the current analyser
                 try {
                     if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
