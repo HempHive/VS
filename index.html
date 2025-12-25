@@ -457,7 +457,7 @@
         /* Mix Settings Panel (right) */
         #mix-panel {
             position: absolute; top: 0; right: 0;
-            width: 28vw; min-width: 340px; max-width: 540px; height: 100vh; overflow: hidden;
+            width: 50vw; max-width: 50vw; height: 100vh; overflow: hidden;
             z-index: 92;
             background: rgba(0,0,0,0.85);
             border: 1px solid rgba(255,255,255,0.2);
@@ -5046,11 +5046,7 @@ function stopAllAndShowStart() {
         if (mixStopB) mixStopB.addEventListener('click', stopRadioB);
         webmPrevBtn.addEventListener('click', () => { prevWebm(); resetIdleTimer(); });
         webmNextBtn.addEventListener('click', () => { nextWebm(); resetIdleTimer(); });
-        settingsBtn.addEventListener('click', (e) => {
-            e.preventDefault(); e.stopPropagation();
-            try { toggleTopMenuPanel(); } catch(e) {}
-            resetIdleTimer();
-        });
+        // Remove legacy binding that opened the top menu; Mix Settings supersedes it.
 		// Horizontal scroll wheel changes visual left/right (ignore when interacting with panels)
 		document.addEventListener('wheel', (e) => {
 			try {
