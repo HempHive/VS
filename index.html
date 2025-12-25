@@ -791,6 +791,7 @@
 		}
 		/* Unify slider style across panels to match volume theme (track color, thumb style) */
 		#top-menu-content input[type="range"],
+        #mix-content input[type="range"],
         #textin-content input[type="range"],
 		#bottom-avatar-content input[type="range"],
 		#settings-panel input[type="range"],
@@ -799,6 +800,7 @@
 			height: 16px; background: transparent; cursor: pointer;
 		}
         #top-menu-content input[type="range"]::-webkit-slider-runnable-track,
+        #mix-content input[type="range"]::-webkit-slider-runnable-track,
         #textin-content input[type="range"]::-webkit-slider-runnable-track,
 		#bottom-avatar-content input[type="range"]::-webkit-slider-runnable-track,
 		#settings-panel input[type="range"]::-webkit-slider-runnable-track,
@@ -806,6 +808,7 @@
 			height: 6px; background: rgba(255,255,255,0.24); border-radius: 6px;
 		}
         #top-menu-content input[type="range"]::-moz-range-track,
+        #mix-content input[type="range"]::-moz-range-track,
         #textin-content input[type="range"]::-moz-range-track,
 		#bottom-avatar-content input[type="range"]::-moz-range-track,
 		#settings-panel input[type="range"]::-moz-range-track,
@@ -813,6 +816,7 @@
 			height: 6px; background: rgba(255,255,255,0.24); border-radius: 6px;
 		}
         #top-menu-content input[type="range"]::-moz-range-progress,
+        #mix-content input[type="range"]::-moz-range-progress,
         #textin-content input[type="range"]::-moz-range-progress,
 		#bottom-avatar-content input[type="range"]::-moz-range-progress,
 		#settings-panel input[type="range"]::-moz-range-progress,
@@ -820,6 +824,7 @@
 			height: 6px; background: rgba(212,175,55,0.35); border-radius: 6px 0 0 6px;
 		}
         #top-menu-content input[type="range"]::-webkit-slider-thumb,
+        #mix-content input[type="range"]::-webkit-slider-thumb,
         #textin-content input[type="range"]::-webkit-slider-thumb,
 		#bottom-avatar-content input[type="range"]::-webkit-slider-thumb,
 		#settings-panel input[type="range"]::-webkit-slider-thumb,
@@ -832,6 +837,7 @@
 			box-shadow: 0 0 8px rgba(0,0,0,0.25);
 		}
         #top-menu-content input[type="range"]::-moz-range-thumb,
+        #mix-content input[type="range"]::-moz-range-thumb,
         #textin-content input[type="range"]::-moz-range-thumb,
 		#bottom-avatar-content input[type="range"]::-moz-range-thumb,
 		#settings-panel input[type="range"]::-moz-range-thumb,
@@ -1147,13 +1153,11 @@
                     </div>
                 </div>
             </div>
-            <div style="display:flex; justify-content:center; margin-top:6px; gap:12px">
-                <div style="display:flex; flex-direction:column; align-items:center; gap:6px">
-                    <div style="font-size:12px; color:#bbb">Crossfade</div>
-                    <input type="range" id="mix-crossfader" class="vertical-range" min="0" max="1" step="0.01" value="0.5">
-                    <div style="display:flex; width:100%; justify-content:space-between; font-size:11px; color:#888">
-                        <span>A</span><span>B</span>
-                    </div>
+            <div id="mix-cross-row" style="display:grid; grid-template-columns: 1fr; gap:6px; margin-top:6px">
+                <div style="font-size:12px; color:#bbb">Crossfade</div>
+                <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0.5" style="width:100%">
+                <div style="display:flex; width:100%; justify-content:space-between; font-size:11px; color:#888">
+                    <span>A</span><span>B</span>
                 </div>
             </div>
         </div>
