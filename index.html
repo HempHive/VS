@@ -436,6 +436,7 @@
             border-radius: 8px; padding: 14px; min-height: 80px;
             display:flex; align-items:center; justify-content:center;
             background: rgba(0,0,0,0.3);
+            margin-bottom: 12px;
         }
         #textin-preview {
             pointer-events: none; user-select: none;
@@ -1020,6 +1021,16 @@
                 <input type="color" id="ti-color" class="textin-color" value="#ffffff">
                 <div class="textin-label">Size</div>
                 <input type="range" id="ti-size" class="textin-range" min="16" max="200" value="64">
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
+                    <input type="checkbox" id="ti-size-rand"> Random
+                </label>
+            </div>
+            <div class="textin-row">
+                <div class="textin-label">X Position</div>
+                <input type="range" id="ti-x" class="textin-range" min="0" max="100" value="50">
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
+                    <input type="checkbox" id="ti-x-rand" checked> Random
+                </label>
             </div>
             <div class="textin-row">
                 <div class="textin-label">Border</div>
@@ -1168,6 +1179,9 @@
         const tiFont = document.getElementById('ti-font');
         const tiColor = document.getElementById('ti-color');
         const tiSize = document.getElementById('ti-size');
+        const tiSizeRand = document.getElementById('ti-size-rand');
+        const tiX = document.getElementById('ti-x');
+        const tiXRand = document.getElementById('ti-x-rand');
         const tiBorder = document.getElementById('ti-border');
         const tiBorderColor = document.getElementById('ti-border-color');
         const tiGlow = document.getElementById('ti-glow');
@@ -4992,6 +5006,9 @@ function stopAllAndShowStart() {
                 font: tiFont?.value || "'Segoe UI', sans-serif",
                 color: tiColor?.value || '#ffffff',
                 size: Math.max(16, Math.min(200, Number(tiSize?.value)||64)),
+                sizeRandom: !!(tiSizeRand?.checked),
+                xPercent: Math.max(0, Math.min(100, Number(tiX?.value)||50)),
+                xRandom: !!(tiXRand?.checked),
                 border: Math.max(0, Math.min(10, Number(tiBorder?.value)||0)),
                 borderColor: tiBorderColor?.value || '#000000',
                 glow: Math.max(0, Math.min(50, Number(tiGlow?.value)||0)),
@@ -5005,6 +5022,11 @@ function stopAllAndShowStart() {
             if (tiPreview) {
                 tiPreview.textContent = cfg.text;
                 applyTextStyles(tiPreview, cfg);
+                // Reflect selected font in the input so the user types in the chosen style
+                try { if (tiText) tiText.style.fontFamily = cfg.font; } catch(_) {}
+                // Disable sliders when random toggles are on
+                if (tiSize && tiSizeRand) tiSize.disabled = !!tiSizeRand.checked;
+                if (tiX && tiXRand) tiX.disabled = !!tiXRand.checked;
             }
         }
         // lock/unlock shortcuts when focusing inside Text-In
@@ -5029,8 +5051,21 @@ function stopAllAndShowStart() {
             el.className = 'rising-text';
             el.textContent = cfg.text;
             applyTextStyles(el, cfg);
+            // compute horizontal origin
+            let xPct = Number(cfg.xPercent || 50);
+            if (cfg.xRandom) {
+                xPct = Math.random() * 100;
+            }
+            // compute size
+            if (cfg.sizeRandom) {
+                const min = Math.max(16, Number(tiSize?.min) || 16);
+                const max = Math.max(min, Number(tiSize?.max) || 200);
+                cfg.size = Math.floor(min + Math.random() * (max - min + 1));
+                try { el.style.fontSize = cfg.size + 'px'; } catch(_) {}
+            }
             const startY = window.innerHeight + 20;
             el.style.top = startY + 'px';
+            el.style.left = xPct + 'vw';
             layer.appendChild(el);
             const item = { el, cfg, y: startY, start: performance.now(), last: performance.now() };
             activeTextOverlays.push(item);
@@ -5064,9 +5099,10 @@ function stopAllAndShowStart() {
             else { cancelAnimationFrame(textOverlayAnimId); textOverlayAnimId = null; }
         }
         // bind preview updates
-        [tiText, tiFont, tiColor, tiSize, tiBorder, tiBorderColor, tiGlow, tiFlash, tiFlashSpeed, tiSpeed].forEach(el => {
+        [tiText, tiFont, tiColor, tiSize, tiSizeRand, tiX, tiXRand, tiBorder, tiBorderColor, tiGlow, tiFlash, tiFlashSpeed, tiSpeed].forEach(el => {
             if (el) el.addEventListener('input', updateTextInPreview);
         });
+        if (tiFont) tiFont.addEventListener('change', updateTextInPreview);
         if (tiSend) tiSend.addEventListener('click', () => { const cfg = getTextConfigFromUi(); spawnRisingText(cfg); });
         if (tiClose) tiClose.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); hideTextInPanel(); });
         updateTextInPreview();
