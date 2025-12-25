@@ -1341,6 +1341,9 @@
         try { audioEl.muted = true; } catch(_) {}
         try { audioElB.muted = true; } catch(_) {}
         try { audioElSample.muted = true; } catch(_) {}
+        try { audioEl.volume = 0; } catch(_) {}
+        try { audioElB.volume = 0; } catch(_) {}
+        try { audioElSample.volume = 0; } catch(_) {}
         const mixBStatusDot = document.getElementById('mix-b-status-dot');
         const mixBStatusText = document.getElementById('mix-b-status-text');
         function updateMixBStatus() {
@@ -5053,14 +5056,9 @@ function stopAllAndShowStart() {
         // Crossfader handler (equal-power)
         function applyCrossfade(val) {
             const x = Math.max(0, Math.min(1, Number(val)||0));
-            let ga, gb;
-            if (x <= 0) { ga = 1; gb = 0; }
-            else if (x >= 1) { ga = 0; gb = 1; }
-            else {
-                // equal-power law in between
-                ga = Math.cos(x * Math.PI * 0.5);
-                gb = Math.sin(x * Math.PI * 0.5);
-            }
+            // Linear crossfade: exact 50/50 amplitude at midpoint
+            const ga = 1 - x;
+            const gb = x;
             if (state && state.streamAGain && state.streamBGain) {
                 state.streamAGain.gain.value = ga;
                 state.streamBGain.gain.value = gb;
