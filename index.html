@@ -1096,7 +1096,7 @@
         <div id="textin-content">
             <div class="textin-row">
                 <div class="textin-label">Text</div>
-                <input type="text" id="ti-text" class="textin-input" value="Lucky🍀Days" placeholder="Your message...">
+                <input type="text" id="ti-text" class="textin-input" value="Lucky🍀Radio" placeholder="Your message...">
             </div>
             <div class="textin-row">
                 <div class="textin-label">Font</div>
@@ -1192,6 +1192,9 @@
             <div class="textin-row">
                 <div class="textin-label">Rise Speed</div>
                 <input type="range" id="ti-speed" class="textin-range" min="25" max="1200" value="25">
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb; margin-left:8px">
+                    <input type="checkbox" id="ti-speed-rand" title="Random Speed">
+                </label>
             </div>
             <div id="textin-preview-wrap">
                 <div id="textin-preview">Preview</div>
@@ -1381,6 +1384,7 @@
         const tiBorderRand = document.getElementById('ti-border-rand');
         const tiGlowRand = document.getElementById('ti-glow-rand');
         const tiFlashRand = document.getElementById('ti-flash-rand');
+        const tiSpeedRand = document.getElementById('ti-speed-rand');
         const tiGlow = document.getElementById('ti-glow');
         const tiFlash = document.getElementById('ti-flash');
         const tiFlashSpeed = document.getElementById('ti-flash-speed');
@@ -5573,7 +5577,8 @@ function stopAllAndShowStart() {
                 flash: !!(tiFlash?.checked),
                 flashRandom: !!(tiFlashRand?.checked),
                 flashSpeed: Math.max(0, Math.min(5, Number(tiFlashSpeed?.value)||1)),
-                speed: Math.max(25, Math.min(1200, Number(tiSpeed?.value)||25))
+                speed: Math.max(25, Math.min(1200, Number(tiSpeed?.value)||25)),
+                speedRandom: !!(tiSpeedRand?.checked)
             };
         }
         function updateTextInPreview() {
@@ -5592,6 +5597,8 @@ function stopAllAndShowStart() {
                 if (tiFont && tiFontRand) tiFont.disabled = !!tiFontRand.checked;
                 if (tiFlash && tiFlashRand) tiFlash.disabled = !!tiFlashRand.checked;
                 if (tiColor && tiColorRandCheck) tiColor.disabled = !!tiColorRandCheck.checked;
+                const tiSpeed = document.getElementById('ti-speed');
+                if (tiSpeed && tiSpeedRand) tiSpeed.disabled = !!tiSpeedRand.checked;
             }
         }
         // lock/unlock shortcuts when focusing inside Text-In
@@ -5615,6 +5622,8 @@ function stopAllAndShowStart() {
         if (tiBorder) tiBorder.addEventListener('input', () => { if (tiBorderRand && tiBorderRand.checked) { tiBorderRand.checked = false; updateTextInPreview(); } });
         if (tiGlow) tiGlow.addEventListener('input', () => { if (tiGlowRand && tiGlowRand.checked) { tiGlowRand.checked = false; updateTextInPreview(); } });
         if (tiFont) tiFont.addEventListener('input', () => { if (tiFontRand && tiFontRand.checked) { tiFontRand.checked = false; updateTextInPreview(); } });
+        const tiSpeedEl = document.getElementById('ti-speed');
+        if (tiSpeedEl) tiSpeedEl.addEventListener('input', () => { if (tiSpeedRand && tiSpeedRand.checked) { tiSpeedRand.checked = false; updateTextInPreview(); } });
         if (tiColor) tiColor.addEventListener('input', () => { if (tiColorRandCheck && tiColorRandCheck.checked) { tiColorRandCheck.checked = false; updateTextInPreview(); } });
         // Enter to send while in text field
         if (tiText) {
@@ -5665,6 +5674,12 @@ function stopAllAndShowStart() {
                 }
                 if (cfg.flashRandom) {
                     cfg.flash = Math.random() < 0.5;
+                }
+                if (cfg.speedRandom) {
+                    const tiSpeedEl = document.getElementById('ti-speed');
+                    const minS = Number(tiSpeedEl?.min) || 25;
+                    const maxS = Number(tiSpeedEl?.max) || 1200;
+                    cfg.speed = Math.floor(minS + Math.random() * (maxS - minS + 1));
                 }
             } catch(_) {}
             const el = document.createElement('div');
@@ -5906,6 +5921,22 @@ function stopAllAndShowStart() {
                 // Toggle WebM Settings panel
                 e.preventDefault();
                 try { toggleWebmSettingsPanel(); } catch(_) {}
+            } else if (e.key === 'i' || e.key === 'I') {
+                // Send Text-In immediately
+                e.preventDefault();
+                try {
+                    const cfg = getTextConfigFromUi();
+                    spawnRisingText(cfg);
+                } catch(_) {}
+            } else if (e.code === 'Space' || e.key === ' ') {
+                // Play/pause current radio (A)
+                e.preventDefault();
+                try {
+                    if (audioEl) {
+                        if (audioEl.paused) audioEl.play().catch(()=>{});
+                        else audioEl.pause();
+                    }
+                } catch(_) {}
             } else if (e.key === 'w' || e.key === 'W') {
                 e.preventDefault();
                 if(!webmOn) {
