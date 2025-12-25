@@ -1526,9 +1526,9 @@
 				}
 				const top = Math.round(anchorBottom + gapBelow);
 				shortcuts.style.top = top + 'px';
-				// Ensure max of 3 lines visible
+				// Ensure up to 5 lines visible
 				const lineHeight = 1.35 * 12; // matches CSS font-size:12px; line-height:1.35
-				shortcuts.style.maxHeight = Math.round(lineHeight * 3) + 'px';
+				shortcuts.style.maxHeight = Math.round(lineHeight * 5) + 'px';
 			}
 		}
 		function setBottomTextRandomColor() {
@@ -1671,11 +1671,11 @@
 			l.style.opacity = '1'; sh.style.opacity = '1';
 			const defaultLine = 'Select a source to begin';
 			const shortcuts = [
-				'F Fullscreen  •  C Next Preset  •  ,/. Visual',
-				'R Random Station  •  T Previous Station',
+				'F Fullscreen  •  C Next Visual  •  ,/. Visual',
+				'V Random Station  •  B Previous Station  •  R Top Menu',
+				'T Text-In Panel  •  M Mix Settings  •  G WebM Settings',
 				'W Toggle Avatar  •  Q/E Avatar Speed  •  Arrows Move Avatar',
-				'+/− Size  •  Z/X Opacity  •  Esc Back',
-				'A/D Avatar Prev/Next (when open)'
+				'+/− Size  •  Z/X Opacity  •  Esc Back'
 			].join('\n');
 			let phase = 'visible';
 			const loop = () => {
@@ -2382,7 +2382,9 @@
 			if (border) border.classList.add('visible');
 			// Type the current status line on start screen, then shortcuts
 			const shortcuts = [
-				'F Fullscreen  •  C Next Visual  •  R Random Station',
+				'F Fullscreen  •  C Next Visual  •  ,/. Visual',
+				'V Random Station  •  B Previous Station  •  R Top Menu',
+				'T Text-In Panel  •  M Mix Settings  •  G WebM Settings',
 				'W Toggle Avatar  •  Q/E Avatar Speed  •  Arrows Move Avatar',
 				'+/− Size  •  Z/X Opacity  •  Esc Back'
 			].join('\n');
@@ -2427,7 +2429,9 @@
 				// Type initial status then shortcuts (if text present)
 				const s = document.getElementById('loading-status');
 				const shortcuts = [
-					'F Fullscreen  •  C Next Visual  •  R Random Station',
+					'F Fullscreen  •  C Next Visual  •  ,/. Visual',
+					'V Random Station  •  B Previous Station  •  R Top Menu',
+					'T Text-In Panel  •  M Mix Settings  •  G WebM Settings',
 					'W Toggle Avatar  •  Q/E Avatar Speed  •  Arrows Move Avatar',
 					'+/− Size  •  Z/X Opacity  •  Esc Back'
 				].join('\n');
@@ -5055,20 +5059,23 @@ function stopAllAndShowStart() {
             });
         }
         // Settings button now opens Mix Settings (right panel)
+        function toggleMixPanel() {
+            try {
+                if (mixPanel.classList.contains('display-none') || !mixPanel.classList.contains('open')) {
+                    try { refreshMixStationB(); } catch(_) {}
+                    mixPanel.classList.remove('display-none');
+                    requestAnimationFrame(() => { mixPanel.classList.add('open'); });
+                } else {
+                    mixPanel.classList.remove('open');
+                    setTimeout(() => { mixPanel.classList.add('display-none'); }, 350);
+                }
+            } catch(_) {}
+        }
         if (settingsBtn) {
             settingsBtn.title = "Mix Settings";
             settingsBtn.addEventListener('click', (e) => {
                 e.preventDefault(); e.stopPropagation();
-                try {
-                    if (mixPanel.classList.contains('display-none') || !mixPanel.classList.contains('open')) {
-                        try { refreshMixStationB(); } catch(_) {}
-                        mixPanel.classList.remove('display-none');
-                        requestAnimationFrame(() => { mixPanel.classList.add('open'); });
-                    } else {
-                        mixPanel.classList.remove('open');
-                        setTimeout(() => { mixPanel.classList.add('display-none'); }, 350);
-                    }
-                } catch(_) {}
+                toggleMixPanel();
                 resetIdleTimer();
             });
         }
@@ -5709,15 +5716,30 @@ function stopAllAndShowStart() {
             } else if (e.key === 'ArrowRight') {
                 e.preventDefault();
                 adjustWebmPosition(2, 0);
-            } else if (e.key === 'r' || e.key === 'R') {
+            } else if (e.key === 'v' || e.key === 'V') {
+                // Next random station
                 e.preventDefault();
-                if (stations && stations.length > 0) {
-                    pickRandomStation();
-                }
-			} else if (e.key === 't' || e.key === 'T') {
+                if (stations && stations.length > 0) pickRandomStation();
+			} else if (e.key === 'b' || e.key === 'B') {
 				// Previous station (true history up to 5, then random)
 				e.preventDefault();
                 goPreviousStation();
+            } else if (e.key === 't' || e.key === 'T') {
+                // Toggle Text-In panel
+                e.preventDefault();
+                try { toggleTextInPanel(); } catch(_) {}
+            } else if (e.key === 'r' || e.key === 'R') {
+                // Toggle Top Menu panel
+                e.preventDefault();
+                try { toggleTopMenuPanel(); } catch(_) {}
+            } else if (e.key === 'm' || e.key === 'M') {
+                // Toggle Mix Settings panel
+                e.preventDefault();
+                try { toggleMixPanel(); } catch(_) {}
+            } else if (e.key === 'g' || e.key === 'G') {
+                // Toggle WebM Settings panel
+                e.preventDefault();
+                try { toggleWebmSettingsPanel(); } catch(_) {}
             } else if (e.key === 'w' || e.key === 'W') {
                 e.preventDefault();
                 if(!webmOn) {
