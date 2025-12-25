@@ -432,6 +432,12 @@
             border-radius: 6px;
         }
         .textin-btn:hover { background: #fff; color: #000; }
+        .textin-num {
+            width: 72px; padding: 6px 8px;
+            border: 1px solid rgba(255,255,255,0.25);
+            background: rgba(255,255,255,0.06);
+            color: #fff; border-radius: 6px; font-size: 12px;
+        }
         .slider-col { position: relative; flex: 1; height: 22px; }
         /* All three handles (min, current, max) share the same visual track line */
         .slider-col .main-range { position: absolute; inset: 0; height: 16px; z-index: 2; }
@@ -1095,7 +1101,11 @@
     <div id="textin-panel" class="display-none" aria-label="Text-In Panel">
         <h3>
             <span>TEXT-IN</span>
-            <button class="textin-btn interactive" id="ti-send" style="margin-left:auto; margin-right:8px">Send</button>
+            <div style="display:flex; align-items:center; gap:8px; margin-left:auto; margin-right:8px">
+                <button class="textin-btn interactive" id="ti-send">Send</button>
+                <input type="number" class="textin-num" id="ti-auto-interval" value="1000" min="100" step="100" title="Auto interval (ms)">
+                <button class="textin-btn interactive" id="ti-auto">Auto</button>
+            </div>
             <button class="icon-btn interactive" id="btn-textin-close" title="Close" aria-label="Close">✕</button>
         </h3>
         <div id="textin-content">
@@ -1452,10 +1462,14 @@
         const tiSpeed = document.getElementById('ti-speed');
         const tiPreview = document.getElementById('textin-preview');
         const tiSend = document.getElementById('ti-send');
+        const tiAutoBtn = document.getElementById('ti-auto');
+        const tiAutoInterval = document.getElementById('ti-auto-interval');
         const tiClose = document.getElementById('btn-textin-close');
         let textOverlayAnimId = null;
         const activeTextOverlays = [];
         let shortcutsLocked = false;
+        let textAutoTimer = null;
+        let textAutoOn = false;
         // Mix panel refs
         const micConfirm = document.getElementById('mic-confirm');
         const micOk = document.getElementById('btn-mic-ok');
@@ -5872,6 +5886,24 @@ function stopAllAndShowStart() {
         if (tiSend) tiSend.addEventListener('click', () => { const cfg = getTextConfigFromUi(); spawnRisingText(cfg); });
         if (tiClose) tiClose.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); hideTextInPanel(); });
         updateTextInPreview();
+        // Auto send controls
+        function setTextAuto(on) {
+            textAutoOn = !!on;
+            if (textAutoTimer) { clearInterval(textAutoTimer); textAutoTimer = null; }
+            if (tiAutoBtn) tiAutoBtn.classList.toggle('on', textAutoOn);
+            if (textAutoOn) {
+                let iv = Math.max(100, Math.min(10000, Number(tiAutoInterval?.value) || 1000));
+                if (tiAutoInterval) tiAutoInterval.value = String(iv);
+                textAutoTimer = setInterval(() => {
+                    try {
+                        const cfg = getTextConfigFromUi();
+                        spawnRisingText(cfg);
+                    } catch(_) {}
+                }, iv);
+            }
+        }
+        if (tiAutoBtn) tiAutoBtn.addEventListener('click', () => setTextAuto(!textAutoOn));
+        if (tiAutoInterval) tiAutoInterval.addEventListener('input', () => { if (textAutoOn) setTextAuto(true); });
         function showStationBanner(text) {
             stationBanner.textContent = text || '';
             if(!text) return;
