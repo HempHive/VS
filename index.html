@@ -5476,29 +5476,43 @@ function stopAllAndShowStart() {
         bindSample(fxWav5, audioElSample5, 'sampleLoop5', 'sourceNodeSample5');
         bindSample(fxWav6, audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
         // Play/Stop B
+        // Play/Stop B
         function playRadioB() {
             initAudio();
             const idx = Math.max(0, Math.min(stations.length - 1, parseInt((mixStationB?.value)||'0', 10) || 0));
             const sel = stations[idx];
             if (!sel || !sel.url) return;
+            
+            // 1. Prepare the element
             audioElB.crossOrigin = "anonymous";
             audioElB.src = sel.url;
             try { audioElB.load(); } catch(_) {}
+
+            // 2. Play and Route
             audioElB.play().then(() => {
-                // disconnect old B source
-                try { if (state.sourceNodeB) state.sourceNodeB.disconnect(); } catch(_) {}
-                state.sourceNodeB = state.audioCtx.createMediaElementSource(audioElB);
+                // Check if we have already created a source for this element
+                if (!state.sourceNodeB) {
+                    // Create it ONCE and store it
+                    state.sourceNodeB = state.audioCtx.createMediaElementSource(audioElB);
+                }
+                
+                // Ensure it is routed correctly (Disconnecting first prevents duplicate connections)
                 try { state.sourceNodeB.disconnect(); } catch(_) {}
                 state.sourceNodeB.connect(state.streamBGain);
+                
                 rebuildEffectsChain();
                 updateMixBStatus();
                 try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
-            }).catch(()=>{});
+            }).catch((e)=>{ 
+                console.warn("Stream B Playback Error:", e);
+                updateMixBStatus();
+            });
         }
+
         function stopRadioB() {
             try { audioElB.pause(); } catch(_) {}
             try { audioElB.removeAttribute('src'); audioElB.load(); } catch(_) {}
-            try { if (state.sourceNodeB) state.sourceNodeB.disconnect(); } catch(_) {}
+            // We do NOT destroy state.sourceNodeB here; we keep it for reuse.
             updateMixBStatus();
         }
         if (mixPlayB) mixPlayB.addEventListener('click', playRadioB);
