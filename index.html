@@ -460,7 +460,46 @@
             pointer-events: none; user-select: none;
             white-space: pre-wrap; text-align: center;
         }
-        
+        /* FORCE CROSSFADER IMAGE HANDLE */
+/* We use #mix-content #mix-crossfader to beat the specificity of the global rules */
+
+#mix-content #mix-crossfader {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 14px !important; /* Match volume track height */
+    background: rgba(255,255,255,0.08) !important;
+    border-radius: 7px;
+    border: none;
+    opacity: 1;
+}
+
+/* Chrome / Edge / Safari */
+#mix-content #mix-crossfader::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 56px !important;
+    height: 56px !important;
+    background: transparent url('vol.png') center center / 100% 100% no-repeat !important;
+    border: none !important;
+    border-radius: 50%;
+    margin-top: -21px !important; /* Centers the 56px thumb on the 14px track */
+    box-shadow: none !important;
+}
+
+/* Firefox */
+#mix-content #mix-crossfader::-moz-range-thumb {
+    width: 56px !important;
+    height: 56px !important;
+    background: transparent url('vol.png') center center / 100% 100% no-repeat !important;
+    border: none !important;
+    border-radius: 50%;
+    box-shadow: none !important;
+}
+
+/* Remove the "filled" progress bar effect on Firefox if desired, or keep it subtle */
+#mix-content #mix-crossfader::-moz-range-progress {
+    background: transparent !important;
+}
         /* Overlay layer for rising texts */
         #text-overlay-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
