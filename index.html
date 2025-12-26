@@ -5525,42 +5525,63 @@ function stopAllAndShowStart() {
         bindSample(fxWav6, audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
         // Play/Stop B
         // Play/Stop B
+        // Play/Stop B
         function playRadioB() {
             initAudio();
             const idx = Math.max(0, Math.min(stations.length - 1, parseInt((mixStationB?.value)||'0', 10) || 0));
             const sel = stations[idx];
             if (!sel || !sel.url) return;
-            
-            // 1. Prepare the element
-            audioElB.crossOrigin = "anonymous";
-            audioElB.src = sel.url;
-            try { audioElB.load(); } catch(_) {}
 
-            // 2. Play and Route
-            audioElB.play().then(() => {
-                // Check if we have already created a source for this element
-                if (!state.sourceNodeB) {
-                    // Create it ONCE and store it
-                    state.sourceNodeB = state.audioCtx.createMediaElementSource(audioElB);
-                }
+            // 1. CLEANUP: Stop and disconnect any existing B stream
+            if (state.audioElB) {
+                try { state.audioElB.pause(); } catch(e) {}
+                try { state.audioElB.removeAttribute('src'); } catch(e) {}
+                try { state.audioElB.load(); } catch(e) {}
+                state.audioElB = null; 
+            }
+            if (state.sourceNodeB) {
+                try { state.sourceNodeB.disconnect(); } catch(e) {}
+                state.sourceNodeB = null;
+            }
+
+            // 2. CREATE NEW: Create a fresh Audio object and Source Node
+            // This prevents Firefox from "leaking" audio to speakers and keeps Chrome happy
+            const newAudio = new Audio();
+            newAudio.crossOrigin = "anonymous";
+            newAudio.src = sel.url;
+            
+            // Store it in state so we can stop it later
+            state.audioElB = newAudio;
+
+            newAudio.play().then(() => {
+                // Create the MediaElementSource only once the new element is ready
+                state.sourceNodeB = state.audioCtx.createMediaElementSource(newAudio);
                 
-                // Ensure it is routed correctly (Disconnecting first prevents duplicate connections)
-                try { state.sourceNodeB.disconnect(); } catch(_) {}
+                // Connect to the Mix B Gain (which goes to the crossfader)
                 state.sourceNodeB.connect(state.streamBGain);
                 
                 rebuildEffectsChain();
                 updateMixBStatus();
                 try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
-            }).catch((e)=>{ 
+            }).catch((e) => {
                 console.warn("Stream B Playback Error:", e);
                 updateMixBStatus();
             });
         }
 
         function stopRadioB() {
-            try { audioElB.pause(); } catch(_) {}
-            try { audioElB.removeAttribute('src'); audioElB.load(); } catch(_) {}
-            // We do NOT destroy state.sourceNodeB here; we keep it for reuse.
+            // Stop the audio object stored in state
+            if (state.audioElB) {
+                try { state.audioElB.pause(); } catch(_) {}
+                try { state.audioElB.removeAttribute('src'); } catch(_) {}
+                try { state.audioElB.load(); } catch(_) {}
+            }
+            // We can disconnect the node now since we will recreate it next time
+            if (state.sourceNodeB) {
+                try { state.sourceNodeB.disconnect(); } catch(_) {}
+                state.sourceNodeB = null;
+            }
+            state.audioElB = null;
             updateMixBStatus();
         }
         if (mixPlayB) mixPlayB.addEventListener('click', playRadioB);
