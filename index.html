@@ -5407,20 +5407,27 @@ function stopAllAndShowStart() {
                 rebuildEffectsChain();
             });
         }
+        // --- FIXED FX WAV LISTENER (Lightbulb) ---
         if (fxWav) {
             fxWav.addEventListener('click', (e) => {
                 e.preventDefault();
                 try { audioElSample.loop = !!sampleLoop; } catch(_) {}
                 try { audioElSample.currentTime = 0; } catch(_) {}
-                audioElSample.play().then(()=>{ fxWav.classList.add('on'); setTimeout(()=>fxWav.classList.remove('on'), 300); }).catch(()=>{});
-                // Route to B stream so crossfader controls it
+                
+                // Fix: Connect to mixInput (always on) instead of streamBGain
                 try {
-                    if (!state.sourceNodeSample && state.audioCtx) {
-                        state.sourceNodeSample = state.audioCtx.createMediaElementSource(audioElSample);
-                        state.sourceNodeSample.connect(state.streamBGain);
-                        rebuildEffectsChain();
+                    if (state.audioCtx) {
+                        if (!state.sourceNodeSample) {
+                            state.sourceNodeSample = state.audioCtx.createMediaElementSource(audioElSample);
+                            state.sourceNodeSample.connect(state.mixInput);
+                        }
                     }
-                } catch(_) {}
+                } catch(e) { console.warn(e); }
+
+                audioElSample.play().then(()=>{ 
+                    fxWav.classList.add('on'); 
+                    setTimeout(()=>fxWav.classList.remove('on'), 300); 
+                }).catch(()=>{});
             });
             fxWav.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
@@ -5429,20 +5436,29 @@ function stopAllAndShowStart() {
                 fxWav.classList.toggle('on', sampleLoop);
             });
         }
+
+        // --- FIXED BIND SAMPLE FUNCTION (Wav 1-6) ---
         function bindSample(btn, media, loopFlagKey, sourceKey) {
             if (!btn || !media) return;
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 try { media.loop = !!window[loopFlagKey]; } catch(_) {}
                 try { media.currentTime = 0; } catch(_) {}
-                media.play().then(()=>{ btn.classList.add('on'); setTimeout(()=>btn.classList.remove('on'), 300); }).catch(()=>{});
+                
+                // Fix: Connect to mixInput (always on) instead of streamBGain
                 try {
-                    if (!state[sourceKey] && state.audioCtx) {
-                        state[sourceKey] = state.audioCtx.createMediaElementSource(media);
-                        state[sourceKey].connect(state.streamBGain);
-                        rebuildEffectsChain();
+                    if (state.audioCtx) {
+                        if (!state[sourceKey]) {
+                            state[sourceKey] = state.audioCtx.createMediaElementSource(media);
+                            state[sourceKey].connect(state.mixInput);
+                        }
                     }
-                } catch(_) {}
+                } catch(e) { console.warn(e); }
+                
+                media.play().then(()=>{ 
+                    btn.classList.add('on'); 
+                    setTimeout(()=>btn.classList.remove('on'), 300); 
+                }).catch(()=>{});
             });
             btn.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
