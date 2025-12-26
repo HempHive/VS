@@ -1298,6 +1298,17 @@
                     <button class="btn" id="fx-wav1" title="Left-click: play once • Right-click: loop">Wah</button>
                     <button class="btn" id="fx-wav2" title="Left-click: play once • Right-click: loop">Waah</button>
                     <button class="btn" id="fx-wav3" title="Left-click: play once • Right-click: loop">Waaah</button>
+<button class="btn" id="fx-wav4" title="Left-click: play once • Right-click: loop">
+    FX 4
+</button>
+
+<button class="btn" id="fx-wav5" title="Left-click: play once • Right-click: loop">
+    FX 5
+</button>
+
+<button class="btn" id="fx-wav6" title="Left-click: play once • Right-click: loop">
+    FX 6
+</button>
                 </div>
             </div>
             <div style="display:grid; grid-template-columns: 1fr; gap: 12px; align-items:flex-start">
@@ -1507,6 +1518,9 @@
         const fxWav1 = document.getElementById('fx-wav1');
         const fxWav2 = document.getElementById('fx-wav2');
         const fxWav3 = document.getElementById('fx-wav3');
+        const fxWav4 = document.getElementById('fx-wav4');
+        const fxWav5 = document.getElementById('fx-wav5');
+        const fxWav6 = document.getElementById('fx-wav6');
         const mixStationB = document.getElementById('mix-station-b');
         const mixPlayB = document.getElementById('mix-b-play');
         const mixStopB = document.getElementById('mix-b-stop');
@@ -1524,6 +1538,15 @@
         const audioElSample3 = new Audio();
         audioElSample3.preload = 'auto';
         audioElSample3.src = 'wav3.mp3';
+        const audioElSample4 = new Audio();
+        audioElSample4.preload = 'auto';
+        audioElSample4.src = 'wav4.mp3';
+        const audioElSample5 = new Audio();
+        audioElSample5.preload = 'auto';
+        audioElSample5.src = 'wav5.mp3';
+        const audioElSample6 = new Audio();
+        audioElSample.preload = 'auto';
+        audioElSample6.src = 'wav6.mp3';
         let sampleLoop = false, sampleLoop1 = false, sampleLoop2 = false, sampleLoop3 = false;
         // Ensure media elements don't double-play outside the WebAudio graph
         // Allow HTML elements to output so MediaElementSource has signal; mixing is controlled in WebAudio
@@ -5415,6 +5438,9 @@ function stopAllAndShowStart() {
         bindSample(fxWav1, audioElSample1, 'sampleLoop1', 'sourceNodeSample1');
         bindSample(fxWav2, audioElSample2, 'sampleLoop2', 'sourceNodeSample2');
         bindSample(fxWav3, audioElSample3, 'sampleLoop3', 'sourceNodeSample3');
+        bindSample(fxWav4, audioElSample4, 'sampleLoop4', 'sourceNodeSample4');
+        bindSample(fxWav5, audioElSample5, 'sampleLoop5', 'sourceNodeSample5');
+        bindSample(fxWav6, audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
         // Play/Stop B
         function playRadioB() {
             initAudio();
