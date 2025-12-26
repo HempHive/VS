@@ -460,6 +460,7 @@
             pointer-events: none; user-select: none;
             white-space: pre-wrap; text-align: center;
         }
+        
         /* Overlay layer for rising texts */
         #text-overlay-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -523,7 +524,15 @@
             letter-spacing: 1px; text-transform: uppercase; color: #ddd;
             display:flex; align-items:center; justify-content:space-between;
         }
-        #mix-content { padding: 12px; display: grid; gap: 12px; grid-template-columns: 1fr; flex: 1; overflow: auto; }
+        #mix-content { 
+            padding: 12px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            flex: 1; 
+            overflow: auto; 
+            justify-content: flex-start; /* Stacks items at the top */
+        }
         #mix-effects { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
         #mix-effects .btn {
             position: relative;
