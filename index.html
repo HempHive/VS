@@ -1238,7 +1238,11 @@
                 </label>
                 <input type="color" id="ti-glow-color" class="textin-color" value="#00ffff" title="Glow Color">
                 <button id="ti-glow-color-rand" class="btn-mini" title="Random glow color">🎲</button>
+<label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#bbb">
+    <input type="checkbox" id="ti-glow-color-rand-check" title="Random Glow Color">
+</label>
             </div>
+
             <div class="textin-row">
                 <div class="textin-label">Flashing</div>
                 <input type="checkbox" id="ti-flash">
@@ -1638,6 +1642,10 @@
 			};
 			step();
 		}
+function randomGlowColor() {
+    const h = Math.floor(Math.random() * 360);
+    return `hsl(${h}, 90%, 60%)`;
+}
 		// Generic typewriter for any element id
 		let shortcutsTypeTimer = null;
 		function typeStatusTo(elId, text, speed) {
@@ -5672,7 +5680,13 @@ function stopAllAndShowStart() {
             el.style.fontSize = cfg.size + 'px';
             el.style.webkitTextStroke = (cfg.border > 0 ? (cfg.border + 'px ' + cfg.borderColor) : '0px transparent');
             const glowPx = Math.max(0, cfg.glow|0);
-            const glowColor = cfg.glowColor && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(cfg.glowColor) ? cfg.glowColor : cfg.color;
+            const glowColor = tiGlowRand.checked
+    ? randomGlowColor()
+    : (
+        cfg.glowColor && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(cfg.glowColor)
+            ? cfg.glowColor
+            : cfg.color
+      );
             const glow = glowPx > 0 ? `0 0 ${glowPx}px ${glowColor}` : '';
             const strokeShadow = (cfg.border > 0) ? `0 0 ${Math.max(1,cfg.border)}px ${cfg.borderColor}` : '';
             el.style.textShadow = [glow, strokeShadow].filter(Boolean).join(', ');
@@ -5942,6 +5956,10 @@ function stopAllAndShowStart() {
         }
         if (tiAutoBtn) tiAutoBtn.addEventListener('click', () => setTextAuto(!textAutoOn));
         if (tiAutoInterval) tiAutoInterval.addEventListener('input', () => { if (textAutoOn) setTextAuto(true); });
+// 🎲 One-shot random glow colour
+tiGlowColorRandBtn.addEventListener('click', () => {
+    tiGlowColor.value = randomGlowColor();
+});
         function showStationBanner(text) {
             stationBanner.textContent = text || '';
             if(!text) return;
