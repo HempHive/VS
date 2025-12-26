@@ -6629,6 +6629,26 @@ function stopAllAndShowStart() {
         }
 
     </script>
+<!-- TEXT-IN AUTO shortcut (Y key) -->
+    <script>
+    document.addEventListener('keydown', (e) => {
+        // Ignore typing in inputs / text areas
+        const tag = document.activeElement?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+        // Ignore modifier keys
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+        // Y key toggles TEXT-IN Auto
+        if (e.key === 'y' || e.key === 'Y') {
+            const autoBtn = document.getElementById('ti-auto');
+            if (!autoBtn) return;
+
+            autoBtn.click(); // reuse existing logic
+            e.preventDefault();
+        }
+    });
+    </script>
 	<div id="border-frame"></div>
 </body>
 </html>
