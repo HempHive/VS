@@ -2636,8 +2636,10 @@ function randomGlowColor() {
 			// Background is now preloaded and applied via CSS for first-paint immediacy
 		})();
 
+        // --- FIXED PLAYRADIO FUNCTION ---
         function playRadio() {
             initAudio();
+            
             // Prefer explicit input if present, else use current/first station
             let url = '';
             try {
@@ -2653,16 +2655,15 @@ function randomGlowColor() {
             }
             
             statusEl.innerText = "Connecting to Stream...";
-            // Update banner title (prefer station name matching current URL)
+
+            // Update banner title
             (function updateInitialStationTitle() {
                 let nameToShow = null;
                 if (currentStationIndex >= 0 && stations[currentStationIndex] && stations[currentStationIndex].url === url) {
                     nameToShow = stations[currentStationIndex].name;
                 } else if (stations && stations.length > 0) {
-                    // Find station by exact URL match and adopt its index for future consistency
                     const foundIdx = stations.findIndex(s => s && s.url === url);
                     if (foundIdx >= 0) {
-                        // Push previous into history when switching by URL match (if not suppressed)
                         if (!suppressHistoryPush && currentStationIndex !== -1 && currentStationIndex !== foundIdx) {
                             if (stationHistory.length === 0 || stationHistory[stationHistory.length - 1] !== currentStationIndex) {
                                 stationHistory.push(currentStationIndex);
@@ -2677,32 +2678,48 @@ function randomGlowColor() {
                 showStationBanner(nameToShow || deriveTitleFromUrl(url));
             })();
             
+            // --- FIX START: Reuse MediaElementSource ---
             audioEl.crossOrigin = "anonymous"; 
             audioEl.src = url;
             
             audioEl.play().then(() => {
-                if(state.sourceNode) state.sourceNode.disconnect();
-                state.sourceNode = state.audioCtx.createMediaElementSource(audioEl);
+                // Disconnect whatever was previously active (e.g. file source or mic)
+                if(state.sourceNode) {
+                    try { state.sourceNode.disconnect(); } catch(e) {}
+                }
+
+                // Check if we have already created a source for the Radio Element
+                if (!state.radioElementSource) {
+                    // First time only: Create and store it
+                    state.radioElementSource = state.audioCtx.createMediaElementSource(audioEl);
+                }
+
+                // Use the persistent source
+                state.sourceNode = state.radioElementSource;
+                
                 // Route to Stream A gain -> mix/effects -> analyser
-                try { state.sourceNode.disconnect(); } catch(_) {}
                 state.sourceNode.connect(state.streamAGain);
+                
                 rebuildEffectsChain();
                 try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
-                // Ensure active visualizer (e.g., ProjectM) is connected to the current analyser
+                
+                // Ensure active visualizer is connected
                 try {
                     if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
                         state.activeVisualizer.visualizer.connectAudio(state.analyserNode);
                     }
                 } catch(e) { /* ignore */ }
+
                 if(!state.isPlaying) startGame();
-                // success: reset retry attempts
+                
+                // Success: reset retry attempts
                 radioRetryAttempts = 0;
             }).catch(e => {
-                // auto-retry with a new random station instead of alerting
+                console.error("Stream playback failed:", e);
+                // auto-retry with a new random station
                 radioRetryAttempts = (radioRetryAttempts || 0) + 1;
                 if (radioRetryAttempts <= MAX_RADIO_RETRIES && stations.length > 0) {
                     statusEl.innerText = "Stream failed. Trying another station...";
-                    // If we don't have a current index, pick one; otherwise pick a different random
                     if (currentStationIndex < 0 || currentStationIndex >= stations.length) {
                         currentStationIndex = Math.floor(Math.random() * stations.length);
                         setStation(currentStationIndex);
@@ -2710,10 +2727,10 @@ function randomGlowColor() {
                         pickRandomStation();
                     }
                 } else {
-                    statusEl.innerText = "No playable station found.";
-                    // do not alert; user experience prefers silent retry
+                    statusEl.innerText = "No playable station found. Check console for CORS/Mixed Content errors.";
                 }
             });
+            // --- FIX END ---
         }
 
         async function useMic() {
