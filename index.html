@@ -1439,114 +1439,109 @@
         </div>
     </div>
     <div id="mix-panel" class="display-none" aria-label="Mix Settings">
-        <h3 style="display:flex; align-items:center; gap:12px; padding: 12px 14px;">
-            <div style="flex:1; display:flex; align-items:center; gap:8px;">
-                <span style="font-size:12px; color:#888; font-weight:bold">A</span>
-                <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%; cursor:pointer;">
-                <span style="font-size:12px; color:#888; font-weight:bold">B</span>
-            </div>
-
-            <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
-        </h3>
-        
-        <div style="display:grid; grid-template-columns: 1fr; gap: 2px; align-items:flex-start; margin-bottom:12px">
-                <div>
-                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:6px">
-                        <div style="font-size:12px; color:#bbb">Second Station⤵</div>
-                        <button class="btn" id="mix-b-play">Play B</button>
-                        <button class="btn" id="mix-b-stop">Stop B</button>
-                        <div class="status-row" style="margin:0; display:flex; align-items:center; gap:6px">
-                            <div id="mix-b-status-dot" class="status-dot"></div>
-                            <div id="mix-b-status-text">B: Stopped</div>
+    <h3 style="display:flex; align-items:center; gap:12px; padding: 12px 14px;">
+        <div style="flex:1; display:flex; align-items:center; gap:8px;">
+            <span style="font-size:12px; color:#888; font-weight:bold">A</span>
+            <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%; cursor:pointer;">
+            <span style="font-size:12px; color:#888; font-weight:bold">B</span>
+        </div>
+        <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
+    </h3>
+    
+    <div style="display:grid; grid-template-columns: 1fr; gap: 2px; align-items:flex-start; margin-bottom:12px">
+        <div>
+            <div class="eq-strip" style="margin-top:0; margin-bottom:12px;">
+                <div class="eq-group">
+                    <div class="eq-col">
+                        <div class="knob-wrap" id="knob-a-low" style="--knob-color:#0ff">
+                            <div class="knob-indicator"></div><div class="knob-value">0</div>
                         </div>
+                        <div class="eq-label">Lo</div>
                     </div>
-
-                    <select id="mix-station-b" class="textin-select" style="width: 100%"></select>
-
-                    <div class="eq-strip">
-                        
-                        <div class="eq-group">
-                            <div class="eq-col">
-                                <div class="knob-wrap" id="knob-a-low" style="--knob-color:#0ff">
-                                    <div class="knob-indicator"></div><div class="knob-value">0</div>
-                                </div>
-                                <div class="eq-label">Lo</div>
-                            </div>
-                            <div class="eq-col">
-                                <div class="knob-wrap" id="knob-a-mid" style="--knob-color:#0ff">
-                                    <div class="knob-indicator"></div><div class="knob-value">0</div>
-                                </div>
-                                <div class="eq-label">Mid</div>
-                            </div>
-                            <div class="eq-col">
-                                <div class="knob-wrap" id="knob-a-high" style="--knob-color:#0ff">
-                                    <div class="knob-indicator"></div><div class="knob-value">0</div>
-                                </div>
-                                <div class="eq-label">Hi</div>
-                            </div>
-                            <div class="eq-col">
-                                <div class="knob-wrap" id="knob-a-gain" style="--knob-color:#0ff">
-                                    <div class="knob-indicator"></div><div class="knob-value">1.0</div>
-                                </div>
-                                <div class="eq-label" style="color:#0ff">Gain</div>
-                            </div>
+                    <div class="eq-col">
+                        <div class="knob-wrap" id="knob-a-mid" style="--knob-color:#0ff">
+                            <div class="knob-indicator"></div><div class="knob-value">0</div>
                         </div>
-                        
-                        <div class="eq-divider"></div>
-
-                        <div class="eq-group">
-                            <div class="eq-col">
-                                <div class="knob-wrap" id="knob-b-gain" style="--knob-color:#f0f">
-                                    <div class="knob-indicator"></div><div class="knob-value">1.0</div>
-                                </div>
-                                <div class="eq-label" style="color:#f0f">Gain</div>
-                            </div>
-                            <div class="eq-col">
-                                <div class="knob-wrap" id="knob-b-high" style="--knob-color:#f0f">
-                                    <div class="knob-indicator"></div><div class="knob-value">0</div>
-                                </div>
-                                <div class="eq-label">Hi</div>
-                            </div>
-                            <div class="eq-col">
-                                <div class="knob-wrap" id="knob-b-mid" style="--knob-color:#f0f">
-                                    <div class="knob-indicator"></div><div class="knob-value">0</div>
-                                </div>
-                                <div class="eq-label">Mid</div>
-                            </div>
-                            <div class="eq-col">
-                                <div class="knob-wrap" id="knob-b-low" style="--knob-color:#f0f">
-                                    <div class="knob-indicator"></div><div class="knob-value">0</div>
-                                </div>
-                                <div class="eq-label">Lo</div>
-                            </div>
+                        <div class="eq-label">Mid</div>
+                    </div>
+                    <div class="eq-col">
+                        <div class="knob-wrap" id="knob-a-high" style="--knob-color:#0ff">
+                            <div class="knob-indicator"></div><div class="knob-value">0</div>
                         </div>
+                        <div class="eq-label">Hi</div>
                     </div>
+                    <div class="eq-col">
+                        <div class="knob-wrap" id="knob-a-gain" style="--knob-color:#0ff">
+                            <div class="knob-indicator"></div><div class="knob-value">1.0</div>
+                        </div>
+                        <div class="eq-label" style="color:#0ff">Gain</div>
                     </div>
-            </div>
-
-            <div>
+                </div>
                 
-                <div id="mix-effects">
-                    <button class="btn" id="fx-wav4" title="Left-click: play once • Right-click: loop">Waa📯</button>
-                    <button class="btn" id="fx-wav5" title="Left-click: play once • Right-click: loop">Waaa📣</button>
-                    <button class="btn" id="fx-wav6" title="Left-click: play once • Right-click: loop">Air📢</button>
-                    <button class="btn" id="fx-lowpass">Low-pass</button>
-                    <button class="btn" id="fx-bass">Bass-Boost</button>
-                    <button class="btn" id="fx-echo">~Echo~</button>
-                    <button class="btn" id="fx-highpass">High-pass</button>
-                    <button class="btn" id="fx-treble">Treble-Boost</button>
-                    <button class="btn" id="fx-distort">Distortion</button>
-                    <button class="btn" id="fx-arp">Arpeggiator</button>
-                    <button class="btn" id="fx-tk">TK-Filter</button>
-                    <button class="btn" id="fx-wav" title="Left-click: play once • Right-click: loop">💭💡</button>
-                    <button class="btn" id="fx-wav1" title="Left-click: play once • Right-click: loop">fx-1</button>
-                    <button class="btn" id="fx-wav2" title="Left-click: play once • Right-click: loop">fx-2</button>
-                    <button class="btn" id="fx-wav3" title="Left-click: play once • Right-click: loop">fx-3</button>
+                <div class="eq-divider"></div>
+
+                <div class="eq-group">
+                    <div class="eq-col">
+                        <div class="knob-wrap" id="knob-b-gain" style="--knob-color:#f0f">
+                            <div class="knob-indicator"></div><div class="knob-value">1.0</div>
+                        </div>
+                        <div class="eq-label" style="color:#f0f">Gain</div>
+                    </div>
+                    <div class="eq-col">
+                        <div class="knob-wrap" id="knob-b-high" style="--knob-color:#f0f">
+                            <div class="knob-indicator"></div><div class="knob-value">0</div>
+                        </div>
+                        <div class="eq-label">Hi</div>
+                    </div>
+                    <div class="eq-col">
+                        <div class="knob-wrap" id="knob-b-mid" style="--knob-color:#f0f">
+                            <div class="knob-indicator"></div><div class="knob-value">0</div>
+                        </div>
+                        <div class="eq-label">Mid</div>
+                    </div>
+                    <div class="eq-col">
+                        <div class="knob-wrap" id="knob-b-low" style="--knob-color:#f0f">
+                            <div class="knob-indicator"></div><div class="knob-value">0</div>
+                        </div>
+                        <div class="eq-label">Lo</div>
+                    </div>
                 </div>
             </div>
 
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:6px">
+                <div style="font-size:12px; color:#bbb">Second Station⤵</div>
+                <button class="btn" id="mix-b-play">Play B</button>
+                <button class="btn" id="mix-b-stop">Stop B</button>
+                <div class="status-row" style="margin:0; display:flex; align-items:center; gap:6px">
+                    <div id="mix-b-status-dot" class="status-dot"></div>
+                    <div id="mix-b-status-text">B: Stopped</div>
+                </div>
+            </div>
+
+            <select id="mix-station-b" class="textin-select" style="width: 100%"></select>
         </div>
     </div>
+
+    <div>
+        <div id="mix-effects">
+            <button class="btn" id="fx-wav4" title="Left-click: play once • Right-click: loop">Waa📯</button>
+            <button class="btn" id="fx-wav5" title="Left-click: play once • Right-click: loop">Waaa📣</button>
+            <button class="btn" id="fx-wav6" title="Left-click: play once • Right-click: loop">Air📢</button>
+            <button class="btn" id="fx-lowpass">Low-pass</button>
+            <button class="btn" id="fx-bass">Bass-Boost</button>
+            <button class="btn" id="fx-echo">~Echo~</button>
+            <button class="btn" id="fx-highpass">High-pass</button>
+            <button class="btn" id="fx-treble">Treble-Boost</button>
+            <button class="btn" id="fx-distort">Distortion</button>
+            <button class="btn" id="fx-arp">Arpeggiator</button>
+            <button class="btn" id="fx-tk">TK-Filter</button>
+            <button class="btn" id="fx-wav" title="Left-click: play once • Right-click: loop">💭💡</button>
+            <button class="btn" id="fx-wav1" title="Left-click: play once • Right-click: loop">fx-1</button>
+            <button class="btn" id="fx-wav2" title="Left-click: play once • Right-click: loop">fx-2</button>
+            <button class="btn" id="fx-wav3" title="Left-click: play once • Right-click: loop">fx-3</button>
+        </div>
+    </div>
+</div>
     
     <!-- WebM Overlay + Nav -->
     <div id="webm-overlay" class="display-none">
@@ -2988,6 +2983,7 @@ function randomGlowColor() {
 		})();
 
         // --- FIXED PLAYRADIO FUNCTION ---
+        // --- FIXED PLAYRADIO FUNCTION (Routes through EQ) ---
         function playRadio() {
             initAudio();
             let url = '';
@@ -3013,55 +3009,29 @@ function randomGlowColor() {
             audioEl.src = url;
             
             audioEl.play().then(() => {
-                if(state.sourceNode) { try { state.sourceNode.disconnect(); } catch(e) {} }
-                if (!state.radioElementSource) {
-                    state.radioElementSource = state.audioCtx.createMediaElementSource(audioEl);
-                }
-                state.sourceNode = state.radioElementSource;
-                
-                // IMPORTANT: Disconnect from previous, Connect to EQ Chain
-                try { state.sourceNode.disconnect(); } catch(_) {}
-                
-                if (state.eqA && state.eqA.high) {
-                    state.sourceNode.connect(state.eqA.high); // <--- HERE IS THE CONNECTION
-                } else {
-                    state.sourceNode.connect(state.streamAGain); // Fallback
-                }
-                
-                rebuildEffectsChain();
-                try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
-                
-                try { if (state.activeVisualizer && state.activeVisualizer.visualizer && state.activeVisualizer.visualizer.connectAudio) state.activeVisualizer.visualizer.connectAudio(state.analyserNode); } catch(e) {}
-                if(!state.isPlaying) startGame();
-                radioRetryAttempts = 0;
-            }).catch(e => {
-                console.error("Stream playback failed:", e);
-                // retry logic...
-            });
-        
-        
-            
-            // --- FIX START: Reuse MediaElementSource ---
-            audioEl.crossOrigin = "anonymous"; 
-            audioEl.src = url;
-            
-            audioEl.play().then(() => {
-                // Disconnect whatever was previously active (e.g. file source or mic)
+                // Disconnect whatever was previously active
                 if(state.sourceNode) {
                     try { state.sourceNode.disconnect(); } catch(e) {}
                 }
 
                 // Check if we have already created a source for the Radio Element
                 if (!state.radioElementSource) {
-                    // First time only: Create and store it
                     state.radioElementSource = state.audioCtx.createMediaElementSource(audioEl);
                 }
 
                 // Use the persistent source
                 state.sourceNode = state.radioElementSource;
                 
-                // Route to Stream A gain -> mix/effects -> analyser
-                state.sourceNode.connect(state.streamAGain);
+                // IMPORTANT: Disconnect from previous destination to avoid double-routing
+                try { state.sourceNode.disconnect(); } catch(_) {}
+
+                // --- FIX: Connect to EQ Chain A instead of direct Gain ---
+                if (state.eqA && state.eqA.high) {
+                    state.sourceNode.connect(state.eqA.high);
+                } else {
+                    // Fallback if EQ setup failed
+                    state.sourceNode.connect(state.streamAGain); 
+                }
                 
                 rebuildEffectsChain();
                 try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
@@ -3075,11 +3045,9 @@ function randomGlowColor() {
 
                 if(!state.isPlaying) startGame();
                 
-                // Success: reset retry attempts
                 radioRetryAttempts = 0;
             }).catch(e => {
                 console.error("Stream playback failed:", e);
-                // auto-retry with a new random station
                 radioRetryAttempts = (radioRetryAttempts || 0) + 1;
                 if (radioRetryAttempts <= MAX_RADIO_RETRIES && stations.length > 0) {
                     statusEl.innerText = "Stream failed. Trying another station...";
