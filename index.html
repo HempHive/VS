@@ -1693,6 +1693,7 @@
         const topBar = document.getElementById('top-bar');
         const shuffleToggle = document.getElementById('shuffle-toggle');
         let currentStationIndex = -1;
+        let currentStationBIndex = 0;
         // Keep up to 5 most recent stations to enable true "previous" navigation
         let stationHistory = [];
         // Guard to avoid pushing into history when navigating back
@@ -5473,13 +5474,22 @@ function stopAllAndShowStart() {
         function refreshMixStationB() {
             if (!mixStationB) return;
             mixStationB.innerHTML = '';
+            
             if (Array.isArray(stations) && stations.length > 0) {
+                // Validate index
+                if (currentStationBIndex < 0 || currentStationBIndex >= stations.length) {
+                    currentStationBIndex = 0;
+                }
+
                 stations.forEach((s, i) => {
                     const opt = document.createElement('option');
                     opt.value = String(i);
                     opt.textContent = s.name || ('Station ' + (i+1));
                     mixStationB.appendChild(opt);
                 });
+                
+                // Restore the active selection
+                mixStationB.value = String(currentStationBIndex);
             }
         }
         refreshMixStationB();
@@ -5607,7 +5617,15 @@ function stopAllAndShowStart() {
         // Play/Stop B
         function playRadioB() {
             initAudio();
-            const idx = Math.max(0, Math.min(stations.length - 1, parseInt((mixStationB?.value)||'0', 10) || 0));
+            
+            // Get index from dropdown
+            let val = parseInt((mixStationB?.value)||'0', 10);
+            if (isNaN(val)) val = 0;
+            const idx = Math.max(0, Math.min(stations.length - 1, val));
+            
+            // SAVE IT TO THE GLOBAL VARIABLE
+            currentStationBIndex = idx;
+
             const sel = stations[idx];
             if (!sel || !sel.url) return;
 
@@ -5629,7 +5647,7 @@ function stopAllAndShowStart() {
             // Store in state
             state.audioElB = newAudio;
 
-            // *** FIX: Bind status updates to this new audio object ***
+            // Bind status updates
             ['play', 'pause', 'ended', 'error', 'waiting', 'playing'].forEach(ev => {
                 newAudio.addEventListener(ev, updateMixBStatus);
             });
@@ -5639,7 +5657,7 @@ function stopAllAndShowStart() {
                 state.sourceNodeB.connect(state.streamBGain);
                 rebuildEffectsChain();
                 
-                updateMixBStatus(); // Force update immediately
+                updateMixBStatus(); 
                 
                 try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
             }).catch((e) => {
@@ -5647,7 +5665,6 @@ function stopAllAndShowStart() {
                 updateMixBStatus();
             });
         }
-
         function stopRadioB() {
             // Stop the audio object stored in state
             if (state.audioElB) {
