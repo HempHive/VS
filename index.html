@@ -5411,6 +5411,10 @@ function stopAllAndShowStart() {
                     requestAnimationFrame(() => { mixPanel.classList.add('open'); });
                 } else {
                     mixPanel.classList.remove('open');
+                    
+                    // ADD THIS LINE: Prevent other panels from opening for 1.2 seconds
+                    try { window.__panelGuardUntilMs = Date.now() + 1200; } catch(_) {}
+                    
                     setTimeout(() => { mixPanel.classList.add('display-none'); }, 350);
                 }
             } catch(_) {}
@@ -5444,6 +5448,10 @@ function stopAllAndShowStart() {
             mixClose.addEventListener('click', (e) => {
                 e.preventDefault(); e.stopPropagation();
                 mixPanel.classList.remove('open');
+                
+                // ADD THIS LINE: Prevent other panels from opening for 1.2 seconds
+                try { window.__panelGuardUntilMs = Date.now() + 1200; } catch(_) {}
+                
                 setTimeout(() => { mixPanel.classList.add('display-none'); }, 350);
             });
         }
