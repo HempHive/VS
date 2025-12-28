@@ -542,21 +542,21 @@
         }
         #mic-confirm .btn:hover { background: #fff; color: #000; }
 
-        /* Mix Settings Panel (right) */
-        #mix-panel {
-            position: fixed; top: 0; right: 0;
-            width: 50vw; max-width: 50vw; height: 100vh; overflow: hidden;
-            z-index: 120;
-            background: rgba(0,0,0,0.85);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 10px 0 0 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-            backdrop-filter: blur(8px);
-            transform: translateX(110%);
-            transition: transform 0.35s ease, opacity 0.4s ease;
-            opacity: 0; display:flex; flex-direction:column;
-        }
-        #mix-panel.open { transform: translateX(0); opacity: 1; }
+        /* Mix Settings Panel (Moved to Bottom) */
+#mix-panel {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    width: 100%; max-width: 100%; height: 50vh; overflow: hidden;
+    z-index: 120;
+    background: rgba(0,0,0,0.85);
+    border-top: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px 10px 0 0;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+    transform: translateY(100%);
+    transition: transform 0.35s ease, opacity 0.4s ease;
+    opacity: 0; display:flex; flex-direction:column;
+}
+#mix-panel.open { transform: translateY(0); opacity: 1; }
         #mix-panel h3 {
             margin: 0; padding: 12px 14px; font-weight: 500; font-size: 14px;
             border-bottom: 1px solid rgba(255,255,255,0.12);
@@ -970,23 +970,25 @@
 			box-shadow: 0 0 8px rgba(0,0,0,0.25);
 		}
 
-		/* Bottom Avatar Menu Panel (slides from bottom, 50vh) */
-		#bottom-avatar-panel {
-			position: fixed; left: 0; right: 0; bottom: 0; height: 50vh;
-			z-index: 95;
-			background: rgba(0,0,0,0.8);
-			border-top: 1px solid rgba(255,255,255,0.2);
-			backdrop-filter: blur(10px);
-			box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
-			transform: translateY(100%);
-			transition: transform 0.35s ease-in-out, opacity 0.2s ease-in-out;
-			opacity: 0; pointer-events: none;
-			display: flex; flex-direction: column;
-		}
-		#bottom-avatar-panel.open {
-			transform: translateY(0);
-			opacity: 1; pointer-events: auto;
-		}
+		/* Bottom Avatar Menu Panel (Moved to Right) */
+#bottom-avatar-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; height: 100vh;
+    width: 50vw;
+    z-index: 95;
+    background: rgba(0,0,0,0.8);
+    border-left: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px 0 0 10px;
+    backdrop-filter: blur(10px);
+    box-shadow: -10px 0 30px rgba(0,0,0,0.6);
+    transform: translateX(100%);
+    transition: transform 0.35s ease-in-out, opacity 0.2s ease-in-out;
+    opacity: 0; pointer-events: none;
+    display: flex; flex-direction: column;
+}
+#bottom-avatar-panel.open {
+    transform: translateX(0);
+    opacity: 1; pointer-events: auto;
+}
 		#bottom-avatar-header {
 			display: flex; align-items: center; justify-content: space-between;
 			padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.12);
@@ -1324,16 +1326,42 @@
             </div>
         </div>
     </div>
-    <!-- Mix Settings Panel (right) -->
     <div id="mix-panel" class="display-none" aria-label="Mix Settings">
         <h3>
             <span>MIXER SETTINGS 🎚️</span>
             <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
         </h3>
         <div id="mix-content">
+            
+            <div id="mix-cross-row" style="display:grid; grid-template-columns: 1fr; gap:6px; margin-bottom:12px">
+                
+                <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%">
+                <div style="display:flex; width:100%; justify-content:space-between; font-size:11px; color:#888">
+                    <span>A</span><span>B</span>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr; gap: 12px; align-items:flex-start; margin-bottom:12px">
+                <div>
+                    <div style="font-size:12px; color:#bbb; margin-bottom:6px">CrossFader 🎚️ Second Station ⤵</div>
+                    <select id="mix-station-b" class="textin-select" style="width: 100%"></select>
+                    <div style="display:flex; gap:8px; margin-top:8px">
+                        <button class="btn" id="mix-b-play">Play B</button>
+                        <button class="btn" id="mix-b-stop">Stop B</button>
+                    </div>
+                    <div class="status-row" style="margin-top:6px">
+                        <div id="mix-b-status-dot" class="status-dot"></div>
+                        <div id="mix-b-status-text">B: Stopped</div>
+                    </div>
+                </div>
+            </div>
+
             <div>
-                <div style="font-size:12px; color:#bbb; margin-bottom:6px">Effects</div>
+                
                 <div id="mix-effects">
+                    <button class="btn" id="fx-wav4" title="Left-click: play once • Right-click: loop">Waaa🚨</button>
+                    <button class="btn" id="fx-wav5" title="Left-click: play once • Right-click: loop">Waaa📣</button>
+                    <button class="btn" id="fx-wav6" title="Left-click: play once • Right-click: loop">Air📢</button>
                     <button class="btn" id="fx-lowpass">Lowpass</button>
                     <button class="btn" id="fx-highpass">Highpass</button>
                     <button class="btn" id="fx-bass">Bass Boost</button>
@@ -1346,40 +1374,9 @@
                     <button class="btn" id="fx-wav1" title="Left-click: play once • Right-click: loop">fx-1</button>
                     <button class="btn" id="fx-wav2" title="Left-click: play once • Right-click: loop">fx-2</button>
                     <button class="btn" id="fx-wav3" title="Left-click: play once • Right-click: loop">fx-3</button>
-<button class="btn" id="fx-wav4" title="Left-click: play once • Right-click: loop">
-    Waaa🚨
-</button>
+                </div>
+            </div>
 
-<button class="btn" id="fx-wav5" title="Left-click: play once • Right-click: loop">
-    Waaa📣
-</button>
-
-<button class="btn" id="fx-wav6" title="Left-click: play once • Right-click: loop">
-    Air📢
-</button>
-                </div>
-            </div>
-            <div style="display:grid; grid-template-columns: 1fr; gap: 12px; align-items:flex-start">
-                <div>
-                    <div style="font-size:12px; color:#bbb; margin-bottom:6px">Second Station</div>
-                    <select id="mix-station-b" class="textin-select" style="width: 100%"></select>
-                    <div style="display:flex; gap:8px; margin-top:8px">
-                        <button class="btn" id="mix-b-play">Play B</button>
-                        <button class="btn" id="mix-b-stop">Stop B</button>
-                    </div>
-                    <div class="status-row" style="margin-top:6px">
-                        <div id="mix-b-status-dot" class="status-dot"></div>
-                        <div id="mix-b-status-text">B: Stopped</div>
-                    </div>
-                </div>
-            </div>
-            <div id="mix-cross-row" style="display:grid; grid-template-columns: 1fr; gap:6px; margin-top:6px">
-                <div style="font-size:16px; color:#bbb">Crossfader🎚️</div>
-                <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%">
-                <div style="display:flex; width:100%; justify-content:space-between; font-size:11px; color:#888">
-                    <span>A</span><span>B</span>
-                </div>
-            </div>
         </div>
     </div>
     
@@ -1615,13 +1612,20 @@
         const mixBStatusDot = document.getElementById('mix-b-status-dot');
         const mixBStatusText = document.getElementById('mix-b-status-text');
         function updateMixBStatus() {
+            // Check the active dynamic audio object first, fallback to the static element
+            const activeB = state.audioElB || audioElB;
+            
             const playing = !!(
-                (audioElB && !audioElB.paused && !audioElB.ended) ||
+                (activeB && !activeB.paused && !activeB.ended) ||
                 (audioElSample && !audioElSample.paused && !audioElSample.ended) ||
                 (audioElSample1 && !audioElSample1.paused && !audioElSample1.ended) ||
                 (audioElSample2 && !audioElSample2.paused && !audioElSample2.ended) ||
-                (audioElSample3 && !audioElSample3.paused && !audioElSample3.ended)
+                (audioElSample3 && !audioElSample3.paused && !audioElSample3.ended) ||
+                (audioElSample4 && !audioElSample4.paused && !audioElSample4.ended) ||
+                (audioElSample5 && !audioElSample5.paused && !audioElSample5.ended) ||
+                (audioElSample6 && !audioElSample6.paused && !audioElSample6.ended)
             );
+            
             if (mixBStatusDot) mixBStatusDot.classList.toggle('on', playing);
             if (mixBStatusText) mixBStatusText.textContent = playing ? 'B: Playing' : 'B: Stopped';
         }
@@ -2214,25 +2218,30 @@ function randomGlowColor() {
                         handledSwipe = true;
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
-                        // Guard against follow-up wheel/touch events opening the opposite panel
+                        
+                        // Guard against follow-up events
                         const guardUntil = (typeof window !== 'undefined' && window.__panelGuardUntilMs) ? window.__panelGuardUntilMs : 0;
-                        const nowMs = Date.now();
-                        if (nowMs < guardUntil) return;
-                        // If any panel is currently open, only close it and do not open others
-                        try {
-                            const topOpen = (typeof isTopMenuOpen === 'function') && isTopMenuOpen();
-                            const bottomOpen = (typeof isBottomMenuOpen === 'function') && isBottomMenuOpen();
-                            if (topOpen) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
-                            if (bottomOpen) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
-                        } catch(_) {}
-                        if (dy > 0) { // swipe down
-                            if (typeof isBottomMenuOpen === 'function' && isBottomMenuOpen()) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
-                            if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
+                        if (Date.now() < guardUntil) return;
+
+                        // Check which panels are currently open
+                        const topOpen = (typeof isTopMenuOpen === 'function') && isTopMenuOpen();
+                        const avatarOpen = (typeof isBottomMenuOpen === 'function') && isBottomMenuOpen(); // Now the side panel
+                        // Check if Mix Panel is open (manually since it doesn't have an isXOpen helper)
+                        const mixOpen = mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open');
+
+                        // PRIORITY: Close any open panel before opening a new one
+                        if (topOpen) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
+                        if (avatarOpen) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
+                        
+                        if (dy > 0) { // SWIPE DOWN
+                            // If Mix Panel is open at the bottom, swipe down should close it
+                            if (mixOpen) { toggleMixPanel(); return; }
+                            
+                            // Otherwise, open the Top Menu
                             if (typeof openTopMenuPanel === 'function') openTopMenuPanel();
-                        } else { // swipe up
-                            if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
-                            if (typeof isBottomMenuOpen === 'function' && isBottomMenuOpen()) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
-                            if (typeof openBottomMenuPanel === 'function') openBottomMenuPanel();
+                        } else { // SWIPE UP
+                            // Open Mix Settings (instead of Avatar/WebM)
+                            if (!mixOpen) toggleMixPanel();
                         }
                         return;
                     }
@@ -2298,6 +2307,7 @@ function randomGlowColor() {
                     }, { passive: false });
                 }
                 // Wheel: scroll UP opens top menu; scroll DOWN opens bottom menu; never open the other when closing (trackpads/mice)
+                // Wheel: scroll UP opens top menu; scroll DOWN opens Mix Settings (bottom); 
                 let lastWheelAt = 0;
                 canvasEl.addEventListener('wheel', (e) => {
                     if (!state || !state.isPlaying) return;
@@ -2306,18 +2316,29 @@ function randomGlowColor() {
                     if (now < guardUntil) return;
                     if (now - lastWheelAt < 250) return;
                     lastWheelAt = now;
+                    
                     const dy = e.deltaY || 0;
+                    
+                    // Check if Mix Panel is open (manual check)
+                    const mixOpen = mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open');
+                    // Check if Side/Avatar Panel is open
+                    const sideOpen = typeof isBottomMenuOpen === 'function' && isBottomMenuOpen();
+                    // Check if Top Menu is open
+                    const topOpen = typeof isTopMenuOpen === 'function' && isTopMenuOpen();
+
                     if (dy < 0) {
-                        // scrolling up
+                        // SCROLL UP: Open Top Menu (or close others)
                         try {
-                            if (typeof isBottomMenuOpen === 'function' && isBottomMenuOpen()) { closeBottomMenuPanel(); return; }
-                            if (typeof isTopMenuOpen === 'function' && !isTopMenuOpen()) { openTopMenuPanel(); }
+                            if (mixOpen) { toggleMixPanel(); return; }
+                            if (sideOpen) { closeBottomMenuPanel(); return; }
+                            if (!topOpen) { openTopMenuPanel(); }
                         } catch(_) {}
                     } else if (dy > 0) {
-                        // scrolling down
+                        // SCROLL DOWN: Open Mix Settings at Bottom (or close others)
                         try {
-                            if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) { closeTopMenuPanel(); return; }
-                            if (typeof isBottomMenuOpen === 'function' && !isBottomMenuOpen()) { openBottomMenuPanel(); }
+                            if (topOpen) { closeTopMenuPanel(); return; }
+                            if (sideOpen) { closeBottomMenuPanel(); return; }
+                            if (!mixOpen) { toggleMixPanel(); }
                         } catch(_) {}
                     }
                 }, { passive: true });
@@ -5532,11 +5553,9 @@ function stopAllAndShowStart() {
             const sel = stations[idx];
             if (!sel || !sel.url) return;
 
-            // 1. CLEANUP: Stop and disconnect any existing B stream
+            // 1. CLEANUP: Stop existing
             if (state.audioElB) {
                 try { state.audioElB.pause(); } catch(e) {}
-                try { state.audioElB.removeAttribute('src'); } catch(e) {}
-                try { state.audioElB.load(); } catch(e) {}
                 state.audioElB = null; 
             }
             if (state.sourceNodeB) {
@@ -5544,24 +5563,26 @@ function stopAllAndShowStart() {
                 state.sourceNodeB = null;
             }
 
-            // 2. CREATE NEW: Create a fresh Audio object and Source Node
-            // This prevents Firefox from "leaking" audio to speakers and keeps Chrome happy
+            // 2. CREATE NEW
             const newAudio = new Audio();
             newAudio.crossOrigin = "anonymous";
             newAudio.src = sel.url;
             
-            // Store it in state so we can stop it later
+            // Store in state
             state.audioElB = newAudio;
 
+            // *** FIX: Bind status updates to this new audio object ***
+            ['play', 'pause', 'ended', 'error', 'waiting', 'playing'].forEach(ev => {
+                newAudio.addEventListener(ev, updateMixBStatus);
+            });
+
             newAudio.play().then(() => {
-                // Create the MediaElementSource only once the new element is ready
                 state.sourceNodeB = state.audioCtx.createMediaElementSource(newAudio);
-                
-                // Connect to the Mix B Gain (which goes to the crossfader)
                 state.sourceNodeB.connect(state.streamBGain);
-                
                 rebuildEffectsChain();
-                updateMixBStatus();
+                
+                updateMixBStatus(); // Force update immediately
+                
                 try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
             }).catch((e) => {
                 console.warn("Stream B Playback Error:", e);
