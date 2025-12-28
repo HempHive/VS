@@ -1066,6 +1066,7 @@
 
             <!-- SETTINGS BUTTON -->
             <button class="icon-btn interactive" id="btn-settings" title="Visualizer Settings">🎚️</button>
+            <button class="icon-btn interactive" id="btn-webm-panel-toggle" title="Avatar Settings">💃</button>
             
         </div>
 
@@ -5359,6 +5360,18 @@ function stopAllAndShowStart() {
         const fileInputEl = document.getElementById('file-input');
         if (fileInputEl) fileInputEl.addEventListener('change', useFile);
         document.getElementById('btn-fullscreen')?.addEventListener('click', toggleFullscreen);
+        const btnWebmPanelToggle = document.getElementById('btn-webm-panel-toggle');
+        if (btnWebmPanelToggle) {
+            btnWebmPanelToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Toggle the Avatar/WebM Panel (which is now the right-side panel)
+                if (typeof toggleBottomMenuPanel === 'function') {
+                    toggleBottomMenuPanel();
+                }
+                resetIdleTimer();
+            });
+        }
         // Repurpose: WebM button opens Text-In panel instead of toggling WebM overlay
         if (webmBtn) {
             webmBtn.title = "Open Text-In Panel";
