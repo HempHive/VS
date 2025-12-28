@@ -2704,41 +2704,54 @@ function randomGlowColor() {
 				state.gainNode = state.audioCtx.createGain();
 				state.gainNode.gain.value = 1.0;
 
-                // Create Gains for Crossfader
+                // --- MIXER CHANNELS ---
                 state.streamAGain = state.audioCtx.createGain();
                 state.streamBGain = state.audioCtx.createGain();
                 state.streamAGain.gain.value = 1.0; 
                 state.streamBGain.gain.value = 0.0; 
                 state.mixInput = state.audioCtx.createGain();
 
-                // --- CHANNEL A EQ ---
+                // --- CHANNEL A EQ & TRIM ---
                 state.trimA = state.audioCtx.createGain(); state.trimA.gain.value = eqState.a.gain;
                 state.eqA = {
                     high: state.audioCtx.createBiquadFilter(),
                     mid: state.audioCtx.createBiquadFilter(),
                     low: state.audioCtx.createBiquadFilter()
                 };
+                // Configure A Filters
                 state.eqA.high.type = 'highshelf'; state.eqA.high.frequency.value = 3000; state.eqA.high.gain.value = eqState.a.high;
                 state.eqA.mid.type = 'peaking'; state.eqA.mid.frequency.value = 1000; state.eqA.mid.gain.value = eqState.a.mid;
                 state.eqA.low.type = 'lowshelf'; state.eqA.low.frequency.value = 200; state.eqA.low.gain.value = eqState.a.low;
-                state.eqA.high.connect(state.eqA.mid); state.eqA.mid.connect(state.eqA.low); state.eqA.low.connect(state.trimA); state.trimA.connect(state.streamAGain);
+                
+                // Chain A: High -> Mid -> Low -> Trim -> CrossfaderA
+                state.eqA.high.connect(state.eqA.mid);
+                state.eqA.mid.connect(state.eqA.low);
+                state.eqA.low.connect(state.trimA);
+                state.trimA.connect(state.streamAGain);
 
-                // --- CHANNEL B EQ ---
+                // --- CHANNEL B EQ & TRIM ---
                 state.trimB = state.audioCtx.createGain(); state.trimB.gain.value = eqState.b.gain;
                 state.eqB = {
                     high: state.audioCtx.createBiquadFilter(),
                     mid: state.audioCtx.createBiquadFilter(),
                     low: state.audioCtx.createBiquadFilter()
                 };
+                // Configure B Filters
                 state.eqB.high.type = 'highshelf'; state.eqB.high.frequency.value = 3000; state.eqB.high.gain.value = eqState.b.high;
                 state.eqB.mid.type = 'peaking'; state.eqB.mid.frequency.value = 1000; state.eqB.mid.gain.value = eqState.b.mid;
                 state.eqB.low.type = 'lowshelf'; state.eqB.low.frequency.value = 200; state.eqB.low.gain.value = eqState.b.low;
-                state.eqB.high.connect(state.eqB.mid); state.eqB.mid.connect(state.eqB.low); state.eqB.low.connect(state.trimB); state.trimB.connect(state.streamBGain);
 
+                // Chain B: High -> Mid -> Low -> Trim -> CrossfaderB
+                state.eqB.high.connect(state.eqB.mid);
+                state.eqB.mid.connect(state.eqB.low);
+                state.eqB.low.connect(state.trimB);
+                state.trimB.connect(state.streamBGain);
+
+                // Connect to Main Mix
                 state.streamAGain.connect(state.mixInput);
                 state.streamBGain.connect(state.mixInput);
                 
-                // Existing FX chain...
+                // --- EFFECTS & MASTER ---
                 state.fx = {
                     low: { node: state.audioCtx.createBiquadFilter(), on: false },
                     high: { node: state.audioCtx.createBiquadFilter(), on: false },
@@ -2750,6 +2763,7 @@ function randomGlowColor() {
                     echoFeedback: { node: state.audioCtx.createGain(), on: false },
                     distort: { node: state.audioCtx.createWaveShaper(), on: false }
                 };
+                // (Standard FX configuration...)
                 state.fx.low.node.type = 'lowpass'; state.fx.low.node.frequency.value = 1800;
                 state.fx.high.node.type = 'highpass'; state.fx.high.node.frequency.value = 200;
                 state.fx.bass.node.type = 'peaking'; state.fx.bass.node.frequency.value = 100; state.fx.bass.node.Q.value = 1.0; state.fx.bass.node.gain.value = 6;
@@ -2765,6 +2779,7 @@ function randomGlowColor() {
                 for (let i=0;i<curveLen;i++){ const x = i/curveLen*2-1; curve[i] = ((3+amount)*x*20*Math.PI/180)/(Math.PI+amount*Math.abs(x)); }
                 state.fx.distort.node.curve = curve; state.fx.distort.node.oversample = '4x';
 
+                // Master Output
                 try { state.mixInput.disconnect(); } catch(_) {}
                 state.mixInput.connect(state.analyserNode);
                 try { state.analyserNode.disconnect(); } catch(_) {}
@@ -2780,14 +2795,12 @@ function randomGlowColor() {
                 try { applyCrossfade(0); } catch(_) {}
                 
                 // --- BIND KNOBS ---
-                // We bind them here so they update the Live Audio Nodes
-                // Stream A
+                // Bind A
                 bindKnob('knob-a-gain', 0, 2, eqState.a.gain, eqState.a, 'gain', v => { if(state.trimA) state.trimA.gain.value = v; });
                 bindKnob('knob-a-high', -20, 20, eqState.a.high, eqState.a, 'high', v => { if(state.eqA.high) state.eqA.high.gain.value = v; });
                 bindKnob('knob-a-mid', -20, 20, eqState.a.mid, eqState.a, 'mid', v => { if(state.eqA.mid) state.eqA.mid.gain.value = v; });
                 bindKnob('knob-a-low', -20, 20, eqState.a.low, eqState.a, 'low', v => { if(state.eqA.low) state.eqA.low.gain.value = v; });
-                
-                // Stream B
+                // Bind B
                 bindKnob('knob-b-gain', 0, 2, eqState.b.gain, eqState.b, 'gain', v => { if(state.trimB) state.trimB.gain.value = v; });
                 bindKnob('knob-b-high', -20, 20, eqState.b.high, eqState.b, 'high', v => { if(state.eqB.high) state.eqB.high.gain.value = v; });
                 bindKnob('knob-b-mid', -20, 20, eqState.b.mid, eqState.b, 'mid', v => { if(state.eqB.mid) state.eqB.mid.gain.value = v; });
@@ -2988,7 +3001,6 @@ function randomGlowColor() {
             if (!url) return;
             statusEl.innerText = "Connecting to Stream...";
             
-            // Update Banner
             (function updateInitialStationTitle() {
                 let nameToShow = null;
                 if (currentStationIndex >= 0 && stations[currentStationIndex] && stations[currentStationIndex].url === url) {
@@ -3007,9 +3019,14 @@ function randomGlowColor() {
                 }
                 state.sourceNode = state.radioElementSource;
                 
-                // --- NEW ROUTING: Connect to EQ Chain A instead of direct Gain ---
+                // IMPORTANT: Disconnect from previous, Connect to EQ Chain
                 try { state.sourceNode.disconnect(); } catch(_) {}
-                state.sourceNode.connect(state.eqA.high);
+                
+                if (state.eqA && state.eqA.high) {
+                    state.sourceNode.connect(state.eqA.high); // <--- HERE IS THE CONNECTION
+                } else {
+                    state.sourceNode.connect(state.streamAGain); // Fallback
+                }
                 
                 rebuildEffectsChain();
                 try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
@@ -3018,9 +3035,10 @@ function randomGlowColor() {
                 if(!state.isPlaying) startGame();
                 radioRetryAttempts = 0;
             }).catch(e => {
-                // Retry logic (abbreviated for brevity, essentially same as before)
                 console.error("Stream playback failed:", e);
+                // retry logic...
             });
+        
         
             
             // --- FIX START: Reuse MediaElementSource ---
@@ -5853,10 +5871,12 @@ function stopAllAndShowStart() {
         // Play/Stop B
         function playRadioB() {
             initAudio();
+            
             let val = parseInt((mixStationB?.value)||'0', 10);
             if (isNaN(val)) val = 0;
             const idx = Math.max(0, Math.min(stations.length - 1, val));
             currentStationBIndex = idx; 
+
             const sel = stations[idx];
             if (!sel || !sel.url) return;
 
@@ -5866,19 +5886,26 @@ function stopAllAndShowStart() {
             media.src = sel.url;
             state.audioElB = media;
 
+            // Connect to Web Audio Graph
             try {
                 if (!state.radioElementSourceB) {
                     state.radioElementSourceB = state.audioCtx.createMediaElementSource(media);
                 }
                 state.sourceNodeB = state.radioElementSourceB;
+
                 try { state.sourceNodeB.disconnect(); } catch(e) {}
                 
-                // --- NEW ROUTING: Connect to EQ Chain B instead of direct Gain ---
-                state.sourceNodeB.connect(state.eqB.high);
+                if (state.eqB && state.eqB.high) {
+                    state.sourceNodeB.connect(state.eqB.high); // <--- HERE IS THE CONNECTION
+                } else {
+                    state.sourceNodeB.connect(state.streamBGain); // Fallback
+                }
                 
                 rebuildEffectsChain();
                 try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
-            } catch(e) { console.warn("Web Audio setup failed:", e); }
+            } catch(e) {
+                console.warn("Web Audio setup failed:", e);
+            }
 
             media.play().then(() => {
                 updateMixBStatus();
