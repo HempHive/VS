@@ -702,36 +702,80 @@
             background: transparent;
             cursor: pointer;
         }
-        /* EQ Knob / Fader Style */
+        /* ROTARY KNOB STYLES (Final Layout Fix) */
         .eq-strip {
             display: flex;
-            justify-content: space-between;
+            align-items: stretch;   /* Ensures divider line stretches full height */
+            justify-content: space-between; 
             margin-top: 12px;
-            padding: 8px;
+            padding: 8px 12px;
             background: rgba(0,0,0,0.3);
             border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
         .eq-group {
             display: flex;
-            gap: 4px;
+            flex: 1;                /* Force groups to take up equal width */
+            justify-content: space-between; /* Spread knobs evenly inside the group */
+        }
+        .eq-divider {
+            width: 1px;
+            background: rgba(255,255,255,0.15);
+            margin: 0 24px;         /* Adds 24px space on both sides (48px total gap) */
+            flex-shrink: 0;         /* Prevents line from disappearing if squeezed */
         }
         .eq-col {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
+            width: 32px; 
         }
-        .eq-knob {
-            -webkit-appearance: slider-vertical; /* Vertical orientation */
-            width: 12px;
-            height: 50px; /* Compact height */
-            background: transparent;
-            cursor: pointer;
+        .knob-wrap {
+            position: relative;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: radial-gradient(100% 100% at 50% 20%, #444 0%, #111 100%);
+            border: 1px solid #555;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.2);
+            cursor: ns-resize; /* Indicates drag up/down */
+        }
+        /* The colored line on the knob */
+        .knob-indicator {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 2px; height: 45%;
+            background: var(--knob-color, #fff);
+            transform-origin: 50% 0; /* Pivot from center */
+            transform: translate(-50%, 0) rotate(180deg); /* Point down by default */
+            border-radius: 2px;
+            pointer-events: none;
+            box-shadow: 0 0 4px var(--knob-color, #fff);
         }
         .eq-label {
             font-size: 9px;
             color: #888;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+        /* Tooltip for value while dragging */
+        .knob-value {
+            position: absolute;
+            top: -18px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+        .knob-wrap:active .knob-value, .knob-wrap:hover .knob-value {
+            opacity: 1;
         }
         /* WebKit track */
         #settings-panel input[type="range"]::-webkit-slider-runnable-track,
@@ -1420,42 +1464,59 @@
                     <select id="mix-station-b" class="textin-select" style="width: 100%"></select>
 
                     <div class="eq-strip">
+                        
                         <div class="eq-group">
                             <div class="eq-col">
-                                <input type="range" id="eq-a-gain" class="eq-knob" min="0" max="2" step="0.01" value="1" title="Gain A">
-                                <div class="eq-label" style="color:#0ff">Gain</div>
+                                <div class="knob-wrap" id="knob-a-low" style="--knob-color:#0ff">
+                                    <div class="knob-indicator"></div><div class="knob-value">0</div>
+                                </div>
+                                <div class="eq-label">Lo</div>
                             </div>
                             <div class="eq-col">
-                                <input type="range" id="eq-a-high" class="eq-knob" min="-20" max="20" step="1" value="0" title="High A">
-                                <div class="eq-label">Hi</div>
-                            </div>
-                            <div class="eq-col">
-                                <input type="range" id="eq-a-mid" class="eq-knob" min="-20" max="20" step="1" value="0" title="Mid A">
+                                <div class="knob-wrap" id="knob-a-mid" style="--knob-color:#0ff">
+                                    <div class="knob-indicator"></div><div class="knob-value">0</div>
+                                </div>
                                 <div class="eq-label">Mid</div>
                             </div>
                             <div class="eq-col">
-                                <input type="range" id="eq-a-low" class="eq-knob" min="-20" max="20" step="1" value="0" title="Low A">
-                                <div class="eq-label">Lo</div>
+                                <div class="knob-wrap" id="knob-a-high" style="--knob-color:#0ff">
+                                    <div class="knob-indicator"></div><div class="knob-value">0</div>
+                                </div>
+                                <div class="eq-label">Hi</div>
+                            </div>
+                            <div class="eq-col">
+                                <div class="knob-wrap" id="knob-a-gain" style="--knob-color:#0ff">
+                                    <div class="knob-indicator"></div><div class="knob-value">1.0</div>
+                                </div>
+                                <div class="eq-label" style="color:#0ff">Gain</div>
                             </div>
                         </div>
                         
-                        <div style="width:1px; background:rgba(255,255,255,0.1); margin:0 4px;"></div>
+                        <div class="eq-divider"></div>
 
                         <div class="eq-group">
                             <div class="eq-col">
-                                <input type="range" id="eq-b-gain" class="eq-knob" min="0" max="2" step="0.01" value="1" title="Gain B">
+                                <div class="knob-wrap" id="knob-b-gain" style="--knob-color:#f0f">
+                                    <div class="knob-indicator"></div><div class="knob-value">1.0</div>
+                                </div>
                                 <div class="eq-label" style="color:#f0f">Gain</div>
                             </div>
                             <div class="eq-col">
-                                <input type="range" id="eq-b-high" class="eq-knob" min="-20" max="20" step="1" value="0" title="High B">
+                                <div class="knob-wrap" id="knob-b-high" style="--knob-color:#f0f">
+                                    <div class="knob-indicator"></div><div class="knob-value">0</div>
+                                </div>
                                 <div class="eq-label">Hi</div>
                             </div>
                             <div class="eq-col">
-                                <input type="range" id="eq-b-mid" class="eq-knob" min="-20" max="20" step="1" value="0" title="Mid B">
+                                <div class="knob-wrap" id="knob-b-mid" style="--knob-color:#f0f">
+                                    <div class="knob-indicator"></div><div class="knob-value">0</div>
+                                </div>
                                 <div class="eq-label">Mid</div>
                             </div>
                             <div class="eq-col">
-                                <input type="range" id="eq-b-low" class="eq-knob" min="-20" max="20" step="1" value="0" title="Low B">
+                                <div class="knob-wrap" id="knob-b-low" style="--knob-color:#f0f">
+                                    <div class="knob-indicator"></div><div class="knob-value">0</div>
+                                </div>
                                 <div class="eq-label">Lo</div>
                             </div>
                         </div>
@@ -1789,6 +1850,76 @@
             opacity: 0.82,
             duplicates: 0
         };
+        // EQ State Storage
+        const eqState = {
+            a: { gain: 1.0, high: 0, mid: 0, low: 0 },
+            b: { gain: 1.0, high: 0, mid: 0, low: 0 }
+        };
+
+        // Helper to bind a visual knob to a value and callback
+        // Helper to bind a visual knob to a value and callback
+        function bindKnob(id, min, max, initial, stateObj, key, callback) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const indicator = el.querySelector('.knob-indicator');
+            const valTooltip = el.querySelector('.knob-value');
+            
+            // FIX: Start at 45deg (Bottom-Left) and sweep 270deg to 315deg (Bottom-Right)
+            // This rotates the whole logic 180 degrees compared to before.
+            const updateVisuals = (val) => {
+                const pct = (val - min) / (max - min);
+                const deg = 45 + (pct * 270); 
+                if (indicator) indicator.style.transform = `translate(-50%, 0) rotate(${deg}deg)`;
+                if (valTooltip) valTooltip.textContent = (Math.round(val * 10) / 10);
+            };
+
+            // Set initial
+            stateObj[key] = initial;
+            updateVisuals(initial);
+
+            // Drag Interaction
+            let startY = 0;
+            let startVal = 0;
+
+            const onMove = (e) => {
+                const y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+                const dy = startY - y; // Drag up = positive
+                const range = max - min;
+                const delta = (dy / 200) * range; 
+                let newVal = Math.max(min, Math.min(max, startVal + delta));
+                
+                stateObj[key] = newVal;
+                updateVisuals(newVal);
+                if (callback) callback(newVal);
+            };
+
+            const onUp = () => {
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('touchmove', onMove);
+                window.removeEventListener('mouseup', onUp);
+                window.removeEventListener('touchend', onUp);
+            };
+
+            const onDown = (e) => {
+                e.preventDefault();
+                startY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+                startVal = stateObj[key];
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('touchmove', onMove, {passive: false});
+                window.addEventListener('mouseup', onUp);
+                window.addEventListener('touchend', onUp);
+            };
+
+            el.addEventListener('mousedown', onDown);
+            el.addEventListener('touchstart', onDown, {passive: false});
+            
+            el.addEventListener('dblclick', () => {
+                const def = (key === 'gain') ? 1.0 : 0;
+                stateObj[key] = def;
+                updateVisuals(def);
+                if (callback) callback(def);
+            });
+        }
         // Radio retry policy
         let radioRetryAttempts = 0;
         const MAX_RADIO_RETRIES = 6;
@@ -2570,11 +2701,9 @@ function randomGlowColor() {
                 state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 state.analyserNode = state.audioCtx.createAnalyser();
                 state.analyserNode.fftSize = 2048; 
-				// Master gain
 				state.gainNode = state.audioCtx.createGain();
 				state.gainNode.gain.value = 1.0;
 
-                // --- MIXER CHANNELS ---
                 // Create Gains for Crossfader
                 state.streamAGain = state.audioCtx.createGain();
                 state.streamBGain = state.audioCtx.createGain();
@@ -2582,66 +2711,34 @@ function randomGlowColor() {
                 state.streamBGain.gain.value = 0.0; 
                 state.mixInput = state.audioCtx.createGain();
 
-                // --- NEW: Channel EQ & Pre-Fader Gain ---
-                
-                // CHANNEL A NODES
-                state.trimA = state.audioCtx.createGain(); state.trimA.gain.value = 1.0;
+                // --- CHANNEL A EQ ---
+                state.trimA = state.audioCtx.createGain(); state.trimA.gain.value = eqState.a.gain;
                 state.eqA = {
                     high: state.audioCtx.createBiquadFilter(),
                     mid: state.audioCtx.createBiquadFilter(),
                     low: state.audioCtx.createBiquadFilter()
                 };
-                state.eqA.high.type = 'highshelf'; state.eqA.high.frequency.value = 3000;
-                state.eqA.mid.type = 'peaking'; state.eqA.mid.frequency.value = 1000;
-                state.eqA.low.type = 'lowshelf'; state.eqA.low.frequency.value = 200;
+                state.eqA.high.type = 'highshelf'; state.eqA.high.frequency.value = 3000; state.eqA.high.gain.value = eqState.a.high;
+                state.eqA.mid.type = 'peaking'; state.eqA.mid.frequency.value = 1000; state.eqA.mid.gain.value = eqState.a.mid;
+                state.eqA.low.type = 'lowshelf'; state.eqA.low.frequency.value = 200; state.eqA.low.gain.value = eqState.a.low;
+                state.eqA.high.connect(state.eqA.mid); state.eqA.mid.connect(state.eqA.low); state.eqA.low.connect(state.trimA); state.trimA.connect(state.streamAGain);
 
-                // Chain A: Input(Source) -> High -> Mid -> Low -> Trim -> CrossfaderGain -> MixInput
-                state.eqA.high.connect(state.eqA.mid);
-                state.eqA.mid.connect(state.eqA.low);
-                state.eqA.low.connect(state.trimA);
-                state.trimA.connect(state.streamAGain);
-
-                // CHANNEL B NODES
-                state.trimB = state.audioCtx.createGain(); state.trimB.gain.value = 1.0;
+                // --- CHANNEL B EQ ---
+                state.trimB = state.audioCtx.createGain(); state.trimB.gain.value = eqState.b.gain;
                 state.eqB = {
                     high: state.audioCtx.createBiquadFilter(),
                     mid: state.audioCtx.createBiquadFilter(),
                     low: state.audioCtx.createBiquadFilter()
                 };
-                state.eqB.high.type = 'highshelf'; state.eqB.high.frequency.value = 3000;
-                state.eqB.mid.type = 'peaking'; state.eqB.mid.frequency.value = 1000;
-                state.eqB.low.type = 'lowshelf'; state.eqB.low.frequency.value = 200;
+                state.eqB.high.type = 'highshelf'; state.eqB.high.frequency.value = 3000; state.eqB.high.gain.value = eqState.b.high;
+                state.eqB.mid.type = 'peaking'; state.eqB.mid.frequency.value = 1000; state.eqB.mid.gain.value = eqState.b.mid;
+                state.eqB.low.type = 'lowshelf'; state.eqB.low.frequency.value = 200; state.eqB.low.gain.value = eqState.b.low;
+                state.eqB.high.connect(state.eqB.mid); state.eqB.mid.connect(state.eqB.low); state.eqB.low.connect(state.trimB); state.trimB.connect(state.streamBGain);
 
-                // Chain B: Input(Source) -> High -> Mid -> Low -> Trim -> CrossfaderGain -> MixInput
-                state.eqB.high.connect(state.eqB.mid);
-                state.eqB.mid.connect(state.eqB.low);
-                state.eqB.low.connect(state.trimB);
-                state.trimB.connect(state.streamBGain);
-
-                // Connect Crossfaders to Mix Bus
                 state.streamAGain.connect(state.mixInput);
                 state.streamBGain.connect(state.mixInput);
-
-                // --- EQ EVENT LISTENERS ---
-                // Helper to bind slider to node param
-                const bindEq = (id, node, param) => {
-                    const el = document.getElementById(id);
-                    if(el) el.addEventListener('input', () => { 
-                        if(node && node[param]) node[param].value = Number(el.value); 
-                    });
-                };
-                bindEq('eq-a-gain', state.trimA.gain, 'value');
-                bindEq('eq-a-high', state.eqA.high.gain, 'value');
-                bindEq('eq-a-mid', state.eqA.mid.gain, 'value');
-                bindEq('eq-a-low', state.eqA.low.gain, 'value');
-
-                bindEq('eq-b-gain', state.trimB.gain, 'value');
-                bindEq('eq-b-high', state.eqB.high.gain, 'value');
-                bindEq('eq-b-mid', state.eqB.mid.gain, 'value');
-                bindEq('eq-b-low', state.eqB.low.gain, 'value');
-
-                // --- EXISTING FX & MASTER CHAIN ---
-                // Effect nodes
+                
+                // Existing FX chain...
                 state.fx = {
                     low: { node: state.audioCtx.createBiquadFilter(), on: false },
                     high: { node: state.audioCtx.createBiquadFilter(), on: false },
@@ -2653,12 +2750,10 @@ function randomGlowColor() {
                     echoFeedback: { node: state.audioCtx.createGain(), on: false },
                     distort: { node: state.audioCtx.createWaveShaper(), on: false }
                 };
-                // Configure filters
                 state.fx.low.node.type = 'lowpass'; state.fx.low.node.frequency.value = 1800;
                 state.fx.high.node.type = 'highpass'; state.fx.high.node.frequency.value = 200;
                 state.fx.bass.node.type = 'peaking'; state.fx.bass.node.frequency.value = 100; state.fx.bass.node.Q.value = 1.0; state.fx.bass.node.gain.value = 6;
                 state.fx.treble.node.type = 'peaking'; state.fx.treble.node.frequency.value = 4000; state.fx.treble.node.Q.value = 0.7; state.fx.treble.node.gain.value = 6;
-                // Arpitagor setup...
                 state.fx.arp.filter.type = 'bandpass'; state.fx.arp.filter.frequency.value = 800; state.fx.arp.filter.Q.value = 2.0;
                 state.fx.arp.lfo.type = 'square'; state.fx.arp.lfo.frequency.value = 4.0; state.fx.arp.lfoGain.gain.value = 0; 
                 state.fx.arp.lfo.connect(state.fx.arp.lfoGain);
@@ -2669,20 +2764,34 @@ function randomGlowColor() {
                 const curveLen = 44100; const curve = new Float32Array(curveLen); const amount = 120;
                 for (let i=0;i<curveLen;i++){ const x = i/curveLen*2-1; curve[i] = ((3+amount)*x*20*Math.PI/180)/(Math.PI+amount*Math.abs(x)); }
                 state.fx.distort.node.curve = curve; state.fx.distort.node.oversample = '4x';
-                
-                // Build Chain
+
                 try { state.mixInput.disconnect(); } catch(_) {}
                 state.mixInput.connect(state.analyserNode);
                 try { state.analyserNode.disconnect(); } catch(_) {}
                 state.analyserNode.connect(state.gainNode);
                 try { state.gainNode.disconnect(); } catch(_) {}
                 state.gainNode.connect(state.audioCtx.destination);
+
 				if (volumeSlider) {
 					volumeSlider.value = String(0.2);
 					volumeSlider.addEventListener('input', (e) => setVolume(volumeSlider.value));
 					try { setVolume(0.2); } catch(e) {}
 				}
                 try { applyCrossfade(0); } catch(_) {}
+                
+                // --- BIND KNOBS ---
+                // We bind them here so they update the Live Audio Nodes
+                // Stream A
+                bindKnob('knob-a-gain', 0, 2, eqState.a.gain, eqState.a, 'gain', v => { if(state.trimA) state.trimA.gain.value = v; });
+                bindKnob('knob-a-high', -20, 20, eqState.a.high, eqState.a, 'high', v => { if(state.eqA.high) state.eqA.high.gain.value = v; });
+                bindKnob('knob-a-mid', -20, 20, eqState.a.mid, eqState.a, 'mid', v => { if(state.eqA.mid) state.eqA.mid.gain.value = v; });
+                bindKnob('knob-a-low', -20, 20, eqState.a.low, eqState.a, 'low', v => { if(state.eqA.low) state.eqA.low.gain.value = v; });
+                
+                // Stream B
+                bindKnob('knob-b-gain', 0, 2, eqState.b.gain, eqState.b, 'gain', v => { if(state.trimB) state.trimB.gain.value = v; });
+                bindKnob('knob-b-high', -20, 20, eqState.b.high, eqState.b, 'high', v => { if(state.eqB.high) state.eqB.high.gain.value = v; });
+                bindKnob('knob-b-mid', -20, 20, eqState.b.mid, eqState.b, 'mid', v => { if(state.eqB.mid) state.eqB.mid.gain.value = v; });
+                bindKnob('knob-b-low', -20, 20, eqState.b.low, eqState.b, 'low', v => { if(state.eqB.low) state.eqB.low.gain.value = v; });
             }
             if(state.audioCtx.state === 'suspended') state.audioCtx.resume();
         }
