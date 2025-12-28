@@ -5476,19 +5476,19 @@ function stopAllAndShowStart() {
             mixStationB.innerHTML = '';
             
             if (Array.isArray(stations) && stations.length > 0) {
-                // Validate index
-                if (currentStationBIndex < 0 || currentStationBIndex >= stations.length) {
+                // Ensure index is valid
+                if (typeof currentStationBIndex !== 'number' || currentStationBIndex < 0) {
                     currentStationBIndex = 0;
                 }
-
+                
                 stations.forEach((s, i) => {
                     const opt = document.createElement('option');
                     opt.value = String(i);
                     opt.textContent = s.name || ('Station ' + (i+1));
                     mixStationB.appendChild(opt);
                 });
-                
-                // Restore the active selection
+
+                // RESTORE THE SAVED SELECTION
                 mixStationB.value = String(currentStationBIndex);
             }
         }
@@ -5617,32 +5617,34 @@ function stopAllAndShowStart() {
         // Play/Stop B
         function playRadioB() {
             initAudio();
-            const idx = Math.max(0, Math.min(stations.length - 1, parseInt((mixStationB?.value)||'0', 10) || 0));
+            
+            // 1. Get the value and SAVE it to the global variable
+            let val = parseInt((mixStationB?.value)||'0', 10);
+            if (isNaN(val)) val = 0;
+            const idx = Math.max(0, Math.min(stations.length - 1, val));
+            
+            currentStationBIndex = idx; // <--- SAVED!
+
             const sel = stations[idx];
             if (!sel || !sel.url) return;
 
-            // FIX: Use the persistent DOM element (audioElB) instead of new Audio()
-            // This ensures Firefox correctly routes audio through the Gain Node/Crossfader.
+            // 2. Playback Logic (Firefox compatible)
             const media = audioElB; 
 
-            // Stop any previous playback
+            // Stop previous
             try { media.pause(); } catch(e) {}
             
             media.crossOrigin = "anonymous";
             media.src = sel.url;
             
-            // Update state reference
             state.audioElB = media;
 
             media.play().then(() => {
-                // Create Source Node ONLY ONCE and store it
-                // (Creating multiple sources for the same element throws errors in some browsers)
                 if (!state.radioElementSourceB) {
                     state.radioElementSourceB = state.audioCtx.createMediaElementSource(media);
                 }
                 state.sourceNodeB = state.radioElementSourceB;
 
-                // Connect to Stream B Gain (The Crossfader Control)
                 try { state.sourceNodeB.disconnect(); } catch(e) {}
                 state.sourceNodeB.connect(state.streamBGain);
                 
