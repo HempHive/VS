@@ -461,9 +461,9 @@
             white-space: pre-wrap; text-align: center;
         }
         /* FORCE CROSSFADER IMAGE HANDLE */
-/* We use #mix-content #mix-crossfader to beat the specificity of the global rules */
+/* Updated to target #mix-panel so it works in the header too */
 
-#mix-content #mix-crossfader {
+#mix-panel #mix-crossfader {
     -webkit-appearance: none;
     appearance: none;
     height: 14px !important; /* Match volume track height */
@@ -474,7 +474,7 @@
 }
 
 /* Chrome / Edge / Safari */
-#mix-content #mix-crossfader::-webkit-slider-thumb {
+#mix-panel #mix-crossfader::-webkit-slider-thumb {
     -webkit-appearance: none !important;
     appearance: none !important;
     width: 56px !important;
@@ -487,7 +487,7 @@
 }
 
 /* Firefox */
-#mix-content #mix-crossfader::-moz-range-thumb {
+#mix-panel #mix-crossfader::-moz-range-thumb {
     width: 56px !important;
     height: 56px !important;
     background: transparent url('vol.png') center center / 100% 100% no-repeat !important;
@@ -496,8 +496,8 @@
     box-shadow: none !important;
 }
 
-/* Remove the "filled" progress bar effect on Firefox if desired, or keep it subtle */
-#mix-content #mix-crossfader::-moz-range-progress {
+/* Remove the "filled" progress bar effect on Firefox */
+#mix-panel #mix-crossfader::-moz-range-progress {
     background: transparent !important;
 }
         /* Overlay layer for rising texts */
@@ -1364,24 +1364,22 @@
         </div>
     </div>
     <div id="mix-panel" class="display-none" aria-label="Mix Settings">
-        <h3>
-            <span>MIXER SETTINGS 🎚️</span>
-            <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
-        </h3>
-        <div id="mix-content">
-            
-            <div id="mix-cross-row" style="display:grid; grid-template-columns: 1fr; gap:2px; margin-bottom:2px">
-                
-                <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%">
-                <div style="display:flex; width:100%; justify-content:space-between; font-size:11px; color:#888">
-                    <span>A</span><span>B</span>
-                </div>
+        <h3 style="display:flex; align-items:center; gap:12px; padding: 12px 14px;">
+            <div style="flex:1; display:flex; align-items:center; gap:8px;">
+                <span style="font-size:12px; color:#888; font-weight:bold">A</span>
+                <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%; cursor:pointer;">
+                <span style="font-size:12px; color:#888; font-weight:bold">B</span>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr; gap: 2px; align-items:flex-start; margin-bottom:2px">
+            <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
+        </h3>
+        
+        <div id="mix-content">
+            
+            <div style="display:grid; grid-template-columns: 1fr; gap: 2px; align-items:flex-start; margin-bottom:12px">
                 <div>
                     <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:6px">
-                        <div style="font-size:12px; color:#bbb">🔺Crossfader 🎚️ Second Station🔻</div>
+                        <div style="font-size:12px; color:#bbb">🔺 Crossfader 🎚️ Second Station 🔻</div>
                         
                         <button class="btn" id="mix-b-play">Play B</button>
                         <button class="btn" id="mix-b-stop">Stop B</button>
