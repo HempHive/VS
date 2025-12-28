@@ -5618,40 +5618,49 @@ function stopAllAndShowStart() {
         function playRadioB() {
             initAudio();
             
-            // 1. Get the value and SAVE it to the global variable
+            // 1. Get/Save Index
             let val = parseInt((mixStationB?.value)||'0', 10);
             if (isNaN(val)) val = 0;
             const idx = Math.max(0, Math.min(stations.length - 1, val));
-            
-            currentStationBIndex = idx; // <--- SAVED!
+            currentStationBIndex = idx; 
 
             const sel = stations[idx];
             if (!sel || !sel.url) return;
 
-            // 2. Playback Logic (Firefox compatible)
             const media = audioElB; 
 
             // Stop previous
             try { media.pause(); } catch(e) {}
             
+            // Setup CORS and Src
             media.crossOrigin = "anonymous";
             media.src = sel.url;
             
             state.audioElB = media;
 
-            media.play().then(() => {
+            // --- KEY FIX: Setup Web Audio Graph BEFORE play() ---
+            // This ensures Firefox intercepts the audio immediately, preventing direct output.
+            try {
+                // Create source only once (Singleton pattern)
                 if (!state.radioElementSourceB) {
                     state.radioElementSourceB = state.audioCtx.createMediaElementSource(media);
                 }
                 state.sourceNodeB = state.radioElementSourceB;
 
+                // Reset connections: Disconnect -> Connect to Crossfader Gain
                 try { state.sourceNodeB.disconnect(); } catch(e) {}
                 state.sourceNodeB.connect(state.streamBGain);
                 
+                // Ensure the rest of the chain is ready
                 rebuildEffectsChain();
-                updateMixBStatus();
-                
                 try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
+            } catch(e) {
+                console.warn("Web Audio setup failed:", e);
+            }
+
+            // 3. Start Playback
+            media.play().then(() => {
+                updateMixBStatus();
             }).catch((e) => {
                 console.warn("Stream B Playback Error:", e);
                 updateMixBStatus();
