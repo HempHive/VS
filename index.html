@@ -1343,16 +1343,19 @@
 
             <div style="display:grid; grid-template-columns: 1fr; gap: 12px; align-items:flex-start; margin-bottom:12px">
                 <div>
-                    <div style="font-size:12px; color:#bbb; margin-bottom:6px">CrossFader 🎚️ Second Station ⤵</div>
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:6px">
+                        <div style="font-size:12px; color:#bbb">🔺Crossfader 🎚️ Second Station⤵</div>
+                        
+                        <button class="btn" id="mix-b-play" style="padding:4px 10px; font-size:11px">Play B</button>
+                        <button class="btn" id="mix-b-stop" style="padding:4px 10px; font-size:11px">Stop B</button>
+                        
+                        <div class="status-row" style="margin:0; display:flex; align-items:center; gap:6px">
+                            <div id="mix-b-status-dot" class="status-dot"></div>
+                            <div id="mix-b-status-text">B: Stopped</div>
+                        </div>
+                    </div>
+
                     <select id="mix-station-b" class="textin-select" style="width: 100%"></select>
-                    <div style="display:flex; gap:8px; margin-top:8px">
-                        <button class="btn" id="mix-b-play">Play B</button>
-                        <button class="btn" id="mix-b-stop">Stop B</button>
-                    </div>
-                    <div class="status-row" style="margin-top:6px">
-                        <div id="mix-b-status-dot" class="status-dot"></div>
-                        <div id="mix-b-status-text">B: Stopped</div>
-                    </div>
                 </div>
             </div>
 
