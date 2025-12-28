@@ -5617,47 +5617,37 @@ function stopAllAndShowStart() {
         // Play/Stop B
         function playRadioB() {
             initAudio();
-            
-            // Get index from dropdown
-            let val = parseInt((mixStationB?.value)||'0', 10);
-            if (isNaN(val)) val = 0;
-            const idx = Math.max(0, Math.min(stations.length - 1, val));
-            
-            // SAVE IT TO THE GLOBAL VARIABLE
-            currentStationBIndex = idx;
-
+            const idx = Math.max(0, Math.min(stations.length - 1, parseInt((mixStationB?.value)||'0', 10) || 0));
             const sel = stations[idx];
             if (!sel || !sel.url) return;
 
-            // 1. CLEANUP: Stop existing
-            if (state.audioElB) {
-                try { state.audioElB.pause(); } catch(e) {}
-                state.audioElB = null; 
-            }
-            if (state.sourceNodeB) {
-                try { state.sourceNodeB.disconnect(); } catch(e) {}
-                state.sourceNodeB = null;
-            }
+            // FIX: Use the persistent DOM element (audioElB) instead of new Audio()
+            // This ensures Firefox correctly routes audio through the Gain Node/Crossfader.
+            const media = audioElB; 
 
-            // 2. CREATE NEW
-            const newAudio = new Audio();
-            newAudio.crossOrigin = "anonymous";
-            newAudio.src = sel.url;
+            // Stop any previous playback
+            try { media.pause(); } catch(e) {}
             
-            // Store in state
-            state.audioElB = newAudio;
+            media.crossOrigin = "anonymous";
+            media.src = sel.url;
+            
+            // Update state reference
+            state.audioElB = media;
 
-            // Bind status updates
-            ['play', 'pause', 'ended', 'error', 'waiting', 'playing'].forEach(ev => {
-                newAudio.addEventListener(ev, updateMixBStatus);
-            });
+            media.play().then(() => {
+                // Create Source Node ONLY ONCE and store it
+                // (Creating multiple sources for the same element throws errors in some browsers)
+                if (!state.radioElementSourceB) {
+                    state.radioElementSourceB = state.audioCtx.createMediaElementSource(media);
+                }
+                state.sourceNodeB = state.radioElementSourceB;
 
-            newAudio.play().then(() => {
-                state.sourceNodeB = state.audioCtx.createMediaElementSource(newAudio);
+                // Connect to Stream B Gain (The Crossfader Control)
+                try { state.sourceNodeB.disconnect(); } catch(e) {}
                 state.sourceNodeB.connect(state.streamBGain);
-                rebuildEffectsChain();
                 
-                updateMixBStatus(); 
+                rebuildEffectsChain();
+                updateMixBStatus();
                 
                 try { applyCrossfade(mixCross ? mixCross.value : 0); } catch(_) {}
             }).catch((e) => {
@@ -5666,18 +5656,13 @@ function stopAllAndShowStart() {
             });
         }
         function stopRadioB() {
-            // Stop the audio object stored in state
-            if (state.audioElB) {
-                try { state.audioElB.pause(); } catch(_) {}
-                try { state.audioElB.removeAttribute('src'); } catch(_) {}
-                try { state.audioElB.load(); } catch(_) {}
+            // Stop the persistent DOM element
+            if (audioElB) {
+                try { audioElB.pause(); } catch(_) {}
+                try { audioElB.removeAttribute('src'); } catch(_) {}
+                try { audioElB.load(); } catch(_) {}
             }
-            // We can disconnect the node now since we will recreate it next time
-            if (state.sourceNodeB) {
-                try { state.sourceNodeB.disconnect(); } catch(_) {}
-                state.sourceNodeB = null;
-            }
-            state.audioElB = null;
+            // We do not set state.audioElB to null here so the reference remains valid
             updateMixBStatus();
         }
         if (mixPlayB) mixPlayB.addEventListener('click', playRadioB);
