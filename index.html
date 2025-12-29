@@ -1497,7 +1497,7 @@
                         <div style="font-size:12px; color:#bbb"></div>
                         <button class="btn" id="mix-b-play">Play B</button>
                         <button class="btn" id="mix-b-stop">Stop B</button>
-                        
+                        <button class="btn" id="mix-b-random" title="Random Station B">↻</button>
                         <div class="status-row" style="margin:0; display:flex; align-items:center; gap:6px">
                             <div id="mix-b-status-dot" class="status-dot"></div>
                             <div id="mix-b-status-text">B: Stopped</div>
@@ -1835,7 +1835,35 @@
             a: { gain: 1.0, high: 0, mid: 0, low: 0 },
             b: { gain: 1.0, high: 0, mid: 0, low: 0 }
         };
+        // --- RANDOM B BUTTON LOGIC ---
+        const mixRandomB = document.getElementById('mix-b-random');
+        if (mixRandomB) {
+            mixRandomB.addEventListener('click', (e) => {
+                e.preventDefault(); 
+                e.stopPropagation();
+                
+                if (!stations || stations.length === 0) return;
 
+                // Pick a random index
+                let idx = Math.floor(Math.random() * stations.length);
+                
+                // If possible, ensure it's different from the currently selected one
+                if (stations.length > 1) {
+                    const current = parseInt(mixStationB?.value || '-1', 10);
+                    while (idx === current) {
+                        idx = Math.floor(Math.random() * stations.length);
+                    }
+                }
+
+                // Update the Dropdown Visuals
+                if (mixStationB) {
+                    mixStationB.value = String(idx);
+                }
+
+                // Play the new station
+                playRadioB();
+            });
+        }
         // Helper to bind a visual knob to a value and callback
         // Helper to bind a visual knob to a value and callback
         function bindKnob(id, min, max, initial, stateObj, key, callback) {
