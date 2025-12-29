@@ -6570,22 +6570,27 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             } else if (e.key === 't' || e.key === 'T') {
                 // Toggle Text-In panel
                 e.preventDefault();
+                window.__panelGuardUntilMs = 0; // FIX: Reset guard timer for instant open
                 try { toggleTextInPanel(); } catch(_) {}
-            } else if (e.key === 'n' || e.key === 'N') {  /* CHANGED FROM 'R' */
+            } else if (e.key === 'n' || e.key === 'N') {
                 // Toggle Top Menu panel (Radio Settings)
                 e.preventDefault();
+                window.__panelGuardUntilMs = 0; // FIX: Reset guard timer for instant open
                 try { toggleTopMenuPanel(); } catch(_) {}
-            } else if (e.key === 'p' || e.key === 'P') {  /* ADDED NEW SHORTCUT */
+            } else if (e.key === 'p' || e.key === 'P') {
                 // Toggle Avatar Settings (Right Slide Panel)
                 e.preventDefault();
+                window.__panelGuardUntilMs = 0; // FIX: Reset guard timer for instant open
                 try { toggleBottomMenuPanel(); } catch(_) {}
             } else if (e.key === 'm' || e.key === 'M') {
                 // Toggle Mix Settings panel
                 e.preventDefault();
+                window.__panelGuardUntilMs = 0; // FIX: Reset guard timer for instant open
                 try { toggleMixPanel(); } catch(_) {}
             } else if (e.key === 'g' || e.key === 'G') {
-                // Toggle WebM Settings panel
+                // Toggle WebM Settings panel (The old smaller panel, if you still use it)
                 e.preventDefault();
+                window.__panelGuardUntilMs = 0; 
                 try { toggleWebmSettingsPanel(); } catch(_) {}
             } else if (e.key === 'i' || e.key === 'I') {
                 // Send Text-In immediately
