@@ -2768,9 +2768,9 @@ function randomGlowColor() {
                 state.gainNode.connect(state.audioCtx.destination);
 
 				if (volumeSlider) {
-					volumeSlider.value = String(0.2);
+					volumeSlider.value = String(0.5);
 					volumeSlider.addEventListener('input', (e) => setVolume(volumeSlider.value));
-					try { setVolume(0.2); } catch(e) {}
+					try { setVolume(0.5); } catch(e) {}
 				}
                 try { applyCrossfade(0); } catch(_) {}
                 
