@@ -6571,10 +6571,14 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 // Toggle Text-In panel
                 e.preventDefault();
                 try { toggleTextInPanel(); } catch(_) {}
-            } else if (e.key === 'r' || e.key === 'R') {
-                // Toggle Top Menu panel
+            } else if (e.key === 'n' || e.key === 'N') {  /* CHANGED FROM 'R' */
+                // Toggle Top Menu panel (Radio Settings)
                 e.preventDefault();
                 try { toggleTopMenuPanel(); } catch(_) {}
+            } else if (e.key === 'p' || e.key === 'P') {  /* ADDED NEW SHORTCUT */
+                // Toggle Avatar Settings (Right Slide Panel)
+                e.preventDefault();
+                try { toggleBottomMenuPanel(); } catch(_) {}
             } else if (e.key === 'm' || e.key === 'M') {
                 // Toggle Mix Settings panel
                 e.preventDefault();
