@@ -326,6 +326,44 @@
 			display: flex; align-items: center; justify-content: center;
 			min-width: 360px;
 		}
+        /* UI Lock (Top-right, 80x80, left of radio-quick) */
+        #ui-lock-toggle {
+            position: absolute;
+            top: 14px;
+            right: 14px; /* align with top spacing */
+            z-index: 145; /* above shield (140), below top menu (150) */
+            width: 80px; height: 80px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.5);
+            color: rgba(255,255,255,0.9);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            backdrop-filter: blur(6px);
+            transition: opacity 1s ease-in-out, filter 0.2s;
+            font-size: 36px;
+            opacity: 1; pointer-events: auto;
+        }
+        #ui-lock-toggle:hover { filter: brightness(1.15); }
+        #ui-lock-toggle.on {
+            border: 1px solid rgba(212,175,55,0.6);
+            box-shadow: 0 0 16px rgba(212,175,55,0.25);
+        }
+        /* Shield to block interactions when locked */
+        #ui-lock-shield {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 140; /* above panels, below top menu (>=150) */
+            background: transparent;
+            display: none;
+            pointer-events: auto;
+        }
+        #ui-lock-shield.active { display: block; }
+        /* Hide lock button/shield on start overlay (before playback) */
+        #overlay:not(.hidden) ~ #ui-lock-toggle,
+        #overlay:not(.hidden) ~ #ui-lock-shield {
+            display: none !important;
+        }
         
         /* Shuffle Toggle (Top-left) */
         #shuffle-toggle {
@@ -898,7 +936,7 @@
 		/* Top Menu Panel (slides from top, 50vh) */
 		#top-menu-panel {
 			position: fixed; top: 0; left: 0; right: 0; height: 50vh;
-			z-index: 95;
+			z-index: 150; /* Above right/left panels and mix panel */
 			background: rgba(0,0,0,0.8);
 			border-bottom: 1px solid rgba(255,255,255,0.2);
 			backdrop-filter: blur(10px);
@@ -1241,6 +1279,9 @@
     <audio id="radio-element-b" crossorigin="anonymous"></audio>
 	<!-- Top bar aligns shuffle, volume, and radio controls -->
 	<div id="top-bar" class="display-none"></div>
+    <!-- UI Lock shield and toggle -->
+    <div id="ui-lock-shield" aria-hidden="true"></div>
+    <button id="ui-lock-toggle" class="icon-btn interactive" title="Lock UI" aria-pressed="false">🔒</button>
 	<!-- Top Menu Panel -->
 	<div id="top-menu-panel" class="display-none">
 		<div id="top-menu-content">
@@ -1756,6 +1797,42 @@ const QUALITY = {
         let shortcutsLocked = false;
         let textAutoTimer = null;
         let textAutoOn = false;
+        // UI Lock state and refs
+        let uiLocked = false;
+        const uiLockShield = document.getElementById('ui-lock-shield');
+        const uiLockToggle = document.getElementById('ui-lock-toggle');
+        function applyUiLockState() {
+            if (!uiLockShield || !uiLockToggle) return;
+            if (uiLocked) {
+                uiLockShield.classList.add('active');
+                uiLockToggle.classList.add('on');
+                uiLockToggle.setAttribute('aria-pressed', 'true');
+                // Close any open panels/menus
+                try { hideTextInPanel(); } catch(_) {}
+                try { if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) closeTopMenuPanel(); } catch(_) {}
+                try { hideWebmSettingsPanel(); } catch(_) {}
+                try { closeBottomMenuPanel(); } catch(_) {}
+                try {
+                    if (settingsPanel && !settingsPanel.classList.contains('display-none')) {
+                        settingsPanel.classList.add('display-none');
+                        settingsPanel.style.opacity = '';
+                        settingsPanel.style.pointerEvents = '';
+                    }
+                } catch(_) {}
+            } else {
+                uiLockShield.classList.remove('active');
+                uiLockToggle.classList.remove('on');
+                uiLockToggle.setAttribute('aria-pressed', 'false');
+            }
+        }
+        if (uiLockToggle) {
+            uiLockToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                uiLocked = !uiLocked;
+                applyUiLockState();
+                resetIdleTimer();
+            });
+        }
         // Mix panel refs
         const micConfirm = document.getElementById('mic-confirm');
         const micOk = document.getElementById('btn-mic-ok');
@@ -2116,6 +2193,10 @@ function randomGlowColor() {
 				radioQuickBtn.style.opacity = '1';
 				radioQuickBtn.style.pointerEvents = 'auto';
 			}
+            if (uiLockToggle && state.isPlaying) {
+                uiLockToggle.style.opacity = '1';
+                uiLockToggle.style.pointerEvents = 'auto';
+            }
             // Show volume slider on interaction
             const vs = document.getElementById('volume-slider-container');
             if (vs && state.isPlaying) { vs.style.opacity = '1'; vs.style.pointerEvents = 'auto'; }
@@ -2171,6 +2252,10 @@ function randomGlowColor() {
                         stationBanner.style.opacity = '0';
                         stationBanner.style.pointerEvents = 'none';
                     }
+                    if (uiLockToggle) {
+                        uiLockToggle.style.opacity = '0';
+                        uiLockToggle.style.pointerEvents = 'none';
+                    }
                     // Hide webm nav
                     webmPrevBtn.style.opacity = '0';
                     webmNextBtn.style.opacity = '0';
@@ -2224,10 +2309,10 @@ function randomGlowColor() {
 			const defaultLine = 'Select a source to begin';
 			const shortcuts = [
 				'F Fullscreen  •  C Next Visual  •  ,/. Visual',
-				'V Random Station  •  B Previous Station  •  R Top Menu',
-				'T Text-In Panel  •  M Mix Settings  •  G WebM Settings',
-				'W Toggle Avatar  •  Q/E Avatar Speed  •  Arrows Move Avatar',
-				'+/− Size  •  Z/X Opacity  •  Esc Back'
+				'V Random Station  •  B Previous Station  •  N Top Menu',
+				'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
+                'P Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
+				'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Play/Pause  •  Esc Back'
 			].join('\n');
 			let phase = 'visible';
 			const loop = () => {
@@ -2241,6 +2326,9 @@ function randomGlowColor() {
 					}, 30000);
 				} else {
 					startTextLoopTimer = setTimeout(() => {
+                        // Clear previous content BEFORE showing, to avoid flash
+                        try { l.innerText = ''; } catch(_) {}
+                        try { sh.innerText = ''; } catch(_) {}
 						l.style.opacity = '1';
 						sh.style.opacity = '1';
 						try { 
@@ -2351,6 +2439,7 @@ function randomGlowColor() {
             return !!(p && !p.classList.contains('display-none') && p.classList.contains('open'));
         }
         function openBottomMenuPanel() {
+            if (uiLocked) return;
             // Prevent opening if a recent panel close just happened
             try { if (window.__panelGuardUntilMs && Date.now() < window.__panelGuardUntilMs) return; } catch(_) {}
             const p = document.getElementById('bottom-avatar-panel');
@@ -2404,6 +2493,7 @@ function randomGlowColor() {
             setTimeout(() => { p.classList.add('display-none'); }, 350);
         }
         function toggleBottomMenuPanel() {
+            if (uiLocked) return;
             if (isBottomMenuOpen()) closeBottomMenuPanel(); else openBottomMenuPanel();
         }
         // Bind bottom menu controls
@@ -2988,12 +3078,12 @@ function randomGlowColor() {
 			if (border) border.classList.add('visible');
 			// Type the current status line on start screen, then shortcuts
 			const shortcuts = [
-				'F Fullscreen  •  C Next Visual  •  ,/. Visual',
-				'V Random Station  •  B Previous Station  •  R Top Menu',
-				'T Text-In Panel  •  M Mix Settings  •  G WebM Settings',
-				'W Toggle Avatar  •  Q/E Avatar Speed  •  Arrows Move Avatar',
-				'+/− Size  •  Z/X Opacity  •  Esc Back'
-			].join('\n');
+					'F Fullscreen  •  C Next Visual  •  ,/. Visual',
+					'V Random Station  •  B Previous Station  •  N Top Menu',
+					'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
+					'P Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
+					'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Play/Pause  •  Esc Back'
+				].join('\n');
 			if (statusEl) {
 				typeStatus(statusEl.innerText || 'Select a source to begin', () => {
 					typeStatusTo('shortcuts-status', shortcuts, 30);
@@ -3041,13 +3131,13 @@ function randomGlowColor() {
 				
                 // Type initial status then shortcuts (if text present)
 				const s = document.getElementById('loading-status');
-				const shortcuts = [
-					'F Fullscreen  •  C Next Visual  •  ,/. Visual',
-					'V Random Station  •  B Previous Station  •  R Top Menu',
-					'T Text-In Panel  •  M Mix Settings  •  G WebM Settings',
-					'W Toggle Avatar  •  Q/E Avatar Speed  •  Arrows Move Avatar',
-					'+/− Size  •  Z/X Opacity  •  Esc Back'
-				].join('\n');
+			const shortcuts = [
+				'F Fullscreen  •  C Next Visual  •  ,/. Visual',
+				'V Random Station  •  B Previous Station  •  N Top Menu',
+				'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
+				'P Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
+				'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Play/Pause  •  Esc Back'
+			].join('\n');
 				if (s && s.innerText && s.innerText.trim().length > 0) {
 					typeStatus(s.innerText.trim(), () => { typeStatusTo('shortcuts-status', shortcuts, 30); try { layoutOverlayElements(); } catch(e) {} try { scheduleStartTextLoop(); } catch(e) {} });
 				} else {
@@ -4083,6 +4173,14 @@ function stopAllAndShowStart() {
                 group.rotation.z = Math.sin(t * 0.8) * 0.2;
                 group.rotation.x = Math.cos(t * 0.6) * 0.15;
             };
+        };
+
+        // Blank (no visualizer, solid black background)
+        const sceneBlank = (scene /*, camera, composer */) => {
+            try {
+                scene.background = new THREE.Color(0x000000);
+            } catch(_) {}
+            return () => { /* no-op */ };
         };
 
         // Bars Vortex (wormhole made of bars)
@@ -5647,6 +5745,7 @@ function stopAllAndShowStart() {
             new MilkdropEngineV3(),
             new ThreeEngine("Audio Bars (Vertical Mirror)", sceneBarsVerticalMirror),
             new ThreeEngine("Audio Bars", sceneBars),
+            new ThreeEngine("Blank", sceneBlank),
             new ThreeEngine("Audio Bars (Circle)", sceneBarsCircle),
             new ThreeEngine("Audio Bars 3D", sceneBars3D),
             new ThreeEngine("Audio Bars: Vortex", sceneBarsVortex),
@@ -6114,13 +6213,14 @@ function stopAllAndShowStart() {
                 item.appendChild(nameEl);
                 item.appendChild(goEl);
                 item.addEventListener('click', () => {
-                    setStation(i);
+                    if (!uiLocked) setStation(i);
                 });
                 radioListEl.appendChild(item);
             });
         }
 
         function setStation(index) {
+            if (uiLocked) return;
             if(index < 0 || index >= stations.length) return;
             // Push current station into history if switching to a different one
             if (!suppressHistoryPush && currentStationIndex !== -1 && currentStationIndex !== index) {
@@ -6161,6 +6261,7 @@ function stopAllAndShowStart() {
         }
 
         function showRadioPanel() { 
+            if (uiLocked) return;
             // Legacy panel removed: open top menu instead
             try { openTopMenuPanel(); } catch(e) {}
             if (!radioPanel) return;
@@ -6196,6 +6297,7 @@ function stopAllAndShowStart() {
             radioPanel.style.pointerEvents = '';
         }
         function toggleRadioPanel() {
+            if (uiLocked) return;
             // Toggle top menu now
             try { toggleTopMenuPanel(); } catch(e) {}
             if (!radioPanel) return;
@@ -6215,6 +6317,7 @@ function stopAllAndShowStart() {
 
         // --- TEXT-IN PANEL & OVERLAY ---
         function showTextInPanel() {
+            if (uiLocked) return;
             if (!textInPanel) return;
             textInPanel.classList.remove('display-none');
             void textInPanel.offsetWidth;
@@ -6226,6 +6329,7 @@ function stopAllAndShowStart() {
             setTimeout(() => { textInPanel.classList.add('display-none'); }, 350);
         }
         function toggleTextInPanel() {
+            if (uiLocked) return;
             if (!textInPanel) return;
             if (textInPanel.classList.contains('display-none') || !textInPanel.classList.contains('open')) showTextInPanel();
             else hideTextInPanel();
@@ -6556,11 +6660,13 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             radioQuickBtn.title = "Left-click: choose • Right-click: random station";
             radioQuickBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (uiLocked) return;
                 toggleRadioPanel();
             });
             radioQuickBtn.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (uiLocked) return;
                 pickRandomStation();
                 // Keep the radio button visible for 10s after right-click shuffle
                 radioQuickBtn.style.opacity = '1';
@@ -6581,6 +6687,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         stationBanner.title = "Click: random station";
         stationBanner.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (uiLocked) return;
             pickRandomStation();
         });
         document.addEventListener('click', (e) => {
@@ -6616,6 +6723,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         function handleGlobalKeydown(e) {
             try {
                 if (shortcutsLocked) return;
+                if (uiLocked) { e.preventDefault(); return; }
                 const ae = document.activeElement;
                 if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable || (ae.closest && ae.closest('#textin-panel')))) {
                     return;
@@ -6910,6 +7018,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         }
         
         function toggleWebmSettingsPanel() {
+            if (uiLocked) return;
             if(webmSettingsPanel.classList.contains('display-none')) {
                 webmSettingsPanel.classList.remove('display-none');
                 webmSettingsPanel.style.display = 'block';
@@ -6942,6 +7051,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             return !!(p && !p.classList.contains('display-none') && p.classList.contains('open'));
         }
         function openTopMenuPanel() {
+            if (uiLocked) return;
             // Prevent opening if a recent panel close just happened
             try { if (window.__panelGuardUntilMs && Date.now() < window.__panelGuardUntilMs) return; } catch(_) {}
             const p = document.getElementById('top-menu-panel');
@@ -6990,6 +7100,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             setTimeout(() => { p.classList.add('display-none'); }, 350);
         }
         function toggleTopMenuPanel() {
+            if (uiLocked) return;
             if (isTopMenuOpen()) closeTopMenuPanel(); else openTopMenuPanel();
         }
         // Bind top menu controls
