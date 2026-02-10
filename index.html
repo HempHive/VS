@@ -331,7 +331,7 @@
             position: absolute;
             top: 14px;
             right: 14px; /* align with top spacing */
-            z-index: 145; /* above shield (140), below top menu (150) */
+            z-index: 85; /* below all sliding panels (>=90), above top bar (80) */
             width: 80px; height: 80px;
             display: flex; align-items: center; justify-content: center;
             background: rgba(0,0,0,0.5);
@@ -662,6 +662,32 @@
             background-repeat: no-repeat;
             background-size: 100% 100%;
         }
+        /* BPM scope row */
+        #mix-bpm-row {
+            display: flex; align-items: center; gap: 4px; margin: 2px 0 10px;
+        }
+        #mix-bpm-a, #mix-bpm-b {
+            flex: 0 0 auto;
+        }
+        #mix-scope-wrap {
+            position: relative; flex: 1 1 auto; height: 44px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 8px; overflow: hidden;
+        }
+        #mix-scope {
+            width: 100%; height: 100%; display: block;
+        }
+        #mix-bpm-legend {
+            flex: 0 0 auto; display: grid; gap: 2px; font-size: 11px; color: #ccc;
+            min-width: 84px;
+        }
+        #mix-bpm-legend .row { display: flex; align-items: center; gap: 6px; }
+        .legend-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            display: inline-block;
+        }
+        .legend-a { background: #00ffff; box-shadow: 0 0 8px rgba(0,255,255,0.6); }
+        .legend-b { background: #ff00ff; box-shadow: 0 0 8px rgba(255,0,255,0.6); }
        
         /* Optional: Hover effect to brighten the image */
         #mix-b-play:hover,
@@ -1586,7 +1612,7 @@
                         </div>
                     </div>
 
-                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:6px">
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:0">
                         <div style="font-size:12px; color:#bbb"></div>
                         <button class="btn" id="mix-b-play">Play B</button>
                         <button class="btn" id="mix-b-stop">Stop B</button>
@@ -1599,7 +1625,25 @@
                         <select id="mix-station-b" class="textin-select" style="flex:1; min-width:120px;"></select>
                     </div>
                 </div>
-            </div> <div>
+            </div>
+            <!-- BPM analyzer row (before FX buttons) -->
+            <div id="mix-bpm-row">
+                <button class="btn" id="mix-bpm-a" title="Toggle BPM and scope for A">BPM A</button>
+                <div id="mix-scope-wrap">
+                    <canvas id="mix-scope" width="800" height="44" aria-label="Beat scope"></canvas>
+                </div>
+                <div id="mix-bpm-legend">
+                    <div class="row"><span class="legend-dot legend-a"></span><span>A: <span id="mix-bpm-out-a">--</span> BPM</span></div>
+                    <div class="row"><span class="legend-dot legend-b"></span><span>B: <span id="mix-bpm-out-b">--</span> BPM</span></div>
+                </div>
+                <button class="btn" id="mix-bpm-b" title="Toggle BPM and scope for B">BPM B</button>
+                <button class="btn" id="mix-bpm-grid" title="Toggle beat grid overlay">Grid</button>
+                <button class="btn" id="mix-bpm-tap-a" title="Tap tempo for A">Tap A</button>
+                <button class="btn" id="mix-bpm-tap-b" title="Tap tempo for B">Tap B</button>
+                <button class="btn" id="mix-bpm-nudge-bm" title="Nudge B -10ms">B −10</button>
+                <button class="btn" id="mix-bpm-nudge-bp" title="Nudge B +10ms">B +10</button>
+            </div>
+            <div>
                 <div id="mix-effects">
                     <button class="btn" id="fx-wav4" title="Left-click: play once • Right-click: loop">Waa📯</button>
                     <button class="btn" id="fx-wav5" title="Left-click: play once • Right-click: loop">Waaa📣</button>
@@ -1854,6 +1898,34 @@ const QUALITY = {
         const fxWav4 = document.getElementById('fx-wav4');
         const fxWav5 = document.getElementById('fx-wav5');
         const fxWav6 = document.getElementById('fx-wav6');
+        // BPM scope refs/state
+        const bpmBtnA = document.getElementById('mix-bpm-a');
+        const bpmBtnB = document.getElementById('mix-bpm-b');
+        const bpmBtnGrid = document.getElementById('mix-bpm-grid');
+        const bpmOutA = document.getElementById('mix-bpm-out-a');
+        const bpmOutB = document.getElementById('mix-bpm-out-b');
+        const scopeCanvas = document.getElementById('mix-scope');
+        const scopeCtx = scopeCanvas ? scopeCanvas.getContext('2d') : null;
+        let scopeAnimId = null;
+        let bpmOnA = false, bpmOnB = false;
+        let envA = [], envB = [];
+        let envFluxA = [], envFluxB = [];
+        const maxEnvSamples = 8 * 60; // ~8 seconds at 60Hz sampling
+        // Onset detection (spectral flux)
+        let lastSpecA = null, lastSpecB = null;
+        let fluxHistA = [], fluxHistB = [];
+        const fluxHistLen = 60;
+        let lastBeatTsA = 0, lastBeatTsB = 0;
+        let bpmSmoothA = null, bpmSmoothB = null;
+        let nextBeatTsA = null, nextBeatTsB = null;
+        let showBeatGrid = false;
+        // Tap/Nudge
+        const tapBtnA = document.getElementById('mix-bpm-tap-a');
+        const tapBtnB = document.getElementById('mix-bpm-tap-b');
+        const nudgeBm = document.getElementById('mix-bpm-nudge-bm');
+        const nudgeBp = document.getElementById('mix-bpm-nudge-bp');
+        let tapTimesA = [], tapTimesB = [];
+        let phaseOffsetBms = 0; // apply to B grid ticks
         const mixStationB = document.getElementById('mix-station-b');
         const mixPlayB = document.getElementById('mix-b-play');
         const mixStopB = document.getElementById('mix-b-stop');
@@ -2003,6 +2075,234 @@ const QUALITY = {
                 playRadioB();
             });
         }
+        // --- BPM scope + detection ---
+        function drawScopeAndUpdateBpm() {
+            if (!scopeCanvas || !scopeCtx) return;
+            const w = scopeCanvas.width, h = scopeCanvas.height;
+            // Scroll left by 1px
+            try { scopeCtx.drawImage(scopeCanvas, -1, 0); } catch(_) {}
+            // Clear rightmost column slightly to create fresh lane
+            scopeCtx.fillStyle = 'rgba(0,0,0,0.35)';
+            scopeCtx.fillRect(w - 1, 0, 1, h);
+            // Compute envelope (RMS) for BPM and spectral flux for beat onsets
+            const calcRms = (analyser) => {
+                if (!analyser) return null;
+                const size = analyser.fftSize || 1024;
+                const buf = new Uint8Array(size);
+                try { analyser.getByteTimeDomainData(buf); } catch(_) { return null; }
+                let sum = 0; for (let i=0;i<buf.length;i++){ const v=(buf[i]-128)/128; sum += v*v; }
+                return Math.sqrt(sum / buf.length);
+            };
+            const calcFlux = (analyser, lastSpec, hist) => {
+                if (!analyser) return { flux: null, last: lastSpec };
+                const bins = analyser.frequencyBinCount || 512;
+                const cur = new Uint8Array(bins);
+                try { analyser.getByteFrequencyData(cur); } catch(_) { return { flux: null, last: lastSpec }; }
+                if (!lastSpec || lastSpec.length !== cur.length) lastSpec = cur.slice(0);
+                // 3-band weighted spectral flux
+                const sr = (state && state.audioCtx && state.audioCtx.sampleRate) ? state.audioCtx.sampleRate : 44100;
+                const fftSize = analyser.fftSize || (bins * 2);
+                const binHz = sr / fftSize;
+                const lowMax = 180;    // Hz: kick/low percussion emphasis (tuned)
+                const midMax = 1500;   // Hz: snare/claps/body (tuned)
+                // weights favoring low (tuned)
+                const wL = 0.7, wM = 0.25, wH = 0.05;
+                let fluxL = 0, fluxM = 0, fluxH = 0;
+                let nL = 0, nM = 0, nH = 0;
+                for (let i = 0; i < bins; i++) {
+                    const f = i * binHz;
+                    const d = cur[i] - lastSpec[i];
+                    if (d <= 0) continue;
+                    if (f < lowMax) { fluxL += d; nL++; }
+                    else if (f < midMax) { fluxM += d; nM++; }
+                    else { fluxH += d; nH++; }
+                }
+                // Normalize per-band by bin count and scale to [0,1]
+                const norm = (sum, n) => (n > 0 ? (sum / (n * 255)) : 0);
+                fluxL = norm(fluxL, nL);
+                fluxM = norm(fluxM, nM);
+                fluxH = norm(fluxH, nH);
+                const flux = (wL * fluxL + wM * fluxM + wH * fluxH) / (wL + wM + wH);
+                hist.push(flux);
+                if (hist.length > fluxHistLen) hist.shift();
+                const m = hist.reduce((a,b)=>a+b,0)/hist.length;
+                const v = hist.reduce((a,b)=>a + (b-m)*(b-m), 0) / hist.length;
+                const sd = Math.sqrt(Math.max(0, v));
+                return { flux, mean: m, sd, last: cur };
+            };
+            // A channel
+            let rmsA = null, rmsB = null;
+            if (bpmOnA) {
+                rmsA = calcRms(state.analyserNodeA);
+                const fa = calcFlux(state.analyserNodeA, lastSpecA, fluxHistA);
+                lastSpecA = fa.last;
+                const now = performance.now();
+                const isBeatA = (typeof fa.flux === 'number') && (fa.flux > (fa.mean + 1.5 * (fa.sd || 0.0001))) && ((now - lastBeatTsA) > 200);
+                if (isBeatA) lastBeatTsA = now;
+                if (isBeatA) { scopeCtx.fillStyle = '#00ffff'; scopeCtx.fillRect(w-1, 2, 1, Math.max(2, Math.floor(h*0.4)-3)); }
+            }
+            // B channel
+            if (bpmOnB) {
+                rmsB = calcRms(state.analyserNodeB);
+                const fb = calcFlux(state.analyserNodeB, lastSpecB, fluxHistB);
+                lastSpecB = fb.last;
+                const now = performance.now();
+                const isBeatB = (typeof fb.flux === 'number') && (fb.flux > (fb.mean + 1.5 * (fb.sd || 0.0001))) && ((now - lastBeatTsB) > 200);
+                if (isBeatB) lastBeatTsB = now;
+                if (isBeatB) { scopeCtx.fillStyle = '#ff00ff'; scopeCtx.fillRect(w-1, Math.floor(h*0.6), 1, Math.max(2, Math.floor(h*0.4)-2)); }
+            }
+            // Center marker (now line)
+            scopeCtx.strokeStyle = 'rgba(255,255,255,0.25)'; scopeCtx.lineWidth = 1;
+            const cx = Math.floor(w/2) + 0.5; scopeCtx.beginPath(); scopeCtx.moveTo(cx, 0); scopeCtx.lineTo(cx, h); scopeCtx.stroke();
+            const pushEnv = (arr, v) => { if (typeof v === 'number') { arr.push(v); if (arr.length > maxEnvSamples) arr.shift(); } };
+            pushEnv(envA, rmsA); pushEnv(envB, rmsB);
+            // Push flux envelope for comb BPM
+            if (bpmOnA && typeof lastSpecA !== 'undefined' && fluxHistA.length > 0) {
+                const latestFluxA = fluxHistA[fluxHistA.length - 1];
+                if (typeof latestFluxA === 'number') { envFluxA.push(latestFluxA); if (envFluxA.length > maxEnvSamples) envFluxA.shift(); }
+            }
+            if (bpmOnB && typeof lastSpecB !== 'undefined' && fluxHistB.length > 0) {
+                const latestFluxB = fluxHistB[fluxHistB.length - 1];
+                if (typeof latestFluxB === 'number') { envFluxB.push(latestFluxB); if (envFluxB.length > maxEnvSamples) envFluxB.shift(); }
+            }
+            // Comb-filter BPM estimate about once per 15 frames
+            if (!drawScopeAndUpdateBpm._ctr) drawScopeAndUpdateBpm._ctr = 0;
+            drawScopeAndUpdateBpm._ctr++;
+            if (drawScopeAndUpdateBpm._ctr % 15 === 0) {
+                const estComb = (env) => {
+                    if (!env || env.length < 120) return null;
+                    const minBpm = 60, maxBpm = 180, fps = 60;
+                    // Normalize envelope
+                    const mean = env.reduce((a,b)=>a+b,0)/env.length;
+                    const std = Math.sqrt(Math.max(1e-6, env.reduce((a,b)=>a+(b-mean)*(b-mean),0)/env.length));
+                    const e = env.map(v => (v-mean)/std);
+                    let bestBpm = null, bestScore = -Infinity;
+                    for (let bpm = minBpm; bpm <= maxBpm; bpm++) {
+                        const period = fps * 60 / bpm; // frames
+                        let score = 0;
+                        // Sum over last window using ~4 beats
+                        const beats = Math.max(3, Math.min(8, Math.floor(env.length / period)));
+                        for (let k = 0; k < beats; k++) {
+                            const idx = Math.round(env.length - 1 - k * period);
+                            const idxH = Math.round(env.length - 1 - (k + 0.5) * period);
+                            if (idx >= 0) score += e[idx];
+                            if (idxH >= 0) score += 0.5 * e[idxH]; // include half-beat
+                        }
+                        if (score > bestScore) { bestScore = score; bestBpm = bpm; }
+                    }
+                    return bestBpm;
+                };
+                const newA = bpmOnA ? estComb(envFluxA) : null;
+                const newB = bpmOnB ? estComb(envFluxB) : null;
+                const smooth = (prev, cur) => {
+                    if (!cur) return prev;
+                    if (!prev) return cur;
+                    const alpha = 0.2;
+                    return (1 - alpha) * prev + alpha * cur;
+                };
+                bpmSmoothA = smooth(bpmSmoothA, newA);
+                bpmSmoothB = smooth(bpmSmoothB, newB);
+                if (bpmOutA) bpmOutA.textContent = bpmSmoothA ? String(Math.round(bpmSmoothA)) : '--';
+                if (bpmOutB) bpmOutB.textContent = bpmSmoothB ? String(Math.round(bpmSmoothB)) : '--';
+                // Update next beat predictions for grid
+                const nowTs = performance.now();
+                if (showBeatGrid && bpmSmoothA && lastBeatTsA) {
+                    const intervalA = 60000 / bpmSmoothA;
+                    if (!nextBeatTsA || nextBeatTsA < nowTs - 2*intervalA || nextBeatTsA < lastBeatTsA) {
+                        nextBeatTsA = lastBeatTsA + intervalA;
+                    }
+                }
+                if (showBeatGrid && bpmSmoothB && lastBeatTsB) {
+                    const intervalB = 60000 / bpmSmoothB;
+                    if (!nextBeatTsB || nextBeatTsB < nowTs - 2*intervalB || nextBeatTsB < lastBeatTsB) {
+                        nextBeatTsB = lastBeatTsB + intervalB;
+                    }
+                }
+            }
+            // Draw beat grid markers at right edge when a predicted beat occurs (they will scroll left)
+            if (showBeatGrid) {
+                const nowTs = performance.now();
+                const drawGridTick = (tsNext, color, bpmVal, setNext) => {
+                    if (!tsNext || !bpmVal) return tsNext;
+                    const interval = 60000 / bpmVal;
+                    if (nowTs + 8 >= tsNext) { // small lookahead to avoid misses
+                        scopeCtx.fillStyle = color;
+                        scopeCtx.globalAlpha = 0.25;
+                        scopeCtx.fillRect(w - 1, 0, 1, h);
+                        scopeCtx.globalAlpha = 1.0;
+                        tsNext = tsNext + interval;
+                    }
+                    return tsNext;
+                };
+                nextBeatTsA = drawGridTick(nextBeatTsA, '#00ffff', bpmSmoothA, (v)=>nextBeatTsA=v);
+                // Apply B phase offset
+                const adjBpm = bpmSmoothB;
+                if (nextBeatTsB && typeof phaseOffsetBms === 'number') {
+                    nextBeatTsB += 0; // keep accumulator; visual offset applied by early-fire logic
+                }
+                nextBeatTsB = drawGridTick(nextBeatTsB ? nextBeatTsB + phaseOffsetBms : nextBeatTsB, '#ff00ff', adjBpm, (v)=>nextBeatTsB=v);
+            }
+            if (bpmOnA || bpmOnB) scopeAnimId = requestAnimationFrame(drawScopeAndUpdateBpm);
+            else { scopeAnimId = null; if (scopeCtx) scopeCtx.clearRect(0,0,w,h); }
+        }
+        function updateBpmRunLoop() {
+            if ((bpmOnA || bpmOnB) && !scopeAnimId) {
+                try { cancelAnimationFrame(scopeAnimId); } catch(_) {}
+                scopeAnimId = requestAnimationFrame(drawScopeAndUpdateBpm);
+            }
+            if (!bpmOnA && !bpmOnB && scopeAnimId) {
+                try { cancelAnimationFrame(scopeAnimId); } catch(_) {}
+                scopeAnimId = null;
+                if (scopeCtx) scopeCtx.clearRect(0,0,scopeCanvas.width, scopeCanvas.height);
+            }
+        }
+        if (bpmBtnA) bpmBtnA.addEventListener('click', (e) => {
+            e.preventDefault();
+            bpmOnA = !bpmOnA;
+            bpmBtnA.classList.toggle('on', bpmOnA);
+            if (!bpmOnA) { envA.length = 0; envFluxA.length = 0; if (bpmOutA) bpmOutA.textContent = '--'; bpmSmoothA = null; nextBeatTsA = null; }
+            if (bpmOnA && lastBeatTsA && bpmSmoothA) { nextBeatTsA = lastBeatTsA + 60000 / bpmSmoothA; }
+            updateBpmRunLoop();
+        });
+        if (bpmBtnB) bpmBtnB.addEventListener('click', (e) => {
+            e.preventDefault();
+            bpmOnB = !bpmOnB;
+            bpmBtnB.classList.toggle('on', bpmOnB);
+            if (!bpmOnB) { envB.length = 0; envFluxB.length = 0; if (bpmOutB) bpmOutB.textContent = '--'; bpmSmoothB = null; nextBeatTsB = null; }
+            if (bpmOnB && lastBeatTsB && bpmSmoothB) { nextBeatTsB = lastBeatTsB + 60000 / bpmSmoothB; }
+            updateBpmRunLoop();
+        });
+        if (bpmBtnGrid) bpmBtnGrid.addEventListener('click', (e) => {
+            e.preventDefault();
+            showBeatGrid = !showBeatGrid;
+            bpmBtnGrid.classList.toggle('on', showBeatGrid);
+            if (showBeatGrid) {
+                if (bpmOnA && lastBeatTsA && bpmSmoothA) nextBeatTsA = lastBeatTsA + 60000 / bpmSmoothA;
+                if (bpmOnB && lastBeatTsB && bpmSmoothB) nextBeatTsB = lastBeatTsB + 60000 / bpmSmoothB;
+            } else {
+                nextBeatTsA = nextBeatTsB = null;
+            }
+        });
+        function handleTap(arr, setBpm, setLastTs, setNextTs) {
+            const now = performance.now();
+            arr.push(now);
+            if (arr.length > 6) arr.shift();
+            if (arr.length >= 2) {
+                const diffs = [];
+                for (let i=1;i<arr.length;i++) diffs.push(arr[i]-arr[i-1]);
+                diffs.sort((a,b)=>a-b);
+                const m = diffs.length>>1;
+                const med = diffs.length%2 ? diffs[m] : 0.5*(diffs[m-1]+diffs[m]);
+                const bpm = 60000 / Math.max(250, Math.min(2000, med)); // constrain 30–240 BPM range
+                setBpm(bpm);
+                setLastTs(now);
+                setNextTs(now + 60000 / bpm);
+            }
+        }
+        if (tapBtnA) tapBtnA.addEventListener('click', (e)=>{ e.preventDefault(); handleTap(tapTimesA, (v)=>{ bpmSmoothA=v; if (bpmOutA) bpmOutA.textContent=String(Math.round(v)); }, (t)=>{ lastBeatTsA=t; }, (n)=>{ nextBeatTsA=n; }); updateBpmRunLoop(); });
+        if (tapBtnB) tapBtnB.addEventListener('click', (e)=>{ e.preventDefault(); handleTap(tapTimesB, (v)=>{ bpmSmoothB=v; if (bpmOutB) bpmOutB.textContent=String(Math.round(v)); }, (t)=>{ lastBeatTsB=t; }, (n)=>{ nextBeatTsB=n; }); updateBpmRunLoop(); });
+        if (nudgeBm) nudgeBm.addEventListener('click', (e)=>{ e.preventDefault(); phaseOffsetBms -= 10; });
+        if (nudgeBp) nudgeBp.addEventListener('click', (e)=>{ e.preventDefault(); phaseOffsetBms += 10; });
         // Helper to bind a visual knob to a value and callback
         // Helper to bind a visual knob to a value and callback
         function bindKnob(id, min, max, initial, stateObj, key, callback) {
@@ -2309,7 +2609,7 @@ function randomGlowColor() {
 			const defaultLine = 'Select a source to begin';
 			const shortcuts = [
 				'F Fullscreen  •  C Next Visual  •  ,/. Visual',
-				'V Random Station  •  B Previous Station  •  N Top Menu',
+				'V Random Station  •  B Previous Station  •  N Top Menu  •  L Lock',
 				'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
                 'P Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
 				'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Play/Pause  •  Esc Back'
@@ -2860,6 +3160,15 @@ function randomGlowColor() {
             if(!state.audioCtx) {
                 state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 state.analyserNode = state.audioCtx.createAnalyser();
+                // Per-stream analysers for scope/BPM
+                state.analyserNodeA = state.audioCtx.createAnalyser();
+                state.analyserNodeB = state.audioCtx.createAnalyser();
+                [state.analyserNodeA, state.analyserNodeB].forEach(an => {
+                    try {
+                        an.fftSize = 1024;
+                        an.smoothingTimeConstant = 0.8;
+                    } catch(_) {}
+                });
                 state.analyserNode.fftSize = 2048; 
 				state.gainNode = state.audioCtx.createGain();
 				state.gainNode.gain.value = 1.0;
@@ -2888,6 +3197,29 @@ function randomGlowColor() {
                 state.eqA.mid.connect(state.eqA.low);
                 state.eqA.low.connect(state.trimA);
                 state.trimA.connect(state.streamAGain);
+                // Tap A into analyser
+                try { state.trimA.connect(state.analyserNodeA); } catch(_) {}
+                // Beat worklet for A
+                try {
+                    const makeA = () => {
+                        if (state.beatNodeA) return;
+                        state.beatNodeA = new AudioWorkletNode(state.audioCtx, 'beat-detector', { numberOfInputs: 1, numberOfOutputs: 0, processorOptions: { channelId: 'A' } });
+                        state.trimA.connect(state.beatNodeA);
+                        state.beatNodeA.port.onmessage = (ev) => {
+                            const d = ev.data || {};
+                            if (d.type === 'onset') {
+                                try { lastBeatTsA = d.t * 1000; } catch(_) {}
+                            } else if (d.type === 'tempo') {
+                                bpmSmoothA = d.bpm;
+                                nextBeatTsA = (d.next || 0) * 1000;
+                                if (bpmOutA) bpmOutA.textContent = bpmSmoothA ? String(Math.round(bpmSmoothA)) : '--';
+                            }
+                        };
+                    };
+                    if (!state._beatModuleLoaded) {
+                        state.audioCtx.audioWorklet.addModule('beat-worklet.js').then(()=>{ state._beatModuleLoaded = true; makeA(); }).catch(()=>{});
+                    } else { makeA(); }
+                } catch(_) {}
 
                 // --- CHANNEL B EQ & TRIM ---
                 state.trimB = state.audioCtx.createGain(); state.trimB.gain.value = eqState.b.gain;
@@ -2906,6 +3238,29 @@ function randomGlowColor() {
                 state.eqB.mid.connect(state.eqB.low);
                 state.eqB.low.connect(state.trimB);
                 state.trimB.connect(state.streamBGain);
+                // Tap B into analyser
+                try { state.trimB.connect(state.analyserNodeB); } catch(_) {}
+                // Beat worklet for B
+                try {
+                    const makeB = () => {
+                        if (state.beatNodeB) return;
+                        state.beatNodeB = new AudioWorkletNode(state.audioCtx, 'beat-detector', { numberOfInputs: 1, numberOfOutputs: 0, processorOptions: { channelId: 'B' } });
+                        state.trimB.connect(state.beatNodeB);
+                        state.beatNodeB.port.onmessage = (ev) => {
+                            const d = ev.data || {};
+                            if (d.type === 'onset') {
+                                try { lastBeatTsB = d.t * 1000; } catch(_) {}
+                            } else if (d.type === 'tempo') {
+                                bpmSmoothB = d.bpm;
+                                nextBeatTsB = (d.next || 0) * 1000;
+                                if (bpmOutB) bpmOutB.textContent = bpmSmoothB ? String(Math.round(bpmSmoothB)) : '--';
+                            }
+                        };
+                    };
+                    if (!state._beatModuleLoaded) {
+                        state.audioCtx.audioWorklet.addModule('beat-worklet.js').then(()=>{ state._beatModuleLoaded = true; makeB(); }).catch(()=>{});
+                    } else { makeB(); }
+                } catch(_) {}
 
                 // Connect to Main Mix
                 state.streamAGain.connect(state.mixInput);
@@ -3079,7 +3434,7 @@ function randomGlowColor() {
 			// Type the current status line on start screen, then shortcuts
 			const shortcuts = [
 					'F Fullscreen  •  C Next Visual  •  ,/. Visual',
-					'V Random Station  •  B Previous Station  •  N Top Menu',
+					'V Random Station  •  B Previous Station  •  N Top Menu  •  L Lock',
 					'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
 					'P Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
 					'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Play/Pause  •  Esc Back'
@@ -3133,7 +3488,7 @@ function randomGlowColor() {
 				const s = document.getElementById('loading-status');
 			const shortcuts = [
 				'F Fullscreen  •  C Next Visual  •  ,/. Visual',
-				'V Random Station  •  B Previous Station  •  N Top Menu',
+				'V Random Station  •  B Previous Station  •  N Top Menu  •  L Lock',
 				'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
 				'P Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
 				'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Play/Pause  •  Esc Back'
@@ -6721,6 +7076,14 @@ tiGlowColorRandBtn.addEventListener('click', () => {
 
         // Keyboard shortcuts
         function handleGlobalKeydown(e) {
+            // Allow Lock toggle (L) to work even when locked or focused in inputs
+            if (e && (e.key === 'l' || e.key === 'L')) {
+                e.preventDefault();
+                uiLocked = !uiLocked;
+                applyUiLockState();
+                try { resetIdleTimer(); } catch(_) {}
+                return;
+            }
             try {
                 if (shortcutsLocked) return;
                 if (uiLocked) { e.preventDefault(); return; }
