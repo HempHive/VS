@@ -1926,6 +1926,74 @@ const QUALITY = {
         const nudgeBp = document.getElementById('mix-bpm-nudge-bp');
         let tapTimesA = [], tapTimesB = [];
         let phaseOffsetBms = 0; // apply to B grid ticks
+        // Beat worklet helpers (lazy load/create)
+        function ensureBeatModuleLoaded(cb) {
+            try {
+                if (!state || !state.audioCtx) return;
+                if (state._beatModuleLoaded) { cb && cb(); return; }
+                state.audioCtx.audioWorklet.addModule('beat-worklet.js').then(()=>{ state._beatModuleLoaded = true; cb && cb(); }).catch(()=>{});
+            } catch(_) {}
+        }
+        function startBeatA() {
+            try {
+                if (!state || !state.audioCtx || state.beatNodeA) return;
+                const make = () => {
+                    if (state.beatNodeA) return;
+                    state.beatNodeA = new AudioWorkletNode(state.audioCtx, 'beat-detector', { numberOfInputs: 1, numberOfOutputs: 0, processorOptions: { channelId: 'A' } });
+                    state.trimA && state.trimA.connect(state.beatNodeA);
+                    state.beatNodeA.port.onmessage = (ev) => {
+                        const d = ev.data || {};
+                        if (d.type === 'onset') {
+                            try { lastBeatTsA = d.t * 1000; } catch(_) {}
+                        } else if (d.type === 'tempo') {
+                            bpmSmoothA = d.bpm;
+                            nextBeatTsA = (d.next || 0) * 1000;
+                            if (bpmOutA) bpmOutA.textContent = bpmSmoothA ? String(Math.round(bpmSmoothA)) : '--';
+                        }
+                    };
+                };
+                if (!state._beatModuleLoaded) ensureBeatModuleLoaded(make); else make();
+            } catch(_) {}
+        }
+        function stopBeatA() {
+            try {
+                if (state && state.beatNodeA) {
+                    try { state.trimA && state.trimA.disconnect(state.beatNodeA); } catch(_) {}
+                    try { state.beatNodeA.port.onmessage = null; } catch(_) {}
+                    state.beatNodeA = null;
+                }
+            } catch(_) {}
+        }
+        function startBeatB() {
+            try {
+                if (!state || !state.audioCtx || state.beatNodeB) return;
+                const make = () => {
+                    if (state.beatNodeB) return;
+                    state.beatNodeB = new AudioWorkletNode(state.audioCtx, 'beat-detector', { numberOfInputs: 1, numberOfOutputs: 0, processorOptions: { channelId: 'B' } });
+                    state.trimB && state.trimB.connect(state.beatNodeB);
+                    state.beatNodeB.port.onmessage = (ev) => {
+                        const d = ev.data || {};
+                        if (d.type === 'onset') {
+                            try { lastBeatTsB = d.t * 1000; } catch(_) {}
+                        } else if (d.type === 'tempo') {
+                            bpmSmoothB = d.bpm;
+                            nextBeatTsB = (d.next || 0) * 1000;
+                            if (bpmOutB) bpmOutB.textContent = bpmSmoothB ? String(Math.round(bpmSmoothB)) : '--';
+                        }
+                    };
+                };
+                if (!state._beatModuleLoaded) ensureBeatModuleLoaded(make); else make();
+            } catch(_) {}
+        }
+        function stopBeatB() {
+            try {
+                if (state && state.beatNodeB) {
+                    try { state.trimB && state.trimB.disconnect(state.beatNodeB); } catch(_) {}
+                    try { state.beatNodeB.port.onmessage = null; } catch(_) {}
+                    state.beatNodeB = null;
+                }
+            } catch(_) {}
+        }
         const mixStationB = document.getElementById('mix-station-b');
         const mixPlayB = document.getElementById('mix-b-play');
         const mixStopB = document.getElementById('mix-b-stop');
@@ -2260,16 +2328,26 @@ const QUALITY = {
             e.preventDefault();
             bpmOnA = !bpmOnA;
             bpmBtnA.classList.toggle('on', bpmOnA);
-            if (!bpmOnA) { envA.length = 0; envFluxA.length = 0; if (bpmOutA) bpmOutA.textContent = '--'; bpmSmoothA = null; nextBeatTsA = null; }
-            if (bpmOnA && lastBeatTsA && bpmSmoothA) { nextBeatTsA = lastBeatTsA + 60000 / bpmSmoothA; }
+            if (bpmOnA) {
+                startBeatA();
+                if (lastBeatTsA && bpmSmoothA) { nextBeatTsA = lastBeatTsA + 60000 / bpmSmoothA; }
+            } else {
+                envA.length = 0; envFluxA.length = 0; if (bpmOutA) bpmOutA.textContent = '--'; bpmSmoothA = null; nextBeatTsA = null;
+                stopBeatA();
+            }
             updateBpmRunLoop();
         });
         if (bpmBtnB) bpmBtnB.addEventListener('click', (e) => {
             e.preventDefault();
             bpmOnB = !bpmOnB;
             bpmBtnB.classList.toggle('on', bpmOnB);
-            if (!bpmOnB) { envB.length = 0; envFluxB.length = 0; if (bpmOutB) bpmOutB.textContent = '--'; bpmSmoothB = null; nextBeatTsB = null; }
-            if (bpmOnB && lastBeatTsB && bpmSmoothB) { nextBeatTsB = lastBeatTsB + 60000 / bpmSmoothB; }
+            if (bpmOnB) {
+                startBeatB();
+                if (lastBeatTsB && bpmSmoothB) { nextBeatTsB = lastBeatTsB + 60000 / bpmSmoothB; }
+            } else {
+                envB.length = 0; envFluxB.length = 0; if (bpmOutB) bpmOutB.textContent = '--'; bpmSmoothB = null; nextBeatTsB = null;
+                stopBeatB();
+            }
             updateBpmRunLoop();
         });
         if (bpmBtnGrid) bpmBtnGrid.addEventListener('click', (e) => {
@@ -3199,27 +3277,8 @@ function randomGlowColor() {
                 state.trimA.connect(state.streamAGain);
                 // Tap A into analyser
                 try { state.trimA.connect(state.analyserNodeA); } catch(_) {}
-                // Beat worklet for A
-                try {
-                    const makeA = () => {
-                        if (state.beatNodeA) return;
-                        state.beatNodeA = new AudioWorkletNode(state.audioCtx, 'beat-detector', { numberOfInputs: 1, numberOfOutputs: 0, processorOptions: { channelId: 'A' } });
-                        state.trimA.connect(state.beatNodeA);
-                        state.beatNodeA.port.onmessage = (ev) => {
-                            const d = ev.data || {};
-                            if (d.type === 'onset') {
-                                try { lastBeatTsA = d.t * 1000; } catch(_) {}
-                            } else if (d.type === 'tempo') {
-                                bpmSmoothA = d.bpm;
-                                nextBeatTsA = (d.next || 0) * 1000;
-                                if (bpmOutA) bpmOutA.textContent = bpmSmoothA ? String(Math.round(bpmSmoothA)) : '--';
-                            }
-                        };
-                    };
-                    if (!state._beatModuleLoaded) {
-                        state.audioCtx.audioWorklet.addModule('beat-worklet.js').then(()=>{ state._beatModuleLoaded = true; makeA(); }).catch(()=>{});
-                    } else { makeA(); }
-                } catch(_) {}
+                // Beat worklet for A (lazy: only when enabled)
+                // no-op here; created on demand by BPM A toggle
 
                 // --- CHANNEL B EQ & TRIM ---
                 state.trimB = state.audioCtx.createGain(); state.trimB.gain.value = eqState.b.gain;
@@ -3240,27 +3299,8 @@ function randomGlowColor() {
                 state.trimB.connect(state.streamBGain);
                 // Tap B into analyser
                 try { state.trimB.connect(state.analyserNodeB); } catch(_) {}
-                // Beat worklet for B
-                try {
-                    const makeB = () => {
-                        if (state.beatNodeB) return;
-                        state.beatNodeB = new AudioWorkletNode(state.audioCtx, 'beat-detector', { numberOfInputs: 1, numberOfOutputs: 0, processorOptions: { channelId: 'B' } });
-                        state.trimB.connect(state.beatNodeB);
-                        state.beatNodeB.port.onmessage = (ev) => {
-                            const d = ev.data || {};
-                            if (d.type === 'onset') {
-                                try { lastBeatTsB = d.t * 1000; } catch(_) {}
-                            } else if (d.type === 'tempo') {
-                                bpmSmoothB = d.bpm;
-                                nextBeatTsB = (d.next || 0) * 1000;
-                                if (bpmOutB) bpmOutB.textContent = bpmSmoothB ? String(Math.round(bpmSmoothB)) : '--';
-                            }
-                        };
-                    };
-                    if (!state._beatModuleLoaded) {
-                        state.audioCtx.audioWorklet.addModule('beat-worklet.js').then(()=>{ state._beatModuleLoaded = true; makeB(); }).catch(()=>{});
-                    } else { makeB(); }
-                } catch(_) {}
+                // Beat worklet for B (lazy: only when enabled)
+                // no-op here; created on demand by BPM B toggle
 
                 // Connect to Main Mix
                 state.streamAGain.connect(state.mixInput);
