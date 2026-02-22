@@ -210,6 +210,11 @@
             font-size: clamp(18px, 2.5vw, 28px); padding: 10px; transition: 0.2s; display: flex; align-items: center;
         }
         .icon-btn:hover { color: #fff; transform: scale(1.2); text-shadow: 0 0 10px #fff; }
+        /* Enlarge bottom bar icon buttons specifically */
+        .center-controls .icon-btn {
+            font-size: clamp(27px, 3.75vw, 42px);
+            padding: 15px;
+        }
         /* Precise hitbox for the WebM close (✕) button */
         #btn-webm-close {
             width: 32px; height: 32px;
@@ -703,6 +708,62 @@
             box-shadow: 0 0 0 0 rgba(0,0,0,0);
             transition: background 0.2s, box-shadow 0.2s;
         }
+        /* Options Panel (center square, fade in/out) */
+        #options-panel {
+            position: fixed; inset: 0; display: none; place-items: center; z-index: 180;
+            opacity: 0; transition: opacity 0.35s ease;
+        }
+        #options-panel.show { display: grid; opacity: 1; }
+        #options-modal {
+            width: min(54vmin, 630px); height: min(54vmin, 630px);
+            background: rgba(0,0,0,0.82);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 14px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            position: relative;
+            display: grid; grid-template-rows: 1fr;
+            overflow: hidden;
+        }
+        #options-head {
+            padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.12);
+            display:flex; align-items:center; justify-content:space-between; color:#ddd; font-size:14px; letter-spacing:1px; text-transform:uppercase;
+        }
+        #options-grid {
+            position: relative;
+            width: 100%; height: 100%;
+        }
+        /* Triangle buttons fill the square; all point to center */
+        .tri-btn {
+            position: absolute; inset: 0;
+            background: transparent;
+            border: 1.5px solid rgba(255,255,255,0.35);
+            box-shadow: inset 0 0 14px rgba(0,0,0,0.35);
+            color: #fff;
+            cursor: pointer;
+            transition: filter 0.2s, transform 0.1s, background-color 0.2s, border-color 0.2s;
+        }
+        .tri-btn:hover { filter: brightness(1.2); }
+        .tri-top    { clip-path: polygon(0% 0%, 100% 0%, 50% 50%); background: rgba(90,50,252,0.18); border-color: rgba(90,50,252,0.75); }
+        .tri-left   { clip-path: polygon(0% 0%, 0% 100%, 50% 50%); background: rgba(57,255,20,0.18); border-color: rgba(57,255,20,0.75); }
+        .tri-right  { clip-path: polygon(100% 0%, 100% 100%, 50% 50%); background: rgba(214,1,77,0.18); border-color: rgba(214,1,77,0.75); }
+        .tri-bottom { clip-path: polygon(0% 100%, 100% 100%, 50% 50%); background: rgba(253,232,2,0.18); border-color: rgba(253,232,2,0.75); }
+        /* Labels inside triangles */
+        .tri-label {
+            position: absolute; pointer-events: none; font-size: 24px; color: #fff; letter-spacing: 0.5px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        }
+        .tri-top .tri-label { top: 12%; left: 50%; transform: translate(-50%, 0); }
+        .tri-left .tri-label { left: 12%; top: 50%; transform: translate(0, -50%); white-space: nowrap; }
+        .tri-right .tri-label { right: 12%; top: 50%; transform: translate(0, -50%); white-space: nowrap; }
+        .tri-bottom .tri-label { bottom: 12%; left: 50%; transform: translate(-50%, 0); }
+        #options-foot {
+            padding: 10px 12px; border-top: 1px solid rgba(255,255,255,0.12);
+            display:flex; justify-content:flex-end; gap:8px;
+        }
+        #btn-options-close {
+            padding: 6px 10px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: #fff; border-radius: 6px; cursor: pointer; font-size: 11px; letter-spacing:1px; text-transform:uppercase;
+        }
+        #btn-options-close:hover { background:#fff; color:#000; }
         .status-dot.on {
             background: #22cc66;
             box-shadow: 0 0 10px rgba(34,204,102,0.8);
@@ -1284,6 +1345,7 @@
             <button class="icon-btn interactive display-none" id="btn-skip-preset" title="Next Visual Preset">⏭</button>
             <!-- WEBM TOGGLE -->
             <button class="icon-btn interactive" id="btn-webm" title="Toggle WebM Overlay">🎛️</button>
+            <button class="icon-btn interactive" id="btn-options" title="Options">🪭</button>
 
             <!-- TITLE INFO -->
             <div id="mode-info">
@@ -1291,9 +1353,9 @@
                 <span id="mode-sub">Engine Ready</span>
             </div>
 
-            <!-- SETTINGS BUTTON -->
-            <button class="icon-btn interactive" id="btn-settings" title="Visualizer Settings">🎚️</button>
+            <!-- SETTINGS BUTTONS -->
             <button class="icon-btn interactive" id="btn-webm-panel-toggle" title="Avatar Settings">💃</button>
+            <button class="icon-btn interactive" id="btn-settings" title="Visualizer Settings">🎚️</button>
             
         </div>
 
@@ -1389,6 +1451,17 @@
 			</div>
 		</div>
 	</div>
+    <!-- Center Options Panel -->
+    <div id="options-panel" class="display-none" aria-label="Options Panel">
+        <div id="options-modal">
+            <div id="options-grid">
+                <button class="tri-btn tri-top"    id="opt-top"    title="Open Top Menu"><span class="tri-label">Top Menu</span></button>
+                <button class="tri-btn tri-left"   id="opt-left"   title="Open Text-In"><span class="tri-label">Text-In</span></button>
+                <button class="tri-btn tri-right"  id="opt-right"  title="Open Avatar Settings"><span class="tri-label">Avatar</span></button>
+                <button class="tri-btn tri-bottom" id="opt-bottom" title="Open Mix Settings"><span class="tri-label">Mixer</span></button>
+            </div>
+        </div>
+    </div>
     <!-- Quick Radio Button and old Radio Panel removed (assets retained) -->
     <div id="station-banner" class="display-none"></div>
     <!-- Rising text overlay layer -->
@@ -1926,6 +1999,51 @@ const QUALITY = {
         const nudgeBp = document.getElementById('mix-bpm-nudge-bp');
         let tapTimesA = [], tapTimesB = [];
         let phaseOffsetBms = 0; // apply to B grid ticks
+        // --- OPTIONS PANEL HELPERS ---
+        const optionsPanel = document.getElementById('options-panel');
+        const btnOptions = document.getElementById('btn-options');
+        const btnOptionsClose = document.getElementById('btn-options-close');
+        function isOptionsOpen() {
+            return !!(optionsPanel && !optionsPanel.classList.contains('display-none') && optionsPanel.classList.contains('show'));
+        }
+        let optionsAutoCloseId = null;
+        function openOptionsPanel() {
+            if (uiLocked) return;
+            if (!optionsPanel) return;
+            optionsPanel.classList.remove('display-none');
+            requestAnimationFrame(()=> optionsPanel.classList.add('show'));
+            // auto close after 15s
+            if (optionsAutoCloseId) { clearTimeout(optionsAutoCloseId); optionsAutoCloseId = null; }
+            optionsAutoCloseId = setTimeout(()=>{ closeOptionsPanel(); }, 20000);
+        }
+        function closeOptionsPanel() {
+            if (!optionsPanel) return;
+            if (optionsAutoCloseId) { clearTimeout(optionsAutoCloseId); optionsAutoCloseId = null; }
+            optionsPanel.classList.remove('show');
+            setTimeout(()=> optionsPanel.classList.add('display-none'), 350);
+        }
+        function toggleOptionsPanel() {
+            if (isOptionsOpen()) closeOptionsPanel(); else openOptionsPanel();
+        }
+        if (btnOptions) btnOptions.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); toggleOptionsPanel(); });
+        if (btnOptionsClose) btnOptionsClose.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); closeOptionsPanel(); });
+        const optTop = document.getElementById('opt-top');
+        const optLeft = document.getElementById('opt-left');
+        const optRight = document.getElementById('opt-right');
+        const optBottom = document.getElementById('opt-bottom');
+        if (optTop) optTop.addEventListener('click', (e)=>{ e.preventDefault(); try { toggleTopMenuPanel(); } catch(_){} closeOptionsPanel(); });
+        if (optLeft) optLeft.addEventListener('click', (e)=>{ e.preventDefault(); try { toggleTextInPanel(); } catch(_){} closeOptionsPanel(); });
+        if (optRight) optRight.addEventListener('click', (e)=>{ e.preventDefault(); try { toggleBottomMenuPanel(); } catch(_){} closeOptionsPanel(); });
+        if (optBottom) optBottom.addEventListener('click', (e)=>{ e.preventDefault(); try { toggleMixPanel(); } catch(_){} closeOptionsPanel(); });
+        // Update Avatar play/stop button label helper
+        function updateAvatarPlayButton() {
+            try {
+                const btn = document.getElementById('avatar-webm-open');
+                if (!btn) return;
+                btn.textContent = (typeof webmOn !== 'undefined' && webmOn) ? '■' : '▶';
+                btn.title = (webmOn ? 'Stop WebM' : 'Play WebM');
+            } catch(_) {}
+        }
         // Beat worklet helpers (lazy load/create)
         function ensureBeatModuleLoaded(cb) {
             try {
@@ -2859,6 +2977,8 @@ function randomGlowColor() {
                 if (aDup) aDup.value = String(webmSettings.duplicates);
                 const autoBtn = document.getElementById('avatar-btn-auto');
                 if (autoBtn) { autoBtn.textContent = 'Auto'; autoBtn.classList.toggle('on', webmAutoOn); }
+                // Sync play/stop label
+                try { updateAvatarPlayButton(); } catch(_) {}
             } catch(_) {}
             p.classList.remove('display-none');
             requestAnimationFrame(() => { p.classList.add('open'); });
@@ -2890,12 +3010,13 @@ function randomGlowColor() {
                     // Toggle behavior: if open, close; otherwise open selected
                     if (typeof webmOn !== 'undefined' && webmOn) {
                         try { hideWebm(); } catch(_) {}
+                        try { updateAvatarPlayButton(); } catch(_) {}
                         return;
                     }
                     if (typeof loadWebmList === 'function' && webmList.length === 0) {
-                        loadWebmList().finally(()=>{ try { const idx = Math.max(0, Math.min(webmList.length-1, parseInt((selWebm?.value)||'0',10)||0)); setWebm(idx); showWebm(); } catch(_){} });
+                        loadWebmList().finally(()=>{ try { const idx = Math.max(0, Math.min(webmList.length-1, parseInt((selWebm?.value)||'0',10)||0)); setWebm(idx); showWebm(); updateAvatarPlayButton(); } catch(_){} });
                     } else {
-                        try { const idx = Math.max(0, Math.min(webmList.length-1, parseInt((selWebm?.value)||'0',10)||0)); setWebm(idx); showWebm(); } catch(_){}
+                        try { const idx = Math.max(0, Math.min(webmList.length-1, parseInt((selWebm?.value)||'0',10)||0)); setWebm(idx); showWebm(); updateAvatarPlayButton(); } catch(_){}
                     }
                 });
                 const aScale = document.getElementById('avatar-inp-scale');
@@ -7149,6 +7270,16 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 let closed = false;
                 try {
+                    // Options panel has priority: close it and stop further handling
+                    if (!closed && typeof isOptionsOpen === 'function' && isOptionsOpen && isOptionsOpen()) {
+                        try { closeOptionsPanel(); } catch(_) {}
+                        closed = true;
+                    }
+                    // Avatar Settings (right slide) next priority
+                    if (!closed && typeof isBottomMenuOpen === 'function' && isBottomMenuOpen()) {
+                        try { closeBottomMenuPanel(); } catch(_) {}
+                        closed = true;
+                    }
                     // Mic confirm
                     if (!closed && micConfirm && micConfirm.style.display === 'flex') {
                         hideMicConfirm();
@@ -7220,10 +7351,10 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 window.__panelGuardUntilMs = 0; // FIX: Reset guard timer for instant open
                 try { toggleMixPanel(); } catch(_) {}
             } else if (e.key === 'g' || e.key === 'G') {
-                // Toggle WebM Settings panel (The old smaller panel, if you still use it)
+                // Toggle Options panel (repurposed)
                 e.preventDefault();
                 window.__panelGuardUntilMs = 0; 
-                try { toggleWebmSettingsPanel(); } catch(_) {}
+                try { toggleOptionsPanel(); } catch(_) {}
             } else if (e.key === 'i' || e.key === 'I') {
                 // Send Text-In immediately
                 e.preventDefault();
@@ -7351,6 +7482,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             applyWebmSettings();
             // resume auto if enabled
             if (webmAutoOn) scheduleWebmAuto();
+            try { updateAvatarPlayButton(); } catch(_) {}
         }
 
         function hideWebm() {
@@ -7368,6 +7500,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             webmVideoRightEl.src = '';
             // stop auto when hidden
             cancelWebmAuto();
+            try { updateAvatarPlayButton(); } catch(_) {}
         }
 
         function setWebm(index) {
