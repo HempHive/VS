@@ -214,6 +214,16 @@
         .center-controls .icon-btn {
             font-size: clamp(27px, 3.75vw, 42px);
             padding: 15px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Remove persistent blue focus ring on Chrome for bottom bar buttons */
+        .center-controls .icon-btn:focus,
+        .center-controls .icon-btn:focus-visible {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        .center-controls .icon-btn::-moz-focus-inner {
+            border: 0;
         }
         /* Precise hitbox for the WebM close (✕) button */
         #btn-webm-close {
