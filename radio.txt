@@ -1,4 +1,3 @@
-Flux🚥Hippie|http://streams.fluxfm.de/event02/mp3-320
 Tomorrowland🎢|https://stream.bigfm.de/tomorrowland/mp3-128/
 Mango🥭|https://mangoradio.stream.laut.fm/mangoradio
 dancewave🌊|https://dancewave.online/dance.mp3
@@ -88,3 +87,4 @@ Digi📀talis|https://ice2.somafm.com/digitalis-128-mp3
 Def💸Con|https://ice2.somafm.com/defcon-128-mp3
 Space🛰️Station|https://ice2.somafm.com/spacestation-128-mp3
 Doomed💺|https://ice2.somafm.com/doomed-128-mp3
+Flux🚥Hippie|http://streams.fluxfm.de/event02/mp3-320
