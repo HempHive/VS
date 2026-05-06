@@ -339,6 +339,18 @@
             align-items: stretch;
             min-width: 100px;
         }
+        #dj-visual-root .dj-fx-row {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            align-items: stretch;
+        }
+        #dj-visual-root .dj-fx-row .btn.dj-fx {
+            flex: 1 1 0;
+            min-width: 72px;
+        }
         .dj-sfx-col .btn.dj-sfx {
             padding: 8px 10px;
             font-size: 11px;
@@ -2553,6 +2565,9 @@ const QUALITY = {
         try { audioElSample1.muted = false; } catch(_) {}
         try { audioElSample2.muted = false; } catch(_) {}
         try { audioElSample3.muted = false; } catch(_) {}
+        try { audioElSample4.muted = false; } catch(_) {}
+        try { audioElSample5.muted = false; } catch(_) {}
+        try { audioElSample6.muted = false; } catch(_) {}
         // Element volume at 1 so MediaElementSourceNode receives full-strength signal
         try { audioEl.volume = 1; } catch(_) {}
         try { audioElB.volume = 1; } catch(_) {}
@@ -2560,6 +2575,9 @@ const QUALITY = {
         try { audioElSample1.volume = 1; } catch(_) {}
         try { audioElSample2.volume = 1; } catch(_) {}
         try { audioElSample3.volume = 1; } catch(_) {}
+        try { audioElSample4.volume = 1; } catch(_) {}
+        try { audioElSample5.volume = 1; } catch(_) {}
+        try { audioElSample6.volume = 1; } catch(_) {}
         const mixBStatusDot = document.getElementById('mix-b-status-dot');
         const mixBStatusText = document.getElementById('mix-b-status-text');
         function updateMixBStatus() {
@@ -5121,17 +5139,21 @@ function stopAllAndShowStart() {
             <div class="dj-jog" id="dj-jog-a" aria-hidden="true"><span class="dj-jog-marker"></span></div>
           </div>
           <div class="dj-fx-col">
-            <button type="button" class="btn dj-fx" id="dj-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-echo" title="Echo (Mixer FX)">~Echo~</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-high" title="High-pass (Mixer FX)">High-pass</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-treble" title="Treble boost (Mixer FX)">Treble</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Distortion (Mixer FX)">Distort</button>
+            <div class="dj-fx-row">
+              <button type="button" class="btn dj-fx" id="dj-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
+              <button type="button" class="btn dj-fx" id="dj-fx-echo" title="Echo (Mixer FX)">~Echo~</button>
+              <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
+            </div>
+            <div class="dj-fx-row">
+              <button type="button" class="btn dj-fx" id="dj-fx-high" title="High-pass (Mixer FX)">High-pass</button>
+              <button type="button" class="btn dj-fx" id="dj-fx-treble" title="Treble boost (Mixer FX)">Treble</button>
+              <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Distortion (Mixer FX)">Distort</button>
+            </div>
           </div>
           <div class="dj-sfx-col">
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="Left: play wav.mp3 • Right: loop">Wav ▷</button>
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Left: play wav1.mp3 • Right: loop">Wav 1 ▷</button>
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Left: play wav2.mp3 • Right: loop">Wav 2 ▷</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
           </div>
         </div>
       </div>
@@ -5179,17 +5201,21 @@ function stopAllAndShowStart() {
             <div class="dj-jog" id="dj-jog-b" aria-hidden="true"><span class="dj-jog-marker"></span></div>
           </div>
           <div class="dj-fx-col">
-            <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
-            <button type="button" class="btn dj-fx" id="dj-b-fx-echo" title="Echo (Mixer FX)">~Echo~</button>
-            <button type="button" class="btn dj-fx" id="dj-b-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
-            <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="High-pass (Mixer FX)">High-pass</button>
-            <button type="button" class="btn dj-fx" id="dj-b-fx-treble" title="Treble boost (Mixer FX)">Treble</button>
-            <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Distortion (Mixer FX)">Distort</button>
+            <div class="dj-fx-row">
+              <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
+              <button type="button" class="btn dj-fx" id="dj-b-fx-echo" title="Echo (Mixer FX)">~Echo~</button>
+              <button type="button" class="btn dj-fx" id="dj-b-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
+            </div>
+            <div class="dj-fx-row">
+              <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="High-pass (Mixer FX)">High-pass</button>
+              <button type="button" class="btn dj-fx" id="dj-b-fx-treble" title="Treble boost (Mixer FX)">Treble</button>
+              <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Distortion (Mixer FX)">Distort</button>
+            </div>
           </div>
           <div class="dj-sfx-col">
-            <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="Left: play wav.mp3 • Right: loop">Wav ▷</button>
-            <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Left: play wav1.mp3 • Right: loop">Wav 1 ▷</button>
-            <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Left: play wav2.mp3 • Right: loop">Wav 2 ▷</button>
+            <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
+            <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
+            <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
           </div>
         </div>
       </div>
@@ -5388,12 +5414,12 @@ function stopAllAndShowStart() {
 
                 try {
                     if (typeof bindSample === 'function') {
-                        bindSample(root.querySelector('#dj-a-sfx-wav'), audioElSample, 'sampleLoop', 'sourceNodeSample');
-                        bindSample(root.querySelector('#dj-a-sfx-w1'), audioElSample1, 'sampleLoop1', 'sourceNodeSample1');
-                        bindSample(root.querySelector('#dj-a-sfx-w2'), audioElSample2, 'sampleLoop2', 'sourceNodeSample2');
-                        bindSample(root.querySelector('#dj-b-sfx-wav'), audioElSample, 'sampleLoop', 'sourceNodeSample');
-                        bindSample(root.querySelector('#dj-b-sfx-w1'), audioElSample1, 'sampleLoop1', 'sourceNodeSample1');
-                        bindSample(root.querySelector('#dj-b-sfx-w2'), audioElSample2, 'sampleLoop2', 'sourceNodeSample2');
+                        bindSample(root.querySelector('#dj-a-sfx-wav'), audioElSample4, 'sampleLoop4', 'sourceNodeSample4');
+                        bindSample(root.querySelector('#dj-a-sfx-w1'), audioElSample5, 'sampleLoop5', 'sourceNodeSample5');
+                        bindSample(root.querySelector('#dj-a-sfx-w2'), audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
+                        bindSample(root.querySelector('#dj-b-sfx-wav'), audioElSample4, 'sampleLoop4', 'sourceNodeSample4');
+                        bindSample(root.querySelector('#dj-b-sfx-w1'), audioElSample5, 'sampleLoop5', 'sourceNodeSample5');
+                        bindSample(root.querySelector('#dj-b-sfx-w2'), audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
                     }
                 } catch (_) {}
 
