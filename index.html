@@ -266,6 +266,26 @@
             background-repeat: no-repeat;
             background-size: 100% 100%;
         }
+        /* ProjectM shortcut on DJ decks: prm.gif instead of flat/black btn.png fill */
+        #dj-visual-root #dj-vis-pm2,
+        #dj-visual-root #dj-b-vis-pm2 {
+            background-image: url('prm.gif');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-color: rgba(0, 0, 0, 0.45);
+        }
+        #dj-visual-root #dj-vis-pm2.on,
+        #dj-visual-root #dj-b-vis-pm2.on {
+            background-image: url('prm.gif');
+            background-size: cover;
+        }
+        #dj-visual-root #dj-vis-pm2:hover,
+        #dj-visual-root #dj-b-vis-pm2:hover {
+            background-image: url('prm.gif');
+            background-size: cover;
+            filter: brightness(1.12);
+        }
         /* DJ crossfader: same vol.png thumb as Mixer / station list theme */
         #dj-visual-root #dj-crossfader {
             -webkit-appearance: none;
@@ -1781,6 +1801,7 @@
 
             <!-- SETTINGS BUTTONS -->
             <button class="icon-btn interactive" id="btn-webm-panel-toggle" title="Avatar Settings">💃</button>
+            <button class="icon-btn interactive" id="btn-dj-decks" title="Open DJ Decks visual">🎧</button>
             <button class="icon-btn interactive" id="btn-settings" title="Visualizer Settings">🎚️</button>
             
         </div>
@@ -5067,7 +5088,7 @@ function stopAllAndShowStart() {
                     if (!state || !state.fx) return;
                     const lon = !!state.fx.low.on;
                     const bon = !!state.fx.bass.on;
-                    const eon = !!(state.fx.echoDelay && state.fx.echoDelay.on);
+                    const kon = !!(state.fx.tk && state.fx.tk.on);
                     const hin = !!state.fx.high.on;
                     const tin = !!state.fx.treble.on;
                     const din = !!(state.fx.distort && state.fx.distort.on);
@@ -5075,8 +5096,8 @@ function stopAllAndShowStart() {
                     if (this.els.fxLowB) this.els.fxLowB.classList.toggle('on', lon);
                     if (this.els.fxBass) this.els.fxBass.classList.toggle('on', bon);
                     if (this.els.fxBassB) this.els.fxBassB.classList.toggle('on', bon);
-                    if (this.els.fxEcho) this.els.fxEcho.classList.toggle('on', eon);
-                    if (this.els.fxEchoB) this.els.fxEchoB.classList.toggle('on', eon);
+                    if (this.els.fxTk) this.els.fxTk.classList.toggle('on', kon);
+                    if (this.els.fxTkB) this.els.fxTkB.classList.toggle('on', kon);
                     if (this.els.fxHighA) this.els.fxHighA.classList.toggle('on', hin);
                     if (this.els.fxHighB) this.els.fxHighB.classList.toggle('on', hin);
                     if (this.els.fxTrebleA) this.els.fxTrebleA.classList.toggle('on', tin);
@@ -5169,14 +5190,14 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
 
             <button type="button" class="btn dj-fx" id="dj-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-echo" title="Echo (Mixer FX)">~Echo~</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-tk" title="TK-Filter (Mixer FX)">TK-Filter</button>
             <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
 
             <button type="button" class="btn dj-fx" id="dj-fx-high" title="High-pass (Mixer FX)">High-pass</button>
             <button type="button" class="btn dj-fx" id="dj-fx-treble" title="Treble boost (Mixer FX)">Treble</button>
             <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Distortion (Mixer FX)">Distort</button>
             <button type="button" class="btn dj-fx" id="dj-vis-blank" title="Switch to no visual (Blank mode)">NO VISUAL</button>
-            <button type="button" class="btn dj-fx" id="dj-vis-bars" title="Switch to Audio Bars visual">AUDIO:BARS</button>
+            <button type="button" class="btn dj-fx" id="dj-vis-bars" title="Switch to Audio Bars visual">AUDIO:BAR</button>
             <button type="button" class="btn dj-fx" id="dj-vis-pm2" title="Switch visual to ProjectM v2">ProjectM</button>
           </div>
         </div>
@@ -5230,14 +5251,14 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
 
             <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
-            <button type="button" class="btn dj-fx" id="dj-b-fx-echo" title="Echo (Mixer FX)">~Echo~</button>
+            <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="TK-Filter (Mixer FX)">TK-Filter</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
 
             <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="High-pass (Mixer FX)">High-pass</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-treble" title="Treble boost (Mixer FX)">Treble</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Distortion (Mixer FX)">Distort</button>
             <button type="button" class="btn dj-fx" id="dj-b-vis-blank" title="Switch to no visual (Blank mode)">NO VISUAL</button>
-            <button type="button" class="btn dj-fx" id="dj-b-vis-bars" title="Switch to Audio Bars visual">AUDIO:BARS</button>
+            <button type="button" class="btn dj-fx" id="dj-b-vis-bars" title="Switch to Audio Bars visual">AUDIO:BAR</button>
             <button type="button" class="btn dj-fx" id="dj-b-vis-pm2" title="Switch visual to ProjectM v2">ProjectM</button>
           </div>
         </div>
@@ -5259,13 +5280,13 @@ function stopAllAndShowStart() {
                 this.els.jogA = root.querySelector('#dj-jog-a');
                 this.els.jogB = root.querySelector('#dj-jog-b');
                 this.els.fxLow = root.querySelector('#dj-fx-low');
-                this.els.fxEcho = root.querySelector('#dj-fx-echo');
+                this.els.fxTk = root.querySelector('#dj-fx-tk');
                 this.els.fxBass = root.querySelector('#dj-fx-bass');
                 this.els.fxHighA = root.querySelector('#dj-fx-high');
                 this.els.fxTrebleA = root.querySelector('#dj-fx-treble');
                 this.els.fxDistortA = root.querySelector('#dj-fx-distort');
                 this.els.fxLowB = root.querySelector('#dj-b-fx-low');
-                this.els.fxEchoB = root.querySelector('#dj-b-fx-echo');
+                this.els.fxTkB = root.querySelector('#dj-b-fx-tk');
                 this.els.fxBassB = root.querySelector('#dj-b-fx-bass');
                 this.els.fxHighB = root.querySelector('#dj-b-fx-high');
                 this.els.fxTrebleB = root.querySelector('#dj-b-fx-treble');
@@ -5302,13 +5323,6 @@ function stopAllAndShowStart() {
                     }, sig);
                 }
 
-                const armEchoToggle = () => {
-                    if (!state || !state.fx) return;
-                    state.fx.echoDelay.on = !state.fx.echoDelay.on;
-                    state.fx.echoFeedback.on = state.fx.echoDelay.on;
-                    if (typeof rebuildEffectsChain === 'function') rebuildEffectsChain();
-                };
-
                 const djToggleLow = () => {
                     try {
                         initAudio();
@@ -5329,14 +5343,14 @@ function stopAllAndShowStart() {
                         if (this.els.fxBassB) this.els.fxBassB.classList.toggle('on', on);
                     } catch (_) {}
                 };
-                const djToggleEcho = () => {
+                const djToggleTk = () => {
                     try {
                         initAudio();
-                        armEchoToggle();
-                        const on = !!(state.fx.echoDelay && state.fx.echoDelay.on);
-                        if (this.els.fxEcho) this.els.fxEcho.classList.toggle('on', on);
-                        if (this.els.fxEchoB) this.els.fxEchoB.classList.toggle('on', on);
-                        if (typeof fxEcho !== 'undefined' && fxEcho) fxEcho.classList.toggle('on', on);
+                        if (typeof toggleFx !== 'function') return;
+                        toggleFx('tk', typeof fxTk !== 'undefined' ? fxTk : null);
+                        const on = !!(state.fx && state.fx.tk && state.fx.tk.on);
+                        if (this.els.fxTk) this.els.fxTk.classList.toggle('on', on);
+                        if (this.els.fxTkB) this.els.fxTkB.classList.toggle('on', on);
                     } catch (_) {}
                 };
                 const djToggleHigh = () => {
@@ -5374,8 +5388,8 @@ function stopAllAndShowStart() {
                 if (this.els.fxLowB) this.els.fxLowB.addEventListener('click', djToggleLow, sig);
                 if (this.els.fxBass) this.els.fxBass.addEventListener('click', djToggleBass, sig);
                 if (this.els.fxBassB) this.els.fxBassB.addEventListener('click', djToggleBass, sig);
-                if (this.els.fxEcho) this.els.fxEcho.addEventListener('click', djToggleEcho, sig);
-                if (this.els.fxEchoB) this.els.fxEchoB.addEventListener('click', djToggleEcho, sig);
+                if (this.els.fxTk) this.els.fxTk.addEventListener('click', djToggleTk, sig);
+                if (this.els.fxTkB) this.els.fxTkB.addEventListener('click', djToggleTk, sig);
                 if (this.els.fxHighA) this.els.fxHighA.addEventListener('click', djToggleHigh, sig);
                 if (this.els.fxHighB) this.els.fxHighB.addEventListener('click', djToggleHigh, sig);
                 if (this.els.fxTrebleA) this.els.fxTrebleA.addEventListener('click', djToggleTreble, sig);
@@ -7383,6 +7397,15 @@ function stopAllAndShowStart() {
             new MilkdropPresetEngine("Rainbow (Invert)", (k) => /rainbow|color|colour|spectrum|palette/i.test(k), { invert: true })
         ];
 
+        function updateDjDecksShortcutVisibility() {
+            try {
+                const btn = document.getElementById('btn-dj-decks');
+                if (!btn) return;
+                const onDj = !!(state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks');
+                btn.classList.toggle('display-none', onDj);
+            } catch (_) {}
+        }
+
         function loadMode(index) {
             if(state.activeVisualizer) state.activeVisualizer.destroy();
             let idx = index;
@@ -7412,6 +7435,7 @@ function stopAllAndShowStart() {
             state.activeVisualizer.init();
             // Randomize bottom text color each time a mode loads
             setBottomTextRandomColor();
+            updateDjDecksShortcutVisibility();
         }
         
         // Allow opening overlay by clicking the title area
@@ -7430,6 +7454,16 @@ function stopAllAndShowStart() {
         const fileInputEl = document.getElementById('file-input');
         if (fileInputEl) fileInputEl.addEventListener('change', useFile);
         document.getElementById('btn-fullscreen')?.addEventListener('click', toggleFullscreen);
+        const btnDjDecksShortcut = document.getElementById('btn-dj-decks');
+        if (btnDjDecksShortcut) {
+            btnDjDecksShortcut.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const idx = modes.findIndex((m) => m && m.name === 'DJ Decks');
+                if (idx >= 0) loadMode(idx);
+                resetIdleTimer();
+            });
+        }
         const btnWebmPanelToggle = document.getElementById('btn-webm-panel-toggle');
         if (btnWebmPanelToggle) {
             const toggleAvatarPlayStop = () => {
