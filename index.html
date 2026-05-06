@@ -7432,9 +7432,56 @@ function stopAllAndShowStart() {
         document.getElementById('btn-fullscreen')?.addEventListener('click', toggleFullscreen);
         const btnWebmPanelToggle = document.getElementById('btn-webm-panel-toggle');
         if (btnWebmPanelToggle) {
+            const toggleAvatarPlayStop = () => {
+                try {
+                    if (!webmOn) {
+                        if (webmList.length === 0 && typeof loadWebmList === 'function') {
+                            loadWebmList().finally(() => {
+                                if (webmList.length > 0) {
+                                    showWebm();
+                                    try { updateAvatarPlayButton(); } catch(_) {}
+                                }
+                            });
+                        } else {
+                            showWebm();
+                            try { updateAvatarPlayButton(); } catch(_) {}
+                        }
+                    } else {
+                        hideWebm();
+                        try { updateAvatarPlayButton(); } catch(_) {}
+                    }
+                } catch(_) {}
+            };
+            let avatarHoldTimer = null;
+            let avatarLongPressHandled = false;
+            const AVATAR_LONG_PRESS_MS = 500;
+            const clearAvatarHold = () => {
+                if (avatarHoldTimer) {
+                    clearTimeout(avatarHoldTimer);
+                    avatarHoldTimer = null;
+                }
+            };
+            const onAvatarHoldStart = (e) => {
+                try { e.preventDefault(); } catch(_) {}
+                avatarLongPressHandled = false;
+                clearAvatarHold();
+                avatarHoldTimer = setTimeout(() => {
+                    avatarLongPressHandled = true;
+                    toggleAvatarPlayStop();
+                }, AVATAR_LONG_PRESS_MS);
+            };
+            const onAvatarHoldEnd = () => clearAvatarHold();
+            btnWebmPanelToggle.addEventListener('pointerdown', onAvatarHoldStart, { passive: false });
+            btnWebmPanelToggle.addEventListener('pointerup', onAvatarHoldEnd);
+            btnWebmPanelToggle.addEventListener('pointercancel', onAvatarHoldEnd);
+            btnWebmPanelToggle.addEventListener('pointerleave', onAvatarHoldEnd);
             btnWebmPanelToggle.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (avatarLongPressHandled) {
+                    avatarLongPressHandled = false;
+                    return;
+                }
                 // Toggle the Avatar/WebM Panel (which is now the right-side panel)
                 if (typeof toggleBottomMenuPanel === 'function') {
                     toggleBottomMenuPanel();
