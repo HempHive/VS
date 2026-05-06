@@ -266,39 +266,39 @@
             background-repeat: no-repeat;
             background-size: 100% 100%;
         }
-        /* ProjectM shortcut on DJ decks: prm.gif instead of flat/black btn.png fill */
+        /* ProjectM / AUDIO:BAR: btn.png on top (transparent center), gif fills underneath */
         #dj-visual-root #dj-vis-pm2,
         #dj-visual-root #dj-b-vis-pm2 {
-            background-image: url('prm.gif');
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: cover;
+            background-image: url('btn.png'), url('prm.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
             background-color: rgba(0, 0, 0, 0.45);
         }
         #dj-visual-root #dj-vis-pm2.on,
         #dj-visual-root #dj-b-vis-pm2.on {
-            background-image: url('prm.gif');
-            background-size: cover;
+            background-image: url('btn.png'), url('prm.gif');
+            background-size: 100% 100%, cover;
         }
         #dj-visual-root #dj-vis-pm2:hover,
         #dj-visual-root #dj-b-vis-pm2:hover {
-            background-image: url('prm.gif');
-            background-size: cover;
+            background-image: url('btn.png'), url('prm.gif');
+            background-size: 100% 100%, cover;
             filter: brightness(1.12);
         }
         /* Audio Bars visual shortcut: aub.gif backdrop */
         #dj-visual-root #dj-vis-bars,
         #dj-visual-root #dj-b-vis-bars {
-            background-image: url('aub.gif');
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: cover;
+            background-image: url('btn.png'), url('aub.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
             background-color: rgba(0, 0, 0, 0.45);
         }
         #dj-visual-root #dj-vis-bars:hover,
         #dj-visual-root #dj-b-vis-bars:hover {
-            background-image: url('aub.gif');
-            background-size: cover;
+            background-image: url('btn.png'), url('aub.gif');
+            background-size: 100% 100%, cover;
             filter: brightness(1.12);
         }
         /* TK filter: long-press editor (bandpass frequency × Q) */
@@ -5285,7 +5285,7 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
 
             <button type="button" class="btn dj-fx" id="dj-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Tap: toggle TK-Filter · Hold: frequency / Q">TK-Filter</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
             <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
 
             <button type="button" class="btn dj-fx" id="dj-fx-high" title="High-pass (Mixer FX)">High-pass</button>
@@ -5346,7 +5346,7 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
 
             <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
-            <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Tap: toggle TK-Filter · Hold: frequency / Q">TK-Filter</button>
+            <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
 
             <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="High-pass (Mixer FX)">High-pass</button>
@@ -5498,7 +5498,7 @@ function stopAllAndShowStart() {
                 const tkHoldPanel = document.createElement('div');
                 tkHoldPanel.className = 'dj-tk-hold-panel display-none';
                 tkHoldPanel.setAttribute('aria-hidden', 'true');
-                tkHoldPanel.innerHTML = '<div class="dj-tk-hold-head">TK filter · X: freq · Y: Q</div><canvas class="dj-tk-hold-graph" width="220" height="72"></canvas><div class="dj-tk-hold-pad" id="dj-tk-hold-pad"><span class="dj-tk-hold-dot" id="dj-tk-hold-dot"></span></div><div class="dj-tk-hold-readout"><span class="dj-tk-f">1200</span> Hz · Q <span class="dj-tk-q">4.0</span></div>';
+                tkHoldPanel.innerHTML = '<div class="dj-tk-hold-head">TK filter · keep holding · drag to set freq / Q</div><canvas class="dj-tk-hold-graph" width="220" height="72"></canvas><div class="dj-tk-hold-pad" id="dj-tk-hold-pad"><span class="dj-tk-hold-dot" id="dj-tk-hold-dot"></span></div><div class="dj-tk-hold-readout"><span class="dj-tk-f">1200</span> Hz · Q <span class="dj-tk-q">4.0</span></div>';
                 root.appendChild(tkHoldPanel);
                 const tkGraphEl = tkHoldPanel.querySelector('.dj-tk-hold-graph');
                 const tkPadEl = tkHoldPanel.querySelector('#dj-tk-hold-pad');
@@ -5508,7 +5508,9 @@ function stopAllAndShowStart() {
 
                 let tkHoldTimer = null;
                 let tkHoldUiOpen = false;
-                let tkWinUpCloser = null;
+                let tkPressPointerId = null;
+                let tkDocMove = null;
+                let tkDocUp = null;
                 let tkSkipNextTkBtnUp = false;
 
                 const tkFreqToNorm = (f) => {
@@ -5525,14 +5527,20 @@ function stopAllAndShowStart() {
                 const closeTkHoldUi = () => {
                     const wasOpen = tkHoldUiOpen;
                     try {
-                        if (tkWinUpCloser) {
-                            window.removeEventListener('pointerup', tkWinUpCloser, true);
-                            tkWinUpCloser = null;
+                        if (tkDocMove) {
+                            document.removeEventListener('pointermove', tkDocMove, true);
+                            tkDocMove = null;
+                        }
+                        if (tkDocUp) {
+                            document.removeEventListener('pointerup', tkDocUp, true);
+                            tkDocUp = null;
                         }
                     } catch (_) {}
                     tkHoldUiOpen = false;
+                    tkPressPointerId = null;
                     tkHoldPanel.classList.add('display-none');
                     tkHoldPanel.setAttribute('aria-hidden', 'true');
+                    /* Only needed when button still receives pointerup after close (same-target release). */
                     if (wasOpen) tkSkipNextTkBtnUp = true;
                 };
 
@@ -5605,36 +5613,26 @@ function stopAllAndShowStart() {
                     tkHoldPanel.setAttribute('aria-hidden', 'false');
                     syncTkHoldUiFromNode();
                     drawTkHoldGraph();
-                    tkWinUpCloser = () => { closeTkHoldUi(); };
-                    window.addEventListener('pointerup', tkWinUpCloser, true);
+                    // Same pointer that held the TK button: drag anywhere to hit-test the pad; release closes.
+                    tkDocMove = (e) => {
+                        if (!tkHoldUiOpen || tkPressPointerId == null || e.pointerId !== tkPressPointerId) return;
+                        tkPadFromClient(e);
+                    };
+                    tkDocUp = (e) => {
+                        if (tkPressPointerId == null || e.pointerId !== tkPressPointerId) return;
+                        closeTkHoldUi();
+                    };
+                    document.addEventListener('pointermove', tkDocMove, true);
+                    document.addEventListener('pointerup', tkDocUp, true);
                 };
-
-                if (tkPadEl) {
-                    tkPadEl.addEventListener('pointerdown', (e) => {
-                        if (!tkHoldUiOpen) return;
-                        e.preventDefault();
-                        try { tkPadEl.setPointerCapture(e.pointerId); } catch (_) {}
-                        tkPadFromClient(e);
-                    }, sig);
-                    tkPadEl.addEventListener('pointermove', (e) => {
-                        if (!tkHoldUiOpen) return;
-                        if (!tkPadEl.hasPointerCapture(e.pointerId)) return;
-                        e.preventDefault();
-                        tkPadFromClient(e);
-                    }, sig);
-                    tkPadEl.addEventListener('pointerup', (e) => {
-                        try { if (tkPadEl.hasPointerCapture(e.pointerId)) tkPadEl.releasePointerCapture(e.pointerId); } catch (_) {}
-                    }, sig);
-                    tkPadEl.addEventListener('pointercancel', (e) => {
-                        try { if (tkPadEl.hasPointerCapture(e.pointerId)) tkPadEl.releasePointerCapture(e.pointerId); } catch (_) {}
-                    }, sig);
-                }
 
                 const bindTkHoldForButton = (btn) => {
                     if (!btn) return;
                     btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); }, sig);
                     btn.addEventListener('pointerdown', (e) => {
                         if (e.button !== 0) return;
+                        tkSkipNextTkBtnUp = false;
+                        tkPressPointerId = e.pointerId;
                         tkHoldUiOpen = false;
                         tkHoldTimer = setTimeout(() => {
                             tkHoldTimer = null;
@@ -5645,21 +5643,25 @@ function stopAllAndShowStart() {
                         if (e.button !== 0) return;
                         if (tkSkipNextTkBtnUp) {
                             tkSkipNextTkBtnUp = false;
+                            tkPressPointerId = null;
                             return;
                         }
                         if (tkHoldTimer) {
                             clearTimeout(tkHoldTimer);
                             tkHoldTimer = null;
+                            tkPressPointerId = null;
                             if (!tkHoldUiOpen) djToggleTk();
                             return;
                         }
-                        if (tkHoldUiOpen) closeTkHoldUi();
+                        // Long-press: release is handled by document capture (tkDocUp) so we can drag first.
+                        tkPressPointerId = null;
                     }, sig);
                     btn.addEventListener('pointercancel', () => {
                         if (tkHoldTimer) {
                             clearTimeout(tkHoldTimer);
                             tkHoldTimer = null;
                         }
+                        tkPressPointerId = null;
                         if (tkHoldUiOpen) closeTkHoldUi();
                     }, sig);
                 };
