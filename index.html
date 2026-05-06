@@ -301,13 +301,13 @@
             background-size: 100% 100%, cover;
             filter: brightness(1.12);
         }
-        /* TK filter: long-press editor (bandpass frequency × Q) */
+        /* TK filter: long-press editor — position set in JS at cursor */
         #dj-visual-root .dj-tk-hold-panel {
             position: absolute;
             z-index: 50;
-            left: 50%;
-            bottom: 10%;
-            transform: translateX(-50%);
+            left: 0;
+            top: 0;
+            transform: none;
             width: min(268px, 90vw);
             padding: 10px 12px 12px;
             border-radius: 12px;
@@ -473,8 +473,8 @@
             width: 100%;
         }
         #dj-visual-root .dj-controls-grid .btn.dj-sfx {
-            padding: 8px 10px;
-            font-size: 11px;
+            padding: 10px;
+            font-size: 14px;
         }
         #dj-visual-root .dj-fx-row {
             display: flex;
@@ -489,8 +489,8 @@
             min-width: 72px;
         }
         .dj-sfx-col .btn.dj-sfx {
-            padding: 8px 10px;
-            font-size: 11px;
+            padding: 10px;
+            font-size: 14px;
         }
         
         canvas {
@@ -5509,9 +5509,35 @@ function stopAllAndShowStart() {
                 let tkHoldTimer = null;
                 let tkHoldUiOpen = false;
                 let tkPressPointerId = null;
+                let tkAnchorX = 0;
+                let tkAnchorY = 0;
                 let tkDocMove = null;
                 let tkDocUp = null;
+                let tkPreOpenMove = null;
                 let tkSkipNextTkBtnUp = false;
+
+                const removeTkPreOpenMove = () => {
+                    if (!tkPreOpenMove) return;
+                    try {
+                        document.removeEventListener('pointermove', tkPreOpenMove, true);
+                    } catch (_) {}
+                    tkPreOpenMove = null;
+                };
+
+                const positionTkHoldPanelAtCursor = () => {
+                    try {
+                        const rr = root.getBoundingClientRect();
+                        const pw = tkHoldPanel.offsetWidth || 268;
+                        const ph = tkHoldPanel.offsetHeight || 240;
+                        const margin = 10;
+                        let left = tkAnchorX - rr.left - pw / 2;
+                        let top = tkAnchorY - rr.top - 28;
+                        left = Math.max(margin, Math.min(rr.width - pw - margin, left));
+                        top = Math.max(margin, Math.min(rr.height - ph - margin, top));
+                        tkHoldPanel.style.left = Math.round(left) + 'px';
+                        tkHoldPanel.style.top = Math.round(top) + 'px';
+                    } catch (_) {}
+                };
 
                 const tkFreqToNorm = (f) => {
                     const lf = Math.max(TK_F_MIN, Math.min(TK_F_MAX, f));
@@ -5608,11 +5634,16 @@ function stopAllAndShowStart() {
                 };
 
                 const openTkHoldUi = () => {
+                    removeTkPreOpenMove();
                     tkHoldUiOpen = true;
                     tkHoldPanel.classList.remove('display-none');
                     tkHoldPanel.setAttribute('aria-hidden', 'false');
                     syncTkHoldUiFromNode();
                     drawTkHoldGraph();
+                    requestAnimationFrame(() => {
+                        positionTkHoldPanelAtCursor();
+                        requestAnimationFrame(() => positionTkHoldPanelAtCursor());
+                    });
                     // Same pointer that held the TK button: drag anywhere to hit-test the pad; release closes.
                     tkDocMove = (e) => {
                         if (!tkHoldUiOpen || tkPressPointerId == null || e.pointerId !== tkPressPointerId) return;
@@ -5633,7 +5664,16 @@ function stopAllAndShowStart() {
                         if (e.button !== 0) return;
                         tkSkipNextTkBtnUp = false;
                         tkPressPointerId = e.pointerId;
+                        tkAnchorX = e.clientX;
+                        tkAnchorY = e.clientY;
                         tkHoldUiOpen = false;
+                        removeTkPreOpenMove();
+                        tkPreOpenMove = (ev) => {
+                            if (ev.pointerId !== tkPressPointerId) return;
+                            tkAnchorX = ev.clientX;
+                            tkAnchorY = ev.clientY;
+                        };
+                        document.addEventListener('pointermove', tkPreOpenMove, true);
                         tkHoldTimer = setTimeout(() => {
                             tkHoldTimer = null;
                             openTkHoldUi();
@@ -5644,12 +5684,14 @@ function stopAllAndShowStart() {
                         if (tkSkipNextTkBtnUp) {
                             tkSkipNextTkBtnUp = false;
                             tkPressPointerId = null;
+                            removeTkPreOpenMove();
                             return;
                         }
                         if (tkHoldTimer) {
                             clearTimeout(tkHoldTimer);
                             tkHoldTimer = null;
                             tkPressPointerId = null;
+                            removeTkPreOpenMove();
                             if (!tkHoldUiOpen) djToggleTk();
                             return;
                         }
@@ -5662,6 +5704,7 @@ function stopAllAndShowStart() {
                             tkHoldTimer = null;
                         }
                         tkPressPointerId = null;
+                        removeTkPreOpenMove();
                         if (tkHoldUiOpen) closeTkHoldUi();
                     }, sig);
                 };
