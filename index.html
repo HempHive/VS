@@ -21,6 +21,328 @@
             overflow: hidden;
             z-index: 1;
         }
+
+        /* --- DJ Decks visual (full-screen overlay inside canvas-container) --- */
+        #dj-visual-root {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            background: radial-gradient(ellipse at center, #121218 0%, #030306 70%);
+            color: #eee;
+            font-family: 'Quicksand', sans-serif;
+            cursor: default;
+            pointer-events: auto;
+            z-index: 4;
+            box-sizing: border-box;
+            padding: clamp(8px, 2vmin, 16px);
+            gap: 8px;
+        }
+        #dj-visual-root button,
+        #dj-visual-root input[type="range"] { cursor: pointer; }
+        .dj-layout {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+            gap: 10px;
+            align-items: stretch;
+        }
+        /* Layout toggled by DJ engine: portrait = A top / B bottom; landscape = A left / B right */
+        #dj-visual-root.dj-mode-portrait .dj-layout { flex-direction: column; }
+        #dj-visual-root.dj-mode-portrait .dj-fader-strip {
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            min-height: 52px;
+            padding: 6px 12px;
+            gap: 10px;
+        }
+        #dj-visual-root.dj-mode-landscape .dj-layout { flex-direction: row; }
+        #dj-visual-root.dj-mode-landscape .dj-fader-strip {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            flex-shrink: 0;
+            padding: 8px 4px;
+            gap: 8px;
+            align-self: stretch;
+        }
+        #dj-visual-root .dj-fader-strip .dj-fader-label-a,
+        #dj-visual-root .dj-fader-strip .dj-fader-label-b {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            flex-shrink: 0;
+        }
+        #dj-visual-root.dj-mode-landscape .dj-fader-strip .dj-fader-label-a,
+        #dj-visual-root.dj-mode-landscape .dj-fader-strip .dj-fader-label-b {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            font-size: 10px;
+            letter-spacing: 0.12em;
+        }
+        #dj-visual-root .dj-fader-strip .dj-fader-label-a { color: #FF0B55; }
+        #dj-visual-root .dj-fader-strip .dj-fader-label-b { color: #5800FF; }
+        .dj-crossfader-mount {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            min-height: 44px;
+        }
+        #dj-visual-root.dj-mode-portrait .dj-crossfader-mount {
+            min-height: 56px;
+        }
+        #dj-visual-root.dj-mode-portrait .dj-crossfader-mount input[type="range"] {
+            width: 100%;
+            max-width: min(92vw, 560px);
+            height: 14px;
+        }
+        #dj-visual-root.dj-mode-landscape .dj-crossfader-mount {
+            flex: 1;
+            width: 100%;
+            min-height: 140px;
+        }
+        #dj-visual-root.dj-mode-landscape .dj-crossfader-mount input[type="range"] {
+            width: min(52vh, 380px);
+            height: 28px;
+            transform: rotate(-90deg);
+            transform-origin: center center;
+        }
+        .dj-deck {
+            flex: 1;
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            padding: clamp(10px, 2vmin, 18px);
+            border-radius: 14px;
+            border: 1px solid rgba(212, 175, 55, 0.28);
+            background: rgba(0, 0, 0, 0.45);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.35);
+        }
+        .dj-deck-a { border-color: rgba(255, 11, 85, 0.35); }
+        .dj-deck-b { border-color: rgba(88, 0, 255, 0.35); }
+        .dj-deck-badge {
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            font-weight: 700;
+            opacity: 0.85;
+        }
+        .dj-deck-a .dj-deck-badge { color: #FF0B55; }
+        .dj-deck-b .dj-deck-badge { color: #9803FC; }
+        .dj-station-title {
+            width: 100%;
+            text-align: center;
+            font-size: clamp(13px, 2.8vmin, 18px);
+            font-weight: 600;
+            line-height: 1.25;
+            padding: 0 6px;
+            word-break: break-word;
+            color: #fafafa;
+            max-height: 3.6em;
+            overflow: hidden;
+        }
+        .dj-deck-body {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(12px, 3vmin, 22px);
+            width: 100%;
+            flex: 1;
+        }
+        .dj-jog-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            touch-action: none;
+        }
+        .dj-jog {
+            width: clamp(120px, 26vmin, 200px);
+            height: clamp(120px, 26vmin, 200px);
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 35% 30%, rgba(255,255,255,0.14), transparent 42%),
+                radial-gradient(circle at center, #1a1a22 0%, #07070c 55%, #020208 100%);
+            border: 3px solid rgba(212, 175, 55, 0.45);
+            box-shadow:
+                0 12px 28px rgba(0,0,0,0.65),
+                inset 0 0 24px rgba(0,0,0,0.55);
+            position: relative;
+            touch-action: none;
+        }
+        .dj-jog-marker {
+            position: absolute;
+            left: 50%; top: 14%;
+            width: 6%; height: 22%;
+            margin-left: -3%;
+            background: rgba(212, 175, 55, 0.95);
+            border-radius: 2px;
+            transform-origin: 50% 318%;
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
+            pointer-events: none;
+        }
+        /* DJ Deck buttons: align with Mixer Settings (#mix-panel .btn / #mix-effects .btn) — btn.png */
+        #dj-visual-root .dj-play,
+        #dj-visual-root .dj-tbtn {
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.25);
+            background-color: rgba(255,255,255,0.08);
+            background-image: url('btn.png');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            min-height: 40px;
+        }
+        #dj-visual-root .dj-play {
+            min-width: 96px;
+        }
+        #dj-visual-root .btn.dj-fx,
+        #dj-visual-root .btn.dj-sfx {
+            padding: 10px;
+            border: 1px solid rgba(255,0,0,0.25);
+            background-color: rgba(0,0,0,0.25);
+            background-image: url('btn.png');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            text-shadow: 0 0 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.6);
+            white-space: nowrap;
+        }
+        #dj-visual-root .btn.dj-fx.on,
+        #dj-visual-root .btn.dj-sfx.on {
+            border-color: rgba(212,175,55,0.8);
+            box-shadow: 0 0 12px rgba(212,175,55,0.25) inset;
+            background-color: rgba(212,175,55,0.12);
+            background-image: url('btn.png');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+            color: #fff;
+        }
+        #dj-visual-root .dj-play:hover,
+        #dj-visual-root .dj-tbtn:hover {
+            background-color: rgba(217,2,45,0.1);
+            color: #f5d20f;
+            box-shadow: 0 0 10px rgba(255,255,255,0.15);
+            border-color: rgba(245,210,15,0.3);
+            background-image: url('btn.png');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+        }
+        #dj-visual-root .btn.dj-fx:hover,
+        #dj-visual-root .btn.dj-sfx:hover {
+            filter: brightness(1.15);
+            border-color: rgba(217,2,45,0.35);
+            color: #f5d20f;
+            background-image: url('btn.png');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+        }
+        /* DJ crossfader: same vol.png thumb as Mixer / station list theme */
+        #dj-visual-root #dj-crossfader {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 14px !important;
+            background: rgba(255,255,255,0.08) !important;
+            border-radius: 7px;
+            border: none;
+        }
+        #dj-visual-root #dj-crossfader::-webkit-slider-thumb {
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            width: 56px !important;
+            height: 56px !important;
+            background: transparent url('vol.png') center center / 100% 100% no-repeat !important;
+            border: none !important;
+            border-radius: 50%;
+            margin-top: -21px !important;
+            box-shadow: none !important;
+        }
+        #dj-visual-root #dj-crossfader::-moz-range-thumb {
+            width: 56px !important;
+            height: 56px !important;
+            background: transparent url('vol.png') center center / 100% 100% no-repeat !important;
+            border: none !important;
+            border-radius: 50%;
+            box-shadow: none !important;
+        }
+        #dj-visual-root #dj-crossfader::-moz-range-progress {
+            background: transparent !important;
+        }
+        .dj-transport-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+        .dj-transport-row .dj-tbtn {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.25);
+            background: rgba(255,255,255,0.07);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            min-height: 40px;
+        }
+        .dj-transport-row .dj-tbtn:hover { background: rgba(212,175,55,0.2); border-color: rgba(212,175,55,0.45); }
+        .dj-stack { width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+        .dj-eq-strip.eq-strip {
+            margin-top: 0;
+            padding: 6px 8px;
+        }
+        #dj-visual-root .dj-eq-strip .eq-group { justify-content: space-around; gap: 4px; }
+        #dj-visual-root .dj-eq-strip .eq-col { width: 36px; gap: 4px; }
+        #dj-visual-root .dj-eq-strip .eq-label { font-size: 8px; line-height: 1.05; }
+        #dj-visual-root .dj-eq-strip .knob-wrap {
+            width: 34px;
+            height: 34px;
+        }
+        .dj-middle-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: center;
+            gap: clamp(10px, 2vmin, 20px);
+            width: 100%;
+        }
+        .dj-fx-col, .dj-sfx-col {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: stretch;
+            min-width: 100px;
+        }
+        .dj-sfx-col .btn.dj-sfx {
+            padding: 8px 10px;
+            font-size: 11px;
+        }
         
         canvas {
             display: block;
@@ -718,10 +1040,12 @@
             box-shadow: 0 0 0 0 rgba(0,0,0,0);
             transition: background 0.2s, box-shadow 0.2s;
         }
-        /* Options Panel (center square, fade in/out) */
+        /* Options Panel (center square, fade in/out)
+           Backdrop ignores pointer-events so the bottom HUD (e.g. 🪭 Options) stays clickable to close */
         #options-panel {
             position: fixed; inset: 0; display: none; place-items: center; z-index: 180;
             opacity: 0; transition: opacity 0.35s ease;
+            pointer-events: none;
         }
         #options-panel.show { display: grid; opacity: 1; }
         #options-modal {
@@ -733,6 +1057,7 @@
             position: relative;
             display: grid; grid-template-rows: 1fr;
             overflow: hidden;
+            pointer-events: auto;
         }
         #options-head {
             padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.12);
@@ -1141,7 +1466,12 @@
 		#top-menu-stations::-webkit-scrollbar { width: 10px; height: 10px; }
 		#top-menu-stations::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 8px; }
 		#top-menu-stations::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.32); border-radius: 8px; border: 2px solid rgba(0,0,0,0.15); }
-		#top-menu-stations::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.45); }
+        #top-menu-stations::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.45); }
+        /* Larger station names in the top menu list only (2× vs default .radio-item) */
+        #top-menu-stations .radio-item {
+            font-size: 26px;
+            padding: 14px 14px;
+        }
 		/* Make the volume slider clearly visible inside the top menu footer */
 		#top-menu-footer #volume-slider {
 			height: 16px;
@@ -1647,6 +1977,7 @@
                 <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%; cursor:pointer;">
                 <span style="font-size:12px; color:#5800FF; font-weight:bold">B</span>
             </div>
+            <span id="midi-status" style="font-size:10px; color:#889; white-space:nowrap; flex-shrink:0; max-width:140px; overflow:hidden; text-overflow:ellipsis;" title="Bluetooth/USB MIDI (Web MIDI API). Default: CC54=crossfader; Ch.1 CC7=Gain A; Ch.2 CC7=Gain B; Note 36/37=Play A/B. Custom: localStorage key omniMidiMap (JSON).">MIDI · …</span>
             <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
         </h3>
         
@@ -2510,37 +2841,46 @@ const QUALITY = {
         if (nudgeBm) nudgeBm.addEventListener('click', (e)=>{ e.preventDefault(); phaseOffsetBms -= 10; });
         if (nudgeBp) nudgeBp.addEventListener('click', (e)=>{ e.preventDefault(); phaseOffsetBms += 10; });
         // Helper to bind a visual knob to a value and callback
-        // Helper to bind a visual knob to a value and callback
-        function bindKnob(id, min, max, initial, stateObj, key, callback) {
-            const el = document.getElementById(id);
+        function setKnobUi(el, min, max, val) {
             if (!el) return;
             const indicator = el.querySelector('.knob-indicator');
             const valTooltip = el.querySelector('.knob-value');
-            
-            // FIX: Start at 45deg (Bottom-Left) and sweep 270deg to 315deg (Bottom-Right)
-            // This rotates the whole logic 180 degrees compared to before.
+            const pct = (val - min) / (max - min);
+            const deg = 45 + (pct * 270);
+            if (indicator) indicator.style.transform = `translate(-50%, 0) rotate(${deg}deg)`;
+            if (valTooltip) valTooltip.textContent = String(Math.round(val * 10) / 10);
+        }
+
+        function bindKnob(id, min, max, initial, stateObj, key, callback) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            try {
+                if (!window.__mixKnobConfig) window.__mixKnobConfig = Object.create(null);
+                window.__mixKnobConfig[id] = { min, max, stateObj, key, callback };
+            } catch (_) {}
+
+            stateObj[key] = initial;
+
             const updateVisuals = (val) => {
-                const pct = (val - min) / (max - min);
-                const deg = 45 + (pct * 270); 
-                if (indicator) indicator.style.transform = `translate(-50%, 0) rotate(${deg}deg)`;
-                if (valTooltip) valTooltip.textContent = (Math.round(val * 10) / 10);
+                setKnobUi(el, min, max, val);
+                try {
+                    const djM = window.djKnobMirrors && window.djKnobMirrors[id];
+                    if (djM) setKnobUi(djM, min, max, val);
+                } catch (_) {}
             };
 
-            // Set initial
-            stateObj[key] = initial;
-            updateVisuals(initial);
+            updateVisuals(stateObj[key]);
 
-            // Drag Interaction
             let startY = 0;
             let startVal = 0;
 
             const onMove = (e) => {
                 const y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-                const dy = startY - y; // Drag up = positive
+                const dy = startY - y;
                 const range = max - min;
-                const delta = (dy / 200) * range; 
+                const delta = (dy / 200) * range;
                 let newVal = Math.max(min, Math.min(max, startVal + delta));
-                
+
                 stateObj[key] = newVal;
                 updateVisuals(newVal);
                 if (callback) callback(newVal);
@@ -2558,20 +2898,79 @@ const QUALITY = {
                 startY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
                 startVal = stateObj[key];
                 window.addEventListener('mousemove', onMove);
-                window.addEventListener('touchmove', onMove, {passive: false});
+                window.addEventListener('touchmove', onMove, { passive: false });
                 window.addEventListener('mouseup', onUp);
                 window.addEventListener('touchend', onUp);
             };
 
             el.addEventListener('mousedown', onDown);
-            el.addEventListener('touchstart', onDown, {passive: false});
-            
+            el.addEventListener('touchstart', onDown, { passive: false });
+
             el.addEventListener('dblclick', () => {
                 const def = (key === 'gain') ? 1.0 : 0;
                 stateObj[key] = def;
                 updateVisuals(def);
                 if (callback) callback(def);
             });
+        }
+
+        /** Link a DJ Deck mirror knob to an existing Mixer knob id (same eqState / Web Audio). */
+        function wireDjKnobMirror(mirrorEl, knobId, signal) {
+            if (!mirrorEl || !knobId) return;
+            const cfg = window.__mixKnobConfig && window.__mixKnobConfig[knobId];
+            if (!cfg) return;
+            const { min, max, stateObj, key, callback } = cfg;
+            try {
+                if (!window.djKnobMirrors) window.djKnobMirrors = Object.create(null);
+                window.djKnobMirrors[knobId] = mirrorEl;
+            } catch (_) {}
+
+            const updateAll = (val) => {
+                stateObj[key] = val;
+                const mixerEl = document.getElementById(knobId);
+                if (mixerEl) setKnobUi(mixerEl, min, max, val);
+                setKnobUi(mirrorEl, min, max, val);
+                if (callback) callback(val);
+            };
+
+            updateAll(stateObj[key]);
+
+            let startY = 0;
+            let startVal = 0;
+
+            const onMove = (e) => {
+                const y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+                const dy = startY - y;
+                const range = max - min;
+                const delta = (dy / 200) * range;
+                let newVal = Math.max(min, Math.min(max, startVal + delta));
+                updateAll(newVal);
+            };
+
+            const onUp = () => {
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('touchmove', onMove);
+                window.removeEventListener('mouseup', onUp);
+                window.removeEventListener('touchend', onUp);
+            };
+
+            const onDown = (e) => {
+                e.preventDefault();
+                startY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+                startVal = stateObj[key];
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('touchmove', onMove, { passive: false });
+                window.addEventListener('mouseup', onUp);
+                window.addEventListener('touchend', onUp);
+            };
+
+            const opts = signal ? { signal } : {};
+            mirrorEl.addEventListener('mousedown', onDown, opts);
+            mirrorEl.addEventListener('touchstart', onDown, Object.assign({ passive: false }, opts));
+            mirrorEl.addEventListener('dblclick', () => {
+                const def = (key === 'gain') ? 1.0 : 0;
+                updateAll(def);
+            }, opts);
         }
         // Radio retry policy
         let radioRetryAttempts = 0;
@@ -3101,11 +3500,13 @@ function randomGlowColor() {
                 const TAP_MAX_MOVE = 8;
                 const DOUBLE_TAP_MS = 300;
                 let pDownX = 0, pDownY = 0, pDownTime = 0;
+                let pDownTarget = null;
                 let lastTapTime = 0;
                 let handledSwipe = false;
                 // Suppress random-station click when we just handled a swipe/double-tap
                 window.__suppressNextClick = false;
                 const onPointerDown = (e) => {
+                    pDownTarget = e.target || null;
                     pDownX = e.clientX || (e.touches && e.touches[0]?.clientX) || 0;
                     pDownY = e.clientY || (e.touches && e.touches[0]?.clientY) || 0;
                     pDownTime = Date.now();
@@ -3137,8 +3538,11 @@ function randomGlowColor() {
                         // Check if Mix Panel is open (manually since it doesn't have an isXOpen helper)
                         const mixOpen = mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open');
 
-                        // PRIORITY: Close any open panel before opening a new one
+                        // PRIORITY: Close any open panel before opening a new one (top menu → Text-In → Avatar)
                         if (topOpen) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
+                        const tipEl = document.getElementById('textin-panel');
+                        const textInOpenVert = !!(tipEl && !tipEl.classList.contains('display-none') && tipEl.classList.contains('open'));
+                        if (textInOpenVert) { if (typeof hideTextInPanel === 'function') hideTextInPanel(); return; }
                         if (avatarOpen) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
                         
                         if (dy > 0) { // SWIPE DOWN
@@ -3153,11 +3557,26 @@ function randomGlowColor() {
                         }
                         return;
                     }
-                    // Horizontal swipe changes visual
+                    // Horizontal swipe: close floating/side panels first, then change visual
                     if (adx > SWIPE_PX && adx > ady) {
+                        if (pDownTarget && typeof pDownTarget.closest === 'function' && pDownTarget.closest('#dj-visual-root')) {
+                            return;
+                        }
                         handledSwipe = true;
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                        const guardH = (typeof window !== 'undefined' && window.__panelGuardUntilMs) ? window.__panelGuardUntilMs : 0;
+                        if (Date.now() < guardH) return;
+
+                        const topOpenH = (typeof isTopMenuOpen === 'function') && isTopMenuOpen();
+                        const tipH = document.getElementById('textin-panel');
+                        const textInOpenH = !!(tipH && !tipH.classList.contains('display-none') && tipH.classList.contains('open'));
+                        const avatarOpenH = (typeof isBottomMenuOpen === 'function') && isBottomMenuOpen();
+
+                        if (topOpenH) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
+                        if (textInOpenH) { if (typeof hideTextInPanel === 'function') hideTextInPanel(); return; }
+                        if (avatarOpenH) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
+
                         if (dx < 0) loadMode(state.currentModeIdx + 1);
                         else loadMode(state.currentModeIdx - 1);
                         return;
@@ -3184,10 +3603,22 @@ function randomGlowColor() {
                     const dy = y - pDownY;
                     const adx = Math.abs(dx), ady = Math.abs(dy);
                     if (adx > SWIPE_PX && adx > ady) {
-                        // Only within overlay area: navigate webms
                         handledSwipe = true;
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                        const guardW = (typeof window !== 'undefined' && window.__panelGuardUntilMs) ? window.__panelGuardUntilMs : 0;
+                        if (Date.now() < guardW) return;
+
+                        const topOpenW = (typeof isTopMenuOpen === 'function') && isTopMenuOpen();
+                        const tipW = document.getElementById('textin-panel');
+                        const textInOpenW = !!(tipW && !tipW.classList.contains('display-none') && tipW.classList.contains('open'));
+                        const avatarOpenW = (typeof isBottomMenuOpen === 'function') && isBottomMenuOpen();
+
+                        if (topOpenW) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
+                        if (textInOpenW) { if (typeof hideTextInPanel === 'function') hideTextInPanel(); return; }
+                        if (avatarOpenW) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
+
+                        // Only within overlay area: navigate webms
                         if (dx < 0) nextWebm();
                         else prevWebm();
                     }
@@ -3229,22 +3660,24 @@ function randomGlowColor() {
                     
                     // Check if Mix Panel is open (manual check)
                     const mixOpen = mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open');
-                    // Check if Side/Avatar Panel is open
                     const sideOpen = typeof isBottomMenuOpen === 'function' && isBottomMenuOpen();
-                    // Check if Top Menu is open
-                    const topOpen = typeof isTopMenuOpen === 'function' && isTopMenuOpen();
+                    const topOpenWh = typeof isTopMenuOpen === 'function' && isTopMenuOpen();
+                    const tipWh = document.getElementById('textin-panel');
+                    const textInOpenWh = !!(tipWh && !tipWh.classList.contains('display-none') && tipWh.classList.contains('open'));
 
                     if (dy < 0) {
                         // SCROLL UP: Open Top Menu (or close others)
                         try {
                             if (mixOpen) { toggleMixPanel(); return; }
+                            if (textInOpenWh) { if (typeof hideTextInPanel === 'function') hideTextInPanel(); return; }
                             if (sideOpen) { closeBottomMenuPanel(); return; }
-                            if (!topOpen) { openTopMenuPanel(); }
+                            if (!topOpenWh) { openTopMenuPanel(); }
                         } catch(_) {}
                     } else if (dy > 0) {
                         // SCROLL DOWN: Open Mix Settings at Bottom (or close others)
                         try {
-                            if (topOpen) { closeTopMenuPanel(); return; }
+                            if (topOpenWh) { closeTopMenuPanel(); return; }
+                            if (textInOpenWh) { if (typeof hideTextInPanel === 'function') hideTextInPanel(); return; }
                             if (sideOpen) { closeBottomMenuPanel(); return; }
                             if (!mixOpen) { toggleMixPanel(); }
                         } catch(_) {}
@@ -3887,6 +4320,7 @@ function randomGlowColor() {
                     }
                 } catch(e) {}
             resetIdleTimer();
+                try { initWebMidi(); } catch (_) {}
             }, 520);
         }
 
@@ -4458,6 +4892,460 @@ function stopAllAndShowStart() {
                 });
 
                 this.renderer.dispose();
+                container.innerHTML = '';
+            }
+        }
+
+        /** Full-screen DJ UI: dual decks (A/B radio), crossfader, FX mirrors Mixer Settings */
+        class DjDecksEngine {
+            constructor() {
+                this.name = 'DJ Decks';
+                this.resizeHandler = this.onResize.bind(this);
+                this.abortCtrl = null;
+                this.animId = null;
+                this.root = null;
+                this.els = {};
+                this.angleA = 0;
+                this.angleB = 0;
+                this.bufA = null;
+                this.bufB = null;
+            }
+
+            onResize() {
+                if (!this.root) return;
+                const land = window.innerWidth > window.innerHeight;
+                this.root.classList.toggle('dj-mode-landscape', land);
+                this.root.classList.toggle('dj-mode-portrait', !land);
+            }
+
+            syncPlayLabels() {
+                try {
+                    const aPlaying = !!(audioEl && audioEl.src && !audioEl.paused && !audioEl.ended);
+                    const bPlaying = !!(audioElB && audioElB.src && !audioElB.paused && !audioElB.ended);
+                    if (this.els.playA) this.els.playA.textContent = aPlaying ? 'Pause' : 'Play';
+                    if (this.els.playB) this.els.playB.textContent = bPlaying ? 'Pause' : 'Play';
+                } catch(_) {}
+            }
+
+            updateStationTitles() {
+                try {
+                    let na = 'Deck A';
+                    if (typeof currentStationIndex === 'number' && currentStationIndex >= 0 && stations[currentStationIndex]) {
+                        na = stations[currentStationIndex].name || na;
+                    } else if (radioInputEl && radioInputEl.value && typeof deriveTitleFromUrl === 'function') {
+                        na = deriveTitleFromUrl(radioInputEl.value);
+                    } else if (audioEl && audioEl.src && typeof deriveTitleFromUrl === 'function') {
+                        na = deriveTitleFromUrl(audioEl.src);
+                    }
+                    let nb = 'Deck B';
+                    if (stations.length && typeof currentStationBIndex === 'number' && stations[currentStationBIndex]) {
+                        nb = stations[currentStationBIndex].name || nb;
+                    }
+                    if (this.els.titleA) this.els.titleA.textContent = na;
+                    if (this.els.titleB) this.els.titleB.textContent = nb;
+                } catch(_) {}
+            }
+
+            syncFxLightsFromState() {
+                try {
+                    if (!state || !state.fx) return;
+                    const lon = !!state.fx.low.on;
+                    const bon = !!state.fx.bass.on;
+                    const eon = !!(state.fx.echoDelay && state.fx.echoDelay.on);
+                    if (this.els.fxLow) this.els.fxLow.classList.toggle('on', lon);
+                    if (this.els.fxLowB) this.els.fxLowB.classList.toggle('on', lon);
+                    if (this.els.fxBass) this.els.fxBass.classList.toggle('on', bon);
+                    if (this.els.fxBassB) this.els.fxBassB.classList.toggle('on', bon);
+                    if (this.els.fxEcho) this.els.fxEcho.classList.toggle('on', eon);
+                    if (this.els.fxEchoB) this.els.fxEchoB.classList.toggle('on', eon);
+                } catch(_) {}
+            }
+
+            animateFrame() {
+                this.animId = requestAnimationFrame(() => this.animateFrame());
+                try {
+                    if (state && state.analyserNodeA && state.analyserNodeB) {
+                        if (!this.bufA || this.bufA.length !== state.analyserNodeA.frequencyBinCount) {
+                            this.bufA = new Uint8Array(state.analyserNodeA.frequencyBinCount);
+                        }
+                        if (!this.bufB || this.bufB.length !== state.analyserNodeB.frequencyBinCount) {
+                            this.bufB = new Uint8Array(state.analyserNodeB.frequencyBinCount);
+                        }
+                        state.analyserNodeA.getByteFrequencyData(this.bufA);
+                        state.analyserNodeB.getByteFrequencyData(this.bufB);
+                        let sumA = 0, sumB = 0;
+                        const n = 24;
+                        for (let i = 0; i < n; i++) { sumA += this.bufA[i]; sumB += this.bufB[i]; }
+                        const driveA = (sumA / (n * 255));
+                        const driveB = (sumB / (n * 255));
+                        const aPlay = !!(audioEl && !audioEl.paused && audioEl.src);
+                        const bPlay = !!(audioElB && !audioElB.paused && audioElB.src);
+                        this.angleA += (0.35 + driveA * 4.2) * (aPlay ? 1 : 0.08);
+                        this.angleB += (0.35 + driveB * 4.2) * (bPlay ? 1 : 0.08);
+                        if (this.els.jogA) this.els.jogA.style.transform = `rotate(${this.angleA}deg)`;
+                        if (this.els.jogB) this.els.jogB.style.transform = `rotate(${this.angleB}deg)`;
+                    }
+                } catch(_) {}
+                this.syncPlayLabels();
+                this.updateStationTitles();
+                this.syncFxLightsFromState();
+            }
+
+            init() {
+                container.innerHTML = '';
+                try { initAudio(); } catch(_) {}
+
+                this.abortCtrl = new AbortController();
+                const sig = { signal: this.abortCtrl.signal };
+
+                const root = document.createElement('div');
+                root.id = 'dj-visual-root';
+                root.setAttribute('aria-label', 'DJ Decks');
+
+                root.innerHTML = `
+<div class="dj-layout">
+  <section class="dj-deck dj-deck-a">
+    <div class="dj-deck-badge">DECK A</div>
+    <div class="dj-station-title" id="dj-station-a-title">—</div>
+    <div class="dj-deck-body">
+      <div class="dj-stack">
+        <div class="dj-transport-row">
+          <button type="button" class="dj-tbtn" id="dj-a-prev" title="Previous station (history)">⟵ Prev</button>
+          <button type="button" class="dj-play" id="dj-play-a">Play</button>
+          <button type="button" class="dj-tbtn" id="dj-a-next" title="Next station in list">Next ⟶</button>
+          <button type="button" class="dj-tbtn" id="dj-a-rand" title="Random station">↻ Random</button>
+        </div>
+        <div class="dj-eq-strip eq-strip">
+          <div class="eq-group">
+            <div class="eq-col">
+              <div class="knob-wrap" id="dj-knob-a-low" style="--knob-color:#06D001"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
+              <div class="eq-label" style="color:#06D001">Lo</div>
+            </div>
+            <div class="eq-col">
+              <div class="knob-wrap" id="dj-knob-a-mid" style="--knob-color:#9BEC00"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
+              <div class="eq-label" style="color:#9BEC00">Mid</div>
+            </div>
+            <div class="eq-col">
+              <div class="knob-wrap" id="dj-knob-a-high" style="--knob-color:#F94C10"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
+              <div class="eq-label" style="color:#F94C10">Hi</div>
+            </div>
+            <div class="eq-col">
+              <div class="knob-wrap" id="dj-knob-a-gain" style="--knob-color:#FF0B55"><div class="knob-indicator"></div><div class="knob-value">1</div></div>
+              <div class="eq-label" style="color:#FF0B55">Gain</div>
+            </div>
+          </div>
+        </div>
+        <div class="dj-middle-row">
+          <div class="dj-jog-wrap">
+            <div class="dj-jog" id="dj-jog-a" aria-hidden="true"><span class="dj-jog-marker"></span></div>
+          </div>
+          <div class="dj-fx-col">
+            <button type="button" class="btn dj-fx" id="dj-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-echo" title="Echo (Mixer FX)">~Echo~</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
+          </div>
+          <div class="dj-sfx-col">
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="Left: play wav.mp3 • Right: loop">Wav ▷</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Left: play wav1.mp3 • Right: loop">Wav 1 ▷</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Left: play wav2.mp3 • Right: loop">Wav 2 ▷</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="dj-fader-strip">
+    <span class="dj-fader-label-a">A</span>
+    <div class="dj-crossfader-mount">
+      <input type="range" id="dj-crossfader" min="0" max="1" step="0.01" value="0" aria-label="Crossfade from A to B" />
+    </div>
+    <span class="dj-fader-label-b">B</span>
+  </div>
+  <section class="dj-deck dj-deck-b">
+    <div class="dj-deck-badge">DECK B</div>
+    <div class="dj-station-title" id="dj-station-b-title">—</div>
+    <div class="dj-deck-body">
+      <div class="dj-stack">
+        <div class="dj-transport-row">
+          <button type="button" class="dj-tbtn" id="dj-b-prev" title="Previous Station B">⟵ Prev</button>
+          <button type="button" class="dj-play" id="dj-play-b">Play</button>
+          <button type="button" class="dj-tbtn" id="dj-b-next" title="Next Station B">Next ⟶</button>
+          <button type="button" class="dj-tbtn" id="dj-b-rand" title="Random Station B">↻ Random</button>
+        </div>
+        <div class="dj-eq-strip eq-strip">
+          <div class="eq-group">
+            <div class="eq-col">
+              <div class="knob-wrap" id="dj-knob-b-gain" style="--knob-color:#5800FF"><div class="knob-indicator"></div><div class="knob-value">1</div></div>
+              <div class="eq-label" style="color:#5800FF">Gain</div>
+            </div>
+            <div class="eq-col">
+              <div class="knob-wrap" id="dj-knob-b-high" style="--knob-color:#f0f"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
+              <div class="eq-label" style="color:#f0f">Hi</div>
+            </div>
+            <div class="eq-col">
+              <div class="knob-wrap" id="dj-knob-b-mid" style="--knob-color:#0ff"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
+              <div class="eq-label" style="color:#0ff">Mid</div>
+            </div>
+            <div class="eq-col">
+              <div class="knob-wrap" id="dj-knob-b-low" style="--knob-color:#9AB3F5"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
+              <div class="eq-label" style="color:#9AB3F5">Lo</div>
+            </div>
+          </div>
+        </div>
+        <div class="dj-middle-row">
+          <div class="dj-jog-wrap">
+            <div class="dj-jog" id="dj-jog-b" aria-hidden="true"><span class="dj-jog-marker"></span></div>
+          </div>
+          <div class="dj-fx-col">
+            <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
+            <button type="button" class="btn dj-fx" id="dj-b-fx-echo" title="Echo (Mixer FX)">~Echo~</button>
+            <button type="button" class="btn dj-fx" id="dj-b-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
+          </div>
+          <div class="dj-sfx-col">
+            <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="Left: play wav.mp3 • Right: loop">Wav ▷</button>
+            <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Left: play wav1.mp3 • Right: loop">Wav 1 ▷</button>
+            <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Left: play wav2.mp3 • Right: loop">Wav 2 ▷</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>`;
+
+                container.appendChild(root);
+                this.root = root;
+                this.onResize();
+                window.addEventListener('resize', this.resizeHandler);
+                window.addEventListener('orientationchange', this.resizeHandler);
+
+                this.els.titleA = root.querySelector('#dj-station-a-title');
+                this.els.titleB = root.querySelector('#dj-station-b-title');
+                this.els.playA = root.querySelector('#dj-play-a');
+                this.els.playB = root.querySelector('#dj-play-b');
+                this.els.jogA = root.querySelector('#dj-jog-a');
+                this.els.jogB = root.querySelector('#dj-jog-b');
+                this.els.fxLow = root.querySelector('#dj-fx-low');
+                this.els.fxEcho = root.querySelector('#dj-fx-echo');
+                this.els.fxBass = root.querySelector('#dj-fx-bass');
+                this.els.fxLowB = root.querySelector('#dj-b-fx-low');
+                this.els.fxEchoB = root.querySelector('#dj-b-fx-echo');
+                this.els.fxBassB = root.querySelector('#dj-b-fx-bass');
+                const djCross = root.querySelector('#dj-crossfader');
+
+                const mirrorPairs = [
+                    ['dj-knob-a-low', 'knob-a-low'],
+                    ['dj-knob-a-mid', 'knob-a-mid'],
+                    ['dj-knob-a-high', 'knob-a-high'],
+                    ['dj-knob-a-gain', 'knob-a-gain'],
+                    ['dj-knob-b-gain', 'knob-b-gain'],
+                    ['dj-knob-b-high', 'knob-b-high'],
+                    ['dj-knob-b-mid', 'knob-b-mid'],
+                    ['dj-knob-b-low', 'knob-b-low']
+                ];
+                mirrorPairs.forEach(([djId, mixId]) => {
+                    try {
+                        const kn = root.querySelector('#' + djId);
+                        if (kn && typeof wireDjKnobMirror === 'function') wireDjKnobMirror(kn, mixId, sig.signal);
+                    } catch (_) {}
+                });
+
+                try {
+                    if (mixCross && djCross) djCross.value = mixCross.value;
+                    else if (djCross) djCross.value = '0';
+                } catch (_) {}
+
+                if (djCross) {
+                    djCross.addEventListener('input', () => {
+                        try {
+                            if (typeof applyCrossfade === 'function') applyCrossfade(djCross.value);
+                        } catch (_) {}
+                    }, sig);
+                }
+
+                const armEchoToggle = () => {
+                    if (!state || !state.fx) return;
+                    state.fx.echoDelay.on = !state.fx.echoDelay.on;
+                    state.fx.echoFeedback.on = state.fx.echoDelay.on;
+                    if (typeof rebuildEffectsChain === 'function') rebuildEffectsChain();
+                };
+
+                const djToggleLow = () => {
+                    try {
+                        initAudio();
+                        if (typeof toggleFx !== 'function') return;
+                        toggleFx('low', fxLow);
+                        const on = !!state.fx.low.on;
+                        if (this.els.fxLow) this.els.fxLow.classList.toggle('on', on);
+                        if (this.els.fxLowB) this.els.fxLowB.classList.toggle('on', on);
+                    } catch (_) {}
+                };
+                const djToggleBass = () => {
+                    try {
+                        initAudio();
+                        if (typeof toggleFx !== 'function') return;
+                        toggleFx('bass', fxBass);
+                        const on = !!state.fx.bass.on;
+                        if (this.els.fxBass) this.els.fxBass.classList.toggle('on', on);
+                        if (this.els.fxBassB) this.els.fxBassB.classList.toggle('on', on);
+                    } catch (_) {}
+                };
+                const djToggleEcho = () => {
+                    try {
+                        initAudio();
+                        armEchoToggle();
+                        const on = !!(state.fx.echoDelay && state.fx.echoDelay.on);
+                        if (this.els.fxEcho) this.els.fxEcho.classList.toggle('on', on);
+                        if (this.els.fxEchoB) this.els.fxEchoB.classList.toggle('on', on);
+                        if (typeof fxEcho !== 'undefined' && fxEcho) fxEcho.classList.toggle('on', on);
+                    } catch (_) {}
+                };
+
+                if (this.els.fxLow) this.els.fxLow.addEventListener('click', djToggleLow, sig);
+                if (this.els.fxLowB) this.els.fxLowB.addEventListener('click', djToggleLow, sig);
+                if (this.els.fxBass) this.els.fxBass.addEventListener('click', djToggleBass, sig);
+                if (this.els.fxBassB) this.els.fxBassB.addEventListener('click', djToggleBass, sig);
+                if (this.els.fxEcho) this.els.fxEcho.addEventListener('click', djToggleEcho, sig);
+                if (this.els.fxEchoB) this.els.fxEchoB.addEventListener('click', djToggleEcho, sig);
+
+                const djPrevA = root.querySelector('#dj-a-prev');
+                const djNextA = root.querySelector('#dj-a-next');
+                const djRandA = root.querySelector('#dj-a-rand');
+                if (djPrevA) {
+                    djPrevA.addEventListener('click', () => {
+                        try {
+                            if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                            if (typeof goPreviousStation === 'function') goPreviousStation();
+                        } catch (_) {}
+                    }, sig);
+                }
+                if (djNextA) {
+                    djNextA.addEventListener('click', () => {
+                        try {
+                            if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                            const n = stations.length;
+                            if (!n || typeof setStation !== 'function') return;
+                            const cur = (typeof currentStationIndex === 'number' && currentStationIndex >= 0) ? currentStationIndex : 0;
+                            setStation((cur + 1) % n);
+                        } catch (_) {}
+                    }, sig);
+                }
+                if (djRandA) {
+                    djRandA.addEventListener('click', () => {
+                        try {
+                            if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                            if (typeof pickRandomStation === 'function') pickRandomStation();
+                        } catch (_) {}
+                    }, sig);
+                }
+
+                const djAdvanceB = (delta) => {
+                    try {
+                        initAudio();
+                        if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                        const n = stations.length;
+                        if (!n) return;
+                        let i = (typeof currentStationBIndex === 'number') ? currentStationBIndex : 0;
+                        i = (((i + delta) % n) + n) % n;
+                        currentStationBIndex = i;
+                        if (mixStationB) mixStationB.value = String(i);
+                        if (typeof playRadioB === 'function') playRadioB();
+                    } catch (_) {}
+                };
+                const djRandomB = () => {
+                    try {
+                        initAudio();
+                        if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                        if (!stations || stations.length === 0) return;
+                        let idx = Math.floor(Math.random() * stations.length);
+                        if (stations.length > 1) {
+                            const cur = (typeof currentStationBIndex === 'number') ? currentStationBIndex : 0;
+                            while (idx === cur) idx = Math.floor(Math.random() * stations.length);
+                        }
+                        currentStationBIndex = idx;
+                        if (mixStationB) mixStationB.value = String(idx);
+                        if (typeof playRadioB === 'function') playRadioB();
+                    } catch (_) {}
+                };
+                const djPrevB = root.querySelector('#dj-b-prev');
+                const djNextB = root.querySelector('#dj-b-next');
+                const djRandB = root.querySelector('#dj-b-rand');
+                if (djPrevB) djPrevB.addEventListener('click', () => djAdvanceB(-1), sig);
+                if (djNextB) djNextB.addEventListener('click', () => djAdvanceB(1), sig);
+                if (djRandB) djRandB.addEventListener('click', djRandomB, sig);
+
+                try {
+                    if (typeof bindSample === 'function') {
+                        bindSample(root.querySelector('#dj-a-sfx-wav'), audioElSample, 'sampleLoop', 'sourceNodeSample');
+                        bindSample(root.querySelector('#dj-a-sfx-w1'), audioElSample1, 'sampleLoop1', 'sourceNodeSample1');
+                        bindSample(root.querySelector('#dj-a-sfx-w2'), audioElSample2, 'sampleLoop2', 'sourceNodeSample2');
+                        bindSample(root.querySelector('#dj-b-sfx-wav'), audioElSample, 'sampleLoop', 'sourceNodeSample');
+                        bindSample(root.querySelector('#dj-b-sfx-w1'), audioElSample1, 'sampleLoop1', 'sourceNodeSample1');
+                        bindSample(root.querySelector('#dj-b-sfx-w2'), audioElSample2, 'sampleLoop2', 'sourceNodeSample2');
+                    }
+                } catch (_) {}
+
+                if (this.els.playA) {
+                    this.els.playA.addEventListener('click', async () => {
+                        try {
+                            initAudio();
+                            if (!audioEl || !audioEl.src) {
+                                if (typeof playRadio === 'function') playRadio();
+                            } else if (audioEl.paused) {
+                                await audioEl.play().catch(() => { if (typeof playRadio === 'function') playRadio(); });
+                            } else {
+                                audioEl.pause();
+                            }
+                        } catch(_) {}
+                        this.syncPlayLabels();
+                    }, sig);
+                }
+                if (this.els.playB) {
+                    this.els.playB.addEventListener('click', async () => {
+                        try {
+                            initAudio();
+                            if (!audioElB || !audioElB.src || audioElB.paused) {
+                                if (typeof playRadioB === 'function') playRadioB();
+                            } else {
+                                audioElB.pause();
+                            }
+                        } catch(_) {}
+                        this.syncPlayLabels();
+                    }, sig);
+                }
+
+                try {
+                    ['play', 'pause', 'ended', 'stalled'].forEach((ev) => {
+                        if (audioEl) audioEl.addEventListener(ev, () => this.syncPlayLabels(), sig);
+                        if (audioElB) audioElB.addEventListener(ev, () => this.syncPlayLabels(), sig);
+                    });
+                } catch(_) {}
+
+                this.syncFxLightsFromState();
+                this.syncPlayLabels();
+                this.updateStationTitles();
+                if (typeof applyCrossfade === 'function' && djCross) applyCrossfade(djCross.value);
+
+                document.getElementById('mode-sub').innerText = 'Dual decks • Mixer-linked FX';
+
+                this.animateFrame();
+            }
+
+            destroy() {
+                try { cancelAnimationFrame(this.animId); } catch(_) {}
+                this.animId = null;
+                try {
+                    window.removeEventListener('resize', this.resizeHandler);
+                    window.removeEventListener('orientationchange', this.resizeHandler);
+                } catch(_) {}
+                try {
+                    const KNOB_IDS = ['knob-a-low', 'knob-a-mid', 'knob-a-high', 'knob-a-gain', 'knob-b-gain', 'knob-b-high', 'knob-b-mid', 'knob-b-low'];
+                    if (window.djKnobMirrors) {
+                        KNOB_IDS.forEach((k) => { try { delete window.djKnobMirrors[k]; } catch (_) {} });
+                    }
+                } catch (_) {}
+                try { this.abortCtrl && this.abortCtrl.abort(); } catch(_) {}
+                this.abortCtrl = null;
+                this.root = null;
+                this.els = {};
                 container.innerHTML = '';
             }
         }
@@ -6272,6 +7160,7 @@ function stopAllAndShowStart() {
             new ThreeEngine("Audio Bars (Vertical Mirror)", sceneBarsVerticalMirror),
             new ThreeEngine("Audio Bars", sceneBars),
             new ThreeEngine("Blank", sceneBlank),
+            new DjDecksEngine(),
             new ThreeEngine("Audio Bars (Circle)", sceneBarsCircle),
             new ThreeEngine("Audio Bars 3D", sceneBars3D),
             new ThreeEngine("Audio Bars: Vortex", sceneBarsVortex),
@@ -6456,11 +7345,189 @@ function stopAllAndShowStart() {
                 state.streamAGain.gain.value = ga;
                 state.streamBGain.gain.value = gb;
             }
+            try {
+                if (mixCross) mixCross.value = String(x);
+                const djX = document.getElementById('dj-crossfader');
+                if (djX) djX.value = String(x);
+            } catch(_) {}
         }
         if (mixCross) {
             mixCross.addEventListener('input', () => applyCrossfade(mixCross.value));
             try { applyCrossfade(mixCross.value); } catch(_) {}
         }
+
+        // --- Web MIDI (USB + Bluetooth class-compliant devices via OS driver) ---
+        const MIDI_MAP_DEFAULT = Object.freeze({
+            crossfaderCC: 54,
+            crossfaderChannel: null,
+            gainACC: 7,
+            gainAChannel: 0,
+            gainBCC: 7,
+            gainBChannel: 1,
+            playANote: 36,
+            playBNote: 37,
+            playChannel: null
+        });
+        function loadMidiMap() {
+            try {
+                const raw = localStorage.getItem('omniMidiMap');
+                if (!raw) return { ...MIDI_MAP_DEFAULT };
+                return { ...MIDI_MAP_DEFAULT, ...JSON.parse(raw) };
+            } catch (_) {
+                return { ...MIDI_MAP_DEFAULT };
+            }
+        }
+        let midiMap = loadMidiMap();
+        let midiAccessRef = null;
+        const midiNoteDebounceMs = 120;
+        const midiLastNoteAt = Object.create(null);
+
+        function midiChannelMatches(cfgCh, msgCh) {
+            if (cfgCh == null || cfgCh === '') return true;
+            return Number(cfgCh) === Number(msgCh);
+        }
+
+        function updateMidiStatus(mode) {
+            const el = document.getElementById('midi-status');
+            if (!el) return;
+            if (mode === 'unsupported') {
+                el.textContent = 'MIDI · n/a';
+            } else if (mode === 'denied') {
+                el.textContent = 'MIDI · blocked';
+            } else if (mode === 'ready') {
+                el.textContent = 'MIDI · ready';
+            } else if (mode === 'ok') {
+                let n = 0;
+                try {
+                    if (midiAccessRef && midiAccessRef.inputs) n = midiAccessRef.inputs.size;
+                } catch (_) {}
+                el.textContent = n ? ('MIDI · ' + n + ' in') : 'MIDI · —';
+            }
+        }
+
+        function midiApplyDeckGain(deck, ccValue) {
+            const v = Math.max(0, Math.min(127, ccValue)) / 127 * 2;
+            try { initAudio(); } catch (_) {}
+            try {
+                if (deck === 'a') {
+                    eqState.a.gain = v;
+                    if (state.trimA) state.trimA.gain.value = v;
+                    setKnobUi(document.getElementById('knob-a-gain'), 0, 2, v);
+                    const djM = window.djKnobMirrors && window.djKnobMirrors['knob-a-gain'];
+                    if (djM) setKnobUi(djM, 0, 2, v);
+                } else {
+                    eqState.b.gain = v;
+                    if (state.trimB) state.trimB.gain.value = v;
+                    setKnobUi(document.getElementById('knob-b-gain'), 0, 2, v);
+                    const djM = window.djKnobMirrors && window.djKnobMirrors['knob-b-gain'];
+                    if (djM) setKnobUi(djM, 0, 2, v);
+                }
+            } catch (_) {}
+        }
+
+        async function midiToggleDeckA() {
+            try { initAudio(); } catch (_) {}
+            try {
+                if (!audioEl || !audioEl.src) {
+                    if (typeof playRadio === 'function') playRadio();
+                    return;
+                }
+                if (audioEl.paused) {
+                    await audioEl.play().catch(() => { if (typeof playRadio === 'function') playRadio(); });
+                } else {
+                    audioEl.pause();
+                }
+            } catch (_) {}
+        }
+
+        async function midiToggleDeckB() {
+            try { initAudio(); } catch (_) {}
+            try {
+                if (!audioElB || !audioElB.src || audioElB.paused) {
+                    if (typeof playRadioB === 'function') playRadioB();
+                } else {
+                    audioElB.pause();
+                }
+            } catch (_) {}
+        }
+
+        function handleMidiMessage(data) {
+            if (!data || data.length < 2 || typeof state === 'undefined') return;
+            midiMap = loadMidiMap();
+            const st = data[0];
+            const d1 = data[1];
+            const d2 = data.length > 2 ? data[2] : 0;
+            const type = st & 0xf0;
+            const channel = st & 0x0f;
+
+            if (type === 0xB0) {
+                const cc = d1;
+                const v = d2;
+                if (cc === midiMap.crossfaderCC && midiChannelMatches(midiMap.crossfaderChannel, channel)) {
+                    if (typeof applyCrossfade === 'function') applyCrossfade(v / 127);
+                    return;
+                }
+                if (cc === midiMap.gainACC && midiChannelMatches(midiMap.gainAChannel, channel)) {
+                    midiApplyDeckGain('a', v);
+                    return;
+                }
+                if (cc === midiMap.gainBCC && midiChannelMatches(midiMap.gainBChannel, channel)) {
+                    midiApplyDeckGain('b', v);
+                    return;
+                }
+            }
+
+            if (type === 0x90 && d2 > 0) {
+                const note = d1;
+                if (!midiChannelMatches(midiMap.playChannel, channel)) return;
+                const now = performance.now();
+                if (note === midiMap.playANote) {
+                    const k = 'a' + note;
+                    if (midiLastNoteAt[k] && now - midiLastNoteAt[k] < midiNoteDebounceMs) return;
+                    midiLastNoteAt[k] = now;
+                    midiToggleDeckA();
+                    return;
+                }
+                if (note === midiMap.playBNote) {
+                    const k = 'b' + note;
+                    if (midiLastNoteAt[k] && now - midiLastNoteAt[k] < midiNoteDebounceMs) return;
+                    midiLastNoteAt[k] = now;
+                    midiToggleDeckB();
+                }
+            }
+        }
+
+        function wireMidiInputs(access) {
+            try {
+                for (const inp of access.inputs.values()) {
+                    try {
+                        inp.onmidimessage = (e) => handleMidiMessage(e.data);
+                    } catch (_) {}
+                }
+            } catch (_) {}
+        }
+
+        async function initWebMidi() {
+            if (typeof navigator === 'undefined' || !navigator.requestMIDIAccess) {
+                updateMidiStatus('unsupported');
+                return;
+            }
+            if (window.__midiInitDone) return;
+            try {
+                midiAccessRef = await navigator.requestMIDIAccess({ sysex: false });
+                window.__midiInitDone = true;
+                wireMidiInputs(midiAccessRef);
+                midiAccessRef.onstatechange = () => {
+                    wireMidiInputs(midiAccessRef);
+                    updateMidiStatus('ok');
+                };
+                updateMidiStatus('ok');
+            } catch (e) {
+                updateMidiStatus('denied');
+                try { console.warn('Web MIDI unavailable:', e); } catch (_) {}
+            }
+        }
+
         // Effect toggles
         function toggleFx(key, btn) {
             if (!state || !state.fx || !state.fx[key]) return;
@@ -6639,7 +7706,7 @@ function stopAllAndShowStart() {
 			try {
 				const horizIntent = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? Math.abs(e.deltaX) : (e.shiftKey ? Math.abs(e.deltaY) : 0));
 				if (horizIntent > 5) {
-					const inUi = !!(e.target && (e.target.closest('#top-menu-content') || e.target.closest('#settings-panel') || e.target.closest('#webm-settings-panel') || e.target.closest('#bottom-avatar-content')));
+					const inUi = !!(e.target && (e.target.closest('#top-menu-content') || e.target.closest('#settings-panel') || e.target.closest('#webm-settings-panel') || e.target.closest('#bottom-avatar-content') || e.target.closest('#dj-visual-root')));
 					if (!inUi) {
 						// One step per gesture: lock during momentum and unlock after wheel quiets down
 						if (!window.__wheelNavLocked) {
