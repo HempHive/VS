@@ -471,10 +471,13 @@
         #dj-visual-root .dj-controls-grid .btn.dj-fx,
         #dj-visual-root .dj-controls-grid .btn.dj-sfx {
             width: 100%;
-        }
-        #dj-visual-root .dj-controls-grid .btn.dj-sfx {
-            padding: 10px;
-            font-size: 14px;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.1;
+            min-height: 40px;
+            padding: 8px 10px;
         }
         #dj-visual-root .dj-fx-row {
             display: flex;
@@ -489,7 +492,13 @@
             min-width: 72px;
         }
         .dj-sfx-col .btn.dj-sfx {
-            padding: 10px;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.1;
+            min-height: 40px;
+            padding: 8px 10px;
             font-size: 14px;
         }
         
@@ -2274,7 +2283,7 @@
                     <button class="btn" id="fx-wav5" title="Left-click: play once • Right-click: loop">Waaa📣</button>
                     <button class="btn" id="fx-wav6" title="Left-click: play once • Right-click: loop">Air📢</button>
                     <button class="btn" id="fx-lowpass">Low-pass</button>
-                    <button class="btn" id="fx-bass">Bass-Boost</button>
+                    <button class="btn" id="fx-bass">Bass-Pass</button>
                     <button class="btn" id="fx-echo">~Echo~</button>
                     <button class="btn" id="fx-highpass">High-pass</button>
                     <button class="btn" id="fx-treble">Treble-Boost</button>
@@ -3770,15 +3779,17 @@ function randomGlowColor() {
                         if (textInOpenVert) { if (typeof hideTextInPanel === 'function') hideTextInPanel(); return; }
                         if (avatarOpen) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
                         
+                        const vertFromDj = pDownTarget && typeof pDownTarget.closest === 'function' && pDownTarget.closest('#dj-visual-root');
+
                         if (dy > 0) { // SWIPE DOWN
                             // If Mix Panel is open at the bottom, swipe down should close it
                             if (mixOpen) { toggleMixPanel(); return; }
-                            
-                            // Otherwise, open the Top Menu
+                            // Do not open Top Menu from vertical drags that started on DJ deck (e.g. TK filter pad)
+                            if (vertFromDj) return;
                             if (typeof openTopMenuPanel === 'function') openTopMenuPanel();
                         } else { // SWIPE UP
                             // Open Mix Settings (instead of Avatar/WebM)
-                            if (!mixOpen) toggleMixPanel();
+                            if (!mixOpen && !vertFromDj) toggleMixPanel();
                         }
                         return;
                     }
@@ -5286,7 +5297,7 @@ function stopAllAndShowStart() {
 
             <button type="button" class="btn dj-fx" id="dj-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
             <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass pass (Mixer FX)">Bass-Pass</button>
 
             <button type="button" class="btn dj-fx" id="dj-fx-high" title="High-pass (Mixer FX)">High-pass</button>
             <button type="button" class="btn dj-fx" id="dj-fx-treble" title="Treble boost (Mixer FX)">Treble</button>
@@ -5347,7 +5358,7 @@ function stopAllAndShowStart() {
 
             <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
-            <button type="button" class="btn dj-fx" id="dj-b-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
+            <button type="button" class="btn dj-fx" id="dj-b-fx-bass" title="Bass pass (Mixer FX)">Bass-Pass</button>
 
             <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="High-pass (Mixer FX)">High-pass</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-treble" title="Treble boost (Mixer FX)">Treble</button>
