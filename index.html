@@ -45,6 +45,10 @@
             gap: 10px;
             align-items: stretch;
         }
+        #dj-visual-root .dj-fader-strip {
+            display: flex;
+            box-sizing: border-box;
+        }
         /* Layout toggled by DJ engine: portrait = A top / B bottom; landscape = A left / B right */
         #dj-visual-root.dj-mode-portrait .dj-layout { flex-direction: column; }
         #dj-visual-root.dj-mode-portrait .dj-fader-strip {
@@ -4389,7 +4393,7 @@ function randomGlowColor() {
                     document.body.style.backgroundPosition = '';
                     document.body.style.backgroundSize = '';
                 } catch(e) {}
-                // Start with last visual if saved, else "ProjectM v2" if available
+                // Start with last visual if saved, else "DJ Decks" if available
                 try {
                     let idxToLoad = -1;
                     try {
@@ -4406,7 +4410,7 @@ function randomGlowColor() {
                         }
                     } catch(_) {}
                     if (idxToLoad < 0) {
-                        idxToLoad = Math.max(0, modes.findIndex(m => m && m.name === "ProjectM v2"));
+                        idxToLoad = Math.max(0, modes.findIndex(m => m && m.name === "DJ Decks"));
                     }
                     loadMode(idxToLoad);
                 } catch(e) {
@@ -5159,7 +5163,7 @@ function stopAllAndShowStart() {
           <div class="dj-jog-wrap">
             <div class="dj-jog" id="dj-jog-a" aria-hidden="true"><span class="dj-jog-marker"></span></div>
           </div>
-          <div class="dj-controls-grid" aria-label="Deck A effects and samples">
+          <div class="dj-controls-grid" aria-label="Deck A effects, samples and visual switch">
             <button type="button" class="btn dj-fx" id="dj-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
             <button type="button" class="btn dj-fx" id="dj-fx-echo" title="Echo (Mixer FX)">~Echo~</button>
             <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
@@ -5171,6 +5175,10 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
+
+            <button type="button" class="btn dj-fx" id="dj-vis-blank" title="Switch visual to Blank">Blank</button>
+            <button type="button" class="btn dj-fx" id="dj-vis-bars" title="Switch visual to Audio Bars">Audio Bars</button>
+            <button type="button" class="btn dj-fx" id="dj-vis-pm2" title="Switch visual to ProjectM v2">ProjectM v2</button>
           </div>
         </div>
       </div>
@@ -5217,7 +5225,7 @@ function stopAllAndShowStart() {
           <div class="dj-jog-wrap">
             <div class="dj-jog" id="dj-jog-b" aria-hidden="true"><span class="dj-jog-marker"></span></div>
           </div>
-          <div class="dj-controls-grid" aria-label="Deck B effects and samples">
+          <div class="dj-controls-grid" aria-label="Deck B effects, samples and visual switch">
             <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-echo" title="Echo (Mixer FX)">~Echo~</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
@@ -5229,6 +5237,10 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
             <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
             <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
+
+            <button type="button" class="btn dj-fx" id="dj-b-vis-blank" title="Switch visual to Blank">Blank</button>
+            <button type="button" class="btn dj-fx" id="dj-b-vis-bars" title="Switch visual to Audio Bars">Audio Bars</button>
+            <button type="button" class="btn dj-fx" id="dj-b-vis-pm2" title="Switch visual to ProjectM v2">ProjectM v2</button>
           </div>
         </div>
       </div>
@@ -5435,6 +5447,25 @@ function stopAllAndShowStart() {
                         bindSample(root.querySelector('#dj-b-sfx-w2'), audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
                     }
                 } catch (_) {}
+
+                const switchVisualByName = (name) => {
+                    try {
+                        if (!Array.isArray(modes) || typeof loadMode !== 'function') return;
+                        const idx = modes.findIndex((m) => m && m.name === name);
+                        if (idx >= 0) loadMode(idx);
+                    } catch (_) {}
+                };
+                const bindVisualSwitch = (id, name) => {
+                    const el = root.querySelector('#' + id);
+                    if (!el) return;
+                    el.addEventListener('click', () => switchVisualByName(name), sig);
+                };
+                bindVisualSwitch('dj-vis-blank', 'Blank');
+                bindVisualSwitch('dj-vis-bars', 'Audio Bars');
+                bindVisualSwitch('dj-vis-pm2', 'ProjectM v2');
+                bindVisualSwitch('dj-b-vis-blank', 'Blank');
+                bindVisualSwitch('dj-b-vis-bars', 'Audio Bars');
+                bindVisualSwitch('dj-b-vis-pm2', 'ProjectM v2');
 
                 if (this.els.playA) {
                     this.els.playA.addEventListener('click', async () => {
@@ -7310,9 +7341,9 @@ function stopAllAndShowStart() {
             new MilkdropEngine(),
             new MilkdropEngineV2(),
             new MilkdropEngineV3(),
+            new ThreeEngine("Blank", sceneBlank),
             new ThreeEngine("Audio Bars (Vertical Mirror)", sceneBarsVerticalMirror),
             new ThreeEngine("Audio Bars", sceneBars),
-            new ThreeEngine("Blank", sceneBlank),
             new DjDecksEngine(),
             new ThreeEngine("Audio Bars (Circle)", sceneBarsCircle),
             new ThreeEngine("Audio Bars 3D", sceneBars3D),
@@ -7490,7 +7521,12 @@ function stopAllAndShowStart() {
         refreshMixStationB();
         // Crossfader handler (equal-power)
         function applyCrossfade(val) {
-            const x = Math.max(0, Math.min(1, Number(val)||0));
+            let x = Math.max(0, Math.min(1, Number(val)||0));
+            // Add a small dead-zone at both extremes so "fully A/B" is a hard cut.
+            // This avoids tiny residual bleed when pointer/touch lands near (but not exactly on) 0 or 1.
+            const EDGE_SNAP = 0.03;
+            if (x <= EDGE_SNAP) x = 0;
+            else if (x >= 1 - EDGE_SNAP) x = 1;
             // Linear crossfade: exact 50/50 amplitude at midpoint
             const ga = 1 - x;
             const gb = x;
