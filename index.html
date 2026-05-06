@@ -3140,7 +3140,8 @@ const QUALITY = {
             el.addEventListener('mousedown', onDown);
             el.addEventListener('touchstart', onDown, { passive: false });
 
-            el.addEventListener('dblclick', () => {
+            el.addEventListener('dblclick', (e) => {
+                try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
                 const def = (key === 'gain') ? 1.0 : 0;
                 stateObj[key] = def;
                 updateVisuals(def);
@@ -3201,7 +3202,8 @@ const QUALITY = {
             const opts = signal ? { signal } : {};
             mirrorEl.addEventListener('mousedown', onDown, opts);
             mirrorEl.addEventListener('touchstart', onDown, Object.assign({ passive: false }, opts));
-            mirrorEl.addEventListener('dblclick', () => {
+            mirrorEl.addEventListener('dblclick', (e) => {
+                try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
                 const def = (key === 'gain') ? 1.0 : 0;
                 updateAll(def);
             }, opts);
@@ -3821,6 +3823,17 @@ function randomGlowColor() {
                     const moved = (adx > TAP_MAX_MOVE || ady > TAP_MAX_MOVE);
                     const now = Date.now();
                     if (!moved && (now - lastTapTime) < DOUBLE_TAP_MS) {
+                        try {
+                            const elTap = e.target;
+                            if (elTap && elTap.closest && elTap.closest('.knob-wrap')) {
+                                lastTapTime = now;
+                                return;
+                            }
+                            if (pDownTarget && pDownTarget.closest && pDownTarget.closest('.knob-wrap')) {
+                                lastTapTime = now;
+                                return;
+                            }
+                        } catch (_) {}
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
                         try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch(_) {}
@@ -3869,6 +3882,9 @@ function randomGlowColor() {
                 // Double click: toggle Fullscreen
                 canvasEl.addEventListener('dblclick', (e) => {
                     if (!state || !state.isPlaying) return;
+                    try {
+                        if (e.target && typeof e.target.closest === 'function' && e.target.closest('.knob-wrap')) return;
+                    } catch (_) {}
                     try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
                     try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch(_) {}
                     try { toggleFullscreen(); } catch(_) {}
@@ -5195,21 +5211,21 @@ function stopAllAndShowStart() {
                     const lon = !!state.fx.low.on;
                     const bon = !!state.fx.bass.on;
                     const kon = !!(state.fx.tk && state.fx.tk.on);
-                    const hin = !!state.fx.high.on;
-                    const tin = !!state.fx.treble.on;
-                    const din = !!(state.fx.distort && state.fx.distort.on);
+                    const avatarOn = !!(typeof webmOn !== 'undefined' && webmOn);
+                    const mixOpenUi = !!(mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open'));
+                    const stationOpenUi = (typeof isTopMenuOpen === 'function') && isTopMenuOpen();
                     if (this.els.fxLow) this.els.fxLow.classList.toggle('on', lon);
                     if (this.els.fxLowB) this.els.fxLowB.classList.toggle('on', lon);
                     if (this.els.fxBass) this.els.fxBass.classList.toggle('on', bon);
                     if (this.els.fxBassB) this.els.fxBassB.classList.toggle('on', bon);
                     if (this.els.fxTk) this.els.fxTk.classList.toggle('on', kon);
                     if (this.els.fxTkB) this.els.fxTkB.classList.toggle('on', kon);
-                    if (this.els.fxHighA) this.els.fxHighA.classList.toggle('on', hin);
-                    if (this.els.fxHighB) this.els.fxHighB.classList.toggle('on', hin);
-                    if (this.els.fxTrebleA) this.els.fxTrebleA.classList.toggle('on', tin);
-                    if (this.els.fxTrebleB) this.els.fxTrebleB.classList.toggle('on', tin);
-                    if (this.els.fxDistortA) this.els.fxDistortA.classList.toggle('on', din);
-                    if (this.els.fxDistortB) this.els.fxDistortB.classList.toggle('on', din);
+                    if (this.els.fxHighA) this.els.fxHighA.classList.toggle('on', avatarOn);
+                    if (this.els.fxHighB) this.els.fxHighB.classList.toggle('on', avatarOn);
+                    if (this.els.fxTrebleA) this.els.fxTrebleA.classList.toggle('on', mixOpenUi);
+                    if (this.els.fxTrebleB) this.els.fxTrebleB.classList.toggle('on', mixOpenUi);
+                    if (this.els.fxDistortA) this.els.fxDistortA.classList.toggle('on', stationOpenUi);
+                    if (this.els.fxDistortB) this.els.fxDistortB.classList.toggle('on', stationOpenUi);
                 } catch(_) {}
             }
 
@@ -5290,21 +5306,22 @@ function stopAllAndShowStart() {
           <div class="dj-jog-wrap">
             <div class="dj-jog" id="dj-jog-a" aria-hidden="true"><span class="dj-jog-marker"></span></div>
           </div>
-          <div class="dj-controls-grid" aria-label="Deck A effects, samples and visual switch">
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
+          <div class="dj-controls-grid" aria-label="Deck A visuals, effects, and samples">
+            <button type="button" class="btn dj-fx" id="dj-vis-blank" title="Switch to no visual (Blank mode)">NO VISUAL</button>
+            <button type="button" class="btn dj-fx" id="dj-vis-bars" title="Switch to Audio Bars visual">AUDIO:BAR</button>
+            <button type="button" class="btn dj-fx" id="dj-vis-pm2" title="Switch visual to ProjectM v2">ProjectM</button>
 
             <button type="button" class="btn dj-fx" id="dj-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
             <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
             <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass pass (Mixer FX)">Bass-Pass</button>
 
-            <button type="button" class="btn dj-fx" id="dj-fx-high" title="High-pass (Mixer FX)">High-pass</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-treble" title="Treble boost (Mixer FX)">Treble</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Distortion (Mixer FX)">Distort</button>
-            <button type="button" class="btn dj-fx" id="dj-vis-blank" title="Switch to no visual (Blank mode)">NO VISUAL</button>
-            <button type="button" class="btn dj-fx" id="dj-vis-bars" title="Switch to Audio Bars visual">AUDIO:BAR</button>
-            <button type="button" class="btn dj-fx" id="dj-vis-pm2" title="Switch visual to ProjectM v2">ProjectM</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-high" title="Toggle avatar / WebM overlay">Avatar</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-treble" title="Open or close Mix Settings (bottom panel)">Mixer</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Open or close station list (top menu)">Station</button>
+
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
           </div>
         </div>
       </div>
@@ -5351,21 +5368,22 @@ function stopAllAndShowStart() {
           <div class="dj-jog-wrap">
             <div class="dj-jog" id="dj-jog-b" aria-hidden="true"><span class="dj-jog-marker"></span></div>
           </div>
-          <div class="dj-controls-grid" aria-label="Deck B effects, samples and visual switch">
-            <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
-            <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
-            <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
+          <div class="dj-controls-grid" aria-label="Deck B visuals, effects, and samples">
+            <button type="button" class="btn dj-fx" id="dj-b-vis-blank" title="Switch to no visual (Blank mode)">NO VISUAL</button>
+            <button type="button" class="btn dj-fx" id="dj-b-vis-bars" title="Switch to Audio Bars visual">AUDIO:BAR</button>
+            <button type="button" class="btn dj-fx" id="dj-b-vis-pm2" title="Switch visual to ProjectM v2">ProjectM</button>
 
             <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-bass" title="Bass pass (Mixer FX)">Bass-Pass</button>
 
-            <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="High-pass (Mixer FX)">High-pass</button>
-            <button type="button" class="btn dj-fx" id="dj-b-fx-treble" title="Treble boost (Mixer FX)">Treble</button>
-            <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Distortion (Mixer FX)">Distort</button>
-            <button type="button" class="btn dj-fx" id="dj-b-vis-blank" title="Switch to no visual (Blank mode)">NO VISUAL</button>
-            <button type="button" class="btn dj-fx" id="dj-b-vis-bars" title="Switch to Audio Bars visual">AUDIO:BAR</button>
-            <button type="button" class="btn dj-fx" id="dj-b-vis-pm2" title="Switch visual to ProjectM v2">ProjectM</button>
+            <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="Toggle avatar / WebM overlay">Avatar</button>
+            <button type="button" class="btn dj-fx" id="dj-b-fx-treble" title="Open or close Mix Settings (bottom panel)">Mixer</button>
+            <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Open or close station list (top menu)">Station</button>
+
+            <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
+            <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
+            <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
           </div>
         </div>
       </div>
@@ -5459,34 +5477,38 @@ function stopAllAndShowStart() {
                         if (this.els.fxTkB) this.els.fxTkB.classList.toggle('on', on);
                     } catch (_) {}
                 };
-                const djToggleHigh = () => {
+                const djToggleAvatar = () => {
                     try {
-                        initAudio();
-                        if (typeof toggleFx !== 'function') return;
-                        toggleFx('high', typeof fxHigh !== 'undefined' ? fxHigh : null);
-                        const on = !!(state.fx && state.fx.high && state.fx.high.on);
-                        if (this.els.fxHighA) this.els.fxHighA.classList.toggle('on', on);
-                        if (this.els.fxHighB) this.els.fxHighB.classList.toggle('on', on);
+                        if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                        if (!webmOn) {
+                            if (!webmList.length) {
+                                loadWebmList().finally(() => {
+                                    try {
+                                        if (webmList.length > 0) showWebm();
+                                        this.syncFxLightsFromState();
+                                    } catch (_) {}
+                                });
+                                return;
+                            }
+                            showWebm();
+                        } else {
+                            hideWebm();
+                        }
+                        this.syncFxLightsFromState();
                     } catch (_) {}
                 };
-                const djToggleTreble = () => {
+                const djToggleMixerUi = () => {
                     try {
-                        initAudio();
-                        if (typeof toggleFx !== 'function') return;
-                        toggleFx('treble', typeof fxTreble !== 'undefined' ? fxTreble : null);
-                        const on = !!(state.fx && state.fx.treble && state.fx.treble.on);
-                        if (this.els.fxTrebleA) this.els.fxTrebleA.classList.toggle('on', on);
-                        if (this.els.fxTrebleB) this.els.fxTrebleB.classList.toggle('on', on);
+                        if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                        if (typeof toggleMixPanel === 'function') toggleMixPanel();
+                        this.syncFxLightsFromState();
                     } catch (_) {}
                 };
-                const djToggleDistort = () => {
+                const djToggleStationUi = () => {
                     try {
-                        initAudio();
-                        if (typeof toggleFx !== 'function') return;
-                        toggleFx('distort', typeof fxDist !== 'undefined' ? fxDist : null);
-                        const on = !!(state.fx && state.fx.distort && state.fx.distort.on);
-                        if (this.els.fxDistortA) this.els.fxDistortA.classList.toggle('on', on);
-                        if (this.els.fxDistortB) this.els.fxDistortB.classList.toggle('on', on);
+                        if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                        if (typeof toggleTopMenuPanel === 'function') toggleTopMenuPanel();
+                        this.syncFxLightsFromState();
                     } catch (_) {}
                 };
 
@@ -5494,12 +5516,12 @@ function stopAllAndShowStart() {
                 if (this.els.fxLowB) this.els.fxLowB.addEventListener('click', djToggleLow, sig);
                 if (this.els.fxBass) this.els.fxBass.addEventListener('click', djToggleBass, sig);
                 if (this.els.fxBassB) this.els.fxBassB.addEventListener('click', djToggleBass, sig);
-                if (this.els.fxHighA) this.els.fxHighA.addEventListener('click', djToggleHigh, sig);
-                if (this.els.fxHighB) this.els.fxHighB.addEventListener('click', djToggleHigh, sig);
-                if (this.els.fxTrebleA) this.els.fxTrebleA.addEventListener('click', djToggleTreble, sig);
-                if (this.els.fxTrebleB) this.els.fxTrebleB.addEventListener('click', djToggleTreble, sig);
-                if (this.els.fxDistortA) this.els.fxDistortA.addEventListener('click', djToggleDistort, sig);
-                if (this.els.fxDistortB) this.els.fxDistortB.addEventListener('click', djToggleDistort, sig);
+                if (this.els.fxHighA) this.els.fxHighA.addEventListener('click', djToggleAvatar, sig);
+                if (this.els.fxHighB) this.els.fxHighB.addEventListener('click', djToggleAvatar, sig);
+                if (this.els.fxTrebleA) this.els.fxTrebleA.addEventListener('click', djToggleMixerUi, sig);
+                if (this.els.fxTrebleB) this.els.fxTrebleB.addEventListener('click', djToggleMixerUi, sig);
+                if (this.els.fxDistortA) this.els.fxDistortA.addEventListener('click', djToggleStationUi, sig);
+                if (this.els.fxDistortB) this.els.fxDistortB.addEventListener('click', djToggleStationUi, sig);
 
                 const TK_HOLD_MS = 450;
                 const TK_F_MIN = 200;
