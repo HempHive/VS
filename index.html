@@ -5025,12 +5025,21 @@ function stopAllAndShowStart() {
                     const lon = !!state.fx.low.on;
                     const bon = !!state.fx.bass.on;
                     const eon = !!(state.fx.echoDelay && state.fx.echoDelay.on);
+                    const hin = !!state.fx.high.on;
+                    const tin = !!state.fx.treble.on;
+                    const din = !!(state.fx.distort && state.fx.distort.on);
                     if (this.els.fxLow) this.els.fxLow.classList.toggle('on', lon);
                     if (this.els.fxLowB) this.els.fxLowB.classList.toggle('on', lon);
                     if (this.els.fxBass) this.els.fxBass.classList.toggle('on', bon);
                     if (this.els.fxBassB) this.els.fxBassB.classList.toggle('on', bon);
                     if (this.els.fxEcho) this.els.fxEcho.classList.toggle('on', eon);
                     if (this.els.fxEchoB) this.els.fxEchoB.classList.toggle('on', eon);
+                    if (this.els.fxHighA) this.els.fxHighA.classList.toggle('on', hin);
+                    if (this.els.fxHighB) this.els.fxHighB.classList.toggle('on', hin);
+                    if (this.els.fxTrebleA) this.els.fxTrebleA.classList.toggle('on', tin);
+                    if (this.els.fxTrebleB) this.els.fxTrebleB.classList.toggle('on', tin);
+                    if (this.els.fxDistortA) this.els.fxDistortA.classList.toggle('on', din);
+                    if (this.els.fxDistortB) this.els.fxDistortB.classList.toggle('on', din);
                 } catch(_) {}
             }
 
@@ -5085,8 +5094,7 @@ function stopAllAndShowStart() {
         <div class="dj-transport-row">
           <button type="button" class="dj-tbtn" id="dj-a-prev" title="Previous station (history)">⟵ Prev</button>
           <button type="button" class="dj-play" id="dj-play-a">Play</button>
-          <button type="button" class="dj-tbtn" id="dj-a-next" title="Next station in list">Next ⟶</button>
-          <button type="button" class="dj-tbtn" id="dj-a-rand" title="Random station">↻ Random</button>
+          <button type="button" class="dj-tbtn" id="dj-a-next" title="Tune to another random station">Rand ⟶</button>
         </div>
         <div class="dj-eq-strip eq-strip">
           <div class="eq-group">
@@ -5116,6 +5124,9 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-fx" id="dj-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
             <button type="button" class="btn dj-fx" id="dj-fx-echo" title="Echo (Mixer FX)">~Echo~</button>
             <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-high" title="High-pass (Mixer FX)">High-pass</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-treble" title="Treble boost (Mixer FX)">Treble</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Distortion (Mixer FX)">Distort</button>
           </div>
           <div class="dj-sfx-col">
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="Left: play wav.mp3 • Right: loop">Wav ▷</button>
@@ -5141,8 +5152,7 @@ function stopAllAndShowStart() {
         <div class="dj-transport-row">
           <button type="button" class="dj-tbtn" id="dj-b-prev" title="Previous Station B">⟵ Prev</button>
           <button type="button" class="dj-play" id="dj-play-b">Play</button>
-          <button type="button" class="dj-tbtn" id="dj-b-next" title="Next Station B">Next ⟶</button>
-          <button type="button" class="dj-tbtn" id="dj-b-rand" title="Random Station B">↻ Random</button>
+          <button type="button" class="dj-tbtn" id="dj-b-next" title="Tune deck B to another random station">Rand ⟶</button>
         </div>
         <div class="dj-eq-strip eq-strip">
           <div class="eq-group">
@@ -5172,6 +5182,9 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-echo" title="Echo (Mixer FX)">~Echo~</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-bass" title="Bass boost (Mixer FX)">Bass-Boost</button>
+            <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="High-pass (Mixer FX)">High-pass</button>
+            <button type="button" class="btn dj-fx" id="dj-b-fx-treble" title="Treble boost (Mixer FX)">Treble</button>
+            <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Distortion (Mixer FX)">Distort</button>
           </div>
           <div class="dj-sfx-col">
             <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="Left: play wav.mp3 • Right: loop">Wav ▷</button>
@@ -5199,9 +5212,15 @@ function stopAllAndShowStart() {
                 this.els.fxLow = root.querySelector('#dj-fx-low');
                 this.els.fxEcho = root.querySelector('#dj-fx-echo');
                 this.els.fxBass = root.querySelector('#dj-fx-bass');
+                this.els.fxHighA = root.querySelector('#dj-fx-high');
+                this.els.fxTrebleA = root.querySelector('#dj-fx-treble');
+                this.els.fxDistortA = root.querySelector('#dj-fx-distort');
                 this.els.fxLowB = root.querySelector('#dj-b-fx-low');
                 this.els.fxEchoB = root.querySelector('#dj-b-fx-echo');
                 this.els.fxBassB = root.querySelector('#dj-b-fx-bass');
+                this.els.fxHighB = root.querySelector('#dj-b-fx-high');
+                this.els.fxTrebleB = root.querySelector('#dj-b-fx-treble');
+                this.els.fxDistortB = root.querySelector('#dj-b-fx-distort');
                 const djCross = root.querySelector('#dj-crossfader');
 
                 const mirrorPairs = [
@@ -5271,6 +5290,36 @@ function stopAllAndShowStart() {
                         if (typeof fxEcho !== 'undefined' && fxEcho) fxEcho.classList.toggle('on', on);
                     } catch (_) {}
                 };
+                const djToggleHigh = () => {
+                    try {
+                        initAudio();
+                        if (typeof toggleFx !== 'function') return;
+                        toggleFx('high', typeof fxHigh !== 'undefined' ? fxHigh : null);
+                        const on = !!(state.fx && state.fx.high && state.fx.high.on);
+                        if (this.els.fxHighA) this.els.fxHighA.classList.toggle('on', on);
+                        if (this.els.fxHighB) this.els.fxHighB.classList.toggle('on', on);
+                    } catch (_) {}
+                };
+                const djToggleTreble = () => {
+                    try {
+                        initAudio();
+                        if (typeof toggleFx !== 'function') return;
+                        toggleFx('treble', typeof fxTreble !== 'undefined' ? fxTreble : null);
+                        const on = !!(state.fx && state.fx.treble && state.fx.treble.on);
+                        if (this.els.fxTrebleA) this.els.fxTrebleA.classList.toggle('on', on);
+                        if (this.els.fxTrebleB) this.els.fxTrebleB.classList.toggle('on', on);
+                    } catch (_) {}
+                };
+                const djToggleDistort = () => {
+                    try {
+                        initAudio();
+                        if (typeof toggleFx !== 'function') return;
+                        toggleFx('distort', typeof fxDist !== 'undefined' ? fxDist : null);
+                        const on = !!(state.fx && state.fx.distort && state.fx.distort.on);
+                        if (this.els.fxDistortA) this.els.fxDistortA.classList.toggle('on', on);
+                        if (this.els.fxDistortB) this.els.fxDistortB.classList.toggle('on', on);
+                    } catch (_) {}
+                };
 
                 if (this.els.fxLow) this.els.fxLow.addEventListener('click', djToggleLow, sig);
                 if (this.els.fxLowB) this.els.fxLowB.addEventListener('click', djToggleLow, sig);
@@ -5278,10 +5327,15 @@ function stopAllAndShowStart() {
                 if (this.els.fxBassB) this.els.fxBassB.addEventListener('click', djToggleBass, sig);
                 if (this.els.fxEcho) this.els.fxEcho.addEventListener('click', djToggleEcho, sig);
                 if (this.els.fxEchoB) this.els.fxEchoB.addEventListener('click', djToggleEcho, sig);
+                if (this.els.fxHighA) this.els.fxHighA.addEventListener('click', djToggleHigh, sig);
+                if (this.els.fxHighB) this.els.fxHighB.addEventListener('click', djToggleHigh, sig);
+                if (this.els.fxTrebleA) this.els.fxTrebleA.addEventListener('click', djToggleTreble, sig);
+                if (this.els.fxTrebleB) this.els.fxTrebleB.addEventListener('click', djToggleTreble, sig);
+                if (this.els.fxDistortA) this.els.fxDistortA.addEventListener('click', djToggleDistort, sig);
+                if (this.els.fxDistortB) this.els.fxDistortB.addEventListener('click', djToggleDistort, sig);
 
                 const djPrevA = root.querySelector('#dj-a-prev');
                 const djNextA = root.querySelector('#dj-a-next');
-                const djRandA = root.querySelector('#dj-a-rand');
                 if (djPrevA) {
                     djPrevA.addEventListener('click', () => {
                         try {
@@ -5292,17 +5346,6 @@ function stopAllAndShowStart() {
                 }
                 if (djNextA) {
                     djNextA.addEventListener('click', () => {
-                        try {
-                            if (typeof uiLocked !== 'undefined' && uiLocked) return;
-                            const n = stations.length;
-                            if (!n || typeof setStation !== 'function') return;
-                            const cur = (typeof currentStationIndex === 'number' && currentStationIndex >= 0) ? currentStationIndex : 0;
-                            setStation((cur + 1) % n);
-                        } catch (_) {}
-                    }, sig);
-                }
-                if (djRandA) {
-                    djRandA.addEventListener('click', () => {
                         try {
                             if (typeof uiLocked !== 'undefined' && uiLocked) return;
                             if (typeof pickRandomStation === 'function') pickRandomStation();
@@ -5340,10 +5383,8 @@ function stopAllAndShowStart() {
                 };
                 const djPrevB = root.querySelector('#dj-b-prev');
                 const djNextB = root.querySelector('#dj-b-next');
-                const djRandB = root.querySelector('#dj-b-rand');
                 if (djPrevB) djPrevB.addEventListener('click', () => djAdvanceB(-1), sig);
-                if (djNextB) djNextB.addEventListener('click', () => djAdvanceB(1), sig);
-                if (djRandB) djRandB.addEventListener('click', djRandomB, sig);
+                if (djNextB) djNextB.addEventListener('click', djRandomB, sig);
 
                 try {
                     if (typeof bindSample === 'function') {
