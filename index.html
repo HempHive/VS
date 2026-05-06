@@ -1122,8 +1122,60 @@
             letter-spacing: 0.5px;
             pointer-events: auto;
             transition: opacity 1s ease-in-out;
-            max-width: min(60vw, 720px);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            max-width: min(92vw, 820px);
+        }
+        #station-banner-inner {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            flex-wrap: nowrap;
+        }
+        #station-banner-name {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        #station-banner-meta-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            flex: 1 1 auto;
+            font-size: 15px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.92);
+            overflow: hidden;
+        }
+        .station-banner-dot { opacity: 0.65; flex-shrink: 0; }
+        #station-banner-nowplaying {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+        #btn-banner-shazam {
+            flex-shrink: 0;
+            padding: 4px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            background-color: rgba(0,0,0,0.25);
+            background-image: url('btn.png');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+            text-shadow: 0 0 4px rgba(0,0,0,0.75);
+            -webkit-tap-highlight-color: transparent;
+        }
+        #btn-banner-shazam:hover {
+            filter: brightness(1.12);
+            border-color: rgba(245,210,15,0.45);
+            color: #ffe866;
         }
         #station-banner.shuffle-on {
             border: 1px solid rgba(212,175,55,0.6);
@@ -1803,7 +1855,16 @@
         </div>
     </div>
     <!-- Quick Radio Button and old Radio Panel removed (assets retained) -->
-    <div id="station-banner" class="display-none"></div>
+    <div id="station-banner" class="display-none" role="status">
+        <div id="station-banner-inner">
+            <span id="station-banner-name"></span>
+            <span id="station-banner-meta-wrap" class="display-none" aria-live="polite">
+                <span class="station-banner-dot" aria-hidden="true">·</span>
+                <span id="station-banner-nowplaying"></span>
+                <button type="button" id="btn-banner-shazam" title="Search this track on Shazam (opens new tab)">Shazam</button>
+            </span>
+        </div>
+    </div>
     <!-- Rising text overlay layer -->
     <div id="text-overlay-layer"></div>
     <!-- Text-In Panel -->
@@ -2201,6 +2262,10 @@ const QUALITY = {
         const audioEl = document.getElementById('radio-element');
         const audioElB = document.getElementById('radio-element-b');
         const stationBanner = document.getElementById('station-banner');
+        const stationBannerNameEl = document.getElementById('station-banner-name');
+        const stationBannerMetaWrap = document.getElementById('station-banner-meta-wrap');
+        const stationBannerNowplayingEl = document.getElementById('station-banner-nowplaying');
+        const btnBannerShazam = document.getElementById('btn-banner-shazam');
         const settingsPanel = document.getElementById('settings-panel');
         const settingsBtn = document.getElementById('btn-settings');
         const settingsApplyBtn = document.getElementById('btn-settings-apply');
@@ -2554,6 +2619,10 @@ const QUALITY = {
         let settingsPanelTimer = null;
         let webmSettingsTimer = null;
         let stationBannerTimer = null;
+        let nowPlayingPollTimer = null;
+        let nowPlayingPollUrl = '';
+        let icyPollBusy = false;
+        let currentNowPlayingICY = '';
         // Hold the radio button visible after right-click random selection
         let radioQuickHoldUntil = 0;
         let radioQuickHoldTimeout = null;
@@ -4120,7 +4189,8 @@ function randomGlowColor() {
             } catch(_) {}
             if (!url) return;
             statusEl.innerText = "Connecting to Stream...";
-            
+            try { stopNowPlayingPoll(); } catch (_) {}
+
             (function updateInitialStationTitle() {
                 let nameToShow = null;
                 if (currentStationIndex >= 0 && stations[currentStationIndex] && stations[currentStationIndex].url === url) {
@@ -4170,6 +4240,7 @@ function randomGlowColor() {
                 if(!state.isPlaying) startGame();
                 
                 radioRetryAttempts = 0;
+                try { restartNowPlayingPoll(url); } catch (_) {}
             }).catch(e => {
                 console.error("Stream playback failed:", e);
                 radioRetryAttempts = (radioRetryAttempts || 0) + 1;
@@ -4352,6 +4423,8 @@ function stopAllAndShowStart() {
     if (typeof hideRadioPanel === 'function') { try { hideRadioPanel(); } catch(e) {} }
     const sb = document.getElementById('station-banner');
     if (sb) { sb.classList.add('display-none'); }
+    try { stopNowPlayingPoll(); } catch (e) {}
+    try { clearNowPlayingICYBanner(); } catch (e) {}
     if (typeof hideWebm === 'function' && typeof webmOn !== 'undefined' && webmOn) {
         try { hideWebm(); } catch(e) {}
     }
@@ -8225,14 +8298,135 @@ function stopAllAndShowStart() {
 tiGlowColorRandBtn.addEventListener('click', () => {
     tiGlowColor.value = randomGlowColor();
 });
+
+        /** ICY/Shoutcast-style embedded metadata (StreamTitle). Requires stream + CORS to allow reading the body. */
+        function parseStreamTitleFromIcyBlock(raw) {
+            if (!raw) return null;
+            const s = String(raw).replace(/\0+$/g, '').trim();
+            let m = s.match(/StreamTitle\s*=\s*'((?:\\'|[^'])*)'/i);
+            if (m) return m[1].replace(/\\'/g, "'").trim();
+            m = s.match(/StreamTitle\s*=\s*"((?:\\"|[^"])*)"/i);
+            if (m) return m[1].replace(/\\"/g, '"').trim();
+            m = s.match(/StreamTitle=([^;]+);/i);
+            if (m) return m[1].replace(/^['"]|['"]$/g, '').trim();
+            return null;
+        }
+
+        async function readOneIcyStreamTitle(streamUrl) {
+            const ac = new AbortController();
+            const to = setTimeout(() => { try { ac.abort(); } catch (_) {} }, 10000);
+            let reader = null;
+            try {
+                const res = await fetch(streamUrl, {
+                    method: 'GET',
+                    headers: { 'Icy-MetaData': '1', Accept: '*/*' },
+                    mode: 'cors',
+                    cache: 'no-store',
+                    signal: ac.signal
+                });
+                if (!res.ok || !res.body) return null;
+                const metaintHdr = res.headers.get('icy-metaint') || res.headers.get('Icy-Metaint');
+                const metaint = parseInt(String(metaintHdr || ''), 10);
+                if (!Number.isFinite(metaint) || metaint < 1) return null;
+
+                reader = res.body.getReader();
+                const chunks = [];
+                let received = 0;
+                const need = metaint + 1 + 512;
+                while (received < need) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    if (value && value.length) {
+                        chunks.push(value);
+                        received += value.length;
+                    }
+                }
+                try { await reader.cancel(); } catch (_) {}
+                reader = null;
+
+                const all = new Uint8Array(received);
+                let pos = 0;
+                for (const c of chunks) {
+                    all.set(c, pos);
+                    pos += c.length;
+                }
+                if (all.length <= metaint) return null;
+                const metaByte = all[metaint];
+                const metaLen = metaByte * 16;
+                if (!metaLen) return null;
+                const metaStart = metaint + 1;
+                if (all.length < metaStart + metaLen) return null;
+                const decoded = new TextDecoder('utf-8', { fatal: false }).decode(all.slice(metaStart, metaStart + metaLen));
+                return parseStreamTitleFromIcyBlock(decoded);
+            } catch (_) {
+                return null;
+            } finally {
+                clearTimeout(to);
+                try { if (reader) await reader.cancel(); } catch (_) {}
+            }
+        }
+
+        function clearNowPlayingICYBanner() {
+            currentNowPlayingICY = '';
+            if (stationBannerNowplayingEl) stationBannerNowplayingEl.textContent = '';
+            if (stationBannerMetaWrap) stationBannerMetaWrap.classList.add('display-none');
+        }
+
+        function applyNowPlayingICYTitle(title) {
+            const t = title && String(title).trim();
+            if (!t) {
+                clearNowPlayingICYBanner();
+                return;
+            }
+            currentNowPlayingICY = t;
+            if (stationBannerNowplayingEl) stationBannerNowplayingEl.textContent = t;
+            if (stationBannerMetaWrap) stationBannerMetaWrap.classList.remove('display-none');
+        }
+
+        function stopNowPlayingPoll() {
+            if (nowPlayingPollTimer) {
+                clearInterval(nowPlayingPollTimer);
+                nowPlayingPollTimer = null;
+            }
+            nowPlayingPollUrl = '';
+        }
+
+        function restartNowPlayingPoll(streamUrl) {
+            stopNowPlayingPoll();
+            if (!streamUrl || typeof streamUrl !== 'string') return;
+            if (!/^https?:\/\//i.test(streamUrl)) return;
+            nowPlayingPollUrl = streamUrl;
+            const tick = async () => {
+                try {
+                    if (!state || !state.isPlaying) return;
+                    if (!audioEl || audioEl.src !== streamUrl) return;
+                    if (audioEl.paused) return;
+                    if (icyPollBusy) return;
+                    icyPollBusy = true;
+                    const ttl = await readOneIcyStreamTitle(streamUrl);
+                    if (ttl && audioEl && audioEl.src === streamUrl) applyNowPlayingICYTitle(ttl);
+                } catch (_) {
+                } finally {
+                    icyPollBusy = false;
+                }
+            };
+            tick();
+            nowPlayingPollTimer = setInterval(tick, 26000);
+        }
+
         function showStationBanner(text) {
-            stationBanner.textContent = text || '';
-            if(!text) return;
+            const nm = text || '';
+            if (stationBannerNameEl) stationBannerNameEl.textContent = nm;
+            else stationBanner.textContent = nm;
+            clearNowPlayingICYBanner();
+            if (!nm) return;
             stationBanner.classList.remove('display-none');
             stationBanner.style.opacity = '1';
             stationBanner.style.pointerEvents = 'auto';
-            // Auto-hide after a short display even if no mouse movement occurs
-            if (stationBannerTimer) { clearTimeout(stationBannerTimer); stationBannerTimer = null; }
+            if (stationBannerTimer) {
+                clearTimeout(stationBannerTimer);
+                stationBannerTimer = null;
+            }
             stationBannerTimer = setTimeout(() => {
                 stationBanner.style.opacity = '0';
                 stationBanner.style.pointerEvents = 'none';
@@ -8277,12 +8471,25 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             });
         }
         // Station banner now triggers random station
-        stationBanner.title = "Click: random station";
+        stationBanner.title = "Click: random station (not on Shazam)";
         stationBanner.addEventListener('click', (e) => {
+            if (e.target.closest && e.target.closest('#btn-banner-shazam')) return;
             e.stopPropagation();
             if (uiLocked) return;
             pickRandomStation();
         });
+        if (btnBannerShazam) {
+            btnBannerShazam.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const q = (currentNowPlayingICY || '').trim();
+                if (!q) return;
+                const url = 'https://www.shazam.com/search?q=' + encodeURIComponent(q);
+                try {
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                } catch (_) {}
+            });
+        }
         document.addEventListener('click', (e) => {
             if (radioPanel && !radioPanel.classList.contains('display-none')) {
                 if(!radioPanel.contains(e.target) && e.target !== radioQuickBtn) {
