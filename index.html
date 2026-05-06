@@ -5456,7 +5456,18 @@ function stopAllAndShowStart() {
                 const bindVisualSwitch = (id, name) => {
                     const el = root.querySelector('#' + id);
                     if (!el) return;
-                    el.addEventListener('click', () => switchVisualByName(name), sig);
+                    el.addEventListener('click', (e) => {
+                        try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                        // Prevent global canvas click handler from treating this as a random-station click
+                        try { window.__suppressNextClick = true; } catch(_) {}
+                        try {
+                            if (window.__randomClickTimer) {
+                                clearTimeout(window.__randomClickTimer);
+                                window.__randomClickTimer = null;
+                            }
+                        } catch(_) {}
+                        switchVisualByName(name);
+                    }, sig);
                 };
                 bindVisualSwitch('dj-vis-blank', 'Blank');
                 bindVisualSwitch('dj-vis-bars', 'Audio Bars');
