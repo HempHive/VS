@@ -408,6 +408,10 @@
             border: 2px solid #D4AF37;
             box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.35);
         }
+        #dj-visual-root #dj-b-video-local {
+            border: 2px solid #39FF14;
+            box-shadow: 0 0 6px rgba(57, 255, 20, 0.55), 0 0 0 1px rgba(57, 255, 20, 0.35);
+        }
         .dj-deck-b-queue-panel .dj-media-list {
             list-style: none;
             margin: 0;
@@ -6616,7 +6620,7 @@ function stopAllAndShowStart() {
                     const btnRestart = mkBtn('Restart', 'Restart current video');
                     const btnPlay = mkBtn('Play', 'Play/Pause current video');
                     const btnNext = mkBtn('Next', 'Next known video source');
-                    const btnStop = mkBtn('Stop', 'Stop playback; disable loop/shuffle; idle logo or blank');
+                    const btnStop = mkBtn('Stop', 'Stop playback; disable loop/shuffle; clear video until you press Play or Load');
                     ctrls.appendChild(btnRestart);
                     ctrls.appendChild(btnPlay);
                     ctrls.appendChild(btnNext);
@@ -6664,12 +6668,23 @@ function stopAllAndShowStart() {
                         });
                     };
 
+                    const applyDeckBVideoStopped = () => {
+                        this.showDeckBVisualBackButton('Video');
+                        try {
+                            vid.pause();
+                            vid.removeAttribute('src');
+                            vid.load();
+                        } catch (_) {}
+                        try { vid.loop = false; } catch (_) {}
+                        btnPlay.textContent = 'Play';
+                    };
+
                     const applyCurrent = () => {
                         this.deckBVideoList = mediaVideoQueue.length
                             ? mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }))
                             : getDeckBVideoCandidates();
                         if (deckBVideoUserIdle) {
-                            tryLogoIdle();
+                            applyDeckBVideoStopped();
                             return;
                         }
                         if (!this.deckBVideoList.length) {
@@ -6694,8 +6709,26 @@ function stopAllAndShowStart() {
                         vid.play().then(() => { btnPlay.textContent = 'Pause'; }).catch(() => { btnPlay.textContent = 'Play'; });
                     });
                     btnPlay.addEventListener('click', () => {
-                        if (vid.paused) vid.play().then(() => { btnPlay.textContent = 'Pause'; }).catch(() => { btnPlay.textContent = 'Play'; });
-                        else { vid.pause(); btnPlay.textContent = 'Play'; }
+                        if (!vid.paused) {
+                            vid.pause();
+                            btnPlay.textContent = 'Play';
+                            return;
+                        }
+                        const noSrc = !vid.getAttribute('src');
+                        if (deckBVideoUserIdle && noSrc) {
+                            this.deckBVideoList = mediaVideoQueue.length
+                                ? mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }))
+                                : getDeckBVideoCandidates();
+                            if (this.deckBVideoList.length) {
+                                deckBVideoUserIdle = false;
+                                applyCurrent();
+                            } else {
+                                deckBVideoUserIdle = false;
+                                tryLogoIdle();
+                            }
+                            return;
+                        }
+                        vid.play().then(() => { btnPlay.textContent = 'Pause'; }).catch(() => { btnPlay.textContent = 'Play'; });
                     });
                     btnNext.addEventListener('click', () => {
                         deckBVideoUserIdle = false;
@@ -6752,9 +6785,8 @@ function stopAllAndShowStart() {
                         deckBVideoLoopEnabled = false;
                         deckBVideoShuffleEnabled = false;
                         deckBVideoUserIdle = true;
-                        try { vid.pause(); } catch (_) {}
                         try { this.refreshQueueUi(); } catch (_) {}
-                        tryLogoIdle();
+                        applyDeckBVideoStopped();
                     });
                     if (btnLoadQA) btnLoadQA.addEventListener('click', () => {
                         const src = urlOrPendingToEntry();
@@ -6791,6 +6823,7 @@ function stopAllAndShowStart() {
                     vid.addEventListener('play', () => { btnPlay.textContent = 'Pause'; });
                     vid.addEventListener('pause', () => { btnPlay.textContent = 'Play'; });
                     vid.addEventListener('ended', () => {
+                        if (deckBVideoUserIdle) return;
                         if (deckBVideoLoopEnabled) {
                             try { vid.currentTime = 0; vid.play().catch(() => {}); } catch (_) {}
                             return;
