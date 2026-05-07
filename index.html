@@ -219,6 +219,21 @@
             color: #fff;
             cursor: pointer;
         }
+        .dj-deck-b-queue-panel li.dj-queue-item button.dj-queue-play {
+            flex-shrink: 0;
+            padding: 2px 8px;
+            font-size: 11px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(0, 0, 0, 0.25);
+            color: #fff;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .dj-deck-b-queue-panel li.dj-queue-item button.dj-queue-play:hover {
+            background: rgba(80, 255, 170, 0.18);
+            border-color: rgba(160, 255, 210, 0.55);
+        }
         .dj-deck-b-queue-panel li.dj-queue-item button.dj-queue-remove:hover {
             background: rgba(255, 80, 80, 0.35);
             border-color: rgba(255, 160, 160, 0.45);
@@ -4943,6 +4958,47 @@ function randomGlowColor() {
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
 
+        function playQueuedTrackNow(deckKey, index) {
+            initAudio();
+            const q = deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
+            if (index < 0 || index >= q.length) return;
+            const item = q.splice(index, 1)[0];
+            if (!item || !item.url) return;
+            try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+            try {
+                if (deckKey === 'b') {
+                    state.deckSourceMode.b = 'local';
+                    revokeBlobSrc(audioElB);
+                    try { audioElB.pause(); } catch (_) {}
+                    audioElB.src = item.url;
+                    audioElB.play().then(() => {
+                        connectDeckMediaToEq('b');
+                        try {
+                            if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
+                                state.activeVisualizer.visualizer.connectAudio(state.analyserNode);
+                            }
+                        } catch (_) {}
+                        if (!state.isPlaying) startGame();
+                        try { if (typeof updateMixBStatus === 'function') updateMixBStatus(); } catch (_) {}
+                    }).catch(() => {});
+                } else {
+                    state.deckSourceMode.a = 'local';
+                    revokeBlobSrc(audioEl);
+                    try { audioEl.pause(); } catch (_) {}
+                    audioEl.src = item.url;
+                    audioEl.play().then(() => {
+                        connectDeckMediaToEq('a');
+                        try {
+                            if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
+                                state.activeVisualizer.visualizer.connectAudio(state.analyserNode);
+                            }
+                        } catch (_) {}
+                        if (!state.isPlaying) startGame();
+                    }).catch(() => {});
+                }
+            } catch (_) {}
+        }
+
         function resetDeckFileQueuesAndRevoke() {
             revokeBlobSrc(audioEl);
             revokeBlobSrc(audioElB);
@@ -5861,6 +5917,16 @@ function stopAllAndShowStart() {
                             const nameSpan = document.createElement('span');
                             nameSpan.className = 'dj-queue-name';
                             nameSpan.textContent = item.name || 'Track';
+                            const play = document.createElement('button');
+                            play.type = 'button';
+                            play.className = 'dj-queue-play';
+                            play.textContent = '▹';
+                            play.title = 'Play this track now';
+                            play.addEventListener('click', (ev) => {
+                                try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                                playQueuedTrackNow(deckKey, idx);
+                                try { this.refreshQueueUi(); } catch (_) {}
+                            });
                             const rm = document.createElement('button');
                             rm.type = 'button';
                             rm.className = 'dj-queue-remove';
@@ -5873,6 +5939,7 @@ function stopAllAndShowStart() {
                             });
                             li.appendChild(idxSpan);
                             li.appendChild(nameSpan);
+                            li.appendChild(play);
                             li.appendChild(rm);
                             ul.appendChild(li);
                         });
@@ -8995,7 +9062,8 @@ function stopAllAndShowStart() {
                     state.activeVisualizer &&
                     (state.activeVisualizer.deckBVizMode === 'bars' ||
                      state.activeVisualizer.deckBVizMode === 'projectm' ||
-                     state.activeVisualizer.deckBVizMode === 'blank')
+                     state.activeVisualizer.deckBVizMode === 'blank' ||
+                     state.activeVisualizer.deckBQueueVisible)
                 );
                 // In DJ mode: only show 🎧 when Deck B visual layer is active, as a quick "return to controls".
                 btn.classList.toggle('display-none', onDj && !deckBVisualActive);
@@ -9063,9 +9131,11 @@ function stopAllAndShowStart() {
                         state.activeVisualizer &&
                         (state.activeVisualizer.deckBVizMode === 'bars' ||
                          state.activeVisualizer.deckBVizMode === 'projectm' ||
-                         state.activeVisualizer.deckBVizMode === 'blank')
+                         state.activeVisualizer.deckBVizMode === 'blank' ||
+                         state.activeVisualizer.deckBQueueVisible)
                     );
                     if (deckBVisualActive) {
+                        try { if (state.activeVisualizer.deckBQueueVisible && typeof state.activeVisualizer.hideDeckBQueueView === 'function') state.activeVisualizer.hideDeckBQueueView(); } catch (_) {}
                         if (typeof state.activeVisualizer.tearDownDeckBViz === 'function') {
                             state.activeVisualizer.tearDownDeckBViz();
                         }
