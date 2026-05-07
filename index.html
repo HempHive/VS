@@ -414,6 +414,7 @@
             background: rgba(0, 0, 0, 0.55);
             border-radius: 10px;
             overflow: hidden;
+            pointer-events: auto;
         }
         #dj-visual-root .dj-video-player {
             width: 100%;
@@ -448,7 +449,7 @@
             left: 10px;
             right: 10px;
             display: grid;
-            grid-template-columns: 1fr auto auto auto auto;
+            grid-template-columns: auto 1fr auto auto auto;
             gap: 6px;
             align-items: center;
             z-index: 2;
@@ -456,6 +457,7 @@
             border-radius: 8px;
             border: 1px solid rgba(255,255,255,0.2);
             background: rgba(0,0,0,0.52);
+            pointer-events: auto;
         }
         #dj-visual-root .dj-video-loader-input {
             width: 100%;
@@ -6492,10 +6494,6 @@ function stopAllAndShowStart() {
                     shell.className = 'dj-video-shell';
                     const loader = document.createElement('div');
                     loader.className = 'dj-video-loader';
-                    const loadInput = document.createElement('input');
-                    loadInput.className = 'dj-video-loader-input';
-                    loadInput.type = 'text';
-                    loadInput.placeholder = 'Paste video URL';
                     const mkBtn = (label, title) => {
                         const b = document.createElement('button');
                         b.type = 'button';
@@ -6504,12 +6502,16 @@ function stopAllAndShowStart() {
                         b.title = title;
                         return b;
                     };
-                    const btnLoadPlay = mkBtn('P', 'Load and play video URL');
+                    const btnLoadUrl = mkBtn('Load', 'Load URL/local into Deck B video player');
+                    const loadInput = document.createElement('input');
+                    loadInput.className = 'dj-video-loader-input';
+                    loadInput.type = 'text';
+                    loadInput.placeholder = 'Paste video URL';
                     const btnLoadQA = mkBtn('A', 'Load into Deck A queue');
                     const btnLoadQB = mkBtn('B', 'Load into Deck B queue');
-                    const btnLoadFile = mkBtn('F', 'Pick local video file');
+                    const btnLoadFile = mkBtn('Local', 'Pick local video file');
+                    loader.appendChild(btnLoadUrl);
                     loader.appendChild(loadInput);
-                    loader.appendChild(btnLoadPlay);
                     loader.appendChild(btnLoadQA);
                     loader.appendChild(btnLoadQB);
                     loader.appendChild(btnLoadFile);
@@ -6585,7 +6587,7 @@ function stopAllAndShowStart() {
                         }
                         return null;
                     };
-                    btnLoadPlay.addEventListener('click', () => {
+                    btnLoadUrl.addEventListener('click', () => {
                         const src = urlOrPendingToEntry();
                         if (!src) return;
                         if (src.type === 'url') {
@@ -6627,7 +6629,7 @@ function stopAllAndShowStart() {
                     loadInput.addEventListener('keydown', (ev) => {
                         if (ev.key !== 'Enter') return;
                         try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
-                        btnLoadPlay.click();
+                        btnLoadUrl.click();
                     });
                     vid.addEventListener('play', () => { btnPlay.textContent = 'Pause'; });
                     vid.addEventListener('pause', () => { btnPlay.textContent = 'Play'; });
