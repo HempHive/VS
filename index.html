@@ -5945,6 +5945,7 @@ function stopAllAndShowStart() {
                         if (barsA) barsA.classList.remove('deck-b-active');
                         if (pmA) pmA.classList.remove('deck-b-active');
                         if (blankA) blankA.classList.remove('deck-b-active');
+                        try { updateDjDecksShortcutVisibility(); } catch (_) {}
                         return;
                     }
                     const m = this.deckBVizMode || 'idle';
@@ -5954,6 +5955,7 @@ function stopAllAndShowStart() {
                     if (barsA) barsA.classList.toggle('deck-b-active', m === 'bars');
                     if (pmA) pmA.classList.toggle('deck-b-active', m === 'projectm');
                     if (blankA) blankA.classList.toggle('deck-b-active', m === 'blank');
+                    try { updateDjDecksShortcutVisibility(); } catch (_) {}
                 } catch (_) {}
             }
 
@@ -8988,7 +8990,16 @@ function stopAllAndShowStart() {
                 const btn = document.getElementById('btn-dj-decks');
                 if (!btn) return;
                 const onDj = !!(state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks');
-                btn.classList.toggle('display-none', onDj);
+                const deckBVisualActive = !!(
+                    onDj &&
+                    state.activeVisualizer &&
+                    (state.activeVisualizer.deckBVizMode === 'bars' ||
+                     state.activeVisualizer.deckBVizMode === 'projectm' ||
+                     state.activeVisualizer.deckBVizMode === 'blank')
+                );
+                // In DJ mode: only show 🎧 when Deck B visual layer is active, as a quick "return to controls".
+                btn.classList.toggle('display-none', onDj && !deckBVisualActive);
+                btn.title = deckBVisualActive ? 'Return Deck B controls' : 'Open DJ Decks visual';
             } catch (_) {}
         }
 
@@ -9045,6 +9056,29 @@ function stopAllAndShowStart() {
             btnDjDecksShortcut.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                try {
+                    const onDj = !!(state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks');
+                    const deckBVisualActive = !!(
+                        onDj &&
+                        state.activeVisualizer &&
+                        (state.activeVisualizer.deckBVizMode === 'bars' ||
+                         state.activeVisualizer.deckBVizMode === 'projectm' ||
+                         state.activeVisualizer.deckBVizMode === 'blank')
+                    );
+                    if (deckBVisualActive) {
+                        if (typeof state.activeVisualizer.tearDownDeckBViz === 'function') {
+                            state.activeVisualizer.tearDownDeckBViz();
+                        }
+                        if (typeof state.activeVisualizer.syncDeckBVisualButtons === 'function') {
+                            state.activeVisualizer.syncDeckBVisualButtons();
+                        }
+                        if (typeof state.activeVisualizer.updateStationTitles === 'function') {
+                            state.activeVisualizer.updateStationTitles();
+                        }
+                        resetIdleTimer();
+                        return;
+                    }
+                } catch (_) {}
                 const idx = modes.findIndex((m) => m && m.name === 'DJ Decks');
                 if (idx >= 0) loadMode(idx);
                 resetIdleTimer();
