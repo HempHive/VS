@@ -6205,14 +6205,34 @@ function stopAllAndShowStart() {
                     } else if (audioEl && audioEl.src && typeof deriveTitleFromUrl === 'function') {
                         na = deriveTitleFromUrl(audioEl.src);
                     }
-                    let nb = '—';
-                    if (stations.length && typeof currentStationBIndex === 'number' && stations[currentStationBIndex]) {
-                        nb = stations[currentStationBIndex].name || nb;
+                    let nb = 'Deck B';
+                    const bPlaying = !!(audioElB && audioElB.src && !audioElB.paused && !audioElB.ended);
+                    const srcB = (audioElB && String(audioElB.currentSrc || audioElB.src || '')) || '';
+                    const isBlobB = srcB.startsWith('blob:');
+                    if (bPlaying) {
+                        if ((state.deckSourceMode && state.deckSourceMode.b === 'local') || isBlobB) {
+                            nb = 'Local file';
+                        } else if (stations.length) {
+                            // Match playRadioB: honour mix panel select, clamp (stale index after radio.txt reload)
+                            let idxB = (typeof currentStationBIndex === 'number' && !isNaN(currentStationBIndex)) ? currentStationBIndex : 0;
+                            if (typeof mixStationB !== 'undefined' && mixStationB && mixStationB.value !== undefined && mixStationB.value !== '') {
+                                const pv = parseInt(mixStationB.value, 10);
+                                if (!isNaN(pv)) idxB = pv;
+                            }
+                            idxB = Math.max(0, Math.min(stations.length - 1, idxB));
+                            const stB = stations[idxB];
+                            if (stB) {
+                                const nm = stB.name && String(stB.name).trim();
+                                nb = nm || (stB.url && typeof deriveTitleFromUrl === 'function' ? deriveTitleFromUrl(stB.url) : 'Deck B');
+                            }
+                        }
+                        if (nb === '—' && srcB && typeof deriveTitleFromUrl === 'function' && !isBlobB) {
+                            nb = deriveTitleFromUrl(srcB);
+                        }
                     }
                     if (this.els.titleA) this.els.titleA.textContent = na;
                     if (this.els.titleB) {
                         this.els.titleB.textContent = nb;
-                        this.els.titleB.classList.toggle('display-none', nb === '—');
                     }
                 } catch(_) {}
             }
@@ -9636,6 +9656,9 @@ function stopAllAndShowStart() {
                 if ((typeof currentStationIndex !== 'number' || currentStationIndex < 0) && stations.length > 0) {
                     currentStationIndex = 0;
                     if (radioInputEl) radioInputEl.value = stations[0].url;
+                }
+                if (stations.length > 0 && typeof currentStationBIndex === 'number' && currentStationBIndex >= stations.length) {
+                    currentStationBIndex = stations.length - 1;
                 }
                 renderStationList();
                 try { refreshMixStationB(); } catch(_) {}
