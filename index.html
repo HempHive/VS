@@ -147,11 +147,11 @@
             pointer-events: none;
             letter-spacing: 0.04em;
         }
-        /* Jog | 4 EQ slots | 3×4 buttons — rows line up */
+        /* Jog | deck volume slider | button block */
         #dj-visual-root .dj-deck-mosaic {
             display: grid;
             grid-template-columns: auto minmax(36px, 44px) repeat(3, minmax(0, 1fr));
-            grid-template-rows: repeat(4, minmax(30px, auto));
+            grid-template-rows: repeat(5, minmax(30px, auto));
             gap: 1px;
             width: 100%;
             align-items: center;
@@ -162,20 +162,41 @@
             justify-self: center;
             align-self: center;
         }
-        #dj-visual-root .dj-deck-mosaic > .eq-col:nth-child(2) { grid-column: 2; grid-row: 1; }
-        #dj-visual-root .dj-deck-mosaic > .eq-col:nth-child(3) { grid-column: 2; grid-row: 2; }
-        #dj-visual-root .dj-deck-mosaic > .eq-col:nth-child(4) { grid-column: 2; grid-row: 3; }
-        #dj-visual-root .dj-deck-mosaic > .eq-col:nth-child(5) { grid-column: 2; grid-row: 4; }
+        #dj-visual-root .dj-deck-mosaic > .dj-deck-vol-col {
+            grid-column: 2;
+            grid-row: 1 / 6;
+        }
         #dj-visual-root .dj-deck-mosaic > .dj-btn-block {
             grid-column: 3 / 6;
-            grid-row: 1 / 5;
+            grid-row: 1 / 6;
             min-width: 0;
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            grid-template-rows: repeat(4, minmax(30px, auto));
+            grid-template-rows: repeat(5, minmax(30px, auto));
             gap: 1px;
             align-items: stretch;
             justify-items: stretch;
+        }
+        #dj-visual-root .dj-btn-block .dj-knob-top-row {
+            grid-column: 1 / 4;
+            grid-row: 1;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 2px;
+            align-items: center;
+        }
+        #dj-visual-root .dj-btn-block .dj-knob-top-row .eq-col {
+            width: auto;
+            gap: 1px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #dj-visual-root .dj-btn-block .dj-knob-top-row .eq-label {
+            font-size: 8px;
+            line-height: 1;
+            text-transform: uppercase;
         }
         #dj-visual-root .dj-deck-mosaic .eq-col {
             width: auto;
@@ -184,6 +205,50 @@
         #dj-visual-root .dj-deck-mosaic .knob-wrap {
             width: 30px;
             height: 30px;
+        }
+        #dj-visual-root .dj-deck-vol-col {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+        }
+        #dj-visual-root .dj-deck-vol-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            min-height: 220px;
+        }
+        #dj-visual-root .dj-deck-vol {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 210px;
+            height: 14px;
+            transform: rotate(-90deg);
+            transform-origin: center center;
+            background: rgba(255,255,255,0.08);
+            border-radius: 7px;
+            border: none;
+        }
+        #dj-visual-root .dj-deck-vol::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 46px;
+            height: 46px;
+            background: transparent url('vol.png') center center / 100% 100% no-repeat;
+            border: none;
+            border-radius: 50%;
+            margin-top: -16px;
+            box-shadow: none;
+        }
+        #dj-visual-root .dj-deck-vol::-moz-range-thumb {
+            width: 46px;
+            height: 46px;
+            background: transparent url('vol.png') center center / 100% 100% no-repeat;
+            border: none;
+            border-radius: 50%;
+            box-shadow: none;
         }
         .dj-deck {
             flex: 1;
@@ -585,8 +650,7 @@
             align-items: stretch;
             min-width: 100px;
         }
-        #dj-visual-root .dj-controls-grid,
-        #dj-visual-root .dj-btn-block {
+        #dj-visual-root .dj-controls-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 8px;
@@ -5689,23 +5753,18 @@ function stopAllAndShowStart() {
           <div class="dj-jog-wrap">
             <div class="dj-jog" id="dj-jog-a" aria-hidden="true"><span class="dj-jog-marker"></span></div>
           </div>
-          <div class="eq-col eq-strip" aria-label="Deck A gain">
-            <div class="knob-wrap" id="dj-knob-a-gain" style="--knob-color:#FF0B55"><div class="knob-indicator"></div><div class="knob-value">1</div></div>
-            <div class="eq-label" style="color:#FF0B55">Gain</div>
-          </div>
-          <div class="eq-col eq-strip" aria-label="Deck A high">
-            <div class="knob-wrap" id="dj-knob-a-high" style="--knob-color:#F94C10"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
-            <div class="eq-label" style="color:#F94C10">Hi</div>
-          </div>
-          <div class="eq-col eq-strip" aria-label="Deck A mid">
-            <div class="knob-wrap" id="dj-knob-a-mid" style="--knob-color:#9BEC00"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
-            <div class="eq-label" style="color:#9BEC00">Mid</div>
-          </div>
-          <div class="eq-col eq-strip" aria-label="Deck A low">
-            <div class="knob-wrap" id="dj-knob-a-low" style="--knob-color:#06D001"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
-            <div class="eq-label" style="color:#06D001">Lo</div>
+          <div class="dj-deck-vol-col" aria-label="Deck A volume">
+            <div class="dj-deck-vol-wrap">
+              <input type="range" id="dj-deck-a-vol" class="dj-deck-vol" min="0" max="1" step="0.01" value="1" />
+            </div>
           </div>
           <div class="dj-controls-grid dj-btn-block" aria-label="Deck A visuals, effects, and transport">
+            <div class="dj-knob-top-row" aria-label="Deck A EQ">
+              <div class="eq-col eq-strip" aria-label="Deck A low"><div class="knob-wrap" id="dj-knob-a-low" style="--knob-color:#06D001"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label" style="color:#06D001">Lo</div></div>
+              <div class="eq-col eq-strip" aria-label="Deck A mid"><div class="knob-wrap" id="dj-knob-a-mid" style="--knob-color:#9BEC00"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label" style="color:#9BEC00">Med</div></div>
+              <div class="eq-col eq-strip" aria-label="Deck A high"><div class="knob-wrap" id="dj-knob-a-high" style="--knob-color:#F94C10"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label" style="color:#F94C10">High</div></div>
+              <div class="eq-col eq-strip" aria-label="Deck A gain"><div class="knob-wrap" id="dj-knob-a-gain" style="--knob-color:#FF0B55"><div class="knob-indicator"></div><div class="knob-value">1</div></div><div class="eq-label" style="color:#FF0B55">Gain</div></div>
+            </div>
             <button type="button" class="btn dj-fx" id="dj-vis-bars" title="Switch to Audio Bars visual">AUDIO:BAR</button>
             <button type="button" class="btn dj-fx" id="dj-vis-blank" title="Switch to no visual (Blank mode)">NO VISUAL</button>
             <button type="button" class="btn dj-fx" id="dj-vis-pm2" title="Switch visual to ProjectM v2">ProjectM</button>
@@ -5744,23 +5803,18 @@ function stopAllAndShowStart() {
               <div class="dj-jog-wrap">
                 <div class="dj-jog" id="dj-jog-b" aria-hidden="true"><span class="dj-jog-marker"></span></div>
               </div>
-              <div class="eq-col eq-strip" aria-label="Deck B gain">
-                <div class="knob-wrap" id="dj-knob-b-gain" style="--knob-color:#5800FF"><div class="knob-indicator"></div><div class="knob-value">1</div></div>
-                <div class="eq-label" style="color:#5800FF">Gain</div>
-              </div>
-              <div class="eq-col eq-strip" aria-label="Deck B high">
-                <div class="knob-wrap" id="dj-knob-b-high" style="--knob-color:#f0f"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
-                <div class="eq-label" style="color:#f0f">Hi</div>
-              </div>
-              <div class="eq-col eq-strip" aria-label="Deck B mid">
-                <div class="knob-wrap" id="dj-knob-b-mid" style="--knob-color:#0ff"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
-                <div class="eq-label" style="color:#0ff">Mid</div>
-              </div>
-              <div class="eq-col eq-strip" aria-label="Deck B low">
-                <div class="knob-wrap" id="dj-knob-b-low" style="--knob-color:#9AB3F5"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
-                <div class="eq-label" style="color:#9AB3F5">Lo</div>
+              <div class="dj-deck-vol-col" aria-label="Deck B volume">
+                <div class="dj-deck-vol-wrap">
+                  <input type="range" id="dj-deck-b-vol" class="dj-deck-vol" min="0" max="1" step="0.01" value="1" />
+                </div>
               </div>
               <div class="dj-controls-grid dj-btn-block" aria-label="Deck B visual screen &amp; transport">
+                <div class="dj-knob-top-row" aria-label="Deck B EQ">
+                  <div class="eq-col eq-strip" aria-label="Deck B low"><div class="knob-wrap" id="dj-knob-b-low" style="--knob-color:#9AB3F5"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label" style="color:#9AB3F5">Lo</div></div>
+                  <div class="eq-col eq-strip" aria-label="Deck B mid"><div class="knob-wrap" id="dj-knob-b-mid" style="--knob-color:#0ff"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label" style="color:#0ff">Med</div></div>
+                  <div class="eq-col eq-strip" aria-label="Deck B high"><div class="knob-wrap" id="dj-knob-b-high" style="--knob-color:#f0f"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label" style="color:#f0f">High</div></div>
+                  <div class="eq-col eq-strip" aria-label="Deck B gain"><div class="knob-wrap" id="dj-knob-b-gain" style="--knob-color:#5800FF"><div class="knob-indicator"></div><div class="knob-value">1</div></div><div class="eq-label" style="color:#5800FF">Gain</div></div>
+                </div>
                 <button type="button" class="btn dj-fx" id="dj-b-vis-bars" title="Show Deck A audio bars here (replaces controls)">AUDIO:BAR</button>
                 <button type="button" class="btn dj-fx" id="dj-b-vis-blank" title="Return to deck controls">NO VISUAL</button>
                 <button type="button" class="btn dj-fx" id="dj-b-vis-pm2" title="Show ProjectM driven by Deck A (replaces controls)">ProjectM</button>
@@ -5828,6 +5882,8 @@ function stopAllAndShowStart() {
                 this.els.fxHighB = root.querySelector('#dj-b-fx-high');
                 this.els.fxTrebleB = root.querySelector('#dj-b-fx-treble');
                 this.els.fxDistortB = root.querySelector('#dj-b-fx-distort');
+                this.els.deckVolA = root.querySelector('#dj-deck-a-vol');
+                this.els.deckVolB = root.querySelector('#dj-deck-b-vol');
                 const djCross = root.querySelector('#dj-crossfader');
 
                 const mirrorPairs = [
@@ -5859,6 +5915,30 @@ function stopAllAndShowStart() {
                         } catch (_) {}
                     }, sig);
                 }
+
+                const clampVol = (v) => Math.max(0, Math.min(1, Number(v) || 0));
+                const setDeckVolA = (v) => {
+                    const cv = clampVol(v);
+                    try { if (audioEl) audioEl.volume = cv; } catch (_) {}
+                };
+                const setDeckVolB = (v) => {
+                    const cv = clampVol(v);
+                    try { if (audioElB) audioElB.volume = cv; } catch (_) {}
+                };
+                try {
+                    if (this.els.deckVolA) {
+                        const initA = (audioEl && Number.isFinite(audioEl.volume)) ? audioEl.volume : 1;
+                        this.els.deckVolA.value = String(initA);
+                        setDeckVolA(initA);
+                        this.els.deckVolA.addEventListener('input', () => setDeckVolA(this.els.deckVolA.value), sig);
+                    }
+                    if (this.els.deckVolB) {
+                        const initB = (audioElB && Number.isFinite(audioElB.volume)) ? audioElB.volume : 1;
+                        this.els.deckVolB.value = String(initB);
+                        setDeckVolB(initB);
+                        this.els.deckVolB.addEventListener('input', () => setDeckVolB(this.els.deckVolB.value), sig);
+                    }
+                } catch (_) {}
 
                 if (this.els.visualBackBtn) {
                     this.els.visualBackBtn.addEventListener('click', (e) => {
