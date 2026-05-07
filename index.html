@@ -255,6 +255,42 @@
             line-height: 1.35;
             color: rgba(255, 255, 255, 0.45);
         }
+        .dj-deck-b-queue-panel .dj-station-cycle {
+            margin-top: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px;
+        }
+        .dj-deck-b-queue-panel .dj-station-cycle-head {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0 0 6px 0;
+        }
+        .dj-deck-b-queue-panel .dj-station-cycle-list {
+            max-height: min(26vh, 180px);
+            overflow: auto;
+            display: grid;
+            gap: 4px;
+        }
+        .dj-deck-b-queue-panel .dj-station-cycle-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 11px;
+            line-height: 1.2;
+            color: #fff;
+            user-select: none;
+        }
+        .dj-deck-b-queue-panel .dj-station-cycle-item input[type="checkbox"] {
+            accent-color: #D4AF37;
+        }
+        .dj-deck-b-queue-panel .dj-station-cycle-empty {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.55);
+        }
         .dj-deck-b-viz-mount {
             position: absolute;
             inset: 0;
@@ -3239,6 +3275,7 @@ const QUALITY = {
         const inpWebmOpacity = document.getElementById('inp-webm-opacity');
         const inpWebmDup = document.getElementById('inp-webm-dup');
         const stations = [];
+        const stationCycleEnabledByUrl = new Map();
         // Volume slider
         const volumeSlider = document.getElementById('volume-slider');
         const topBar = document.getElementById('top-bar');
@@ -3266,6 +3303,31 @@ const QUALITY = {
         let radioQuickHoldTimeout = null;
         // Guard to suppress unintended overlay-start when opening local file via "O"
         let suppressNextOverlayStartUntil = 0;
+        function syncStationCycleSelection() {
+            const seen = new Set();
+            stations.forEach((st) => {
+                if (!st || !st.url) return;
+                seen.add(st.url);
+                if (!stationCycleEnabledByUrl.has(st.url)) stationCycleEnabledByUrl.set(st.url, true);
+            });
+            Array.from(stationCycleEnabledByUrl.keys()).forEach((url) => {
+                if (!seen.has(url)) stationCycleEnabledByUrl.delete(url);
+            });
+        }
+        function getCycleEligibleStationIndexes(excludeIndex) {
+            if (!Array.isArray(stations) || stations.length === 0) return [];
+            syncStationCycleSelection();
+            const enabled = [];
+            stations.forEach((st, idx) => {
+                if (!st || !st.url) return;
+                if (stationCycleEnabledByUrl.get(st.url) !== false) enabled.push(idx);
+            });
+            if (!enabled.length) return [];
+            if (enabled.length > 1 && typeof excludeIndex === 'number') {
+                return enabled.filter((idx) => idx !== excludeIndex);
+            }
+            return enabled;
+        }
         const webmSettings = {
             scaleVw: 50,
             posXvw: 50,
@@ -3288,17 +3350,10 @@ const QUALITY = {
                 e.stopPropagation();
                 
                 if (!stations || stations.length === 0) return;
-
-                // Pick a random index
-                let idx = Math.floor(Math.random() * stations.length);
-                
-                // If possible, ensure it's different from the currently selected one
-                if (stations.length > 1) {
-                    const current = parseInt(mixStationB?.value || '-1', 10);
-                    while (idx === current) {
-                        idx = Math.floor(Math.random() * stations.length);
-                    }
-                }
+                const current = parseInt(mixStationB?.value || '-1', 10);
+                const eligible = getCycleEligibleStationIndexes(current);
+                if (!eligible.length) return;
+                const idx = eligible[Math.floor(Math.random() * eligible.length)];
 
                 // Update the Dropdown Visuals
                 if (mixStationB) {
@@ -5947,6 +6002,39 @@ function stopAllAndShowStart() {
                     fill(ulA, 'a');
                     fill(ulB, 'b');
                 } catch (_) {}
+                try { this.renderStationCycleUi(); } catch (_) {}
+            }
+
+            renderStationCycleUi() {
+                if (!this.root) return;
+                const listEl = this.root.querySelector('#dj-station-cycle-list');
+                if (!listEl) return;
+                listEl.innerHTML = '';
+                try { syncStationCycleSelection(); } catch (_) {}
+                if (!Array.isArray(stations) || stations.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'dj-station-cycle-empty';
+                    empty.textContent = 'No radio stations loaded.';
+                    listEl.appendChild(empty);
+                    return;
+                }
+                stations.forEach((st, idx) => {
+                    if (!st || !st.url) return;
+                    const row = document.createElement('label');
+                    row.className = 'dj-station-cycle-item';
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.checked = stationCycleEnabledByUrl.get(st.url) !== false;
+                    cb.setAttribute('aria-label', 'Cycle station ' + (st.name || ('Station ' + (idx + 1))));
+                    cb.addEventListener('change', () => {
+                        stationCycleEnabledByUrl.set(st.url, !!cb.checked);
+                    });
+                    const txt = document.createElement('span');
+                    txt.textContent = st.name || ('Station ' + (idx + 1));
+                    row.appendChild(cb);
+                    row.appendChild(txt);
+                    listEl.appendChild(row);
+                });
             }
 
             tearDownDeckBViz(opts) {
@@ -6321,14 +6409,13 @@ function stopAllAndShowStart() {
                 try {
                     if (!state || !state.fx) return;
                     const lon = !!state.fx.low.on;
-                    const bon = !!state.fx.bass.on;
                     const kon = !!(state.fx.tk && state.fx.tk.on);
                     const avatarOn = !!(typeof webmOn !== 'undefined' && webmOn);
                     const mixOpenUi = !!(mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open'));
                     const stationOpenUi = (typeof isTopMenuOpen === 'function') && isTopMenuOpen();
                     if (this.els.fxLow) this.els.fxLow.classList.toggle('on', lon);
                     if (this.els.fxLowB) this.els.fxLowB.classList.toggle('on', lon);
-                    if (this.els.fxBass) this.els.fxBass.classList.toggle('on', bon);
+                    if (this.els.queueA) this.els.queueA.classList.toggle('on', !!this.deckBQueueVisible);
                     if (this.els.queueB) this.els.queueB.classList.toggle('on', !!this.deckBQueueVisible);
                     if (this.els.fxTk) this.els.fxTk.classList.toggle('on', kon);
                     if (this.els.fxTkB) this.els.fxTkB.classList.toggle('on', kon);
@@ -6415,7 +6502,7 @@ function stopAllAndShowStart() {
 
             <button type="button" class="btn dj-fx" id="dj-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
             <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass pass (Mixer FX)">Bass-Pass</button>
+            <button type="button" class="btn dj-fx" id="dj-a-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
 
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
@@ -6499,7 +6586,10 @@ function stopAllAndShowStart() {
                 <button type="button" class="dj-queue-add" id="dj-queue-add-b">Add files…</button>
               </div>
             </div>
-            <p class="dj-queue-hint">“O” on the start screen adds to Deck A (multiple files supported). When a deck’s queue runs out, that deck returns to radio. Rand skips to the next queued track while in local mode.</p>
+            <div class="dj-station-cycle" aria-label="Station cycle filter">
+              <div class="dj-station-cycle-head">Radio station cycle list</div>
+              <div id="dj-station-cycle-list" class="dj-station-cycle-list"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -6545,7 +6635,7 @@ function stopAllAndShowStart() {
                 this.els.jogB = root.querySelector('#dj-jog-b');
                 this.els.fxLow = root.querySelector('#dj-fx-low');
                 this.els.fxTk = root.querySelector('#dj-fx-tk');
-                this.els.fxBass = root.querySelector('#dj-fx-bass');
+                this.els.queueA = root.querySelector('#dj-a-queue');
                 this.els.fxHighA = root.querySelector('#dj-fx-high');
                 this.els.fxTrebleA = root.querySelector('#dj-fx-treble');
                 this.els.fxDistortA = root.querySelector('#dj-fx-distort');
@@ -6638,15 +6728,6 @@ function stopAllAndShowStart() {
                         if (this.els.fxLowB) this.els.fxLowB.classList.toggle('on', on);
                     } catch (_) {}
                 };
-                const djToggleBass = () => {
-                    try {
-                        initAudio();
-                        if (typeof toggleFx !== 'function') return;
-                        toggleFx('bass', fxBass);
-                        const on = !!state.fx.bass.on;
-                        if (this.els.fxBass) this.els.fxBass.classList.toggle('on', on);
-                    } catch (_) {}
-                };
                 const djToggleTk = () => {
                     try {
                         initAudio();
@@ -6694,7 +6775,14 @@ function stopAllAndShowStart() {
 
                 if (this.els.fxLow) this.els.fxLow.addEventListener('click', djToggleLow, sig);
                 if (this.els.fxLowB) this.els.fxLowB.addEventListener('click', djToggleLow, sig);
-                if (this.els.fxBass) this.els.fxBass.addEventListener('click', djToggleBass, sig);
+                if (this.els.queueA) {
+                    this.els.queueA.addEventListener('click', (e) => {
+                        try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+                        try { window.__suppressNextClick = true; } catch (_) {}
+                        this.toggleDeckBQueuePanel();
+                        try { resetIdleTimer(); } catch (_) {}
+                    }, sig);
+                }
                 if (this.els.queueB) {
                     this.els.queueB.addEventListener('click', (e) => {
                         try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
@@ -7020,11 +7108,10 @@ function stopAllAndShowStart() {
                             return;
                         }
                         if (!stations || stations.length === 0) return;
-                        let idx = Math.floor(Math.random() * stations.length);
-                        if (stations.length > 1) {
-                            const cur = (typeof currentStationBIndex === 'number') ? currentStationBIndex : 0;
-                            while (idx === cur) idx = Math.floor(Math.random() * stations.length);
-                        }
+                        const cur = (typeof currentStationBIndex === 'number') ? currentStationBIndex : 0;
+                        const eligible = getCycleEligibleStationIndexes(cur);
+                        if (!eligible.length) return;
+                        const idx = eligible[Math.floor(Math.random() * eligible.length)];
                         currentStationBIndex = idx;
                         if (mixStationB) mixStationB.value = String(idx);
                         if (typeof playRadioB === 'function') playRadioB();
@@ -9790,8 +9877,10 @@ function stopAllAndShowStart() {
                 if (stations.length > 0 && typeof currentStationBIndex === 'number' && currentStationBIndex >= stations.length) {
                     currentStationBIndex = stations.length - 1;
                 }
+                syncStationCycleSelection();
                 renderStationList();
                 try { refreshMixStationB(); } catch(_) {}
+                try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
             } catch(e) {
                 console.warn('Failed to load radio.txt', e);
             }
@@ -9848,13 +9937,9 @@ function stopAllAndShowStart() {
 
         function pickRandomStation() {
             if(stations.length === 0) return;
-            let idx = currentStationIndex;
-            if(stations.length === 1) idx = 0;
-            else {
-                while(idx === currentStationIndex) {
-                    idx = Math.floor(Math.random() * stations.length);
-                }
-            }
+            const eligible = getCycleEligibleStationIndexes(currentStationIndex);
+            if (!eligible.length) return;
+            const idx = eligible[Math.floor(Math.random() * eligible.length)];
             setStation(idx);
         }
 
