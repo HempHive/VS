@@ -156,7 +156,8 @@
             grid-template-rows: repeat(6, minmax(30px, auto));
             gap: 1px;
             width: 100%;
-            align-items: center;
+            /* stretch so deck volume column spans full knob + button stack (center would shrink column to ~track height) */
+            align-items: stretch;
         }
         #dj-visual-root .dj-deck-mosaic > .dj-jog-wrap {
             grid-column: 1;
@@ -167,11 +168,15 @@
         #dj-visual-root .dj-deck-mosaic > .dj-deck-vol-col {
             grid-column: 2;
             grid-row: 1 / 7;
+            min-height: 0;
+            align-self: stretch;
         }
         #dj-visual-root .dj-deck-mosaic > .dj-btn-block {
             grid-column: 3 / 6;
             grid-row: 1 / 7;
             min-width: 0;
+            min-height: 0;
+            align-self: stretch;
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             grid-template-rows: repeat(6, minmax(30px, auto));
@@ -222,6 +227,7 @@
             width: 100%;
             height: 100%;
             min-height: 0;
+            overflow: visible;
         }
         #dj-visual-root .dj-deck-vol {
             -webkit-appearance: none;
@@ -5456,6 +5462,7 @@ function stopAllAndShowStart() {
                 this.deckBVizPmResize = null;
                 this.deckBVizBarsAnimId = null;
                 this.deckBVizResizeObs = null;
+                this.deckVolResizeObs = null;
             }
 
             tearDownDeckBViz() {
@@ -5718,15 +5725,10 @@ function stopAllAndShowStart() {
                 try {
                     const blocks = Array.from(this.root.querySelectorAll('.dj-btn-block'));
                     if (!blocks.length) return;
-                    const target = Math.max(...blocks.map((el) => {
-                        const blockH = Math.floor(el.getBoundingClientRect().height || 0);
-                        const knobRow = el.querySelector('.dj-knob-top-row');
-                        const knobRowH = knobRow ? Math.floor(knobRow.getBoundingClientRect().height || 0) : 0;
-                        // Full visual stack = button block + knobs sitting on top of it.
-                        return blockH + knobRowH;
-                    }));
+                    // Knob row is already inside .dj-btn-block — use its full height only.
+                    const target = Math.max(...blocks.map((el) => Math.floor(el.getBoundingClientRect().height || 0)));
                     if (!target || target <= 0) return;
-                    const len = Math.max(200, target + 16);
+                    const len = Math.max(200, target + 32); /* padding for vol.png thumb past track ends */
                     const volA = this.root.querySelector('#dj-deck-a-vol');
                     const volB = this.root.querySelector('#dj-deck-b-vol');
                     if (volA) volA.style.width = `${len}px`;
@@ -5745,6 +5747,7 @@ function stopAllAndShowStart() {
                     }
                 } catch (_) {}
                 this.syncDeckVolumeSliderLengths();
+                requestAnimationFrame(() => { try { this.syncDeckVolumeSliderLengths(); } catch (_) {} });
             }
 
             syncPlayLabels() {
@@ -5967,6 +5970,15 @@ function stopAllAndShowStart() {
                 this.onResize();
                 window.addEventListener('resize', this.resizeHandler);
                 window.addEventListener('orientationchange', this.resizeHandler);
+
+                try {
+                    if (typeof ResizeObserver !== 'undefined') {
+                        this.deckVolResizeObs = new ResizeObserver(() => {
+                            try { this.syncDeckVolumeSliderLengths(); } catch (_) {}
+                        });
+                        root.querySelectorAll('.dj-deck-mosaic').forEach((el) => this.deckVolResizeObs.observe(el));
+                    }
+                } catch (_) {}
 
                 try {
                     const vizLayer = root.querySelector('#dj-deck-b-viz-layer');
@@ -6542,6 +6554,10 @@ function stopAllAndShowStart() {
                     if (this.deckBVizResizeObs) {
                         this.deckBVizResizeObs.disconnect();
                         this.deckBVizResizeObs = null;
+                    }
+                    if (this.deckVolResizeObs) {
+                        this.deckVolResizeObs.disconnect();
+                        this.deckVolResizeObs = null;
                     }
                 } catch (_) {}
                 try { this.tearDownDeckBViz(); } catch (_) {}
