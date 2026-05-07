@@ -978,6 +978,8 @@
 		/* Per-letter pattern fill */
 		#logo-omni .logo-letter {
 			display: inline-block;
+			position: relative;
+			isolation: isolate;
 			color: transparent;
 			-webkit-text-fill-color: transparent;
 			-webkit-background-clip: text;
@@ -986,6 +988,51 @@
 			background-repeat: no-repeat; /* reuse but do not tile */
 			background-position: center center;
 			background-size: cover; /* fill the glyph area */
+			--omni-letter-border: rgba(255, 255, 255, 0.65);
+		}
+		/*
+		  Hover halo follows glyph curves: duplicate character behind with text-stroke + slight scale.
+		  Random stroke colour from JS (--omni-letter-border).
+		*/
+		#logo-omni .logo-letter::before {
+			content: attr(data-ch);
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			transform: translate(-50%, -52%) scale(1.09);
+			transform-origin: center center;
+			font: inherit;
+			font-weight: inherit;
+			line-height: 1;
+			text-transform: inherit;
+			letter-spacing: 0;
+			color: transparent;
+			-webkit-text-fill-color: transparent;
+			background: none !important;
+			-webkit-background-clip: unset !important;
+			background-clip: unset !important;
+			-webkit-text-stroke-width: clamp(2px, 0.042em, 8px);
+			-webkit-text-stroke-color: var(--omni-letter-border, rgba(255, 255, 255, 0.85));
+			paint-order: stroke fill;
+			pointer-events: none;
+			opacity: 0;
+			transition: opacity 0.55s ease-out;
+			z-index: -1;
+		}
+		/* Pulse scale while hovered (opacity stays 1) so outline fades out smoothly on mouseleave */
+		#logo-omni .logo-letter.omni-letter-hover-active::before {
+			opacity: 1;
+			animation: omniLetterContourPulse 1.35s ease-in-out infinite;
+		}
+		@keyframes omniLetterContourPulse {
+			0%, 100% { transform: translate(-50%, -52%) scale(1.055); }
+			50% { transform: translate(-50%, -52%) scale(1.115); }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			#logo-omni .logo-letter.omni-letter-hover-active::before {
+				animation: none;
+				opacity: 0.88;
+			}
 		}
 		#logo-omni.logo-animate {
 			animation: omniShimmer 1400ms ease forwards;
@@ -2237,7 +2284,7 @@
 
     <!-- START SCREEN -->
 	<div id="overlay" class="no-blur bg-lite">
-		<h1 id="logo-omni" data-text="OMNI&gt;"><span class="logo-letter logo-o">O</span><span class="logo-letter logo-m">M</span><span class="logo-letter">N</span><span class="logo-letter logo-midi">I</span><span class="logo-letter logo-start">&gt;</span></h1>
+		<h1 id="logo-omni" data-text="OMNI&gt;"><span class="logo-letter logo-o" data-ch="O">O</span><span class="logo-letter logo-m" data-ch="M">M</span><span class="logo-letter" data-ch="N">N</span><span class="logo-letter logo-midi" data-ch="I">I</span><span class="logo-letter logo-start" data-ch="&#62;">&gt;</span></h1>
 		<!-- Toggle URL input (shown via clicking 'N' in OMNI>) -->
 		<div id="url-flyover" class="is-hidden">
             <input type="text" id="radio-url" class="radio-input interactive" value="https://stream.bigfm.de/tomorrowland/mp3-128/" placeholder="Paste Stream URL">
@@ -3884,6 +3931,21 @@ function randomGlowColor() {
 			try {
 				const logo = document.getElementById('logo-omni');
 				if (!logo) return;
+				const randomOmniLetterBorder = () =>
+					'#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+				logo.querySelectorAll('.logo-letter').forEach((el) => {
+					el.addEventListener('mouseenter', () => {
+						try {
+							el.style.setProperty('--omni-letter-border', randomOmniLetterBorder());
+							el.classList.add('omni-letter-hover-active');
+						} catch (_) {}
+					});
+					el.addEventListener('mouseleave', () => {
+						try {
+							el.classList.remove('omni-letter-hover-active');
+						} catch (_) {}
+					});
+				});
 				const starts = logo.querySelectorAll('.logo-start');
 				starts.forEach((el) => {
 					el.style.cursor = 'pointer';
