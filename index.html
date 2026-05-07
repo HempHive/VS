@@ -264,9 +264,12 @@
         }
         .dj-deck-b-queue-panel .dj-queue-tools {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
             align-items: start;
+        }
+        @media (max-width: 980px) {
+            .dj-deck-b-queue-panel .dj-queue-tools { grid-template-columns: 1fr 1fr; }
         }
         @media (max-width: 700px) {
             .dj-deck-b-queue-panel .dj-queue-tools { grid-template-columns: 1fr; }
@@ -376,6 +379,41 @@
             min-width: 0;
             line-height: 1;
             width: auto;
+        }
+        .dj-deck-b-queue-panel .dj-media-queue {
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .dj-deck-b-queue-panel .dj-media-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+        }
+        .dj-deck-b-queue-panel .dj-media-head-actions {
+            display: inline-flex;
+            gap: 4px;
+        }
+        .dj-deck-b-queue-panel .dj-media-head-actions .dj-url-btn {
+            padding: 1px 5px;
+            font-size: 9px;
+            border-radius: 4px;
+            line-height: 1;
+        }
+        .dj-deck-b-queue-panel .dj-media-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: min(26vh, 190px);
+            overflow: auto;
         }
         #dj-visual-root.dj-mode-portrait .dj-deck-b-queue-panel {
             padding-bottom: calc(10px + clamp(88px, 13vh, 138px) + env(safe-area-inset-bottom, 0px));
@@ -3066,6 +3104,9 @@ const QUALITY = {
         let djQueueUrlEntries = [];
         const deckVideoFeeds = { a: null, b: null };
         const deckVideoHistory = { a: [], b: [] };
+        const mediaVideoQueue = [];
+        let deckBVideoLoopEnabled = false;
+        let deckBVideoShuffleEnabled = false;
 
         const container = document.getElementById('canvas-container');
         const statusEl = document.getElementById('loading-status');
@@ -3496,11 +3537,22 @@ const QUALITY = {
             if (idx >= 0) arr.splice(idx, 1);
             arr.unshift({ url: clean, label: deckVideoFeeds[k].label });
             if (arr.length > 50) arr.length = 50;
+            const mqIdx = mediaVideoQueue.findIndex((it) => it && it.url === clean);
+            if (mqIdx >= 0) mediaVideoQueue.splice(mqIdx, 1);
+            mediaVideoQueue.unshift({ id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8), url: clean, label: deckVideoFeeds[k].label });
+            if (mediaVideoQueue.length > 120) mediaVideoQueue.length = 120;
             try {
                 if (state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks' && typeof state.activeVisualizer.refreshDeckBVideoSource === 'function') {
                     state.activeVisualizer.refreshDeckBVideoSource();
                 }
+                if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi();
             } catch (_) {}
+        }
+        function removeMediaVideoQueueItem(id) {
+            const idx = mediaVideoQueue.findIndex((it) => it && String(it.id) === String(id));
+            if (idx < 0) return;
+            mediaVideoQueue.splice(idx, 1);
+            try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
         function getDeckBVideoCandidates() {
             const out = [];
@@ -6294,6 +6346,7 @@ function stopAllAndShowStart() {
                 } catch (_) {}
                 try { this.renderStationCycleUi(); } catch (_) {}
                 try { this.renderQueueUrlUi(); } catch (_) {}
+                try { this.renderMediaQueueUi(); } catch (_) {}
             }
 
             renderStationCycleUi() {
@@ -6363,6 +6416,51 @@ function stopAllAndShowStart() {
                     acts.appendChild(mk('queue-a', 'A', 'Send to Deck A queue'));
                     acts.appendChild(mk('queue-b', 'B', 'Send to Deck B queue'));
                     acts.appendChild(mk('delete', 'x', 'Remove URL entry'));
+                    li.appendChild(name);
+                    li.appendChild(acts);
+                    listEl.appendChild(li);
+                });
+            }
+
+            renderMediaQueueUi() {
+                if (!this.root) return;
+                const listEl = this.root.querySelector('#dj-media-queue-list');
+                const btnLoop = this.root.querySelector('#dj-media-loop');
+                const btnShuffle = this.root.querySelector('#dj-media-shuffle');
+                if (btnLoop) btnLoop.classList.toggle('on', !!deckBVideoLoopEnabled);
+                if (btnShuffle) btnShuffle.classList.toggle('on', !!deckBVideoShuffleEnabled);
+                if (!listEl) return;
+                listEl.innerHTML = '';
+                if (!Array.isArray(mediaVideoQueue) || mediaVideoQueue.length === 0) {
+                    const empty = document.createElement('li');
+                    empty.className = 'dj-url-item dj-station-cycle-empty';
+                    empty.textContent = 'No media yet.';
+                    listEl.appendChild(empty);
+                    return;
+                }
+                mediaVideoQueue.forEach((it) => {
+                    if (!it || !it.url) return;
+                    const li = document.createElement('li');
+                    li.className = 'dj-url-item';
+                    li.setAttribute('data-id', String(it.id || ''));
+                    const name = document.createElement('div');
+                    name.className = 'dj-url-name';
+                    name.textContent = String(it.label || deriveNameFromUrl(it.url) || 'Video source');
+                    const acts = document.createElement('div');
+                    acts.className = 'dj-url-item-actions';
+                    const mk = (act, label, title) => {
+                        const b = document.createElement('button');
+                        b.type = 'button';
+                        b.className = 'dj-url-btn';
+                        b.textContent = label;
+                        b.title = title;
+                        b.setAttribute('data-action', act);
+                        return b;
+                    };
+                    acts.appendChild(mk('play', 'P', 'Play in Deck B video player'));
+                    acts.appendChild(mk('queue-a', 'A', 'Send to Deck A queue'));
+                    acts.appendChild(mk('queue-b', 'B', 'Send to Deck B queue'));
+                    acts.appendChild(mk('delete', 'x', 'Remove from media queue'));
                     li.appendChild(name);
                     li.appendChild(acts);
                     listEl.appendChild(li);
@@ -6528,7 +6626,9 @@ function stopAllAndShowStart() {
                     shell.appendChild(fiVideo);
 
                     const applyCurrent = () => {
-                        this.deckBVideoList = getDeckBVideoCandidates();
+                        this.deckBVideoList = mediaVideoQueue.length
+                            ? mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }))
+                            : getDeckBVideoCandidates();
                         if (!this.deckBVideoList.length) {
                             btnPlay.textContent = 'Play';
                             this.showDeckBVisualBackButton('Video');
@@ -6538,6 +6638,7 @@ function stopAllAndShowStart() {
                         const cur = this.deckBVideoList[this.deckBVideoIndex];
                         if (!cur || !cur.url) return;
                         vid.src = cur.url;
+                        vid.loop = !!deckBVideoLoopEnabled;
                         this.showDeckBVisualBackButton(cur.label || 'Video');
                         vid.play().then(() => {
                             btnPlay.textContent = 'Pause';
@@ -6555,9 +6656,17 @@ function stopAllAndShowStart() {
                         else { vid.pause(); btnPlay.textContent = 'Play'; }
                     });
                     btnNext.addEventListener('click', () => {
-                        this.deckBVideoList = getDeckBVideoCandidates();
+                        this.deckBVideoList = mediaVideoQueue.length
+                            ? mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }))
+                            : getDeckBVideoCandidates();
                         if (!this.deckBVideoList.length) return;
-                        this.deckBVideoIndex = (this.deckBVideoIndex + 1) % this.deckBVideoList.length;
+                        if (deckBVideoShuffleEnabled && this.deckBVideoList.length > 1) {
+                            let next = this.deckBVideoIndex;
+                            while (next === this.deckBVideoIndex) next = Math.floor(Math.random() * this.deckBVideoList.length);
+                            this.deckBVideoIndex = next;
+                        } else {
+                            this.deckBVideoIndex = (this.deckBVideoIndex + 1) % this.deckBVideoList.length;
+                        }
                         applyCurrent();
                     });
                     const urlOrPendingToEntry = () => {
@@ -6627,9 +6736,21 @@ function stopAllAndShowStart() {
                     vid.addEventListener('play', () => { btnPlay.textContent = 'Pause'; });
                     vid.addEventListener('pause', () => { btnPlay.textContent = 'Play'; });
                     vid.addEventListener('ended', () => {
-                        this.deckBVideoList = getDeckBVideoCandidates();
+                        if (deckBVideoLoopEnabled) {
+                            try { vid.currentTime = 0; vid.play().catch(() => {}); } catch (_) {}
+                            return;
+                        }
+                        this.deckBVideoList = mediaVideoQueue.length
+                            ? mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }))
+                            : getDeckBVideoCandidates();
                         if (this.deckBVideoList.length > 1) {
-                            this.deckBVideoIndex = (this.deckBVideoIndex + 1) % this.deckBVideoList.length;
+                            if (deckBVideoShuffleEnabled) {
+                                let next = this.deckBVideoIndex;
+                                while (next === this.deckBVideoIndex) next = Math.floor(Math.random() * this.deckBVideoList.length);
+                                this.deckBVideoIndex = next;
+                            } else {
+                                this.deckBVideoIndex = (this.deckBVideoIndex + 1) % this.deckBVideoList.length;
+                            }
                             applyCurrent();
                         } else {
                             btnPlay.textContent = 'Play';
@@ -7131,6 +7252,16 @@ function stopAllAndShowStart() {
                 </div>
                 <ul id="dj-url-list" class="dj-url-list"></ul>
               </div>
+              <div class="dj-media-queue" aria-label="Media queue">
+                <div class="dj-media-head">
+                  <div class="dj-station-cycle-head" style="margin:0;">Media queue</div>
+                  <div class="dj-media-head-actions">
+                    <button type="button" class="dj-url-btn" id="dj-media-loop">Loop</button>
+                    <button type="button" class="dj-url-btn" id="dj-media-shuffle">Shuffle</button>
+                  </div>
+                </div>
+                <ul id="dj-media-queue-list" class="dj-media-list"></ul>
+              </div>
             </div>
           </div>
         </div>
@@ -7382,6 +7513,9 @@ function stopAllAndShowStart() {
                     const urlInput = root.querySelector('#dj-queue-url-input');
                     const btnUrlAdd = root.querySelector('#dj-url-add');
                     const urlList = root.querySelector('#dj-url-list');
+                    const mediaList = root.querySelector('#dj-media-queue-list');
+                    const btnMediaLoop = root.querySelector('#dj-media-loop');
+                    const btnMediaShuffle = root.querySelector('#dj-media-shuffle');
                     const getUrlFromInput = () => sanitizeUrlForAudio(urlInput ? urlInput.value : '');
                     const withEntryFromInput = () => {
                         const u = getUrlFromInput();
@@ -7414,6 +7548,42 @@ function stopAllAndShowStart() {
                         else if (action === 'queue-a') enqueueDeckUrl('a', it.url, it.name);
                         else if (action === 'queue-b') enqueueDeckUrl('b', it.url, it.name);
                         else if (action === 'delete') removeDjQueueUrl(id);
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
+                    if (mediaList) mediaList.addEventListener('click', (ev) => {
+                        const btn = ev.target && ev.target.closest ? ev.target.closest('button[data-action]') : null;
+                        if (!btn) return;
+                        const row = btn.closest('li[data-id]');
+                        if (!row) return;
+                        const id = row.getAttribute('data-id');
+                        const it = mediaVideoQueue.find((x) => x && String(x.id) === String(id));
+                        if (!it || !it.url) return;
+                        const action = btn.getAttribute('data-action');
+                        if (action === 'play') {
+                            this.startDeckBVideoVisual();
+                            this.deckBVideoList = mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }));
+                            this.deckBVideoIndex = Math.max(0, this.deckBVideoList.findIndex((m) => m && m.url === it.url));
+                            try {
+                                if (this.deckBVideoEl) {
+                                    this.deckBVideoEl.src = it.url;
+                                    this.deckBVideoEl.loop = !!deckBVideoLoopEnabled;
+                                    this.deckBVideoEl.play().catch(() => {});
+                                }
+                            } catch (_) {}
+                        } else if (action === 'queue-a') enqueueDeckUrl('a', it.url, it.label);
+                        else if (action === 'queue-b') enqueueDeckUrl('b', it.url, it.label);
+                        else if (action === 'delete') removeMediaVideoQueueItem(id);
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
+                    if (btnMediaLoop) btnMediaLoop.addEventListener('click', () => {
+                        deckBVideoLoopEnabled = !deckBVideoLoopEnabled;
+                        try {
+                            if (this.deckBVideoEl) this.deckBVideoEl.loop = !!deckBVideoLoopEnabled;
+                        } catch (_) {}
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
+                    if (btnMediaShuffle) btnMediaShuffle.addEventListener('click', () => {
+                        deckBVideoShuffleEnabled = !deckBVideoShuffleEnabled;
                         try { this.refreshQueueUi(); } catch (_) {}
                     }, sig);
                     const stationCycleListEl = root.querySelector('#dj-station-cycle-list');
