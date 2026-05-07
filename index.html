@@ -544,30 +544,37 @@
             font-size: 11px;
             padding: 5px 7px;
         }
-        /* Jog | deck volume slider | button block */
+        /* Beat map | jog | deck volume | button block */
         #dj-visual-root .dj-deck-mosaic {
             display: grid;
-            grid-template-columns: auto minmax(36px, 44px) repeat(3, minmax(0, 1fr));
+            grid-template-columns: minmax(252px, min(38vw, 360px)) auto minmax(36px, 44px) repeat(3, minmax(0, 1fr));
             grid-template-rows: repeat(6, minmax(30px, auto));
             gap: 1px;
             width: 100%;
             /* stretch so deck volume column spans full knob + button stack (center would shrink column to ~track height) */
             align-items: stretch;
         }
-        #dj-visual-root .dj-deck-mosaic > .dj-jog-wrap {
+        #dj-visual-root .dj-deck-mosaic > .dj-beatmap-strip {
             grid-column: 1;
+            grid-row: 1 / 7;
+            min-width: 0;
+            min-height: 0;
+            align-self: stretch;
+        }
+        #dj-visual-root .dj-deck-mosaic > .dj-jog-wrap {
+            grid-column: 2;
             grid-row: 1 / -1;
             justify-self: center;
             align-self: center;
         }
         #dj-visual-root .dj-deck-mosaic > .dj-deck-vol-col {
-            grid-column: 2;
+            grid-column: 3;
             grid-row: 1 / 7;
             min-height: 0;
             align-self: stretch;
         }
         #dj-visual-root .dj-deck-mosaic > .dj-btn-block {
-            grid-column: 3 / 6;
+            grid-column: 4 / 7;
             grid-row: 1 / 7;
             min-width: 0;
             min-height: 0;
@@ -615,14 +622,149 @@
             min-height: 0;
             align-self: stretch;
         }
+        #dj-visual-root .dj-deck-vol-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            min-height: 0;
+            gap: 4px;
+        }
+        #dj-visual-root .dj-deck-vol-caption {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            color: rgba(255, 255, 255, 0.55);
+            line-height: 1;
+            flex-shrink: 0;
+        }
         #dj-visual-root .dj-deck-vol-wrap {
             display: flex;
             align-items: center;
             justify-content: center;
             width: 100%;
-            height: 100%;
+            flex: 1 1 auto;
             min-height: 0;
             overflow: visible;
+        }
+        #dj-visual-root .dj-beatmap-strip {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 6px;
+            min-width: 0;
+            padding: 0;
+        }
+        /* Tempo column: same width band as Deck VOL column */
+        #dj-visual-root .dj-beatmap-tempo-col {
+            flex: 0 0 minmax(36px, 44px);
+            min-width: 36px;
+            max-width: 44px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: stretch;
+            min-height: 0;
+            align-self: stretch;
+        }
+        #dj-visual-root .dj-beatmap-tempo-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            min-height: 0;
+            gap: 4px;
+            width: 100%;
+        }
+        #dj-visual-root .dj-beatmap-tempo-slider-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: visible;
+        }
+        /* Tempo slider: identical dimensions & thumb to .dj-deck-vol */
+        #dj-visual-root .dj-beatmap-bpm-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 210px;
+            height: 14px;
+            transform: rotate(-90deg);
+            transform-origin: center center;
+            background: rgba(255,255,255,0.08);
+            border-radius: 7px;
+            border: none;
+        }
+        #dj-visual-root .dj-beatmap-bpm-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 46px;
+            height: 46px;
+            background: transparent url('vol.png') center center / 100% 100% no-repeat;
+            border: none;
+            border-radius: 50%;
+            margin-top: calc((14px - 46px) / 2);
+            box-shadow: none;
+        }
+        #dj-visual-root .dj-beatmap-bpm-slider::-moz-range-thumb {
+            width: 46px;
+            height: 46px;
+            background: transparent url('vol.png') center center / 100% 100% no-repeat;
+            border: none;
+            border-radius: 50%;
+            box-shadow: none;
+        }
+        #dj-visual-root .dj-beatmap-bpm-readout {
+            font-size: 9px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.75);
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        #dj-visual-root .btn.dj-fx.dj-beatmap-sync {
+            width: 100%;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 8px 6px;
+            font-size: 12px;
+            letter-spacing: 0.06em;
+            flex-shrink: 0;
+            white-space: normal;
+            line-height: 1.1;
+            text-align: center;
+        }
+        #dj-visual-root .dj-beatmap-pads {
+            flex: 1 1 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3px;
+            min-width: 0;
+            min-height: 0;
+        }
+        #dj-visual-root .dj-beatmap-col {
+            display: grid;
+            grid-template-rows: repeat(5, minmax(40px, auto));
+            gap: 3px;
+            min-height: 0;
+            align-items: stretch;
+        }
+        #dj-visual-root .dj-beatmap-pads .btn.dj-fx.dj-beat-pad {
+            font-size: 13px;
+            letter-spacing: 0.04em;
+            padding: 8px 10px;
+            min-height: 40px;
+            height: auto;
+            box-sizing: border-box;
+            touch-action: manipulation;
+            white-space: normal;
+            word-break: break-word;
         }
         #dj-visual-root .dj-deck-vol {
             -webkit-appearance: none;
@@ -1127,7 +1269,8 @@
         #dj-visual-root .dj-controls-grid .btn.dj-fx,
         #dj-visual-root .dj-controls-grid .btn.dj-sfx,
         #dj-visual-root .dj-btn-block .btn.dj-fx,
-        #dj-visual-root .dj-btn-block .btn.dj-sfx {
+        #dj-visual-root .dj-btn-block .btn.dj-sfx,
+        #dj-visual-root .dj-beatmap-pads .btn.dj-fx {
             width: 100%;
             box-sizing: border-box;
             display: inline-flex;
@@ -6337,6 +6480,199 @@ function stopAllAndShowStart() {
                 this.deckBVizResizeObs = null;
                 this.deckVolResizeObs = null;
                 this.deckBQueueVisible = false;
+                this.beatMapSlots = null;
+            }
+
+            bindDeckBeatMaps(root, sig) {
+                const REF_BPM = 120;
+                const BEAT_MAP_DEFAULTS = [
+                    { label: 'High', src: 'High.wav' },
+                    { label: 'Drum', src: 'Drum.wav' },
+                    { label: 'Clap', src: 'Clap.wav' },
+                    { label: 'Perc', src: 'Perc.wav' },
+                    { label: 'Tom', src: 'Tom.wav' },
+                    { label: 'WAA', src: 'wav4.mp3' },
+                    { label: 'WAAA', src: 'wav5.mp3' },
+                    { label: 'AIR📢', src: 'wav6.mp3' },
+                    { label: 'FX1', src: 'wav1.mp3' },
+                    { label: 'FX2', src: 'wav2.mp3' },
+                ];
+                this.beatMapSlots = { a: [], b: [] };
+
+                const setupDeck = (deckKey) => {
+                    const prefix = deckKey === 'a' ? 'dj-a' : 'dj-b';
+                    const slots = [];
+                    for (let i = 0; i < BEAT_MAP_DEFAULTS.length; i++) {
+                        const el = new Audio();
+                        el.preload = 'auto';
+                        el.src = BEAT_MAP_DEFAULTS[i].src;
+                        try { el.muted = false; el.volume = 1; } catch (_) {}
+                        slots.push({
+                            audio: el,
+                            sourceNode: null,
+                            blobUrl: '',
+                            defaultSrc: BEAT_MAP_DEFAULTS[i].src,
+                            label: BEAT_MAP_DEFAULTS[i].label,
+                        });
+                    }
+                    this.beatMapSlots[deckKey] = slots;
+
+                    const bpmSlider = root.querySelector('#' + prefix + '-beat-bpm');
+                    const bpmOut = root.querySelector('#' + prefix + '-beat-bpm-out');
+                    const syncBtn = root.querySelector('#' + prefix + '-beat-sync');
+                    const fi = root.querySelector('#' + prefix + '-beat-file');
+
+                    const getRate = () => {
+                        const v = bpmSlider ? parseFloat(bpmSlider.value) : REF_BPM;
+                        const bpm = Number.isFinite(v) ? v : REF_BPM;
+                        return Math.max(0.25, Math.min(4, bpm / REF_BPM));
+                    };
+
+                    const ensureGraph = (slot) => {
+                        try { initAudio(); } catch (_) {}
+                        if (!state.audioCtx || !slot.audio || slot.sourceNode) return;
+                        try {
+                            slot.sourceNode = state.audioCtx.createMediaElementSource(slot.audio);
+                            slot.sourceNode.connect(state.mixInput);
+                        } catch (_) {}
+                    };
+
+                    const applyRates = () => {
+                        const r = getRate();
+                        slots.forEach((s) => {
+                            try {
+                                if (s.audio && !s.audio.paused) s.audio.playbackRate = r;
+                            } catch (_) {}
+                        });
+                    };
+
+                    if (bpmSlider) {
+                        bpmSlider.addEventListener('input', () => {
+                            if (bpmOut) bpmOut.textContent = String(Math.round(parseFloat(bpmSlider.value) || REF_BPM));
+                            applyRates();
+                        }, sig);
+                    }
+
+                    if (syncBtn) {
+                        syncBtn.addEventListener('click', () => {
+                            try {
+                                initAudio();
+                                const raw = deckKey === 'a' ? bpmSmoothA : bpmSmoothB;
+                                const bpm = raw && raw > 40 && raw < 300 ? Math.round(raw) : null;
+                                if (bpm && bpmSlider) {
+                                    bpmSlider.value = String(bpm);
+                                    if (bpmOut) bpmOut.textContent = String(bpm);
+                                    applyRates();
+                                }
+                            } catch (_) {}
+                        }, sig);
+                        syncBtn.title = deckKey === 'a'
+                            ? 'Match tempo to Mix panel BPM A (enable BPM A first)'
+                            : 'Match tempo to Mix panel BPM B (enable BPM B first)';
+                    }
+
+                    let loadSlotIdx = -1;
+                    if (fi) {
+                        fi.addEventListener('change', (ev) => {
+                            const f = ev.target.files && ev.target.files[0];
+                            try { ev.target.value = ''; } catch (_) {}
+                            if (!f || loadSlotIdx < 0) return;
+                            const slot = slots[loadSlotIdx];
+                            try { slot.audio.pause(); } catch (_) {}
+                            try {
+                                if (slot.blobUrl) URL.revokeObjectURL(slot.blobUrl);
+                            } catch (_) {}
+                            slot.blobUrl = '';
+                            try {
+                                slot.blobUrl = URL.createObjectURL(f);
+                                slot.audio.src = slot.blobUrl;
+                            } catch (_) {}
+                            const btn = root.querySelector(`button[data-beat-deck="${deckKey}"][data-beat-slot="${loadSlotIdx}"]`);
+                            if (btn) {
+                                const nm = (f.name || 'sample').replace(/\.[^/.]+$/, '');
+                                btn.textContent = nm.length > 8 ? nm.slice(0, 7) + '…' : nm;
+                                btn.title = f.name || 'Loaded sample';
+                            }
+                            loadSlotIdx = -1;
+                        }, sig);
+                    }
+
+                    const pads = root.querySelectorAll(`button[data-beat-deck="${deckKey}"][data-beat-slot]`);
+                    pads.forEach((btn) => {
+                        const idx = parseInt(btn.getAttribute('data-beat-slot'), 10);
+                        if (Number.isNaN(idx) || !slots[idx]) return;
+                        let holdT = null;
+                        let longFired = false;
+
+                        const togglePlay = () => {
+                            const slot = slots[idx];
+                            ensureGraph(slot);
+                            const rate = getRate();
+                            try { slot.audio.loop = true; } catch (_) {}
+                            if (!slot.audio.paused) {
+                                try { slot.audio.pause(); } catch (_) {}
+                                btn.classList.remove('on');
+                                return;
+                            }
+                            try { slot.audio.playbackRate = rate; } catch (_) {}
+                            try { slot.audio.currentTime = 0; } catch (_) {}
+                            slot.audio.play().then(() => {
+                                btn.classList.add('on');
+                            }).catch(() => {});
+                        };
+
+                        btn.addEventListener('click', (e) => {
+                            if (longFired) {
+                                longFired = false;
+                                return;
+                            }
+                            try { e.preventDefault(); } catch (_) {}
+                            togglePlay();
+                        }, sig);
+
+                        btn.addEventListener('pointerdown', (e) => {
+                            if (e.button !== 0) return;
+                            longFired = false;
+                            holdT = setTimeout(() => {
+                                holdT = null;
+                                longFired = true;
+                                loadSlotIdx = idx;
+                                try { if (fi) fi.click(); } catch (_) {}
+                            }, 550);
+                        }, sig);
+
+                        const cancelHold = () => {
+                            if (holdT) {
+                                clearTimeout(holdT);
+                                holdT = null;
+                            }
+                        };
+                        btn.addEventListener('pointerup', cancelHold, sig);
+                        btn.addEventListener('pointerleave', cancelHold, sig);
+                        btn.addEventListener('pointercancel', cancelHold, sig);
+                    });
+                };
+
+                setupDeck('a');
+                setupDeck('b');
+            }
+
+            tearDownDeckBeatMaps() {
+                try {
+                    if (!this.beatMapSlots) return;
+                    ['a', 'b'].forEach((dk) => {
+                        const arr = this.beatMapSlots[dk];
+                        if (!arr) return;
+                        arr.forEach((slot) => {
+                            try { slot.audio.pause(); } catch (_) {}
+                            try {
+                                if (slot.blobUrl) URL.revokeObjectURL(slot.blobUrl);
+                            } catch (_) {}
+                            slot.blobUrl = '';
+                        });
+                    });
+                    this.beatMapSlots = null;
+                } catch (_) {}
             }
 
             hideDeckBQueueView() {
@@ -7418,12 +7754,43 @@ function stopAllAndShowStart() {
     <div class="dj-deck-body">
       <div class="dj-stack">
         <div class="dj-middle-row dj-deck-mosaic">
+          <div class="dj-beatmap-strip" aria-label="Deck A beat map">
+            <div class="dj-beatmap-tempo-col">
+              <div class="dj-beatmap-tempo-stack">
+                <div class="dj-beatmap-tempo-slider-wrap">
+                  <input type="range" id="dj-a-beat-bpm" class="dj-beatmap-bpm-slider" min="60" max="180" step="1" value="120" aria-label="Deck A beat tempo BPM" />
+                </div>
+                <span class="dj-beatmap-bpm-readout" id="dj-a-beat-bpm-out">120</span>
+                <button type="button" class="btn dj-fx dj-beatmap-sync" id="dj-a-beat-sync">Sync</button>
+              </div>
+            </div>
+            <div class="dj-beatmap-pads">
+              <div class="dj-beatmap-col" aria-label="Deck A beat layers">
+                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="0">High</button>
+                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="1">Drum</button>
+                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="2">Clap</button>
+                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="3">Perc</button>
+                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="4">Tom</button>
+              </div>
+              <div class="dj-beatmap-col" aria-label="Deck A sample pads">
+                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="5">WAA</button>
+                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="6">WAAA</button>
+                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="7">AIR📢</button>
+                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="8">FX1</button>
+                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="9">FX2</button>
+              </div>
+            </div>
+            <input type="file" id="dj-a-beat-file" class="display-none" accept="audio/*" aria-hidden="true" />
+          </div>
           <div class="dj-jog-wrap">
             <div class="dj-jog" id="dj-jog-a" aria-hidden="true"><span class="dj-jog-marker"></span></div>
           </div>
           <div class="dj-deck-vol-col" aria-label="Deck A volume">
-            <div class="dj-deck-vol-wrap">
-              <input type="range" id="dj-deck-a-vol" class="dj-deck-vol" min="0" max="1" step="0.01" value="1" />
+            <div class="dj-deck-vol-stack">
+              <div class="dj-deck-vol-wrap">
+                <input type="range" id="dj-deck-a-vol" class="dj-deck-vol" min="0" max="1" step="0.01" value="1" />
+              </div>
+              <span class="dj-deck-vol-caption">VOL</span>
             </div>
           </div>
           <div class="dj-controls-grid dj-btn-block" aria-label="Deck A visuals, effects, and transport">
@@ -7472,12 +7839,43 @@ function stopAllAndShowStart() {
         <div id="dj-deck-b-controls" class="dj-deck-b-controls">
           <div class="dj-stack">
             <div class="dj-middle-row dj-deck-mosaic">
+              <div class="dj-beatmap-strip" aria-label="Deck B beat map">
+                <div class="dj-beatmap-tempo-col">
+                  <div class="dj-beatmap-tempo-stack">
+                    <div class="dj-beatmap-tempo-slider-wrap">
+                      <input type="range" id="dj-b-beat-bpm" class="dj-beatmap-bpm-slider" min="60" max="180" step="1" value="120" aria-label="Deck B beat tempo BPM" />
+                    </div>
+                    <span class="dj-beatmap-bpm-readout" id="dj-b-beat-bpm-out">120</span>
+                    <button type="button" class="btn dj-fx dj-beatmap-sync" id="dj-b-beat-sync">Sync</button>
+                  </div>
+                </div>
+                <div class="dj-beatmap-pads">
+                  <div class="dj-beatmap-col" aria-label="Deck B beat layers">
+                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="0">High</button>
+                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="1">Drum</button>
+                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="2">Clap</button>
+                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="3">Perc</button>
+                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="4">Tom</button>
+                  </div>
+                  <div class="dj-beatmap-col" aria-label="Deck B sample pads">
+                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="5">WAA</button>
+                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="6">WAAA</button>
+                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="7">AIR📢</button>
+                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="8">FX1</button>
+                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="9">FX2</button>
+                  </div>
+                </div>
+                <input type="file" id="dj-b-beat-file" class="display-none" accept="audio/*" aria-hidden="true" />
+              </div>
               <div class="dj-jog-wrap">
                 <div class="dj-jog" id="dj-jog-b" aria-hidden="true"><span class="dj-jog-marker"></span></div>
               </div>
               <div class="dj-deck-vol-col" aria-label="Deck B volume">
-                <div class="dj-deck-vol-wrap">
-                  <input type="range" id="dj-deck-b-vol" class="dj-deck-vol" min="0" max="1" step="0.01" value="1" />
+                <div class="dj-deck-vol-stack">
+                  <div class="dj-deck-vol-wrap">
+                    <input type="range" id="dj-deck-b-vol" class="dj-deck-vol" min="0" max="1" step="0.01" value="1" />
+                  </div>
+                  <span class="dj-deck-vol-caption">VOL</span>
                 </div>
               </div>
               <div class="dj-controls-grid dj-btn-block" aria-label="Deck B visual screen &amp; transport">
@@ -8191,6 +8589,8 @@ function stopAllAndShowStart() {
                     }
                 } catch (_) {}
 
+                try { this.bindDeckBeatMaps(root, sig); } catch (_) {}
+
                 const switchVisualByName = (name) => {
                     try {
                         if (!Array.isArray(modes) || typeof loadMode !== 'function') return;
@@ -8346,6 +8746,7 @@ function stopAllAndShowStart() {
                         this.deckVolResizeObs = null;
                     }
                 } catch (_) {}
+                try { this.tearDownDeckBeatMaps(); } catch (_) {}
                 try { this.tearDownDeckBViz(); } catch (_) {}
                 try {
                     const KNOB_IDS = ['knob-a-low', 'knob-a-mid', 'knob-a-high', 'knob-a-gain', 'knob-b-gain', 'knob-b-high', 'knob-b-mid', 'knob-b-low'];
