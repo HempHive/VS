@@ -411,6 +411,16 @@
             max-height: 3.6em;
             overflow: hidden;
         }
+        /* Deck B fallback label should match Deck badge styling (purple) */
+        .dj-deck-b .dj-station-title.is-deck-b-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            color: #9803FC;
+            opacity: 0.85;
+            text-transform: uppercase;
+            line-height: 1.15;
+        }
         #dj-visual-root .dj-visual-title-btn {
             width: 100%;
             min-height: 32px;
@@ -560,6 +570,11 @@
             background-repeat: no-repeat;
             background-size: 100% 100%;
             color: #fff;
+        }
+        /* Deck A indicator: matching Deck B visual is active */
+        #dj-visual-root .btn.dj-fx.deck-b-active {
+            color: #f5d20f;
+            text-shadow: 0 0 6px rgba(245, 210, 15, 0.6), 0 0 14px rgba(245, 210, 15, 0.4);
         }
         #dj-visual-root .dj-play:hover,
         #dj-visual-root .dj-tbtn:hover {
@@ -5917,33 +5932,28 @@ function stopAllAndShowStart() {
 
             syncDeckBVisualButtons() {
                 try {
-                    if (this.deckBQueueVisible) {
-                        const bars = this.root && this.root.querySelector('#dj-b-vis-bars');
-                        const pm = this.root && this.root.querySelector('#dj-b-vis-pm2');
-                        const blank = this.root && this.root.querySelector('#dj-b-vis-blank');
-                        if (bars) bars.classList.remove('on');
-                        if (pm) pm.classList.remove('on');
-                        if (blank) blank.classList.remove('on');
-                        if (this.els && this.els.visualBackBtn) {
-                            this.els.visualBackBtn.classList.remove('as-deck-badge');
-                        }
-                        this.showDeckBVisualBackButton('Queue');
-                        return;
-                    }
                     const bars = this.root && this.root.querySelector('#dj-b-vis-bars');
                     const pm = this.root && this.root.querySelector('#dj-b-vis-pm2');
                     const blank = this.root && this.root.querySelector('#dj-b-vis-blank');
+                    const barsA = this.root && this.root.querySelector('#dj-vis-bars');
+                    const pmA = this.root && this.root.querySelector('#dj-vis-pm2');
+                    const blankA = this.root && this.root.querySelector('#dj-vis-blank');
+                    if (this.deckBQueueVisible) {
+                        if (bars) bars.classList.remove('on');
+                        if (pm) pm.classList.remove('on');
+                        if (blank) blank.classList.remove('on');
+                        if (barsA) barsA.classList.remove('deck-b-active');
+                        if (pmA) pmA.classList.remove('deck-b-active');
+                        if (blankA) blankA.classList.remove('deck-b-active');
+                        return;
+                    }
                     const m = this.deckBVizMode || 'idle';
                     if (bars) bars.classList.toggle('on', m === 'bars');
                     if (pm) pm.classList.toggle('on', m === 'projectm');
-                    if (blank) blank.classList.toggle('on', m === 'idle' || m === 'blank');
-                    if (this.els && this.els.visualBackBtn) {
-                        this.els.visualBackBtn.classList.toggle('as-deck-badge', m === 'idle');
-                    }
-                    this.showDeckBVisualBackButton(
-                        m === 'projectm' ? 'ProjectM' :
-                        (m === 'bars' ? 'Audio Bars' : (m === 'blank' ? 'No Visual' : 'Deck B'))
-                    );
+                    if (blank) blank.classList.toggle('on', m === 'blank');
+                    if (barsA) barsA.classList.toggle('deck-b-active', m === 'bars');
+                    if (pmA) pmA.classList.toggle('deck-b-active', m === 'projectm');
+                    if (blankA) blankA.classList.toggle('deck-b-active', m === 'blank');
                 } catch (_) {}
             }
 
@@ -6205,7 +6215,7 @@ function stopAllAndShowStart() {
                     } else if (audioEl && audioEl.src && typeof deriveTitleFromUrl === 'function') {
                         na = deriveTitleFromUrl(audioEl.src);
                     }
-                    let nb = 'Deck B';
+                    let nb = 'DECK B';
                     const bPlaying = !!(audioElB && audioElB.src && !audioElB.paused && !audioElB.ended);
                     const srcB = (audioElB && String(audioElB.currentSrc || audioElB.src || '')) || '';
                     const isBlobB = srcB.startsWith('blob:');
@@ -6223,7 +6233,7 @@ function stopAllAndShowStart() {
                             const stB = stations[idxB];
                             if (stB) {
                                 const nm = stB.name && String(stB.name).trim();
-                                nb = nm || (stB.url && typeof deriveTitleFromUrl === 'function' ? deriveTitleFromUrl(stB.url) : 'Deck B');
+                                nb = nm || (stB.url && typeof deriveTitleFromUrl === 'function' ? deriveTitleFromUrl(stB.url) : 'DECK B');
                             }
                         }
                         if (nb === '—' && srcB && typeof deriveTitleFromUrl === 'function' && !isBlobB) {
@@ -6233,6 +6243,7 @@ function stopAllAndShowStart() {
                     if (this.els.titleA) this.els.titleA.textContent = na;
                     if (this.els.titleB) {
                         this.els.titleB.textContent = nb;
+                        this.els.titleB.classList.toggle('is-deck-b-label', nb === 'DECK B');
                     }
                 } catch(_) {}
             }
@@ -6357,7 +6368,7 @@ function stopAllAndShowStart() {
       </div>
       <span class="dj-fader-label-b">B</span>
     </div>
-    <button type="button" class="dj-visual-title-btn" id="dj-b-visual-back-btn">DECK B</button>
+    <button type="button" class="dj-visual-title-btn display-none" id="dj-b-visual-back-btn">DECK B</button>
     <div class="dj-station-title" id="dj-station-b-title">—</div>
     <div class="dj-deck-body dj-deck-body-b">
       <div class="dj-deck-b-stage">
@@ -6986,6 +6997,18 @@ function stopAllAndShowStart() {
                                 window.__randomClickTimer = null;
                             }
                         } catch(_) {}
+                        // If matching Deck B visual is active, first click should clear Deck B visual mode.
+                        const deckBModeFromDeckAName = (
+                            name === 'Audio Bars' ? 'bars' :
+                            (name === 'ProjectM v2' ? 'projectm' :
+                            (name === 'Blank' ? 'blank' : null))
+                        );
+                        if (deckBModeFromDeckAName && this.deckBVizMode === deckBModeFromDeckAName) {
+                            this.tearDownDeckBViz();
+                            this.syncDeckBVisualButtons();
+                            this.updateStationTitles();
+                            return;
+                        }
                         switchVisualByName(name);
                     }, sig);
                 };
@@ -7005,12 +7028,15 @@ function stopAllAndShowStart() {
                                 window.__randomClickTimer = null;
                             }
                         } catch (_) {}
-                        if (mode === 'blank') {
-                            this.startDeckBBlankVisual();
+                        if (this.deckBQueueVisible) this.hideDeckBQueueView();
+                        // Toggle off if this visual is already active
+                        if (this.deckBVizMode === mode) {
+                            this.tearDownDeckBViz();
                             this.syncDeckBVisualButtons();
                             return;
                         }
-                        if (mode === 'bars') this.startDeckBAudioBars();
+                        if (mode === 'blank') this.startDeckBBlankVisual();
+                        else if (mode === 'bars') this.startDeckBAudioBars();
                         else if (mode === 'projectm') this.startDeckBProjectM();
                         this.syncDeckBVisualButtons();
                     }, sig);
