@@ -1292,15 +1292,17 @@
             will-change: transform, opacity, text-shadow, filter;
             white-space: pre;
         }
-        /* Mic confirm modal */
-        #mic-confirm {
+        /* Mic / MIDI confirm modals */
+        #mic-confirm,
+        #midi-confirm {
             position: fixed; inset: 0; z-index: 140;
             background: rgba(0,0,0,0.6);
             display: none;
             align-items: center; justify-content: center;
             backdrop-filter: blur(6px);
         }
-        #mic-confirm .panel {
+        #mic-confirm .panel,
+        #midi-confirm .panel {
             background: rgba(0,0,0,0.9);
             border: 1px solid rgba(255,255,255,0.2);
             border-radius: 10px;
@@ -1310,19 +1312,24 @@
             color: #fff;
             text-align: center;
         }
-        #mic-confirm .title {
+        #mic-confirm .title,
+        #midi-confirm .title {
             font-size: 16px; margin-bottom: 10px; letter-spacing: 1px;
         }
-        #mic-confirm .desc {
+        #mic-confirm .desc,
+        #midi-confirm .desc {
             font-size: 12px; color: #bbb; margin-bottom: 14px;
         }
-        #mic-confirm .actions { display: flex; gap: 10px; justify-content: center; }
-        #mic-confirm .btn {
+        #mic-confirm .actions,
+        #midi-confirm .actions { display: flex; gap: 10px; justify-content: center; }
+        #mic-confirm .btn,
+        #midi-confirm .btn {
             padding: 10px 16px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); color: #fff;
             font-size: 12px; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s;
             border-radius: 6px; cursor: pointer;
         }
-        #mic-confirm .btn:hover { background: #fff; color: #000; }
+        #mic-confirm .btn:hover,
+        #midi-confirm .btn:hover { background: #fff; color: #000; }
 
         /* Mix Settings Panel (Moved to Bottom) */
 #mix-panel {
@@ -2110,7 +2117,7 @@
 
     <!-- START SCREEN -->
 	<div id="overlay" class="no-blur bg-lite">
-		<h1 id="logo-omni" data-text="OMNI&gt;"><span class="logo-letter logo-o">O</span><span class="logo-letter logo-m">M</span><span class="logo-letter">N</span><span class="logo-letter logo-start">I</span><span class="logo-letter logo-start">&gt;</span></h1>
+		<h1 id="logo-omni" data-text="OMNI&gt;"><span class="logo-letter logo-o">O</span><span class="logo-letter logo-m">M</span><span class="logo-letter">N</span><span class="logo-letter logo-midi">I</span><span class="logo-letter logo-start">&gt;</span></h1>
 		<!-- Toggle URL input (shown via clicking 'N' in OMNI>) -->
 		<div id="url-flyover" class="is-hidden">
             <input type="text" id="radio-url" class="radio-input interactive" value="https://stream.bigfm.de/tomorrowland/mp3-128/" placeholder="Paste Stream URL">
@@ -2131,6 +2138,17 @@
             <div class="actions">
                 <button id="btn-mic-ok" class="btn">Okay</button>
                 <button id="btn-mic-cancel" class="btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="midi-confirm">
+        <div class="panel">
+            <div class="title" id="midi-confirm-title">Enable MIDI Input?</div>
+            <div class="desc" id="midi-confirm-desc">Your browser will ask permission to access MIDI devices. Controllers can then adjust crossfader, deck gains, and transport (defaults shown in the mix panel MIDI tooltip).</div>
+            <div class="actions">
+                <button id="btn-midi-ok" class="btn">Okay</button>
+                <button id="btn-midi-cancel" class="btn">Cancel</button>
             </div>
         </div>
     </div>
@@ -2446,7 +2464,7 @@
                 <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%; cursor:pointer;">
                 <span style="font-size:12px; color:#5800FF; font-weight:bold">B</span>
             </div>
-            <span id="midi-status" style="font-size:10px; color:#889; white-space:nowrap; flex-shrink:0; max-width:140px; overflow:hidden; text-overflow:ellipsis;" title="Bluetooth/USB MIDI (Web MIDI API). Default: CC54=crossfader; Ch.1 CC7=Gain A; Ch.2 CC7=Gain B; Note 36/37=Play A/B. Custom: localStorage key omniMidiMap (JSON).">MIDI · …</span>
+            <span id="midi-status" style="font-size:10px; color:#889; white-space:nowrap; flex-shrink:0; max-width:140px; overflow:hidden; text-overflow:ellipsis; cursor:pointer;" title="Bluetooth/USB MIDI (Web MIDI API). Default: CC54=crossfader; Ch.1 CC7=Gain A; Ch.2 CC7=Gain B; Note 36/37=Play A/B. Custom: localStorage key omniMidiMap (JSON). Click to enable MIDI or reopen this prompt (same as OMNI “I” on the start screen).">MIDI · …</span>
             <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
         </h3>
         
@@ -2768,6 +2786,9 @@ const QUALITY = {
         const micConfirm = document.getElementById('mic-confirm');
         const micOk = document.getElementById('btn-mic-ok');
         const micCancel = document.getElementById('btn-mic-cancel');
+        const midiConfirm = document.getElementById('midi-confirm');
+        const midiOk = document.getElementById('btn-midi-ok');
+        const midiCancel = document.getElementById('btn-midi-cancel');
         const mixPanel = document.getElementById('mix-panel');
         const mixClose = document.getElementById('btn-mix-close');
         const fxLow = document.getElementById('fx-lowpass');
@@ -3733,7 +3754,7 @@ function randomGlowColor() {
 			};
 			loop();
         }
-		// Make the last two letters "I>" clickable to start radio
+		// ">" starts radio; "I" opens MIDI enable prompt (same pattern as "M" + mic)
 		(() => {
 			try {
 				const logo = document.getElementById('logo-omni');
@@ -3749,6 +3770,17 @@ function randomGlowColor() {
 						else if (typeof playRadio === 'function') playRadio();
 					});
 				});
+				const midiLetter = logo.querySelector('.logo-midi');
+				if (midiLetter) {
+					midiLetter.style.cursor = 'pointer';
+					midiLetter.title = 'Enable MIDI Input';
+					midiLetter.addEventListener('click', (e) => {
+						e.stopPropagation();
+						try { showMidiConfirm(); } catch (_) {
+							try { initWebMidi(); } catch (_) {}
+						}
+					});
+				}
 				// Make "N" toggle the URL input flyover (reserve space via is-hidden)
 				const nEl = logo.querySelector('.logo-letter:nth-child(3)');
 				if (nEl) {
@@ -4826,7 +4858,6 @@ function randomGlowColor() {
                     }
                 } catch(e) {}
             resetIdleTimer();
-                try { initWebMidi(); } catch (_) {}
             }, 520);
         }
 
@@ -8529,6 +8560,29 @@ function stopAllAndShowStart() {
             if (!micConfirm) return;
             micConfirm.style.display = 'none';
         }
+        function showMidiConfirm() {
+            const titleEl = document.getElementById('midi-confirm-title');
+            const descEl = document.getElementById('midi-confirm-desc');
+            if (!midiConfirm) {
+                try { initWebMidi(); } catch (_) {}
+                return;
+            }
+            if (typeof navigator === 'undefined' || !navigator.requestMIDIAccess) {
+                if (titleEl) titleEl.textContent = 'MIDI not available';
+                if (descEl) descEl.textContent = 'This browser does not support the Web MIDI API.';
+            } else if (window.__midiInitDone) {
+                if (titleEl) titleEl.textContent = 'MIDI Input';
+                if (descEl) descEl.textContent = 'MIDI is already enabled. Connect or reconnect USB or Bluetooth controllers; connection status appears beside the mix controls.';
+            } else {
+                if (titleEl) titleEl.textContent = 'Enable MIDI Input?';
+                if (descEl) descEl.textContent = 'Your browser will ask permission to access MIDI devices. Controllers can then adjust crossfader, deck gains, and transport (defaults are described in the mix panel MIDI tooltip).';
+            }
+            midiConfirm.style.display = 'flex';
+        }
+        function hideMidiConfirm() {
+            if (!midiConfirm) return;
+            midiConfirm.style.display = 'none';
+        }
         if (micOk) micOk.addEventListener('click', (e) => {
             e.preventDefault(); e.stopPropagation();
             hideMicConfirm();
@@ -8538,6 +8592,23 @@ function stopAllAndShowStart() {
             e.preventDefault(); e.stopPropagation();
             hideMicConfirm();
         });
+        if (midiOk) midiOk.addEventListener('click', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            hideMidiConfirm();
+            try { initWebMidi(); } catch (_) {}
+        });
+        if (midiCancel) midiCancel.addEventListener('click', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            hideMidiConfirm();
+        });
+        const midiStatusTap = document.getElementById('midi-status');
+        if (midiStatusTap) {
+            midiStatusTap.addEventListener('click', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                try { showMidiConfirm(); } catch (_) {}
+                try { resetIdleTimer(); } catch (_) {}
+            });
+        }
         if (settingsBtn) {
             settingsBtn.title = "Mix Settings";
             settingsBtn.addEventListener('click', (e) => {
