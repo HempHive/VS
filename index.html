@@ -656,6 +656,42 @@
             min-width: 0;
             padding: 0;
         }
+        #dj-visual-root .dj-beatmap-main {
+            flex: 1 1 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+            min-height: 0;
+        }
+        #dj-visual-root .dj-beatmap-fx-knobs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            align-items: end;
+            justify-items: center;
+            flex-shrink: 0;
+        }
+        #dj-visual-root .dj-beatmap-fx-knobs .eq-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 2px;
+            min-width: 0;
+        }
+        #dj-visual-root .dj-beatmap-fx-knobs .knob-wrap {
+            width: 48px;
+            height: 48px;
+        }
+        #dj-visual-root .dj-beatmap-fx-knobs .eq-label {
+            font-size: 7px;
+            line-height: 1;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.65);
+        }
         /* Tempo column: same width band as Deck VOL column */
         #dj-visual-root .dj-beatmap-tempo-col {
             flex: 0 0 minmax(36px, 44px);
@@ -5254,6 +5290,7 @@ function randomGlowColor() {
                     tk: { node: state.audioCtx.createBiquadFilter(), on: false },
                     echoDelay: { node: state.audioCtx.createDelay(5.0), on: false },
                     echoFeedback: { node: state.audioCtx.createGain(), on: false },
+                    loopMusical: { delay: state.audioCtx.createDelay(15.0), feedback: state.audioCtx.createGain(), on: false },
                     distort: { node: state.audioCtx.createWaveShaper(), on: false }
                 };
                 // (Standard FX configuration...)
@@ -5268,6 +5305,13 @@ function randomGlowColor() {
                 try { state.fx.arp.lfo.start(); } catch(_) {}
                 state.fx.tk.node.type = 'bandpass'; state.fx.tk.node.frequency.value = 1200; state.fx.tk.node.Q.value = 4.0;
                 state.fx.echoDelay.node.delayTime.value = 0.28; state.fx.echoFeedback.node.gain.value = 0.35;
+                try {
+                    state.fx.loopMusical.feedback.gain.value = 0.38;
+                    state.fx.loopMusical.delay.delayTime.value = 0.001;
+                    state.fx.loopMusical.delay.connect(state.fx.loopMusical.feedback);
+                    state.fx.loopMusical.feedback.connect(state.fx.loopMusical.delay);
+                } catch (_) {}
+                state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4 };
                 const curveLen = 44100; const curve = new Float32Array(curveLen); const amount = 120;
                 for (let i=0;i<curveLen;i++){ const x = i/curveLen*2-1; curve[i] = ((3+amount)*x*20*Math.PI/180)/(Math.PI+amount*Math.abs(x)); }
                 state.fx.distort.node.curve = curve; state.fx.distort.node.oversample = '4x';
@@ -5320,6 +5364,13 @@ function randomGlowColor() {
                 state.fx.echoFeedback.node.connect(state.fx.echoDelay.node);
                 enabled.push(state.fx.echoDelay.node);
             }
+            if (state.fx.loopMusical && state.fx.loopMusical.on) {
+                try { state.fx.loopMusical.delay.disconnect(); } catch (_) {}
+                try { state.fx.loopMusical.feedback.disconnect(); } catch (_) {}
+                state.fx.loopMusical.delay.connect(state.fx.loopMusical.feedback);
+                state.fx.loopMusical.feedback.connect(state.fx.loopMusical.delay);
+                enabled.push(state.fx.loopMusical.delay);
+            }
             if (state.fx.distort.on) enabled.push(state.fx.distort.node);
             // Chain: mixInput -> ...enabled... -> analyser
             let last = state.mixInput;
@@ -5342,7 +5393,133 @@ function randomGlowColor() {
                 }
             } catch(_) {}
         }
-        
+
+        function syncDjMusicalLoopDelayTime() {
+            if (!state.audioCtx || !state.fx || !state.fx.loopMusical || !state.djBeatFx) return;
+            const bars = Math.round(Math.max(0, Math.min(8, state.djBeatFx.loopBars)));
+            const bpm = (typeof bpmSmoothA === 'number' && bpmSmoothA > 40 && bpmSmoothA < 300)
+                ? bpmSmoothA : ((typeof bpmSmoothB === 'number' && bpmSmoothB > 40 && bpmSmoothB < 300) ? bpmSmoothB : 120);
+            const beatSec = 60 / bpm;
+            const barSec = beatSec * 4;
+            const dt = bars <= 0 ? 0.001 : Math.min(14.9, Math.max(0.03, bars * barSec));
+            try {
+                state.fx.loopMusical.delay.delayTime.value = dt;
+            } catch (_) {}
+        }
+
+        function applyDjBeatFxTk(val) {
+            if (!state.djBeatFx) return;
+            state.djBeatFx.tkHz = val;
+            try {
+                if (state.fx && state.fx.tk && state.fx.tk.node) state.fx.tk.node.frequency.value = val;
+            } catch (_) {}
+        }
+
+        function applyDjBeatFxLoop(val) {
+            if (!state.djBeatFx || !state.fx || !state.fx.loopMusical) return;
+            const bars = Math.round(Math.max(0, Math.min(8, val)));
+            state.djBeatFx.loopBars = bars;
+            state.fx.loopMusical.on = bars > 0;
+            syncDjMusicalLoopDelayTime();
+            rebuildEffectsChain();
+        }
+
+        function applyDjBeatFxArp(val) {
+            if (!state.djBeatFx || !state.fx || !state.fx.arp) return;
+            state.djBeatFx.arpHz = val;
+            const on = val >= 0.35;
+            try {
+                state.fx.arp.lfo.frequency.value = Math.max(0.25, Math.min(32, val <= 0.35 ? 4 : val));
+                state.fx.arp.on = on;
+                state.fx.arp.lfoGain.gain.value = on ? 600 : 0;
+            } catch (_) {}
+            rebuildEffectsChain();
+            try {
+                const fxArp = document.getElementById('fx-arp');
+                if (fxArp) fxArp.classList.toggle('on', on);
+            } catch (_) {}
+        }
+
+        function bindDjBeatFxKnobPair(root, suffix, min, max, key, applyFn, resetVal, loopIntegerUi) {
+            const elA = root.querySelector('#dj-knob-a-' + suffix);
+            const elB = root.querySelector('#dj-knob-b-' + suffix);
+            if (!elA || !elB) return;
+            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4 };
+            let startY = 0;
+            let startVal = 0;
+
+            const updateVisuals = (val) => {
+                state.djBeatFx[key] = val;
+                setKnobUi(elA, min, max, val);
+                setKnobUi(elB, min, max, val);
+                if (loopIntegerUi) {
+                    const t = String(Math.round(val));
+                    try {
+                        const va = elA.querySelector('.knob-value');
+                        const vb = elB.querySelector('.knob-value');
+                        if (va) va.textContent = t;
+                        if (vb) vb.textContent = t;
+                    } catch (_) {}
+                }
+            };
+
+            updateVisuals(typeof state.djBeatFx[key] === 'number' ? state.djBeatFx[key] : resetVal);
+
+            const onMove = (e) => {
+                const y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+                const dy = startY - y;
+                const range = max - min;
+                const delta = (dy / 200) * range;
+                let newVal = Math.max(min, Math.min(max, startVal + delta));
+                updateVisuals(newVal);
+                applyFn(newVal);
+            };
+
+            const onUp = () => {
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('touchmove', onMove);
+                window.removeEventListener('mouseup', onUp);
+                window.removeEventListener('touchend', onUp);
+            };
+
+            const bindEl = (el) => {
+                el.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    startY = e.clientY || 0;
+                    startVal = state.djBeatFx[key];
+                    window.addEventListener('mousemove', onMove);
+                    window.addEventListener('mouseup', onUp);
+                });
+                el.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    startY = e.touches ? e.touches[0].clientY : 0;
+                    startVal = state.djBeatFx[key];
+                    window.addEventListener('touchmove', onMove, { passive: false });
+                    window.addEventListener('touchend', onUp);
+                }, { passive: false });
+                el.addEventListener('dblclick', (e) => {
+                    try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+                    updateVisuals(resetVal);
+                    applyFn(resetVal);
+                });
+            };
+            bindEl(elA);
+            bindEl(elB);
+        }
+
+        function wireDjBeatFxKnobs(root) {
+            try { initAudio(); } catch (_) {}
+            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4 };
+            bindDjBeatFxKnobPair(root, 'tk', 200, 8000, 'tkHz', applyDjBeatFxTk, 1200, false);
+            bindDjBeatFxKnobPair(root, 'loop', 0, 8, 'loopBars', applyDjBeatFxLoop, 0, true);
+            bindDjBeatFxKnobPair(root, 'arp', 0, 16, 'arpHz', applyDjBeatFxArp, 4, false);
+            try {
+                applyDjBeatFxTk(state.djBeatFx.tkHz);
+                applyDjBeatFxLoop(state.djBeatFx.loopBars);
+                applyDjBeatFxArp(state.djBeatFx.arpHz);
+            } catch (_) {}
+        }
+
         // Enable/disable start controls (radio/mic/file/url)
         function setStartControlsEnabled(enabled) {
             const btnRadio = document.getElementById('btn-radio');
@@ -7708,6 +7885,11 @@ function stopAllAndShowStart() {
             animateFrame() {
                 this.animId = requestAnimationFrame(() => this.animateFrame());
                 try {
+                    if (state && state.fx && state.fx.loopMusical && state.fx.loopMusical.on && typeof syncDjMusicalLoopDelayTime === 'function') {
+                        syncDjMusicalLoopDelayTime();
+                    }
+                } catch (_) {}
+                try {
                     if (state && state.analyserNodeA && state.analyserNodeB) {
                         if (!this.bufA || this.bufA.length !== state.analyserNodeA.frequencyBinCount) {
                             this.bufA = new Uint8Array(state.analyserNodeA.frequencyBinCount);
@@ -7764,20 +7946,27 @@ function stopAllAndShowStart() {
                 <button type="button" class="btn dj-fx dj-beatmap-sync" id="dj-a-beat-sync">Sync</button>
               </div>
             </div>
-            <div class="dj-beatmap-pads">
-              <div class="dj-beatmap-col" aria-label="Deck A beat layers">
-                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="0">High</button>
-                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="1">Drum</button>
-                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="2">Clap</button>
-                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="3">Perc</button>
-                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="4">Tom</button>
+            <div class="dj-beatmap-main">
+              <div class="dj-beatmap-fx-knobs" aria-label="Deck A beat FX">
+                <div class="eq-col eq-strip" aria-label="TK filter frequency"><div class="knob-wrap" id="dj-knob-a-tk" style="--knob-color:#f5d20f"><div class="knob-indicator"></div><div class="knob-value">1200</div></div><div class="eq-label">TK</div></div>
+                <div class="eq-col eq-strip" aria-label="Musical loop bars"><div class="knob-wrap" id="dj-knob-a-loop" style="--knob-color:#58f5ff"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label">Loop</div></div>
+                <div class="eq-col eq-strip" aria-label="Arpeggiator rate"><div class="knob-wrap" id="dj-knob-a-arp" style="--knob-color:#d580ff"><div class="knob-indicator"></div><div class="knob-value">4</div></div><div class="eq-label">Arp</div></div>
               </div>
-              <div class="dj-beatmap-col" aria-label="Deck A sample pads">
-                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="5">WAA</button>
-                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="6">WAAA</button>
-                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="7">AIR📢</button>
-                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="8">FX1</button>
-                <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="9">FX2</button>
+              <div class="dj-beatmap-pads">
+                <div class="dj-beatmap-col" aria-label="Deck A beat layers">
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="0">High</button>
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="1">Drum</button>
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="2">Clap</button>
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="3">Perc</button>
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="4">Tom</button>
+                </div>
+                <div class="dj-beatmap-col" aria-label="Deck A sample pads">
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="5">WAA</button>
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="6">WAAA</button>
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="7">AIR📢</button>
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="8">FX1</button>
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="9">FX2</button>
+                </div>
               </div>
             </div>
             <input type="file" id="dj-a-beat-file" class="display-none" accept="audio/*" aria-hidden="true" />
@@ -7849,20 +8038,27 @@ function stopAllAndShowStart() {
                     <button type="button" class="btn dj-fx dj-beatmap-sync" id="dj-b-beat-sync">Sync</button>
                   </div>
                 </div>
-                <div class="dj-beatmap-pads">
-                  <div class="dj-beatmap-col" aria-label="Deck B beat layers">
-                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="0">High</button>
-                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="1">Drum</button>
-                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="2">Clap</button>
-                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="3">Perc</button>
-                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="4">Tom</button>
+                <div class="dj-beatmap-main">
+                  <div class="dj-beatmap-fx-knobs" aria-label="Deck B beat FX">
+                    <div class="eq-col eq-strip" aria-label="TK filter frequency"><div class="knob-wrap" id="dj-knob-b-tk" style="--knob-color:#f5d20f"><div class="knob-indicator"></div><div class="knob-value">1200</div></div><div class="eq-label">TK</div></div>
+                    <div class="eq-col eq-strip" aria-label="Musical loop bars"><div class="knob-wrap" id="dj-knob-b-loop" style="--knob-color:#58f5ff"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label">Loop</div></div>
+                    <div class="eq-col eq-strip" aria-label="Arpeggiator rate"><div class="knob-wrap" id="dj-knob-b-arp" style="--knob-color:#d580ff"><div class="knob-indicator"></div><div class="knob-value">4</div></div><div class="eq-label">Arp</div></div>
                   </div>
-                  <div class="dj-beatmap-col" aria-label="Deck B sample pads">
-                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="5">WAA</button>
-                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="6">WAAA</button>
-                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="7">AIR📢</button>
-                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="8">FX1</button>
-                    <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="9">FX2</button>
+                  <div class="dj-beatmap-pads">
+                    <div class="dj-beatmap-col" aria-label="Deck B beat layers">
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="0">High</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="1">Drum</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="2">Clap</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="3">Perc</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="4">Tom</button>
+                    </div>
+                    <div class="dj-beatmap-col" aria-label="Deck B sample pads">
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="5">WAA</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="6">WAAA</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="7">AIR📢</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="8">FX1</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="9">FX2</button>
+                    </div>
                   </div>
                 </div>
                 <input type="file" id="dj-b-beat-file" class="display-none" accept="audio/*" aria-hidden="true" />
@@ -8031,6 +8227,10 @@ function stopAllAndShowStart() {
                         if (kn && typeof wireDjKnobMirror === 'function') wireDjKnobMirror(kn, mixId, sig.signal);
                     } catch (_) {}
                 });
+
+                try {
+                    if (typeof wireDjBeatFxKnobs === 'function') wireDjBeatFxKnobs(root);
+                } catch (_) {}
 
                 try {
                     if (mixCross && djCross) djCross.value = mixCross.value;
