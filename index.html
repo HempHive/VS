@@ -488,13 +488,39 @@
             line-height: 1;
         }
         #dj-visual-root .dj-video-btn:hover { filter: brightness(1.1); }
-        #dj-visual-root .dj-b-video-inline {
-            width: 100%;
-            display: grid;
-            grid-template-columns: auto auto 1fr auto auto;
+        .dj-deck-b-queue-panel .dj-media-deck-b-tools {
+            display: flex;
+            flex-wrap: wrap;
             gap: 6px;
             align-items: center;
-            margin-top: 6px;
+            margin: 6px 0 4px;
+        }
+        .dj-deck-b-queue-panel .dj-media-deck-b-tools .dj-video-loader-input {
+            flex: 1 1 140px;
+            min-width: 72px;
+            width: auto;
+            max-width: 100%;
+        }
+        #dj-visual-root .dj-video-shell:fullscreen {
+            border-radius: 0;
+            background: #000;
+        }
+        #dj-visual-root .dj-video-shell:-webkit-full-screen {
+            border-radius: 0;
+            background: #000;
+        }
+        #dj-visual-root #dj-deck-b-viz-mount:fullscreen {
+            border-radius: 0;
+            background: #000;
+        }
+        #dj-visual-root #dj-deck-b-viz-mount:-webkit-full-screen {
+            border-radius: 0;
+            background: #000;
+        }
+        #dj-visual-root .dj-video-shell.dj-video-fs-hide-controls .dj-video-controls {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
         }
         #dj-visual-root .dj-video-loader-input {
             width: 100%;
@@ -3577,6 +3603,41 @@ const QUALITY = {
             (deckVideoHistory.a || []).forEach(pushUnique);
             return out;
         }
+        function isDeckAVideoActivelyPlaying() {
+            try {
+                if (!audioEl) return false;
+                const src = String(audioEl.currentSrc || audioEl.src || '').trim();
+                if (!src || audioEl.paused || audioEl.ended) return false;
+                return isLikelyVideoUrl(src);
+            } catch (_) {
+                return false;
+            }
+        }
+        /** Deck B video panel: live Deck A video overrides media queue / B feeds until A stops. */
+        function getDeckBVideoPlaybackSources() {
+            if (isDeckAVideoActivelyPlaying()) {
+                try {
+                    const src = String(audioEl.currentSrc || audioEl.src || '').trim();
+                    if (!src) return getDeckBVideoCandidates();
+                    let label = 'Deck A video';
+                    try {
+                        const fa = deckVideoFeeds.a;
+                        if (fa && fa.url) {
+                            const su = sanitizeUrlForAudio(src);
+                            if (su === sanitizeUrlForAudio(fa.url) || src === fa.url) label = fa.label || label;
+                            else label = deriveNameFromUrl(src) || label;
+                        } else {
+                            label = deriveNameFromUrl(src) || label;
+                        }
+                    } catch (_) {}
+                    return [{ url: src, label }];
+                } catch (_) {}
+            }
+            if (mediaVideoQueue.length) {
+                return mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }));
+            }
+            return getDeckBVideoCandidates();
+        }
         // Volume slider
         const volumeSlider = document.getElementById('volume-slider');
         const topBar = document.getElementById('top-bar');
@@ -6479,6 +6540,28 @@ function stopAllAndShowStart() {
 
             tearDownDeckBViz(opts) {
                 try {
+                    if (typeof this._deckBVizMountFsCleanup === 'function') {
+                        try { this._deckBVizMountFsCleanup(); } catch (_) {}
+                        this._deckBVizMountFsCleanup = null;
+                    }
+                } catch (_) {}
+                try {
+                    if (typeof this._deckBVideoFullscreenCleanup === 'function') {
+                        try { this._deckBVideoFullscreenCleanup(); } catch (_) {}
+                        this._deckBVideoFullscreenCleanup = null;
+                    }
+                } catch (_) {}
+                try {
+                    const fe = document.fullscreenElement || document.webkitFullscreenElement;
+                    const mountFs = this.root && this.root.querySelector('#dj-deck-b-viz-mount');
+                    if (fe && mountFs && mountFs.contains(fe)) {
+                        try {
+                            if (document.exitFullscreen) document.exitFullscreen();
+                            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                        } catch (_) {}
+                    }
+                } catch (_) {}
+                try {
                     if (!opts || !opts.skipQueueStrip) {
                         try {
                             this.deckBQueueVisible = false;
@@ -6533,12 +6616,10 @@ function stopAllAndShowStart() {
                     const bars = this.root && this.root.querySelector('#dj-b-vis-bars');
                     const pm = this.root && this.root.querySelector('#dj-b-vis-pm2');
                     const blank = this.root && this.root.querySelector('#dj-b-vis-blank');
-                    const videoInline = this.root && this.root.querySelector('#dj-b-video-inline');
                     const barsA = this.root && this.root.querySelector('#dj-vis-bars');
                     const pmA = this.root && this.root.querySelector('#dj-vis-pm2');
                     const blankA = this.root && this.root.querySelector('#dj-vis-blank');
                     if (this.deckBQueueVisible) {
-                        if (videoInline) videoInline.classList.add('display-none');
                         if (bars) bars.classList.remove('on');
                         if (pm) pm.classList.remove('on');
                         if (blank) blank.classList.remove('on');
@@ -6552,7 +6633,6 @@ function stopAllAndShowStart() {
                     if (bars) bars.classList.toggle('on', m === 'bars');
                     if (pm) pm.classList.toggle('on', m === 'projectm');
                     if (blank) blank.classList.toggle('on', m === 'blank');
-                    if (videoInline) videoInline.classList.toggle('display-none', m !== 'video');
                     if (barsA) barsA.classList.toggle('deck-b-active', m === 'bars');
                     if (pmA) pmA.classList.toggle('deck-b-active', m === 'projectm');
                     if (blankA) blankA.classList.toggle('deck-b-active', m === 'blank');
@@ -6564,7 +6644,7 @@ function stopAllAndShowStart() {
                 if (this.deckBVizMode !== 'video') return;
                 if (deckBVideoUserIdle) return;
                 try {
-                    const list = getDeckBVideoCandidates();
+                    const list = getDeckBVideoPlaybackSources();
                     this.deckBVideoList = Array.isArray(list) ? list : [];
                     if (!this.deckBVideoList.length) return;
                     if (this.deckBVideoIndex >= this.deckBVideoList.length) this.deckBVideoIndex = 0;
@@ -6572,18 +6652,70 @@ function stopAllAndShowStart() {
                     if (!src || !src.url) return;
                     if (!this.deckBVideoEl) return;
                     if (this.deckBVideoEl.src !== src.url) this.deckBVideoEl.src = src.url;
+                    try { this.deckBVideoEl.loop = !!deckBVideoLoopEnabled; } catch (_) {}
                     this.showDeckBVisualBackButton(src.label || 'Video');
+                    this.deckBVideoEl.play().catch(() => {});
                 } catch (_) {}
             }
 
-            startDeckBVideoVisual() {
+            attachDeckBVizMountFullscreen(mount) {
+                try {
+                    if (typeof this._deckBVizMountFsCleanup === 'function') {
+                        try { this._deckBVizMountFsCleanup(); } catch (_) {}
+                        this._deckBVizMountFsCleanup = null;
+                    }
+                } catch (_) {}
+                if (!mount) return;
+                try { mount.title = 'Double-click for fullscreen · Esc to exit'; } catch (_) {}
+                const getFs = () => document.fullscreenElement || document.webkitFullscreenElement;
+                const exitFs = () => {
+                    try {
+                        if (document.exitFullscreen) document.exitFullscreen();
+                        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                    } catch (_) {}
+                };
+                const enterFs = () => {
+                    const req = mount.requestFullscreen || mount.webkitRequestFullscreen;
+                    if (req) try { req.call(mount); } catch (_) {}
+                };
+                const onDblClick = (e) => {
+                    try { e.preventDefault(); } catch (_) {}
+                    if (getFs() === mount) exitFs();
+                    else enterFs();
+                };
+                const onKeyDown = (e) => {
+                    if (e.key !== 'Escape') return;
+                    if (getFs() !== mount) return;
+                    try { e.preventDefault(); } catch (_) {}
+                    exitFs();
+                };
+                mount.addEventListener('dblclick', onDblClick);
+                document.addEventListener('keydown', onKeyDown, true);
+                this._deckBVizMountFsCleanup = () => {
+                    try { mount.removeEventListener('dblclick', onDblClick); } catch (_) {}
+                    try { document.removeEventListener('keydown', onKeyDown, true); } catch (_) {}
+                };
+            }
+
+            startDeckBVideoVisual(opts) {
                 if (!this.root) return;
                 deckBVideoUserIdle = false;
-                const list = getDeckBVideoCandidates();
+                const list = getDeckBVideoPlaybackSources();
                 this.tearDownDeckBViz();
                 this.deckBVizMode = 'video';
                 this.deckBVideoList = list;
                 this.deckBVideoIndex = 0;
+                try {
+                    const pi = opts && typeof opts.mediaQueueIndex === 'number' ? opts.mediaQueueIndex : -1;
+                    if (pi >= 0) {
+                        this.deckBVideoIndex = pi;
+                        if (this.deckBVideoList.length && this.deckBVideoIndex >= this.deckBVideoList.length) {
+                            this.deckBVideoIndex = 0;
+                        }
+                    }
+                } catch (_) {
+                    this.deckBVideoIndex = 0;
+                }
                 try {
                     const stage = this.root.querySelector('.dj-deck-b-stage');
                     if (stage) stage.classList.add('dj-deck-b-visual-mode');
@@ -6621,10 +6753,12 @@ function stopAllAndShowStart() {
                     const btnPlay = mkBtn('Play', 'Play/Pause current video');
                     const btnNext = mkBtn('Next', 'Next known video source');
                     const btnStop = mkBtn('Stop', 'Stop playback; disable loop/shuffle; clear video until you press Play or Load');
+                    const btnFullscreen = mkBtn('Fullscreen', 'Fullscreen video (Esc to exit)');
                     ctrls.appendChild(btnRestart);
                     ctrls.appendChild(btnPlay);
                     ctrls.appendChild(btnNext);
                     ctrls.appendChild(btnStop);
+                    ctrls.appendChild(btnFullscreen);
                     shell.appendChild(vid);
                     shell.appendChild(ctrls);
                     mount.appendChild(shell);
@@ -6638,6 +6772,68 @@ function stopAllAndShowStart() {
                     fiVideo.style.display = 'none';
                     fiVideo.setAttribute('aria-hidden', 'true');
                     shell.appendChild(fiVideo);
+
+                    let fsCtrlHideTimer = null;
+                    const clearFsHideTimer = () => {
+                        if (fsCtrlHideTimer != null) {
+                            clearTimeout(fsCtrlHideTimer);
+                            fsCtrlHideTimer = null;
+                        }
+                    };
+                    const isShellFs = () =>
+                        (document.fullscreenElement === shell) ||
+                        (document.webkitFullscreenElement === shell);
+                    const scheduleFsCtrlHide = () => {
+                        clearFsHideTimer();
+                        shell.classList.remove('dj-video-fs-hide-controls');
+                        if (!isShellFs()) return;
+                        fsCtrlHideTimer = setTimeout(() => {
+                            fsCtrlHideTimer = null;
+                            if (isShellFs()) shell.classList.add('dj-video-fs-hide-controls');
+                        }, 3000);
+                    };
+                    const onFsShellActivity = () => {
+                        if (!isShellFs()) return;
+                        scheduleFsCtrlHide();
+                    };
+                    const syncFsBtn = () => {
+                        const on = isShellFs();
+                        btnFullscreen.textContent = on ? 'Exit FS' : 'Fullscreen';
+                        btnFullscreen.title = on ? 'Exit fullscreen (Esc)' : 'Fullscreen video player';
+                    };
+                    const onFsChange = () => {
+                        syncFsBtn();
+                        if (isShellFs()) scheduleFsCtrlHide();
+                        else {
+                            clearFsHideTimer();
+                            shell.classList.remove('dj-video-fs-hide-controls');
+                        }
+                    };
+                    document.addEventListener('fullscreenchange', onFsChange);
+                    document.addEventListener('webkitfullscreenchange', onFsChange);
+                    shell.addEventListener('mousemove', onFsShellActivity);
+                    shell.addEventListener('touchstart', onFsShellActivity, { passive: true });
+                    btnFullscreen.addEventListener('click', () => {
+                        if (isShellFs()) {
+                            try {
+                                if (document.exitFullscreen) document.exitFullscreen();
+                                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                            } catch (_) {}
+                        } else {
+                            const req = shell.requestFullscreen || shell.webkitRequestFullscreen;
+                            if (req) {
+                                try { req.call(shell); } catch (_) {}
+                            }
+                        }
+                    });
+                    this._deckBVideoFullscreenCleanup = () => {
+                        clearFsHideTimer();
+                        document.removeEventListener('fullscreenchange', onFsChange);
+                        document.removeEventListener('webkitfullscreenchange', onFsChange);
+                        try { shell.removeEventListener('mousemove', onFsShellActivity); } catch (_) {}
+                        try { shell.removeEventListener('touchstart', onFsShellActivity); } catch (_) {}
+                        shell.classList.remove('dj-video-fs-hide-controls');
+                    };
 
                     const tryLogoIdle = () => {
                         this.showDeckBVisualBackButton('Video');
@@ -6680,9 +6876,7 @@ function stopAllAndShowStart() {
                     };
 
                     const applyCurrent = () => {
-                        this.deckBVideoList = mediaVideoQueue.length
-                            ? mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }))
-                            : getDeckBVideoCandidates();
+                        this.deckBVideoList = getDeckBVideoPlaybackSources();
                         if (deckBVideoUserIdle) {
                             applyDeckBVideoStopped();
                             return;
@@ -6716,9 +6910,7 @@ function stopAllAndShowStart() {
                         }
                         const noSrc = !vid.getAttribute('src');
                         if (deckBVideoUserIdle && noSrc) {
-                            this.deckBVideoList = mediaVideoQueue.length
-                                ? mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }))
-                                : getDeckBVideoCandidates();
+                            this.deckBVideoList = getDeckBVideoPlaybackSources();
                             if (this.deckBVideoList.length) {
                                 deckBVideoUserIdle = false;
                                 applyCurrent();
@@ -6732,9 +6924,7 @@ function stopAllAndShowStart() {
                     });
                     btnNext.addEventListener('click', () => {
                         deckBVideoUserIdle = false;
-                        this.deckBVideoList = mediaVideoQueue.length
-                            ? mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }))
-                            : getDeckBVideoCandidates();
+                        this.deckBVideoList = getDeckBVideoPlaybackSources();
                         if (!this.deckBVideoList.length) {
                             tryLogoIdle();
                             return;
@@ -6768,15 +6958,15 @@ function stopAllAndShowStart() {
                         if (!src) return;
                         deckBVideoUserIdle = false;
                         if (src.type === 'url') {
-                            this.deckBVideoList = getDeckBVideoCandidates();
-                            this.deckBVideoIndex = Math.max(0, this.deckBVideoList.findIndex((x) => x.url === src.entry.url));
+                            const mqIdx = mediaVideoQueue.findIndex((x) => x && x.url === src.entry.url);
+                            this.deckBVideoIndex = mqIdx >= 0 ? mqIdx : 0;
                             applyCurrent();
                         } else if (src.type === 'file') {
                             enqueueDeckLocalFiles('b', [src.file]);
                             playDeckBTrackFromQueue();
                             pendingLocalVideoFile = null;
                             loadInput.value = '';
-                            this.deckBVideoList = getDeckBVideoCandidates();
+                            this.deckBVideoList = getDeckBVideoPlaybackSources();
                             this.deckBVideoIndex = 0;
                             applyCurrent();
                         }
@@ -6828,9 +7018,7 @@ function stopAllAndShowStart() {
                             try { vid.currentTime = 0; vid.play().catch(() => {}); } catch (_) {}
                             return;
                         }
-                        this.deckBVideoList = mediaVideoQueue.length
-                            ? mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }))
-                            : getDeckBVideoCandidates();
+                        this.deckBVideoList = getDeckBVideoPlaybackSources();
                         if (this.deckBVideoList.length > 1) {
                             if (deckBVideoShuffleEnabled) {
                                 let next = this.deckBVideoIndex;
@@ -6841,7 +7029,11 @@ function stopAllAndShowStart() {
                             }
                             applyCurrent();
                         } else {
-                            tryLogoIdle();
+                            if (isDeckAVideoActivelyPlaying()) {
+                                applyCurrent();
+                            } else {
+                                tryLogoIdle();
+                            }
                         }
                     });
                     applyCurrent();
@@ -6970,6 +7162,7 @@ function stopAllAndShowStart() {
                     } catch (_) {}
                 };
                 loop();
+                this.attachDeckBVizMountFullscreen(mount);
             }
 
             startDeckBAudioBars() {
@@ -7029,6 +7222,7 @@ function stopAllAndShowStart() {
                     } catch (_) {}
                 };
                 loop();
+                this.attachDeckBVizMountFullscreen(mount);
             }
 
             startDeckBBlankVisual() {
@@ -7260,13 +7454,6 @@ function stopAllAndShowStart() {
       <span class="dj-fader-label-b">B</span>
     </div>
     <button type="button" class="dj-visual-title-btn display-none" id="dj-b-visual-back-btn">DECK B</button>
-    <div id="dj-b-video-inline" class="dj-b-video-inline display-none" aria-label="Deck B video loader">
-      <button type="button" class="dj-video-btn" id="dj-b-video-local" title="Pick local video file">Local</button>
-      <button type="button" class="dj-video-btn" id="dj-b-video-load" title="Load URL/local into Deck B video player">Load</button>
-      <input id="dj-b-video-input" class="dj-video-loader-input" type="text" placeholder="Paste video URL" />
-      <button type="button" class="dj-video-btn" id="dj-b-video-q-a" title="Load into Deck A queue">A</button>
-      <button type="button" class="dj-video-btn" id="dj-b-video-q-b" title="Load into Deck B queue">B</button>
-    </div>
     <div class="dj-station-title" id="dj-station-b-title">—</div>
     <div class="dj-deck-body dj-deck-body-b">
       <div class="dj-deck-b-stage">
@@ -7348,6 +7535,13 @@ function stopAllAndShowStart() {
                     <button type="button" class="dj-url-btn" id="dj-media-loop">Loop</button>
                     <button type="button" class="dj-url-btn" id="dj-media-shuffle">Shuffle</button>
                   </div>
+                </div>
+                <div class="dj-media-deck-b-tools" aria-label="Deck B video URL and file loader">
+                  <button type="button" class="dj-video-btn" id="dj-b-video-local" title="Pick local video file">Local</button>
+                  <button type="button" class="dj-video-btn" id="dj-b-video-load" title="Load URL/local into Deck B video player">Load</button>
+                  <input id="dj-b-video-input" class="dj-video-loader-input" type="text" placeholder="Paste video URL" />
+                  <button type="button" class="dj-video-btn" id="dj-b-video-q-a" title="Load into Deck A queue">A</button>
+                  <button type="button" class="dj-video-btn" id="dj-b-video-q-b" title="Load into Deck B queue">B</button>
                 </div>
                 <ul id="dj-media-queue-list" class="dj-media-list"></ul>
               </div>
@@ -7649,16 +7843,8 @@ function stopAllAndShowStart() {
                         if (!it || !it.url) return;
                         const action = btn.getAttribute('data-action');
                         if (action === 'play') {
-                            this.startDeckBVideoVisual();
-                            this.deckBVideoList = mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }));
-                            this.deckBVideoIndex = Math.max(0, this.deckBVideoList.findIndex((m) => m && m.url === it.url));
-                            try {
-                                if (this.deckBVideoEl) {
-                                    this.deckBVideoEl.src = it.url;
-                                    this.deckBVideoEl.loop = !!deckBVideoLoopEnabled;
-                                    this.deckBVideoEl.play().catch(() => {});
-                                }
-                            } catch (_) {}
+                            const mqIdx = mediaVideoQueue.findIndex((m) => m && m.url === it.url);
+                            this.startDeckBVideoVisual({ mediaQueueIndex: mqIdx >= 0 ? mqIdx : 0 });
                         } else if (action === 'queue-a') enqueueDeckUrl('a', it.url, it.label);
                         else if (action === 'queue-b') enqueueDeckUrl('b', it.url, it.label);
                         else if (action === 'delete') removeMediaVideoQueueItem(id);
@@ -8104,7 +8290,12 @@ function stopAllAndShowStart() {
 
                 try {
                     ['play', 'pause', 'ended', 'stalled'].forEach((ev) => {
-                        if (audioEl) audioEl.addEventListener(ev, () => this.syncPlayLabels(), sig);
+                        if (audioEl) {
+                            audioEl.addEventListener(ev, () => {
+                                try { this.syncPlayLabels(); } catch (_) {}
+                                try { this.refreshDeckBVideoSource(); } catch (_) {}
+                            }, sig);
+                        }
                         if (audioElB) audioElB.addEventListener(ev, () => this.syncPlayLabels(), sig);
                     });
                 } catch(_) {}
