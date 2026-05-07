@@ -349,27 +349,36 @@
         }
         .dj-deck-b-queue-panel .dj-url-item {
             display: flex;
-            flex-direction: column;
-            gap: 5px;
+            align-items: center;
+            gap: 6px;
             padding: 6px;
             border-radius: 6px;
             background: rgba(255, 255, 255, 0.06);
         }
         .dj-deck-b-queue-panel .dj-url-name {
             font-size: 11px;
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             word-break: break-word;
         }
         .dj-deck-b-queue-panel .dj-url-item-actions {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            display: inline-flex;
             gap: 4px;
+            flex-shrink: 0;
         }
         .dj-deck-b-queue-panel .dj-url-item .dj-url-btn {
-            padding: 2px 6px;
-            font-size: 10px;
+            padding: 1px 4px;
+            font-size: 9px;
             border-radius: 4px;
             min-width: 0;
             line-height: 1;
+            width: auto;
+        }
+        #dj-visual-root.dj-mode-portrait .dj-deck-b-queue-panel {
+            padding-bottom: calc(10px + clamp(88px, 13vh, 138px) + env(safe-area-inset-bottom, 0px));
         }
         .dj-deck-b-viz-mount {
             position: absolute;
@@ -433,6 +442,31 @@
             line-height: 1;
         }
         #dj-visual-root .dj-video-btn:hover { filter: brightness(1.1); }
+        #dj-visual-root .dj-video-loader {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: grid;
+            grid-template-columns: 1fr auto auto auto auto;
+            gap: 6px;
+            align-items: center;
+            z-index: 2;
+            padding: 6px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.52);
+        }
+        #dj-visual-root .dj-video-loader-input {
+            width: 100%;
+            box-sizing: border-box;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.24);
+            background: rgba(0,0,0,0.4);
+            color: #fff;
+            font-size: 11px;
+            padding: 5px 7px;
+        }
         /* Jog | deck volume slider | button block */
         #dj-visual-root .dj-deck-mosaic {
             display: grid;
@@ -6439,7 +6473,6 @@ function stopAllAndShowStart() {
             startDeckBVideoVisual() {
                 if (!this.root) return;
                 const list = getDeckBVideoCandidates();
-                if (!list.length) return;
                 this.tearDownDeckBViz();
                 this.deckBVizMode = 'video';
                 this.deckBVideoList = list;
@@ -6457,13 +6490,12 @@ function stopAllAndShowStart() {
 
                     const shell = document.createElement('div');
                     shell.className = 'dj-video-shell';
-                    const vid = document.createElement('video');
-                    vid.className = 'dj-video-player';
-                    vid.playsInline = true;
-                    vid.muted = true;
-                    vid.loop = false;
-                    const ctrls = document.createElement('div');
-                    ctrls.className = 'dj-video-controls';
+                    const loader = document.createElement('div');
+                    loader.className = 'dj-video-loader';
+                    const loadInput = document.createElement('input');
+                    loadInput.className = 'dj-video-loader-input';
+                    loadInput.type = 'text';
+                    loadInput.placeholder = 'Paste video URL';
                     const mkBtn = (label, title) => {
                         const b = document.createElement('button');
                         b.type = 'button';
@@ -6472,20 +6504,49 @@ function stopAllAndShowStart() {
                         b.title = title;
                         return b;
                     };
+                    const btnLoadPlay = mkBtn('P', 'Load and play video URL');
+                    const btnLoadQA = mkBtn('A', 'Load into Deck A queue');
+                    const btnLoadQB = mkBtn('B', 'Load into Deck B queue');
+                    const btnLoadFile = mkBtn('F', 'Pick local video file');
+                    loader.appendChild(loadInput);
+                    loader.appendChild(btnLoadPlay);
+                    loader.appendChild(btnLoadQA);
+                    loader.appendChild(btnLoadQB);
+                    loader.appendChild(btnLoadFile);
+                    const vid = document.createElement('video');
+                    vid.className = 'dj-video-player';
+                    vid.playsInline = true;
+                    vid.muted = true;
+                    vid.loop = false;
+                    const ctrls = document.createElement('div');
+                    ctrls.className = 'dj-video-controls';
                     const btnRestart = mkBtn('Restart', 'Restart current video');
                     const btnPlay = mkBtn('Play', 'Play/Pause current video');
                     const btnNext = mkBtn('Next', 'Next known video source');
                     ctrls.appendChild(btnRestart);
                     ctrls.appendChild(btnPlay);
                     ctrls.appendChild(btnNext);
+                    shell.appendChild(loader);
                     shell.appendChild(vid);
                     shell.appendChild(ctrls);
                     mount.appendChild(shell);
                     this.deckBVideoEl = vid;
+                    let pendingLocalVideoFile = null;
+                    const fiVideo = document.createElement('input');
+                    fiVideo.type = 'file';
+                    fiVideo.accept = 'video/*';
+                    fiVideo.multiple = false;
+                    fiVideo.style.display = 'none';
+                    fiVideo.setAttribute('aria-hidden', 'true');
+                    shell.appendChild(fiVideo);
 
                     const applyCurrent = () => {
                         this.deckBVideoList = getDeckBVideoCandidates();
-                        if (!this.deckBVideoList.length) return;
+                        if (!this.deckBVideoList.length) {
+                            btnPlay.textContent = 'Play';
+                            this.showDeckBVisualBackButton('Video');
+                            return;
+                        }
                         if (this.deckBVideoIndex >= this.deckBVideoList.length) this.deckBVideoIndex = 0;
                         const cur = this.deckBVideoList[this.deckBVideoIndex];
                         if (!cur || !cur.url) return;
@@ -6511,6 +6572,62 @@ function stopAllAndShowStart() {
                         if (!this.deckBVideoList.length) return;
                         this.deckBVideoIndex = (this.deckBVideoIndex + 1) % this.deckBVideoList.length;
                         applyCurrent();
+                    });
+                    const urlOrPendingToEntry = () => {
+                        const clean = sanitizeUrlForAudio(loadInput.value);
+                        if (clean) {
+                            const it = upsertDjQueueUrl(clean, deriveNameFromUrl(clean));
+                            registerDeckVideoFeed('b', it.url, it.name);
+                            return { type: 'url', entry: it };
+                        }
+                        if (pendingLocalVideoFile) {
+                            return { type: 'file', file: pendingLocalVideoFile };
+                        }
+                        return null;
+                    };
+                    btnLoadPlay.addEventListener('click', () => {
+                        const src = urlOrPendingToEntry();
+                        if (!src) return;
+                        if (src.type === 'url') {
+                            this.deckBVideoList = getDeckBVideoCandidates();
+                            this.deckBVideoIndex = Math.max(0, this.deckBVideoList.findIndex((x) => x.url === src.entry.url));
+                            applyCurrent();
+                        } else if (src.type === 'file') {
+                            enqueueDeckLocalFiles('b', [src.file]);
+                            playDeckBTrackFromQueue();
+                            pendingLocalVideoFile = null;
+                            loadInput.value = '';
+                            this.deckBVideoList = getDeckBVideoCandidates();
+                            this.deckBVideoIndex = 0;
+                            applyCurrent();
+                        }
+                    });
+                    btnLoadQA.addEventListener('click', () => {
+                        const src = urlOrPendingToEntry();
+                        if (!src) return;
+                        if (src.type === 'url') enqueueDeckUrl('a', src.entry.url, src.entry.name);
+                        else if (src.type === 'file') enqueueDeckLocalFiles('a', [src.file]);
+                    });
+                    btnLoadQB.addEventListener('click', () => {
+                        const src = urlOrPendingToEntry();
+                        if (!src) return;
+                        if (src.type === 'url') enqueueDeckUrl('b', src.entry.url, src.entry.name);
+                        else if (src.type === 'file') enqueueDeckLocalFiles('b', [src.file]);
+                    });
+                    btnLoadFile.addEventListener('click', () => { try { fiVideo.click(); } catch (_) {} });
+                    fiVideo.addEventListener('change', (ev) => {
+                        const f = (ev.target.files && ev.target.files[0]) || null;
+                        try { ev.target.value = ''; } catch (_) {}
+                        if (!f) return;
+                        pendingLocalVideoFile = f;
+                        loadInput.value = '';
+                        const nm = f.name || 'Video file';
+                        this.showDeckBVisualBackButton(nm);
+                    });
+                    loadInput.addEventListener('keydown', (ev) => {
+                        if (ev.key !== 'Enter') return;
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        btnLoadPlay.click();
                     });
                     vid.addEventListener('play', () => { btnPlay.textContent = 'Pause'; });
                     vid.addEventListener('pause', () => { btnPlay.textContent = 'Play'; });
