@@ -493,6 +493,21 @@
             background-size: 100% 100%, cover;
             filter: brightness(1.12);
         }
+        /* No Visual shortcut: nvi.gif backdrop with btn frame */
+        #dj-visual-root #dj-vis-blank,
+        #dj-visual-root #dj-b-vis-blank {
+            background-image: url('btn.png'), url('nvi.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+            background-color: rgba(0, 0, 0, 0.45);
+        }
+        #dj-visual-root #dj-vis-blank:hover,
+        #dj-visual-root #dj-b-vis-blank:hover {
+            background-image: url('btn.png'), url('nvi.gif');
+            background-size: 100% 100%, cover;
+            filter: brightness(1.12);
+        }
         /* TK filter: long-press editor — position set in JS at cursor */
         #dj-visual-root .dj-tk-hold-panel {
             position: absolute;
