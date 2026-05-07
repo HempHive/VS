@@ -256,11 +256,19 @@
             color: rgba(255, 255, 255, 0.45);
         }
         .dj-deck-b-queue-panel .dj-station-cycle {
-            margin-top: 8px;
             border: 1px solid rgba(255, 255, 255, 0.14);
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.03);
             padding: 8px;
+        }
+        .dj-deck-b-queue-panel .dj-queue-tools {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            align-items: start;
+        }
+        @media (max-width: 700px) {
+            .dj-deck-b-queue-panel .dj-queue-tools { grid-template-columns: 1fr; }
         }
         .dj-deck-b-queue-panel .dj-station-cycle-head {
             font-size: 10px;
@@ -291,6 +299,69 @@
             font-size: 11px;
             color: rgba(255, 255, 255, 0.55);
         }
+        .dj-deck-b-queue-panel .dj-url-drop {
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .dj-deck-b-queue-panel .dj-url-input {
+            width: 100%;
+            box-sizing: border-box;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.35);
+            color: #fff;
+            padding: 6px 8px;
+            font-size: 11px;
+        }
+        .dj-deck-b-queue-panel .dj-url-input::placeholder { color: rgba(255, 255, 255, 0.45); }
+        .dj-deck-b-queue-panel .dj-url-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .dj-deck-b-queue-panel .dj-url-btn {
+            padding: 5px 8px;
+            font-size: 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.07);
+            color: #fff;
+            cursor: pointer;
+            line-height: 1.1;
+        }
+        .dj-deck-b-queue-panel .dj-url-btn:hover { filter: brightness(1.1); }
+        .dj-deck-b-queue-panel .dj-url-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: min(24vh, 170px);
+            overflow: auto;
+        }
+        .dj-deck-b-queue-panel .dj-url-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 6px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .dj-deck-b-queue-panel .dj-url-name {
+            font-size: 11px;
+            word-break: break-word;
+        }
+        .dj-deck-b-queue-panel .dj-url-item-actions {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 4px;
+        }
         .dj-deck-b-viz-mount {
             position: absolute;
             inset: 0;
@@ -315,6 +386,44 @@
             pointer-events: none;
             letter-spacing: 0.04em;
         }
+        #dj-visual-root .dj-video-shell {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #dj-visual-root .dj-video-player {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+        #dj-visual-root .dj-video-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            pointer-events: auto;
+        }
+        #dj-visual-root .dj-video-btn {
+            padding: 6px 10px;
+            font-size: 11px;
+            border-radius: 7px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(0, 0, 0, 0.45);
+            color: #fff;
+            cursor: pointer;
+            line-height: 1;
+        }
+        #dj-visual-root .dj-video-btn:hover { filter: brightness(1.1); }
         /* Jog | deck volume slider | button block */
         #dj-visual-root .dj-deck-mosaic {
             display: grid;
@@ -2916,6 +3025,10 @@ const QUALITY = {
 
         /** Waiting local tracks per deck ({ name, url } blob URLs). Current track is not in queue. */
         const deckFileQueues = { a: [], b: [] };
+        const DJ_QUEUE_URL_STORE_KEY = 'djQueueUrlEntries.v1';
+        let djQueueUrlEntries = [];
+        const deckVideoFeeds = { a: null, b: null };
+        const deckVideoHistory = { a: [], b: [] };
 
         const container = document.getElementById('canvas-container');
         const statusEl = document.getElementById('loading-status');
@@ -3276,6 +3389,93 @@ const QUALITY = {
         const inpWebmDup = document.getElementById('inp-webm-dup');
         const stations = [];
         const stationCycleEnabledByUrl = new Map();
+        const sanitizeUrlForAudio = (v) => String(v || '').trim();
+        function deriveNameFromUrl(url) {
+            const clean = sanitizeUrlForAudio(url);
+            if (!clean) return 'URL source';
+            try {
+                const u = new URL(clean);
+                const bits = (u.pathname || '').split('/').filter(Boolean);
+                const last = bits.length ? decodeURIComponent(bits[bits.length - 1]) : '';
+                return last || (u.hostname || clean);
+            } catch (_) {
+                const cut = clean.split('?')[0];
+                const bits = cut.split('/').filter(Boolean);
+                return bits.length ? bits[bits.length - 1] : clean;
+            }
+        }
+        function saveDjQueueUrlEntries() {
+            try { localStorage.setItem(DJ_QUEUE_URL_STORE_KEY, JSON.stringify(djQueueUrlEntries.slice(0, 100))); } catch (_) {}
+        }
+        function loadDjQueueUrlEntries() {
+            try {
+                const raw = localStorage.getItem(DJ_QUEUE_URL_STORE_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                if (Array.isArray(parsed)) {
+                    djQueueUrlEntries = parsed
+                        .filter((it) => it && typeof it.url === 'string' && it.url.trim())
+                        .map((it) => ({ id: String(it.id || Date.now() + Math.random()), url: it.url.trim(), name: String(it.name || deriveNameFromUrl(it.url)).trim() }))
+                        .slice(0, 100);
+                }
+            } catch (_) {}
+        }
+        function upsertDjQueueUrl(url, preferredName) {
+            const clean = sanitizeUrlForAudio(url);
+            if (!clean) return null;
+            const existingIdx = djQueueUrlEntries.findIndex((it) => it && it.url === clean);
+            if (existingIdx >= 0) {
+                if (preferredName && !djQueueUrlEntries[existingIdx].name) djQueueUrlEntries[existingIdx].name = String(preferredName);
+                const [it] = djQueueUrlEntries.splice(existingIdx, 1);
+                djQueueUrlEntries.unshift(it);
+                saveDjQueueUrlEntries();
+                return it;
+            }
+            const item = { id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8), url: clean, name: String(preferredName || deriveNameFromUrl(clean) || 'URL source') };
+            djQueueUrlEntries.unshift(item);
+            if (djQueueUrlEntries.length > 100) djQueueUrlEntries = djQueueUrlEntries.slice(0, 100);
+            saveDjQueueUrlEntries();
+            return item;
+        }
+        function removeDjQueueUrl(id) {
+            const idx = djQueueUrlEntries.findIndex((it) => it && String(it.id) === String(id));
+            if (idx < 0) return;
+            djQueueUrlEntries.splice(idx, 1);
+            saveDjQueueUrlEntries();
+        }
+        function isLikelyVideoUrl(url) {
+            const v = sanitizeUrlForAudio(url).toLowerCase();
+            if (!v) return false;
+            return /\.(mp4|webm|mkv|mov|m4v|ogv|ogg|avi)(\?|#|$)/i.test(v);
+        }
+        function registerDeckVideoFeed(deckKey, url, label) {
+            const clean = sanitizeUrlForAudio(url);
+            if (!clean || !isLikelyVideoUrl(clean)) return;
+            const k = deckKey === 'b' ? 'b' : 'a';
+            deckVideoFeeds[k] = { url: clean, label: String(label || deriveNameFromUrl(clean) || 'Video source') };
+            const arr = deckVideoHistory[k];
+            const idx = arr.findIndex((it) => it && it.url === clean);
+            if (idx >= 0) arr.splice(idx, 1);
+            arr.unshift({ url: clean, label: deckVideoFeeds[k].label });
+            if (arr.length > 50) arr.length = 50;
+            try {
+                if (state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks' && typeof state.activeVisualizer.refreshDeckBVideoSource === 'function') {
+                    state.activeVisualizer.refreshDeckBVideoSource();
+                }
+            } catch (_) {}
+        }
+        function getDeckBVideoCandidates() {
+            const out = [];
+            const pushUnique = (it) => {
+                if (!it || !it.url) return;
+                if (out.some((x) => x.url === it.url)) return;
+                out.push({ url: it.url, label: it.label || deriveNameFromUrl(it.url) || 'Video source' });
+            };
+            pushUnique(deckVideoFeeds.b);
+            pushUnique(deckVideoFeeds.a);
+            (deckVideoHistory.b || []).forEach(pushUnique);
+            (deckVideoHistory.a || []).forEach(pushUnique);
+            return out;
+        }
         // Volume slider
         const volumeSlider = document.getElementById('volume-slider');
         const topBar = document.getElementById('top-bar');
@@ -4996,11 +5196,55 @@ function randomGlowColor() {
             const q = deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                if (!file || !(file.type || '').startsWith('audio')) continue;
+                const mime = (file.type || '').toLowerCase();
+                const isAudio = mime.startsWith('audio');
+                const isVideo = mime.startsWith('video');
+                if (!file || (!isAudio && !isVideo)) continue;
                 const url = URL.createObjectURL(file);
-                q.push({ name: file.name || 'Audio track', url });
+                q.push({ name: file.name || (isVideo ? 'Video track' : 'Audio track'), url, isVideo: !!isVideo });
+                if (isVideo) registerDeckVideoFeed(deckKey, url, file.name || 'Video track');
             }
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+        }
+        function enqueueDeckUrl(deckKey, url, label) {
+            const clean = sanitizeUrlForAudio(url);
+            if (!clean) return false;
+            const q = deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
+            q.push({ name: String(label || deriveNameFromUrl(clean) || 'URL source'), url: clean });
+            registerDeckVideoFeed(deckKey, clean, label);
+            try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+            return true;
+        }
+        function playDeckUrlNow(deckKey, url, label) {
+            const clean = sanitizeUrlForAudio(url);
+            if (!clean) return false;
+            const media = deckKey === 'b' ? audioElB : audioEl;
+            if (!media) return false;
+            initAudio();
+            try {
+                if (deckKey === 'b') state.deckSourceMode.b = 'local';
+                else state.deckSourceMode.a = 'local';
+                revokeBlobSrc(media);
+                try { media.pause(); } catch (_) {}
+                media.crossOrigin = 'anonymous';
+                media.src = clean;
+                registerDeckVideoFeed(deckKey, clean, label);
+                media.play().then(() => {
+                    connectDeckMediaToEq(deckKey === 'b' ? 'b' : 'a');
+                    try {
+                        if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
+                            state.activeVisualizer.visualizer.connectAudio(state.analyserNode);
+                        }
+                    } catch (_) {}
+                    if (!state.isPlaying) startGame();
+                    if (deckKey === 'b') {
+                        try { if (typeof updateMixBStatus === 'function') updateMixBStatus(); } catch (_) {}
+                    } else {
+                        try { showStationBanner(String(label || deriveNameFromUrl(clean) || 'URL source')); } catch (_) {}
+                    }
+                }).catch(() => {});
+                return true;
+            } catch (_) { return false; }
         }
 
         function removeQueuedTrack(deckKey, index) {
@@ -5026,6 +5270,7 @@ function randomGlowColor() {
                     revokeBlobSrc(audioElB);
                     try { audioElB.pause(); } catch (_) {}
                     audioElB.src = item.url;
+                    if (item.isVideo) registerDeckVideoFeed('b', item.url, item.name);
                     audioElB.play().then(() => {
                         connectDeckMediaToEq('b');
                         try {
@@ -5041,6 +5286,7 @@ function randomGlowColor() {
                     revokeBlobSrc(audioEl);
                     try { audioEl.pause(); } catch (_) {}
                     audioEl.src = item.url;
+                    if (item.isVideo) registerDeckVideoFeed('a', item.url, item.name);
                     audioEl.play().then(() => {
                         connectDeckMediaToEq('a');
                         try {
@@ -5091,6 +5337,7 @@ function randomGlowColor() {
             state.deckSourceMode.a = 'local';
             try { audioEl.crossOrigin = 'anonymous'; } catch (_) {}
             audioEl.src = item.url;
+            if (item.isVideo) registerDeckVideoFeed('a', item.url, item.name);
             audioEl.play().then(() => {
                 connectDeckMediaToEq('a');
                 try {
@@ -5126,6 +5373,7 @@ function randomGlowColor() {
             state.deckSourceMode.b = 'local';
             try { audioElB.crossOrigin = 'anonymous'; } catch (_) {}
             audioElB.src = item.url;
+            if (item.isVideo) registerDeckVideoFeed('b', item.url, item.name);
             audioElB.play().then(() => {
                 connectDeckMediaToEq('b');
                 try {
@@ -5909,6 +6157,9 @@ function stopAllAndShowStart() {
                 this.deckBVizPmCanvas = null;
                 this.deckBVizPmResize = null;
                 this.deckBVizBarsAnimId = null;
+                this.deckBVideoList = [];
+                this.deckBVideoIndex = 0;
+                this.deckBVideoEl = null;
                 this.deckBVizResizeObs = null;
                 this.deckVolResizeObs = null;
                 this.deckBQueueVisible = false;
@@ -6003,6 +6254,7 @@ function stopAllAndShowStart() {
                     fill(ulB, 'b');
                 } catch (_) {}
                 try { this.renderStationCycleUi(); } catch (_) {}
+                try { this.renderQueueUrlUi(); } catch (_) {}
             }
 
             renderStationCycleUi() {
@@ -6037,6 +6289,48 @@ function stopAllAndShowStart() {
                 });
             }
 
+            renderQueueUrlUi() {
+                if (!this.root) return;
+                const listEl = this.root.querySelector('#dj-url-list');
+                if (!listEl) return;
+                listEl.innerHTML = '';
+                if (!Array.isArray(djQueueUrlEntries) || djQueueUrlEntries.length === 0) {
+                    const empty = document.createElement('li');
+                    empty.className = 'dj-url-item dj-station-cycle-empty';
+                    empty.textContent = 'No saved URLs.';
+                    listEl.appendChild(empty);
+                    return;
+                }
+                djQueueUrlEntries.forEach((it) => {
+                    if (!it || !it.url) return;
+                    const li = document.createElement('li');
+                    li.className = 'dj-url-item';
+                    li.setAttribute('data-id', String(it.id || ''));
+                    const name = document.createElement('div');
+                    name.className = 'dj-url-name';
+                    name.textContent = String(it.name || deriveNameFromUrl(it.url) || 'URL source');
+                    const acts = document.createElement('div');
+                    acts.className = 'dj-url-item-actions';
+                    const mk = (act, label, title) => {
+                        const b = document.createElement('button');
+                        b.type = 'button';
+                        b.className = 'dj-url-btn';
+                        b.textContent = label;
+                        b.title = title;
+                        b.setAttribute('data-action', act);
+                        return b;
+                    };
+                    acts.appendChild(mk('play-a', 'Play A', 'Play on Deck A now'));
+                    acts.appendChild(mk('play-b', 'Play B', 'Play on Deck B now'));
+                    acts.appendChild(mk('queue-a', '+A Q', 'Add to Deck A queue'));
+                    acts.appendChild(mk('queue-b', '+B Q', 'Add to Deck B queue'));
+                    acts.appendChild(mk('delete', 'Del', 'Remove URL entry'));
+                    li.appendChild(name);
+                    li.appendChild(acts);
+                    listEl.appendChild(li);
+                });
+            }
+
             tearDownDeckBViz(opts) {
                 try {
                     if (!opts || !opts.skipQueueStrip) {
@@ -6064,6 +6358,9 @@ function stopAllAndShowStart() {
                 this.deckBVizPmVisualizer = null;
                 this.deckBVizPmCanvas = null;
                 this.deckBVizPmResize = null;
+                this.deckBVideoEl = null;
+                this.deckBVideoList = [];
+                this.deckBVideoIndex = 0;
                 try {
                     const stage = this.root && this.root.querySelector('.dj-deck-b-stage');
                     if (stage) stage.classList.remove('dj-deck-b-visual-mode');
@@ -6111,6 +6408,112 @@ function stopAllAndShowStart() {
                     if (pmA) pmA.classList.toggle('deck-b-active', m === 'projectm');
                     if (blankA) blankA.classList.toggle('deck-b-active', m === 'blank');
                     try { updateDjDecksShortcutVisibility(); } catch (_) {}
+                } catch (_) {}
+            }
+
+            refreshDeckBVideoSource() {
+                if (this.deckBVizMode !== 'video') return;
+                try {
+                    const list = getDeckBVideoCandidates();
+                    this.deckBVideoList = Array.isArray(list) ? list : [];
+                    if (!this.deckBVideoList.length) return;
+                    if (this.deckBVideoIndex >= this.deckBVideoList.length) this.deckBVideoIndex = 0;
+                    const src = this.deckBVideoList[this.deckBVideoIndex];
+                    if (!src || !src.url) return;
+                    if (!this.deckBVideoEl) return;
+                    if (this.deckBVideoEl.src !== src.url) this.deckBVideoEl.src = src.url;
+                    this.showDeckBVisualBackButton(src.label || 'Video');
+                } catch (_) {}
+            }
+
+            startDeckBVideoVisual() {
+                if (!this.root) return;
+                const list = getDeckBVideoCandidates();
+                if (!list.length) return;
+                this.tearDownDeckBViz();
+                this.deckBVizMode = 'video';
+                this.deckBVideoList = list;
+                this.deckBVideoIndex = 0;
+                try {
+                    const stage = this.root.querySelector('.dj-deck-b-stage');
+                    if (stage) stage.classList.add('dj-deck-b-visual-mode');
+                    const layer = this.root.querySelector('#dj-deck-b-viz-layer');
+                    if (layer) layer.setAttribute('aria-hidden', 'false');
+                    const mount = this.root.querySelector('#dj-deck-b-viz-mount');
+                    const ph = this.root.querySelector('#dj-deck-b-viz-placeholder');
+                    if (!mount) return;
+                    mount.innerHTML = '';
+                    if (ph) ph.classList.add('display-none');
+
+                    const shell = document.createElement('div');
+                    shell.className = 'dj-video-shell';
+                    const vid = document.createElement('video');
+                    vid.className = 'dj-video-player';
+                    vid.playsInline = true;
+                    vid.muted = true;
+                    vid.loop = false;
+                    const ctrls = document.createElement('div');
+                    ctrls.className = 'dj-video-controls';
+                    const mkBtn = (label, title) => {
+                        const b = document.createElement('button');
+                        b.type = 'button';
+                        b.className = 'dj-video-btn';
+                        b.textContent = label;
+                        b.title = title;
+                        return b;
+                    };
+                    const btnRestart = mkBtn('Restart', 'Restart current video');
+                    const btnPlay = mkBtn('Play', 'Play/Pause current video');
+                    const btnNext = mkBtn('Next', 'Next known video source');
+                    ctrls.appendChild(btnRestart);
+                    ctrls.appendChild(btnPlay);
+                    ctrls.appendChild(btnNext);
+                    shell.appendChild(vid);
+                    shell.appendChild(ctrls);
+                    mount.appendChild(shell);
+                    this.deckBVideoEl = vid;
+
+                    const applyCurrent = () => {
+                        this.deckBVideoList = getDeckBVideoCandidates();
+                        if (!this.deckBVideoList.length) return;
+                        if (this.deckBVideoIndex >= this.deckBVideoList.length) this.deckBVideoIndex = 0;
+                        const cur = this.deckBVideoList[this.deckBVideoIndex];
+                        if (!cur || !cur.url) return;
+                        vid.src = cur.url;
+                        this.showDeckBVisualBackButton(cur.label || 'Video');
+                        vid.play().then(() => {
+                            btnPlay.textContent = 'Pause';
+                        }).catch(() => {
+                            btnPlay.textContent = 'Play';
+                        });
+                    };
+
+                    btnRestart.addEventListener('click', () => {
+                        try { vid.currentTime = 0; } catch (_) {}
+                        vid.play().then(() => { btnPlay.textContent = 'Pause'; }).catch(() => { btnPlay.textContent = 'Play'; });
+                    });
+                    btnPlay.addEventListener('click', () => {
+                        if (vid.paused) vid.play().then(() => { btnPlay.textContent = 'Pause'; }).catch(() => { btnPlay.textContent = 'Play'; });
+                        else { vid.pause(); btnPlay.textContent = 'Play'; }
+                    });
+                    btnNext.addEventListener('click', () => {
+                        this.deckBVideoList = getDeckBVideoCandidates();
+                        if (!this.deckBVideoList.length) return;
+                        this.deckBVideoIndex = (this.deckBVideoIndex + 1) % this.deckBVideoList.length;
+                        applyCurrent();
+                    });
+                    vid.addEventListener('play', () => { btnPlay.textContent = 'Pause'; });
+                    vid.addEventListener('pause', () => { btnPlay.textContent = 'Play'; });
+                    vid.addEventListener('ended', () => {
+                        this.deckBVideoList = getDeckBVideoCandidates();
+                        if (this.deckBVideoList.length > 1) {
+                            this.deckBVideoIndex = (this.deckBVideoIndex + 1) % this.deckBVideoList.length;
+                            applyCurrent();
+                        } else {
+                            btnPlay.textContent = 'Play';
+                        }
+                    });
+                    applyCurrent();
                 } catch (_) {}
             }
 
@@ -6355,7 +6758,7 @@ function stopAllAndShowStart() {
                         this.els.playB.textContent = bPlaying ? 'Pause' : 'Play';
                         this.els.playB.classList.toggle('is-playing', bPlaying);
                     }
-                    const visualActiveOnDeckB = (this.deckBVizMode === 'bars' || this.deckBVizMode === 'projectm' || this.deckBVizMode === 'blank');
+                    const visualActiveOnDeckB = (this.deckBVizMode === 'bars' || this.deckBVizMode === 'projectm' || this.deckBVizMode === 'blank' || this.deckBVizMode === 'video');
                     const hideDeckBFader = visualActiveOnDeckB && !bPlaying;
                     const deckBFader = this.root && this.root.querySelector('.dj-deck-b .dj-fader-strip');
                     if (deckBFader) deckBFader.classList.toggle('display-none', hideDeckBFader);
@@ -6408,13 +6811,13 @@ function stopAllAndShowStart() {
             syncFxLightsFromState() {
                 try {
                     if (!state || !state.fx) return;
-                    const lon = !!state.fx.low.on;
+                    const videoOn = this.deckBVizMode === 'video';
                     const kon = !!(state.fx.tk && state.fx.tk.on);
                     const avatarOn = !!(typeof webmOn !== 'undefined' && webmOn);
                     const mixOpenUi = !!(mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open'));
                     const stationOpenUi = (typeof isTopMenuOpen === 'function') && isTopMenuOpen();
-                    if (this.els.fxLow) this.els.fxLow.classList.toggle('on', lon);
-                    if (this.els.fxLowB) this.els.fxLowB.classList.toggle('on', lon);
+                    if (this.els.fxLow) this.els.fxLow.classList.toggle('on', videoOn);
+                    if (this.els.fxLowB) this.els.fxLowB.classList.toggle('on', videoOn);
                     if (this.els.queueA) this.els.queueA.classList.toggle('on', !!this.deckBQueueVisible);
                     if (this.els.queueB) this.els.queueB.classList.toggle('on', !!this.deckBQueueVisible);
                     if (this.els.fxTk) this.els.fxTk.classList.toggle('on', kon);
@@ -6500,7 +6903,7 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-fx" id="dj-fx-treble" title="Open or close Mix Settings (bottom panel)">Mixer</button>
             <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Open or close station list (top menu)">Station</button>
 
-            <button type="button" class="btn dj-fx" id="dj-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-low" title="Toggle Deck B video player">Video</button>
             <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
             <button type="button" class="btn dj-fx" id="dj-a-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
 
@@ -6554,7 +6957,7 @@ function stopAllAndShowStart() {
                 <button type="button" class="btn dj-fx" id="dj-b-fx-treble" title="Open or close Mix Settings (bottom panel)">Mixer</button>
                 <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Open or close station list (top menu)">Station</button>
 
-                <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
+                <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Toggle Deck B video player">Video</button>
                 <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
                 <button type="button" class="btn dj-fx" id="dj-b-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
 
@@ -6586,9 +6989,23 @@ function stopAllAndShowStart() {
                 <button type="button" class="dj-queue-add" id="dj-queue-add-b">Add files…</button>
               </div>
             </div>
-            <div class="dj-station-cycle" aria-label="Station cycle filter">
-              <div class="dj-station-cycle-head">Radio station cycle list</div>
-              <div id="dj-station-cycle-list" class="dj-station-cycle-list"></div>
+            <div class="dj-queue-tools">
+              <div class="dj-station-cycle" aria-label="Station cycle filter">
+                <div class="dj-station-cycle-head">Radio station cycle list</div>
+                <div id="dj-station-cycle-list" class="dj-station-cycle-list"></div>
+              </div>
+              <div class="dj-url-drop" aria-label="URL drop list">
+                <div class="dj-station-cycle-head">URL drop list</div>
+                <input id="dj-queue-url-input" class="dj-url-input" type="text" placeholder="Paste radio / audio / video URL" />
+                <div class="dj-url-actions">
+                  <button type="button" class="dj-url-btn" id="dj-url-add">Add</button>
+                  <button type="button" class="dj-url-btn" id="dj-url-play-a">Play A</button>
+                  <button type="button" class="dj-url-btn" id="dj-url-play-b">Play B</button>
+                  <button type="button" class="dj-url-btn" id="dj-url-q-a">Queue A</button>
+                  <button type="button" class="dj-url-btn" id="dj-url-q-b">Queue B</button>
+                </div>
+                <ul id="dj-url-list" class="dj-url-list"></ul>
+              </div>
             </div>
           </div>
         </div>
@@ -6718,14 +7135,17 @@ function stopAllAndShowStart() {
                 }
                 this.syncDeckBVisualButtons();
 
-                const djToggleLow = () => {
+                const djToggleVideo = () => {
                     try {
-                        initAudio();
-                        if (typeof toggleFx !== 'function') return;
-                        toggleFx('low', fxLow);
-                        const on = !!state.fx.low.on;
-                        if (this.els.fxLow) this.els.fxLow.classList.toggle('on', on);
-                        if (this.els.fxLowB) this.els.fxLowB.classList.toggle('on', on);
+                        if (this.deckBVizMode === 'video') {
+                            this.tearDownDeckBViz();
+                            this.syncDeckBVisualButtons();
+                            this.syncFxLightsFromState();
+                            return;
+                        }
+                        this.startDeckBVideoVisual();
+                        this.syncDeckBVisualButtons();
+                        this.syncFxLightsFromState();
                     } catch (_) {}
                 };
                 const djToggleTk = () => {
@@ -6773,8 +7193,8 @@ function stopAllAndShowStart() {
                     } catch (_) {}
                 };
 
-                if (this.els.fxLow) this.els.fxLow.addEventListener('click', djToggleLow, sig);
-                if (this.els.fxLowB) this.els.fxLowB.addEventListener('click', djToggleLow, sig);
+                if (this.els.fxLow) this.els.fxLow.addEventListener('click', djToggleVideo, sig);
+                if (this.els.fxLowB) this.els.fxLowB.addEventListener('click', djToggleVideo, sig);
                 if (this.els.queueA) {
                     this.els.queueA.addEventListener('click', (e) => {
                         try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
@@ -6795,14 +7215,14 @@ function stopAllAndShowStart() {
                 try {
                     const fiQA = document.createElement('input');
                     fiQA.type = 'file';
-                    fiQA.accept = 'audio/*';
+                    fiQA.accept = 'audio/*,video/*';
                     fiQA.multiple = true;
                     fiQA.style.display = 'none';
                     fiQA.setAttribute('aria-hidden', 'true');
                     root.appendChild(fiQA);
                     const fiQB = document.createElement('input');
                     fiQB.type = 'file';
-                    fiQB.accept = 'audio/*';
+                    fiQB.accept = 'audio/*,video/*';
                     fiQB.multiple = true;
                     fiQB.style.display = 'none';
                     fiQB.setAttribute('aria-hidden', 'true');
@@ -6831,6 +7251,73 @@ function stopAllAndShowStart() {
                         const playingLocal = state.deckSourceMode.b === 'local';
                         const mediaGoing = audioElB && audioElB.src && !audioElB.paused && !audioElB.ended;
                         if (!playingLocal || !mediaGoing) playDeckBTrackFromQueue();
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
+
+                    const urlInput = root.querySelector('#dj-queue-url-input');
+                    const btnUrlAdd = root.querySelector('#dj-url-add');
+                    const btnUrlPlayA = root.querySelector('#dj-url-play-a');
+                    const btnUrlPlayB = root.querySelector('#dj-url-play-b');
+                    const btnUrlQA = root.querySelector('#dj-url-q-a');
+                    const btnUrlQB = root.querySelector('#dj-url-q-b');
+                    const urlList = root.querySelector('#dj-url-list');
+                    const getUrlFromInput = () => sanitizeUrlForAudio(urlInput ? urlInput.value : '');
+                    const withEntryFromInput = () => {
+                        const u = getUrlFromInput();
+                        if (!u) return null;
+                        return upsertDjQueueUrl(u, deriveNameFromUrl(u));
+                    };
+                    if (btnUrlAdd) btnUrlAdd.addEventListener('click', () => {
+                        const it = withEntryFromInput();
+                        if (!it) return;
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
+                    if (btnUrlPlayA) btnUrlPlayA.addEventListener('click', () => {
+                        const it = withEntryFromInput();
+                        if (!it) return;
+                        playDeckUrlNow('a', it.url, it.name);
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
+                    if (btnUrlPlayB) btnUrlPlayB.addEventListener('click', () => {
+                        const it = withEntryFromInput();
+                        if (!it) return;
+                        playDeckUrlNow('b', it.url, it.name);
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
+                    if (btnUrlQA) btnUrlQA.addEventListener('click', () => {
+                        const it = withEntryFromInput();
+                        if (!it) return;
+                        enqueueDeckUrl('a', it.url, it.name);
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
+                    if (btnUrlQB) btnUrlQB.addEventListener('click', () => {
+                        const it = withEntryFromInput();
+                        if (!it) return;
+                        enqueueDeckUrl('b', it.url, it.name);
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
+                    if (urlInput) urlInput.addEventListener('keydown', (ev) => {
+                        if (ev.key !== 'Enter') return;
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        const it = withEntryFromInput();
+                        if (!it) return;
+                        playDeckUrlNow('a', it.url, it.name);
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
+                    if (urlList) urlList.addEventListener('click', (ev) => {
+                        const btn = ev.target && ev.target.closest ? ev.target.closest('button[data-action]') : null;
+                        if (!btn) return;
+                        const row = btn.closest('li[data-id]');
+                        if (!row) return;
+                        const id = row.getAttribute('data-id');
+                        const it = djQueueUrlEntries.find((x) => x && String(x.id) === String(id));
+                        if (!it || !it.url) return;
+                        const action = btn.getAttribute('data-action');
+                        if (action === 'play-a') playDeckUrlNow('a', it.url, it.name);
+                        else if (action === 'play-b') playDeckUrlNow('b', it.url, it.name);
+                        else if (action === 'queue-a') enqueueDeckUrl('a', it.url, it.name);
+                        else if (action === 'queue-b') enqueueDeckUrl('b', it.url, it.name);
+                        else if (action === 'delete') removeDjQueueUrl(id);
                         try { this.refreshQueueUi(); } catch (_) {}
                     }, sig);
                 } catch (_) {}
@@ -9150,6 +9637,7 @@ function stopAllAndShowStart() {
                     (state.activeVisualizer.deckBVizMode === 'bars' ||
                      state.activeVisualizer.deckBVizMode === 'projectm' ||
                      state.activeVisualizer.deckBVizMode === 'blank' ||
+                     state.activeVisualizer.deckBVizMode === 'video' ||
                      state.activeVisualizer.deckBQueueVisible)
                 );
                 // In DJ mode: only show 🎧 when Deck B visual layer is active, as a quick "return to controls".
@@ -9219,6 +9707,7 @@ function stopAllAndShowStart() {
                         (state.activeVisualizer.deckBVizMode === 'bars' ||
                          state.activeVisualizer.deckBVizMode === 'projectm' ||
                          state.activeVisualizer.deckBVizMode === 'blank' ||
+                         state.activeVisualizer.deckBVizMode === 'video' ||
                          state.activeVisualizer.deckBQueueVisible)
                     );
                     if (deckBVisualActive) {
@@ -10730,6 +11219,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         } catch(e) {}
 
         // Bootstrap station list
+        loadDjQueueUrlEntries();
         loadStations();
         // Preload webm list (best-effort)
         loadWebmList();
