@@ -34,6 +34,8 @@
             z-index: 4;
             box-sizing: border-box;
             padding: clamp(8px, 2vmin, 16px);
+            /* Clear persistent #ui-layer at bottom (z-index 50) so Deck B controls stay tappable */
+            padding-bottom: calc(clamp(52px, 7.5vh, 94px) + env(safe-area-inset-bottom, 0px));
             gap: 8px;
         }
         #dj-visual-root button,
