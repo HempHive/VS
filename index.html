@@ -448,6 +448,33 @@
             background-repeat: no-repeat;
             background-size: 100% 100%;
         }
+        /* Transport GIF backdrops */
+        #dj-visual-root #dj-a-prev,
+        #dj-visual-root #dj-b-prev {
+            background-image: url('btn.png'), url('pre.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-a-next,
+        #dj-visual-root #dj-b-next {
+            background-image: url('btn.png'), url('ran.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-play-a:not(.is-playing),
+        #dj-visual-root #dj-play-b:not(.is-playing) {
+            background-image: url('btn.png'), url('ylp.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-play-a:not(.is-playing):hover,
+        #dj-visual-root #dj-play-b:not(.is-playing):hover {
+            background-image: url('btn.png'), url('ylp.gif');
+            background-size: 100% 100%, cover;
+        }
         #dj-visual-root .btn.dj-fx:hover,
         #dj-visual-root .btn.dj-sfx:hover {
             filter: brightness(1.15);
@@ -5668,8 +5695,14 @@ function stopAllAndShowStart() {
                 try {
                     const aPlaying = !!(audioEl && audioEl.src && !audioEl.paused && !audioEl.ended);
                     const bPlaying = !!(audioElB && audioElB.src && !audioElB.paused && !audioElB.ended);
-                    if (this.els.playA) this.els.playA.textContent = aPlaying ? 'Pause' : 'Play';
-                    if (this.els.playB) this.els.playB.textContent = bPlaying ? 'Pause' : 'Play';
+                    if (this.els.playA) {
+                        this.els.playA.textContent = aPlaying ? 'Pause' : 'Play';
+                        this.els.playA.classList.toggle('is-playing', aPlaying);
+                    }
+                    if (this.els.playB) {
+                        this.els.playB.textContent = bPlaying ? 'Pause' : 'Play';
+                        this.els.playB.classList.toggle('is-playing', bPlaying);
+                    }
                 } catch(_) {}
             }
 
