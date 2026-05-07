@@ -320,10 +320,11 @@
             font-size: 11px;
         }
         .dj-deck-b-queue-panel .dj-url-input::placeholder { color: rgba(255, 255, 255, 0.45); }
-        .dj-deck-b-queue-panel .dj-url-actions {
+        .dj-deck-b-queue-panel .dj-url-entry-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr auto;
             gap: 6px;
+            align-items: center;
         }
         .dj-deck-b-queue-panel .dj-url-btn {
             padding: 5px 8px;
@@ -362,6 +363,13 @@
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 4px;
+        }
+        .dj-deck-b-queue-panel .dj-url-item .dj-url-btn {
+            padding: 2px 6px;
+            font-size: 10px;
+            border-radius: 4px;
+            min-width: 0;
+            line-height: 1;
         }
         .dj-deck-b-viz-mount {
             position: absolute;
@@ -3446,11 +3454,13 @@ const QUALITY = {
         function isLikelyVideoUrl(url) {
             const v = sanitizeUrlForAudio(url).toLowerCase();
             if (!v) return false;
+            if (v.startsWith('blob:') || v.startsWith('data:')) return true;
             return /\.(mp4|webm|mkv|mov|m4v|ogv|ogg|avi)(\?|#|$)/i.test(v);
         }
-        function registerDeckVideoFeed(deckKey, url, label) {
+        function registerDeckVideoFeed(deckKey, url, label, forceVideo) {
             const clean = sanitizeUrlForAudio(url);
-            if (!clean || !isLikelyVideoUrl(clean)) return;
+            if (!clean) return;
+            if (!forceVideo && !isLikelyVideoUrl(clean)) return;
             const k = deckKey === 'b' ? 'b' : 'a';
             deckVideoFeeds[k] = { url: clean, label: String(label || deriveNameFromUrl(clean) || 'Video source') };
             const arr = deckVideoHistory[k];
@@ -5203,7 +5213,7 @@ function randomGlowColor() {
                 if (!file || (!isAudio && !isVideo)) continue;
                 const url = URL.createObjectURL(file);
                 q.push({ name: file.name || (isVideo ? 'Video track' : 'Audio track'), url, isVideo: !!isVideo });
-                if (isVideo) registerDeckVideoFeed(deckKey, url, file.name || 'Video track');
+                if (isVideo) registerDeckVideoFeed(deckKey, url, file.name || 'Video track', true);
             }
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
@@ -5271,7 +5281,7 @@ function randomGlowColor() {
                     revokeBlobSrc(audioElB);
                     try { audioElB.pause(); } catch (_) {}
                     audioElB.src = item.url;
-                    if (item.isVideo) registerDeckVideoFeed('b', item.url, item.name);
+                    if (item.isVideo) registerDeckVideoFeed('b', item.url, item.name, true);
                     audioElB.play().then(() => {
                         connectDeckMediaToEq('b');
                         try {
@@ -5287,7 +5297,7 @@ function randomGlowColor() {
                     revokeBlobSrc(audioEl);
                     try { audioEl.pause(); } catch (_) {}
                     audioEl.src = item.url;
-                    if (item.isVideo) registerDeckVideoFeed('a', item.url, item.name);
+                    if (item.isVideo) registerDeckVideoFeed('a', item.url, item.name, true);
                     audioEl.play().then(() => {
                         connectDeckMediaToEq('a');
                         try {
@@ -5338,7 +5348,7 @@ function randomGlowColor() {
             state.deckSourceMode.a = 'local';
             try { audioEl.crossOrigin = 'anonymous'; } catch (_) {}
             audioEl.src = item.url;
-            if (item.isVideo) registerDeckVideoFeed('a', item.url, item.name);
+            if (item.isVideo) registerDeckVideoFeed('a', item.url, item.name, true);
             audioEl.play().then(() => {
                 connectDeckMediaToEq('a');
                 try {
@@ -5374,7 +5384,7 @@ function randomGlowColor() {
             state.deckSourceMode.b = 'local';
             try { audioElB.crossOrigin = 'anonymous'; } catch (_) {}
             audioElB.src = item.url;
-            if (item.isVideo) registerDeckVideoFeed('b', item.url, item.name);
+            if (item.isVideo) registerDeckVideoFeed('b', item.url, item.name, true);
             audioElB.play().then(() => {
                 connectDeckMediaToEq('b');
                 try {
@@ -6996,13 +7006,9 @@ function stopAllAndShowStart() {
               </div>
               <div class="dj-url-drop" aria-label="URL drop list">
                 <div class="dj-station-cycle-head">URL drop list</div>
-                <input id="dj-queue-url-input" class="dj-url-input" type="text" placeholder="Paste radio / audio / video URL" />
-                <div class="dj-url-actions">
+                <div class="dj-url-entry-row">
+                  <input id="dj-queue-url-input" class="dj-url-input" type="text" placeholder="Paste radio / audio / video URL" />
                   <button type="button" class="dj-url-btn" id="dj-url-add">Add</button>
-                  <button type="button" class="dj-url-btn" id="dj-url-play-a">Play A</button>
-                  <button type="button" class="dj-url-btn" id="dj-url-play-b">Play B</button>
-                  <button type="button" class="dj-url-btn" id="dj-url-q-a">Queue A</button>
-                  <button type="button" class="dj-url-btn" id="dj-url-q-b">Queue B</button>
                 </div>
                 <ul id="dj-url-list" class="dj-url-list"></ul>
               </div>
@@ -7256,10 +7262,6 @@ function stopAllAndShowStart() {
 
                     const urlInput = root.querySelector('#dj-queue-url-input');
                     const btnUrlAdd = root.querySelector('#dj-url-add');
-                    const btnUrlPlayA = root.querySelector('#dj-url-play-a');
-                    const btnUrlPlayB = root.querySelector('#dj-url-play-b');
-                    const btnUrlQA = root.querySelector('#dj-url-q-a');
-                    const btnUrlQB = root.querySelector('#dj-url-q-b');
                     const urlList = root.querySelector('#dj-url-list');
                     const getUrlFromInput = () => sanitizeUrlForAudio(urlInput ? urlInput.value : '');
                     const withEntryFromInput = () => {
@@ -7270,30 +7272,6 @@ function stopAllAndShowStart() {
                     if (btnUrlAdd) btnUrlAdd.addEventListener('click', () => {
                         const it = withEntryFromInput();
                         if (!it) return;
-                        try { this.refreshQueueUi(); } catch (_) {}
-                    }, sig);
-                    if (btnUrlPlayA) btnUrlPlayA.addEventListener('click', () => {
-                        const it = withEntryFromInput();
-                        if (!it) return;
-                        playDeckUrlNow('a', it.url, it.name);
-                        try { this.refreshQueueUi(); } catch (_) {}
-                    }, sig);
-                    if (btnUrlPlayB) btnUrlPlayB.addEventListener('click', () => {
-                        const it = withEntryFromInput();
-                        if (!it) return;
-                        playDeckUrlNow('b', it.url, it.name);
-                        try { this.refreshQueueUi(); } catch (_) {}
-                    }, sig);
-                    if (btnUrlQA) btnUrlQA.addEventListener('click', () => {
-                        const it = withEntryFromInput();
-                        if (!it) return;
-                        enqueueDeckUrl('a', it.url, it.name);
-                        try { this.refreshQueueUi(); } catch (_) {}
-                    }, sig);
-                    if (btnUrlQB) btnUrlQB.addEventListener('click', () => {
-                        const it = withEntryFromInput();
-                        if (!it) return;
-                        enqueueDeckUrl('b', it.url, it.name);
                         try { this.refreshQueueUi(); } catch (_) {}
                     }, sig);
                     if (urlInput) urlInput.addEventListener('keydown', (ev) => {
