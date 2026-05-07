@@ -151,7 +151,7 @@
         #dj-visual-root .dj-deck-mosaic {
             display: grid;
             grid-template-columns: auto minmax(36px, 44px) repeat(3, minmax(0, 1fr));
-            grid-template-rows: repeat(5, minmax(30px, auto));
+            grid-template-rows: repeat(6, minmax(30px, auto));
             gap: 1px;
             width: 100%;
             align-items: center;
@@ -164,15 +164,15 @@
         }
         #dj-visual-root .dj-deck-mosaic > .dj-deck-vol-col {
             grid-column: 2;
-            grid-row: 1 / 6;
+            grid-row: 1 / 7;
         }
         #dj-visual-root .dj-deck-mosaic > .dj-btn-block {
             grid-column: 3 / 6;
-            grid-row: 1 / 6;
+            grid-row: 1 / 7;
             min-width: 0;
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            grid-template-rows: repeat(5, minmax(30px, auto));
+            grid-template-rows: repeat(6, minmax(30px, auto));
             gap: 1px;
             align-items: stretch;
             justify-items: stretch;
@@ -211,6 +211,7 @@
             align-items: center;
             justify-content: center;
             min-height: 0;
+            align-self: stretch;
         }
         #dj-visual-root .dj-deck-vol-wrap {
             display: flex;
@@ -218,7 +219,7 @@
             justify-content: center;
             width: 100%;
             height: 100%;
-            min-height: 220px;
+            min-height: 0;
         }
         #dj-visual-root .dj-deck-vol {
             -webkit-appearance: none;
@@ -239,7 +240,7 @@
             background: transparent url('vol.png') center center / 100% 100% no-repeat;
             border: none;
             border-radius: 50%;
-            margin-top: -16px;
+            margin-top: calc((14px - 46px) / 2);
             box-shadow: none;
         }
         #dj-visual-root .dj-deck-vol::-moz-range-thumb {
@@ -5679,6 +5680,27 @@ function stopAllAndShowStart() {
                 } catch (_) {}
             }
 
+            syncDeckVolumeSliderLengths() {
+                if (!this.root) return;
+                try {
+                    const blocks = Array.from(this.root.querySelectorAll('.dj-btn-block'));
+                    if (!blocks.length) return;
+                    const target = Math.max(...blocks.map((el) => {
+                        const blockH = Math.floor(el.getBoundingClientRect().height || 0);
+                        const knobRow = el.querySelector('.dj-knob-top-row');
+                        const knobRowH = knobRow ? Math.floor(knobRow.getBoundingClientRect().height || 0) : 0;
+                        // Full visual stack = button block + knobs sitting on top of it.
+                        return blockH + knobRowH;
+                    }));
+                    if (!target || target <= 0) return;
+                    const len = Math.max(200, target + 16);
+                    const volA = this.root.querySelector('#dj-deck-a-vol');
+                    const volB = this.root.querySelector('#dj-deck-b-vol');
+                    if (volA) volA.style.width = `${len}px`;
+                    if (volB) volB.style.width = `${len}px`;
+                } catch (_) {}
+            }
+
             onResize() {
                 if (!this.root) return;
                 const land = window.innerWidth > window.innerHeight;
@@ -5689,6 +5711,7 @@ function stopAllAndShowStart() {
                         this.deckBVizPmResize();
                     }
                 } catch (_) {}
+                this.syncDeckVolumeSliderLengths();
             }
 
             syncPlayLabels() {
@@ -5703,6 +5726,10 @@ function stopAllAndShowStart() {
                         this.els.playB.textContent = bPlaying ? 'Pause' : 'Play';
                         this.els.playB.classList.toggle('is-playing', bPlaying);
                     }
+                    const visualActiveOnDeckB = (this.deckBVizMode === 'bars' || this.deckBVizMode === 'projectm' || this.deckBVizMode === 'blank');
+                    const hideDeckBFader = visualActiveOnDeckB && !bPlaying;
+                    const deckBFader = this.root && this.root.querySelector('.dj-deck-b .dj-fader-strip');
+                    if (deckBFader) deckBFader.classList.toggle('display-none', hideDeckBFader);
                 } catch(_) {}
             }
 
@@ -5721,7 +5748,10 @@ function stopAllAndShowStart() {
                         nb = stations[currentStationBIndex].name || nb;
                     }
                     if (this.els.titleA) this.els.titleA.textContent = na;
-                    if (this.els.titleB) this.els.titleB.textContent = nb;
+                    if (this.els.titleB) {
+                        this.els.titleB.textContent = nb;
+                        this.els.titleB.classList.toggle('display-none', nb === '—');
+                    }
                 } catch(_) {}
             }
 
@@ -5825,6 +5855,10 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
             <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass pass (Mixer FX)">Bass-Pass</button>
 
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
+
             <button type="button" class="dj-play" id="dj-play-a" title="Play or pause Deck A">Play</button>
             <button type="button" class="dj-tbtn" id="dj-a-next" title="Tune to another random station">Rand ⟶</button>
             <button type="button" class="dj-tbtn" id="dj-a-prev" title="Previous station (history)">⟵ Prev</button>
@@ -5874,6 +5908,10 @@ function stopAllAndShowStart() {
                 <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Low-pass (Mixer FX)">Low-pass</button>
                 <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
                 <button type="button" class="btn dj-fx" id="dj-b-fx-bass" title="Bass pass (Mixer FX)">Bass-Pass</button>
+
+                <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
+                <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
+                <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
 
                 <button type="button" class="dj-play" id="dj-play-b" title="Play or pause Deck B">Play</button>
                 <button type="button" class="dj-tbtn" id="dj-b-next" title="Tune deck B to another random station">Rand ⟶</button>
@@ -6347,6 +6385,17 @@ function stopAllAndShowStart() {
                 if (djPrevB) djPrevB.addEventListener('click', () => djAdvanceB(-1), sig);
                 if (djNextB) djNextB.addEventListener('click', djRandomB, sig);
 
+                try {
+                    if (typeof bindSample === 'function') {
+                        bindSample(root.querySelector('#dj-a-sfx-wav'), audioElSample4, 'sampleLoop4', 'sourceNodeSample4');
+                        bindSample(root.querySelector('#dj-a-sfx-w1'), audioElSample5, 'sampleLoop5', 'sourceNodeSample5');
+                        bindSample(root.querySelector('#dj-a-sfx-w2'), audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
+                        bindSample(root.querySelector('#dj-b-sfx-wav'), audioElSample4, 'sampleLoop4', 'sourceNodeSample4');
+                        bindSample(root.querySelector('#dj-b-sfx-w1'), audioElSample5, 'sampleLoop5', 'sourceNodeSample5');
+                        bindSample(root.querySelector('#dj-b-sfx-w2'), audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
+                    }
+                } catch (_) {}
+
                 const switchVisualByName = (name) => {
                     try {
                         if (!Array.isArray(modes) || typeof loadMode !== 'function') return;
@@ -6444,6 +6493,7 @@ function stopAllAndShowStart() {
                 document.getElementById('mode-sub').innerText = 'Dual decks • Mixer-linked FX';
 
                 this.syncDeckBVisualButtons();
+                this.syncDeckVolumeSliderLengths();
 
                 this.animateFrame();
             }
