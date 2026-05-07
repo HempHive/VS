@@ -45,44 +45,28 @@
             gap: 10px;
             align-items: stretch;
         }
+        /* Crossfader strip lives at top of Deck B only */
         #dj-visual-root .dj-fader-strip {
             display: flex;
             box-sizing: border-box;
-        }
-        /* Layout toggled by DJ engine: portrait = A top / B bottom; landscape = A left / B right */
-        #dj-visual-root.dj-mode-portrait .dj-layout { flex-direction: column; }
-        #dj-visual-root.dj-mode-portrait .dj-fader-strip {
             flex-direction: row;
             align-items: center;
             justify-content: center;
+            width: 100%;
+            flex-shrink: 0;
             min-height: 52px;
             padding: 6px 12px;
             gap: 10px;
         }
+        /* Layout toggled by DJ engine: portrait = A top / B bottom; landscape = A left / B right */
+        #dj-visual-root.dj-mode-portrait .dj-layout { flex-direction: column; }
         #dj-visual-root.dj-mode-landscape .dj-layout { flex-direction: row; }
-        #dj-visual-root.dj-mode-landscape .dj-fader-strip {
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 56px;
-            flex-shrink: 0;
-            padding: 8px 4px;
-            gap: 8px;
-            align-self: stretch;
-        }
         #dj-visual-root .dj-fader-strip .dj-fader-label-a,
         #dj-visual-root .dj-fader-strip .dj-fader-label-b {
             font-size: 11px;
             font-weight: 700;
             letter-spacing: 0.06em;
             flex-shrink: 0;
-        }
-        #dj-visual-root.dj-mode-landscape .dj-fader-strip .dj-fader-label-a,
-        #dj-visual-root.dj-mode-landscape .dj-fader-strip .dj-fader-label-b {
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
-            font-size: 10px;
-            letter-spacing: 0.12em;
         }
         #dj-visual-root .dj-fader-strip .dj-fader-label-a { color: #FF0B55; }
         #dj-visual-root .dj-fader-strip .dj-fader-label-b { color: #5800FF; }
@@ -94,24 +78,72 @@
             min-width: 0;
             min-height: 44px;
         }
-        #dj-visual-root.dj-mode-portrait .dj-crossfader-mount {
+        #dj-visual-root .dj-crossfader-mount {
             min-height: 56px;
         }
-        #dj-visual-root.dj-mode-portrait .dj-crossfader-mount input[type="range"] {
+        #dj-visual-root .dj-crossfader-mount input[type="range"] {
             width: 100%;
             max-width: min(92vw, 560px);
             height: 14px;
         }
-        #dj-visual-root.dj-mode-landscape .dj-crossfader-mount {
-            flex: 1;
-            width: 100%;
-            min-height: 140px;
+        .dj-deck-body-b {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            justify-content: flex-start;
+            gap: 12px;
         }
-        #dj-visual-root.dj-mode-landscape .dj-crossfader-mount input[type="range"] {
-            width: min(52vh, 380px);
-            height: 28px;
-            transform: rotate(-90deg);
-            transform-origin: center center;
+        .dj-deck-b-viz-shell {
+            position: relative;
+            flex: 1 1 auto;
+            width: 100%;
+            min-height: clamp(96px, 22vmin, 260px);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(152, 3, 252, 0.35);
+            background: rgba(0, 0, 0, 0.55);
+            box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.45);
+        }
+        .dj-deck-b-viz-mount {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+        .dj-deck-b-viz-mount canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+        .dj-deck-b-viz-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            font-size: clamp(11px, 2.4vmin, 14px);
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.45);
+            text-align: center;
+            pointer-events: none;
+            letter-spacing: 0.04em;
+        }
+        .dj-eq-col-vertical {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 8px;
+            flex-shrink: 0;
+            align-self: flex-start;
+            padding-top: 4px;
+        }
+        #dj-visual-root .dj-eq-col-vertical .eq-col {
+            width: auto;
+            gap: 3px;
+        }
+        #dj-visual-root .dj-eq-col-vertical .knob-wrap {
+            width: 34px;
+            height: 34px;
         }
         .dj-deck {
             flex: 1;
@@ -488,6 +520,11 @@
             line-height: 1.1;
             min-height: 40px;
             padding: 8px 10px;
+        }
+        #dj-visual-root .dj-controls-grid .dj-play,
+        #dj-visual-root .dj-controls-grid .dj-tbtn {
+            width: 100%;
+            box-sizing: border-box;
         }
         #dj-visual-root .dj-fx-row {
             display: flex;
@@ -5178,6 +5215,227 @@ function stopAllAndShowStart() {
                 this.angleB = 0;
                 this.bufA = null;
                 this.bufB = null;
+                this.deckBVizMode = 'idle';
+                this.deckBVizPmAnimId = null;
+                this.deckBVizPmCycleTimeout = null;
+                this.deckBVizPmVisualizer = null;
+                this.deckBVizPmCanvas = null;
+                this.deckBVizPmResize = null;
+                this.deckBVizBarsAnimId = null;
+                this.deckBVizResizeObs = null;
+            }
+
+            tearDownDeckBViz() {
+                try {
+                    if (this.deckBVizPmAnimId) cancelAnimationFrame(this.deckBVizPmAnimId);
+                } catch (_) {}
+                this.deckBVizPmAnimId = null;
+                try {
+                    if (this.deckBVizPmCycleTimeout) clearTimeout(this.deckBVizPmCycleTimeout);
+                } catch (_) {}
+                this.deckBVizPmCycleTimeout = null;
+                try {
+                    if (this.deckBVizBarsAnimId) cancelAnimationFrame(this.deckBVizBarsAnimId);
+                } catch (_) {}
+                this.deckBVizBarsAnimId = null;
+                this.deckBVizPmVisualizer = null;
+                this.deckBVizPmCanvas = null;
+                this.deckBVizPmResize = null;
+                try {
+                    const mount = this.root && this.root.querySelector('#dj-deck-b-viz-mount');
+                    if (mount) mount.innerHTML = '';
+                    const ph = this.root && this.root.querySelector('#dj-deck-b-viz-placeholder');
+                    if (ph) ph.classList.remove('display-none');
+                } catch (_) {}
+                this.deckBVizMode = 'idle';
+            }
+
+            syncDeckBVisualButtons() {
+                try {
+                    const bars = this.root && this.root.querySelector('#dj-b-vis-bars');
+                    const pm = this.root && this.root.querySelector('#dj-b-vis-pm2');
+                    const blank = this.root && this.root.querySelector('#dj-b-vis-blank');
+                    const m = this.deckBVizMode || 'idle';
+                    if (bars) bars.classList.toggle('on', m === 'bars');
+                    if (pm) pm.classList.toggle('on', m === 'projectm');
+                    if (blank) blank.classList.toggle('on', m === 'idle');
+                } catch (_) {}
+            }
+
+            startDeckBProjectM() {
+                if (!this.root || !state || !state.audioCtx || typeof butterchurn === 'undefined') return;
+                try { initAudio(); } catch (_) {}
+                this.tearDownDeckBViz();
+                this.deckBVizMode = 'projectm';
+                const mount = this.root.querySelector('#dj-deck-b-viz-mount');
+                const ph = this.root.querySelector('#dj-deck-b-viz-placeholder');
+                if (!mount) return;
+                if (ph) ph.classList.add('display-none');
+
+                const canvas = document.createElement('canvas');
+                canvas.style.display = 'block';
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                mount.appendChild(canvas);
+
+                const presetMap = (typeof butterchurnPresets !== 'undefined' && butterchurnPresets.getPresets)
+                    ? butterchurnPresets.getPresets() : {};
+                const presetKeys = Object.keys(presetMap);
+                let currentPresetIdx = Math.floor(Math.random() * Math.max(1, presetKeys.length));
+
+                const resizePm = () => {
+                    try {
+                        const rect = mount.getBoundingClientRect();
+                        const w = Math.max(64, Math.floor(rect.width));
+                        const h = Math.max(64, Math.floor(rect.height));
+                        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                        canvas.width = Math.floor(w * dpr);
+                        canvas.height = Math.floor(h * dpr);
+                        if (this.deckBVizPmVisualizer && this.deckBVizPmVisualizer.setRendererSize) {
+                            this.deckBVizPmVisualizer.setRendererSize(w, h);
+                        }
+                    } catch (_) {}
+                };
+
+                const pxRatio = Number(visualSettings.pixelRatio) || Math.min(window.devicePixelRatio || 1, 2);
+                const rect0 = mount.getBoundingClientRect();
+                const w0 = Math.max(64, Math.floor(rect0.width));
+                const h0 = Math.max(64, Math.floor(rect0.height));
+                const dpr0 = Math.min(window.devicePixelRatio || 1, 2);
+                canvas.width = Math.floor(w0 * dpr0);
+                canvas.height = Math.floor(h0 * dpr0);
+
+                let viz;
+                try {
+                    viz = butterchurn.createVisualizer(state.audioCtx, canvas, {
+                        width: w0,
+                        height: h0,
+                        pixelRatio: pxRatio
+                    });
+                } catch (_) {
+                    viz = null;
+                }
+                if (!viz) {
+                    this.deckBVizMode = 'idle';
+                    if (ph) ph.classList.remove('display-none');
+                    return;
+                }
+                this.deckBVizPmVisualizer = viz;
+                this.deckBVizPmCanvas = canvas;
+                try {
+                    viz.connectAudio(state.analyserNodeB || state.analyserNode);
+                } catch (_) {}
+
+                const loadPmPreset = (idx) => {
+                    if (presetKeys.length === 0 || !this.deckBVizPmVisualizer) return;
+                    const key = presetKeys[idx];
+                    const transition = Number(visualSettings.transitionSec) || 2.7;
+                    try {
+                        this.deckBVizPmVisualizer.loadPreset(presetMap[key], transition);
+                    } catch (_) {}
+                };
+
+                loadPmPreset(currentPresetIdx);
+
+                const nextPmPreset = () => {
+                    if (presetKeys.length <= 1 || !this.deckBVizPmVisualizer) return;
+                    let next = currentPresetIdx;
+                    let guard = 0;
+                    while (next === currentPresetIdx && presetKeys.length > 1 && guard++ < 8) {
+                        next = Math.floor(Math.random() * presetKeys.length);
+                    }
+                    currentPresetIdx = next;
+                    loadPmPreset(currentPresetIdx);
+                };
+
+                const restartPmCycle = () => {
+                    try {
+                        if (this.deckBVizPmCycleTimeout) clearTimeout(this.deckBVizPmCycleTimeout);
+                    } catch (_) {}
+                    const schedule = () => {
+                        const minS = Number(visualSettings.shuffleMinSec) || 12;
+                        const maxS = Number(visualSettings.shuffleMaxSec) || 25;
+                        const lo = Math.min(minS, maxS);
+                        const hi = Math.max(minS, maxS);
+                        const delay = (lo + Math.random() * (hi - lo)) * 1000;
+                        this.deckBVizPmCycleTimeout = setTimeout(() => {
+                            nextPmPreset();
+                            schedule();
+                        }, delay);
+                    };
+                    schedule();
+                };
+                restartPmCycle();
+
+                resizePm();
+                this.deckBVizPmResize = resizePm;
+
+                const loop = () => {
+                    this.deckBVizPmAnimId = requestAnimationFrame(loop);
+                    try {
+                        if (this.deckBVizPmVisualizer) this.deckBVizPmVisualizer.render();
+                    } catch (_) {}
+                };
+                loop();
+            }
+
+            startDeckBAudioBars() {
+                if (!this.root || !state) return;
+                try { initAudio(); } catch (_) {}
+                this.tearDownDeckBViz();
+                this.deckBVizMode = 'bars';
+                const mount = this.root.querySelector('#dj-deck-b-viz-mount');
+                const ph = this.root.querySelector('#dj-deck-b-viz-placeholder');
+                if (!mount) return;
+                if (ph) ph.classList.add('display-none');
+
+                const canvas = document.createElement('canvas');
+                canvas.style.display = 'block';
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                mount.appendChild(canvas);
+                const ctx = canvas.getContext('2d');
+                let dataArray = null;
+
+                const loop = () => {
+                    this.deckBVizBarsAnimId = requestAnimationFrame(loop);
+                    try {
+                        const rect = mount.getBoundingClientRect();
+                        const w = Math.max(64, Math.floor(rect.width));
+                        const h = Math.max(64, Math.floor(rect.height));
+                        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                        const cw = Math.floor(w * dpr);
+                        const ch = Math.floor(h * dpr);
+                        if (canvas.width !== cw || canvas.height !== ch) {
+                            canvas.width = cw;
+                            canvas.height = ch;
+                        }
+                        ctx.setTransform(1, 0, 0, 1, 0, 0);
+                        ctx.clearRect(0, 0, cw, ch);
+                        ctx.fillStyle = 'rgba(0,0,0,0.28)';
+                        ctx.fillRect(0, 0, cw, ch);
+                        const an = state.analyserNodeB || state.analyserNode;
+                        if (!an) return;
+                        if (!dataArray || dataArray.length !== an.frequencyBinCount) {
+                            dataArray = new Uint8Array(an.frequencyBinCount);
+                        }
+                        an.getByteFrequencyData(dataArray);
+                        const nBars = 40;
+                        const gap = 2 * dpr;
+                        const barW = (cw - gap * (nBars + 1)) / nBars;
+                        let x = gap;
+                        for (let i = 0; i < nBars; i++) {
+                            const bin = Math.floor((i / nBars) * Math.min(Math.max(1, dataArray.length - 1), 48));
+                            const v = dataArray[bin] / 255;
+                            const bh = Math.max(2 * dpr, v * ch * 0.92);
+                            const hue = (280 + i * 4) % 360;
+                            ctx.fillStyle = `hsla(${hue}, 88%, 58%, 0.92)`;
+                            ctx.fillRect(x, ch - bh, Math.max(1, barW), bh);
+                            x += barW + gap;
+                        }
+                    } catch (_) {}
+                };
+                loop();
             }
 
             onResize() {
@@ -5185,6 +5443,11 @@ function stopAllAndShowStart() {
                 const land = window.innerWidth > window.innerHeight;
                 this.root.classList.toggle('dj-mode-landscape', land);
                 this.root.classList.toggle('dj-mode-portrait', !land);
+                try {
+                    if (this.deckBVizMode === 'projectm' && typeof this.deckBVizPmResize === 'function') {
+                        this.deckBVizPmResize();
+                    }
+                } catch (_) {}
             }
 
             syncPlayLabels() {
@@ -5287,13 +5550,11 @@ function stopAllAndShowStart() {
     <div class="dj-station-title" id="dj-station-a-title">—</div>
     <div class="dj-deck-body">
       <div class="dj-stack">
-        <div class="dj-transport-row">
-          <button type="button" class="dj-tbtn" id="dj-a-prev" title="Previous station (history)">⟵ Prev</button>
-          <button type="button" class="dj-play" id="dj-play-a">Play</button>
-          <button type="button" class="dj-tbtn" id="dj-a-next" title="Tune to another random station">Rand ⟶</button>
-        </div>
-        <div class="dj-eq-strip eq-strip">
-          <div class="eq-group">
+        <div class="dj-middle-row">
+          <div class="dj-jog-wrap">
+            <div class="dj-jog" id="dj-jog-a" aria-hidden="true"><span class="dj-jog-marker"></span></div>
+          </div>
+          <div class="dj-eq-col-vertical eq-strip" aria-label="Deck A EQ">
             <div class="eq-col">
               <div class="knob-wrap" id="dj-knob-a-low" style="--knob-color:#06D001"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
               <div class="eq-label" style="color:#06D001">Lo</div>
@@ -5311,12 +5572,7 @@ function stopAllAndShowStart() {
               <div class="eq-label" style="color:#FF0B55">Gain</div>
             </div>
           </div>
-        </div>
-        <div class="dj-middle-row">
-          <div class="dj-jog-wrap">
-            <div class="dj-jog" id="dj-jog-a" aria-hidden="true"><span class="dj-jog-marker"></span></div>
-          </div>
-          <div class="dj-controls-grid" aria-label="Deck A visuals, effects, and samples">
+          <div class="dj-controls-grid" aria-label="Deck A visuals, effects, and transport">
             <button type="button" class="btn dj-fx" id="dj-vis-bars" title="Switch to Audio Bars visual">AUDIO:BAR</button>
             <button type="button" class="btn dj-fx" id="dj-vis-blank" title="Switch to no visual (Blank mode)">NO VISUAL</button>
             <button type="button" class="btn dj-fx" id="dj-vis-pm2" title="Switch visual to ProjectM v2">ProjectM</button>
@@ -5329,59 +5585,56 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
             <button type="button" class="btn dj-fx" id="dj-fx-bass" title="Bass pass (Mixer FX)">Bass-Pass</button>
 
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
+            <button type="button" class="dj-play" id="dj-play-a" title="Play or pause Deck A">Play</button>
+            <button type="button" class="dj-tbtn" id="dj-a-next" title="Tune to another random station">Rand ⟶</button>
+            <button type="button" class="dj-tbtn" id="dj-a-prev" title="Previous station (history)">⟵ Prev</button>
           </div>
         </div>
       </div>
     </div>
   </section>
-  <div class="dj-fader-strip">
-    <span class="dj-fader-label-a">A</span>
-    <div class="dj-crossfader-mount">
-      <input type="range" id="dj-crossfader" min="0" max="1" step="0.01" value="0" aria-label="Crossfade from A to B" />
-    </div>
-    <span class="dj-fader-label-b">B</span>
-  </div>
   <section class="dj-deck dj-deck-b">
+    <div class="dj-fader-strip">
+      <span class="dj-fader-label-a">A</span>
+      <div class="dj-crossfader-mount">
+        <input type="range" id="dj-crossfader" min="0" max="1" step="0.01" value="0" aria-label="Crossfade from A to B" />
+      </div>
+      <span class="dj-fader-label-b">B</span>
+    </div>
     <div class="dj-deck-badge">DECK B</div>
     <div class="dj-station-title" id="dj-station-b-title">—</div>
-    <div class="dj-deck-body">
+    <div class="dj-deck-body dj-deck-body-b">
+      <div class="dj-deck-b-viz-shell">
+        <div id="dj-deck-b-viz-mount" class="dj-deck-b-viz-mount"></div>
+        <div id="dj-deck-b-viz-placeholder" class="dj-deck-b-viz-placeholder">Deck B preview · AUDIO:BAR or ProjectM</div>
+      </div>
       <div class="dj-stack">
-        <div class="dj-transport-row">
-          <button type="button" class="dj-tbtn" id="dj-b-prev" title="Previous Station B">⟵ Prev</button>
-          <button type="button" class="dj-play" id="dj-play-b">Play</button>
-          <button type="button" class="dj-tbtn" id="dj-b-next" title="Tune deck B to another random station">Rand ⟶</button>
-        </div>
-        <div class="dj-eq-strip eq-strip">
-          <div class="eq-group">
+        <div class="dj-middle-row">
+          <div class="dj-jog-wrap">
+            <div class="dj-jog" id="dj-jog-b" aria-hidden="true"><span class="dj-jog-marker"></span></div>
+          </div>
+          <div class="dj-eq-col-vertical eq-strip" aria-label="Deck B EQ">
             <div class="eq-col">
-              <div class="knob-wrap" id="dj-knob-b-gain" style="--knob-color:#5800FF"><div class="knob-indicator"></div><div class="knob-value">1</div></div>
-              <div class="eq-label" style="color:#5800FF">Gain</div>
-            </div>
-            <div class="eq-col">
-              <div class="knob-wrap" id="dj-knob-b-high" style="--knob-color:#f0f"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
-              <div class="eq-label" style="color:#f0f">Hi</div>
+              <div class="knob-wrap" id="dj-knob-b-low" style="--knob-color:#9AB3F5"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
+              <div class="eq-label" style="color:#9AB3F5">Lo</div>
             </div>
             <div class="eq-col">
               <div class="knob-wrap" id="dj-knob-b-mid" style="--knob-color:#0ff"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
               <div class="eq-label" style="color:#0ff">Mid</div>
             </div>
             <div class="eq-col">
-              <div class="knob-wrap" id="dj-knob-b-low" style="--knob-color:#9AB3F5"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
-              <div class="eq-label" style="color:#9AB3F5">Lo</div>
+              <div class="knob-wrap" id="dj-knob-b-high" style="--knob-color:#f0f"><div class="knob-indicator"></div><div class="knob-value">0</div></div>
+              <div class="eq-label" style="color:#f0f">Hi</div>
+            </div>
+            <div class="eq-col">
+              <div class="knob-wrap" id="dj-knob-b-gain" style="--knob-color:#5800FF"><div class="knob-indicator"></div><div class="knob-value">1</div></div>
+              <div class="eq-label" style="color:#5800FF">Gain</div>
             </div>
           </div>
-        </div>
-        <div class="dj-middle-row">
-          <div class="dj-jog-wrap">
-            <div class="dj-jog" id="dj-jog-b" aria-hidden="true"><span class="dj-jog-marker"></span></div>
-          </div>
-          <div class="dj-controls-grid" aria-label="Deck B visuals, effects, and samples">
-            <button type="button" class="btn dj-fx" id="dj-b-vis-bars" title="Switch to Audio Bars visual">AUDIO:BAR</button>
-            <button type="button" class="btn dj-fx" id="dj-b-vis-blank" title="Switch to no visual (Blank mode)">NO VISUAL</button>
-            <button type="button" class="btn dj-fx" id="dj-b-vis-pm2" title="Switch visual to ProjectM v2">ProjectM</button>
+          <div class="dj-controls-grid" aria-label="Deck B visuals preview, effects, and transport">
+            <button type="button" class="btn dj-fx" id="dj-b-vis-bars" title="Show spectrum bars in Deck B preview">AUDIO:BAR</button>
+            <button type="button" class="btn dj-fx" id="dj-b-vis-blank" title="Clear Deck B preview">NO VISUAL</button>
+            <button type="button" class="btn dj-fx" id="dj-b-vis-pm2" title="Show ProjectM in Deck B preview">ProjectM</button>
 
             <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="Toggle avatar / WebM overlay">Avatar</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-treble" title="Open or close Mix Settings (bottom panel)">Mixer</button>
@@ -5391,9 +5644,9 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
             <button type="button" class="btn dj-fx" id="dj-b-fx-bass" title="Bass pass (Mixer FX)">Bass-Pass</button>
 
-            <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
-            <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
-            <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
+            <button type="button" class="dj-play" id="dj-play-b" title="Play or pause Deck B">Play</button>
+            <button type="button" class="dj-tbtn" id="dj-b-next" title="Tune deck B to another random station">Rand ⟶</button>
+            <button type="button" class="dj-tbtn" id="dj-b-prev" title="Previous Station B">⟵ Prev</button>
           </div>
         </div>
       </div>
@@ -5406,6 +5659,20 @@ function stopAllAndShowStart() {
                 this.onResize();
                 window.addEventListener('resize', this.resizeHandler);
                 window.addEventListener('orientationchange', this.resizeHandler);
+
+                try {
+                    const vizShell = root.querySelector('.dj-deck-b-viz-shell');
+                    if (vizShell && typeof ResizeObserver !== 'undefined') {
+                        this.deckBVizResizeObs = new ResizeObserver(() => {
+                            try {
+                                if (this.deckBVizMode === 'projectm' && typeof this.deckBVizPmResize === 'function') {
+                                    this.deckBVizPmResize();
+                                }
+                            } catch (_) {}
+                        });
+                        this.deckBVizResizeObs.observe(vizShell);
+                    }
+                } catch (_) {}
 
                 this.els.titleA = root.querySelector('#dj-station-a-title');
                 this.els.titleB = root.querySelector('#dj-station-b-title');
@@ -5806,17 +6073,6 @@ function stopAllAndShowStart() {
                 if (djPrevB) djPrevB.addEventListener('click', () => djAdvanceB(-1), sig);
                 if (djNextB) djNextB.addEventListener('click', djRandomB, sig);
 
-                try {
-                    if (typeof bindSample === 'function') {
-                        bindSample(root.querySelector('#dj-a-sfx-wav'), audioElSample4, 'sampleLoop4', 'sourceNodeSample4');
-                        bindSample(root.querySelector('#dj-a-sfx-w1'), audioElSample5, 'sampleLoop5', 'sourceNodeSample5');
-                        bindSample(root.querySelector('#dj-a-sfx-w2'), audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
-                        bindSample(root.querySelector('#dj-b-sfx-wav'), audioElSample4, 'sampleLoop4', 'sourceNodeSample4');
-                        bindSample(root.querySelector('#dj-b-sfx-w1'), audioElSample5, 'sampleLoop5', 'sourceNodeSample5');
-                        bindSample(root.querySelector('#dj-b-sfx-w2'), audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
-                    }
-                } catch (_) {}
-
                 const switchVisualByName = (name) => {
                     try {
                         if (!Array.isArray(modes) || typeof loadMode !== 'function') return;
@@ -5843,9 +6099,32 @@ function stopAllAndShowStart() {
                 bindVisualSwitch('dj-vis-blank', 'Blank');
                 bindVisualSwitch('dj-vis-bars', 'Audio Bars');
                 bindVisualSwitch('dj-vis-pm2', 'ProjectM v2');
-                bindVisualSwitch('dj-b-vis-blank', 'Blank');
-                bindVisualSwitch('dj-b-vis-bars', 'Audio Bars');
-                bindVisualSwitch('dj-b-vis-pm2', 'ProjectM v2');
+
+                const bindDeckBPreviewMode = (id, mode) => {
+                    const el = root.querySelector('#' + id);
+                    if (!el) return;
+                    el.addEventListener('click', (e) => {
+                        try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+                        try { window.__suppressNextClick = true; } catch (_) {}
+                        try {
+                            if (window.__randomClickTimer) {
+                                clearTimeout(window.__randomClickTimer);
+                                window.__randomClickTimer = null;
+                            }
+                        } catch (_) {}
+                        if (mode === 'blank') {
+                            this.tearDownDeckBViz();
+                            this.syncDeckBVisualButtons();
+                            return;
+                        }
+                        if (mode === 'bars') this.startDeckBAudioBars();
+                        else if (mode === 'projectm') this.startDeckBProjectM();
+                        this.syncDeckBVisualButtons();
+                    }, sig);
+                };
+                bindDeckBPreviewMode('dj-b-vis-blank', 'blank');
+                bindDeckBPreviewMode('dj-b-vis-bars', 'bars');
+                bindDeckBPreviewMode('dj-b-vis-pm2', 'projectm');
 
                 if (this.els.playA) {
                     this.els.playA.addEventListener('click', async () => {
@@ -5890,6 +6169,8 @@ function stopAllAndShowStart() {
 
                 document.getElementById('mode-sub').innerText = 'Dual decks • Mixer-linked FX';
 
+                this.syncDeckBVisualButtons();
+
                 this.animateFrame();
             }
 
@@ -5900,6 +6181,13 @@ function stopAllAndShowStart() {
                     window.removeEventListener('resize', this.resizeHandler);
                     window.removeEventListener('orientationchange', this.resizeHandler);
                 } catch(_) {}
+                try {
+                    if (this.deckBVizResizeObs) {
+                        this.deckBVizResizeObs.disconnect();
+                        this.deckBVizResizeObs = null;
+                    }
+                } catch (_) {}
+                try { this.tearDownDeckBViz(); } catch (_) {}
                 try {
                     const KNOB_IDS = ['knob-a-low', 'knob-a-mid', 'knob-a-high', 'knob-a-gain', 'knob-b-gain', 'knob-b-high', 'knob-b-mid', 'knob-b-low'];
                     if (window.djKnobMirrors) {
