@@ -142,6 +142,7 @@
             display: flex;
             flex-direction: column;
             padding: 10px 12px;
+            padding-bottom: calc(10px + clamp(52px, 7.5vh, 94px) + env(safe-area-inset-bottom, 0px));
             box-sizing: border-box;
             color: #eaeaf4;
             font-size: 12px;
@@ -359,7 +360,7 @@
         }
         .dj-deck-b-queue-panel .dj-url-item-actions {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 4px;
         }
         .dj-deck-b-viz-mount {
@@ -6320,11 +6321,10 @@ function stopAllAndShowStart() {
                         b.setAttribute('data-action', act);
                         return b;
                     };
-                    acts.appendChild(mk('play-a', 'Play A', 'Play on Deck A now'));
-                    acts.appendChild(mk('play-b', 'Play B', 'Play on Deck B now'));
-                    acts.appendChild(mk('queue-a', '+A Q', 'Add to Deck A queue'));
-                    acts.appendChild(mk('queue-b', '+B Q', 'Add to Deck B queue'));
-                    acts.appendChild(mk('delete', 'Del', 'Remove URL entry'));
+                    acts.appendChild(mk('play', 'P', 'Play now on Deck B'));
+                    acts.appendChild(mk('queue-a', 'A', 'Send to Deck A queue'));
+                    acts.appendChild(mk('queue-b', 'B', 'Send to Deck B queue'));
+                    acts.appendChild(mk('delete', 'x', 'Remove URL entry'));
                     li.appendChild(name);
                     li.appendChild(acts);
                     listEl.appendChild(li);
@@ -7313,13 +7313,30 @@ function stopAllAndShowStart() {
                         const it = djQueueUrlEntries.find((x) => x && String(x.id) === String(id));
                         if (!it || !it.url) return;
                         const action = btn.getAttribute('data-action');
-                        if (action === 'play-a') playDeckUrlNow('a', it.url, it.name);
-                        else if (action === 'play-b') playDeckUrlNow('b', it.url, it.name);
+                        if (action === 'play') playDeckUrlNow('b', it.url, it.name);
                         else if (action === 'queue-a') enqueueDeckUrl('a', it.url, it.name);
                         else if (action === 'queue-b') enqueueDeckUrl('b', it.url, it.name);
                         else if (action === 'delete') removeDjQueueUrl(id);
                         try { this.refreshQueueUi(); } catch (_) {}
                     }, sig);
+                    const stationCycleListEl = root.querySelector('#dj-station-cycle-list');
+                    if (stationCycleListEl) stationCycleListEl.addEventListener('wheel', (ev) => {
+                        try {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                        } catch (_) {}
+                        try {
+                            if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                            const dy = Number(ev.deltaY) || 0;
+                            if (dy < 0) {
+                                if (typeof openTopMenuPanel === 'function') openTopMenuPanel();
+                            } else if (dy > 0) {
+                                const mixOpen = mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open');
+                                if (!mixOpen && typeof toggleMixPanel === 'function') toggleMixPanel();
+                            }
+                            if (typeof resetIdleTimer === 'function') resetIdleTimer();
+                        } catch (_) {}
+                    }, { passive: false, signal: this.abortCtrl.signal });
                 } catch (_) {}
 
                 if (this.els.fxHighA) this.els.fxHighA.addEventListener('click', djToggleAvatar, sig);
