@@ -692,6 +692,28 @@
             text-transform: uppercase;
             color: rgba(255, 255, 255, 0.65);
         }
+        /* Beat-map FX knobs: click toggles effect; active = ring + red pilot dot */
+        #dj-visual-root .dj-beatmap-fx-knobs .knob-wrap.dj-beatfx-on {
+            box-shadow:
+                0 0 0 2px rgba(255, 72, 72, 0.75),
+                0 0 16px rgba(255, 60, 60, 0.35),
+                0 4px 6px rgba(0, 0, 0, 0.5),
+                inset 0 1px 1px rgba(255, 255, 255, 0.22);
+            filter: saturate(1.2) brightness(1.06);
+        }
+        #dj-visual-root .dj-beatmap-fx-knobs .knob-wrap.dj-beatfx-on::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #ff3838;
+            box-shadow: 0 0 8px rgba(255, 55, 55, 0.95);
+            pointer-events: none;
+            z-index: 2;
+        }
         /* Tempo column: same width band as Deck VOL column */
         #dj-visual-root .dj-beatmap-tempo-col {
             flex: 0 0 minmax(36px, 44px);
@@ -708,7 +730,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             height: 100%;
             min-height: 0;
             gap: 4px;
@@ -5311,7 +5333,7 @@ function randomGlowColor() {
                     state.fx.loopMusical.delay.connect(state.fx.loopMusical.feedback);
                     state.fx.loopMusical.feedback.connect(state.fx.loopMusical.delay);
                 } catch (_) {}
-                state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4 };
+                state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false };
                 const curveLen = 44100; const curve = new Float32Array(curveLen); const amount = 120;
                 for (let i=0;i<curveLen;i++){ const x = i/curveLen*2-1; curve[i] = ((3+amount)*x*20*Math.PI/180)/(Math.PI+amount*Math.abs(x)); }
                 state.fx.distort.node.curve = curve; state.fx.distort.node.oversample = '4x';
@@ -5419,7 +5441,8 @@ function randomGlowColor() {
             if (!state.djBeatFx || !state.fx || !state.fx.loopMusical) return;
             const bars = Math.round(Math.max(0, Math.min(8, val)));
             state.djBeatFx.loopBars = bars;
-            state.fx.loopMusical.on = bars > 0;
+            if (bars <= 0) state.djBeatFx.loopArm = false;
+            state.fx.loopMusical.on = !!(state.djBeatFx.loopArm && bars > 0);
             syncDjMusicalLoopDelayTime();
             rebuildEffectsChain();
         }
@@ -5427,26 +5450,110 @@ function randomGlowColor() {
         function applyDjBeatFxArp(val) {
             if (!state.djBeatFx || !state.fx || !state.fx.arp) return;
             state.djBeatFx.arpHz = val;
-            const on = val >= 0.35;
+            const hz = Math.max(0.25, Math.min(32, val < 0.35 ? 4 : val));
             try {
-                state.fx.arp.lfo.frequency.value = Math.max(0.25, Math.min(32, val <= 0.35 ? 4 : val));
-                state.fx.arp.on = on;
-                state.fx.arp.lfoGain.gain.value = on ? 600 : 0;
+                state.fx.arp.lfo.frequency.value = hz;
+                state.fx.arp.lfoGain.gain.value = state.fx.arp.on ? 600 : 0;
             } catch (_) {}
             rebuildEffectsChain();
             try {
                 const fxArp = document.getElementById('fx-arp');
-                if (fxArp) fxArp.classList.toggle('on', on);
+                if (fxArp) fxArp.classList.toggle('on', !!state.fx.arp.on);
             } catch (_) {}
         }
 
-        function bindDjBeatFxKnobPair(root, suffix, min, max, key, applyFn, resetVal, loopIntegerUi) {
+        function syncDjBeatFxKnobActiveDom(root) {
+            try {
+                if (!root) root = document.getElementById('dj-visual-root');
+                if (!root || !state.fx) return;
+                const tkOn = !!(state.fx.tk && state.fx.tk.on);
+                const loopOn = !!(state.fx.loopMusical && state.fx.loopMusical.on);
+                const arpOn = !!(state.fx.arp && state.fx.arp.on);
+                ['a', 'b'].forEach((d) => {
+                    const tk = root.querySelector('#dj-knob-' + d + '-tk');
+                    const loop = root.querySelector('#dj-knob-' + d + '-loop');
+                    const arp = root.querySelector('#dj-knob-' + d + '-arp');
+                    if (tk) tk.classList.toggle('dj-beatfx-on', tkOn);
+                    if (loop) loop.classList.toggle('dj-beatfx-on', loopOn);
+                    if (arp) arp.classList.toggle('dj-beatfx-on', arpOn);
+                });
+            } catch (_) {}
+        }
+
+        function refreshDjBeatLoopKnobVisuals(root) {
+            if (!state.djBeatFx) return;
+            if (!root) root = document.getElementById('dj-visual-root');
+            if (!root) return;
+            const v = state.djBeatFx.loopBars;
+            ['a', 'b'].forEach((d) => {
+                const el = root.querySelector('#dj-knob-' + d + '-loop');
+                if (!el) return;
+                setKnobUi(el, 0, 8, v);
+                try {
+                    const vv = el.querySelector('.knob-value');
+                    if (vv) vv.textContent = String(Math.round(v));
+                } catch (_) {}
+            });
+        }
+
+        function refreshDjBeatArpKnobVisuals(root) {
+            if (!state.djBeatFx) return;
+            if (!root) root = document.getElementById('dj-visual-root');
+            if (!root) return;
+            const v = state.djBeatFx.arpHz;
+            ['a', 'b'].forEach((d) => {
+                const el = root.querySelector('#dj-knob-' + d + '-arp');
+                if (!el) return;
+                setKnobUi(el, 0, 16, v);
+            });
+        }
+
+        function toggleDjBeatFxTkFromKnob() {
+            try { initAudio(); } catch (_) {}
+            if (!state.fx || !state.fx.tk) return;
+            state.fx.tk.on = !state.fx.tk.on;
+            rebuildEffectsChain();
+            try {
+                const fxTk = document.getElementById('fx-tk');
+                if (fxTk) fxTk.classList.toggle('on', state.fx.tk.on);
+            } catch (_) {}
+            syncDjBeatFxKnobActiveDom();
+        }
+
+        function toggleDjBeatFxLoopFromKnob() {
+            try { initAudio(); } catch (_) {}
+            if (!state.djBeatFx || !state.fx || !state.fx.loopMusical) return;
+            state.djBeatFx.loopArm = !state.djBeatFx.loopArm;
+            if (state.djBeatFx.loopArm && state.djBeatFx.loopBars <= 0) {
+                state.djBeatFx.loopBars = 1;
+            }
+            applyDjBeatFxLoop(state.djBeatFx.loopBars);
+            refreshDjBeatLoopKnobVisuals();
+            syncDjBeatFxKnobActiveDom();
+        }
+
+        function toggleDjBeatFxArpFromKnob() {
+            try { initAudio(); } catch (_) {}
+            if (!state.fx || !state.fx.arp || !state.djBeatFx) return;
+            state.fx.arp.on = !state.fx.arp.on;
+            state.fx.arp.lfoGain.gain.value = state.fx.arp.on ? 600 : 0;
+            if (state.fx.arp.on && state.djBeatFx.arpHz < 0.35) {
+                state.djBeatFx.arpHz = 4;
+            }
+            applyDjBeatFxArp(state.djBeatFx.arpHz);
+            refreshDjBeatArpKnobVisuals();
+            syncDjBeatFxKnobActiveDom();
+        }
+
+        function bindDjBeatFxKnobPair(root, suffix, min, max, key, applyFn, resetVal, loopIntegerUi, toggleKind) {
             const elA = root.querySelector('#dj-knob-a-' + suffix);
             const elB = root.querySelector('#dj-knob-b-' + suffix);
             if (!elA || !elB) return;
-            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4 };
-            let startY = 0;
-            let startVal = 0;
+            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false };
+            const TH = 6;
+            let downY = 0;
+            let startValAtDown = 0;
+            let maxAbsDy = 0;
 
             const updateVisuals = (val) => {
                 state.djBeatFx[key] = val;
@@ -5465,12 +5572,21 @@ function randomGlowColor() {
 
             updateVisuals(typeof state.djBeatFx[key] === 'number' ? state.djBeatFx[key] : resetVal);
 
+            const clientYOf = (e) => {
+                if (e.clientY != null) return e.clientY;
+                if (e.touches && e.touches[0]) return e.touches[0].clientY;
+                if (e.changedTouches && e.changedTouches[0]) return e.changedTouches[0].clientY;
+                return 0;
+            };
+
             const onMove = (e) => {
-                const y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-                const dy = startY - y;
+                const y = clientYOf(e);
+                maxAbsDy = Math.max(maxAbsDy, Math.abs(y - downY));
+                if (maxAbsDy <= TH) return;
+                const dy = downY - y;
                 const range = max - min;
                 const delta = (dy / 200) * range;
-                let newVal = Math.max(min, Math.min(max, startVal + delta));
+                let newVal = Math.max(min, Math.min(max, startValAtDown + delta));
                 updateVisuals(newVal);
                 applyFn(newVal);
             };
@@ -5480,27 +5596,35 @@ function randomGlowColor() {
                 window.removeEventListener('touchmove', onMove);
                 window.removeEventListener('mouseup', onUp);
                 window.removeEventListener('touchend', onUp);
+                window.removeEventListener('touchcancel', onUp);
+                if (maxAbsDy <= TH && toggleKind) {
+                    if (toggleKind === 'tk') toggleDjBeatFxTkFromKnob();
+                    else if (toggleKind === 'loop') toggleDjBeatFxLoopFromKnob();
+                    else if (toggleKind === 'arp') toggleDjBeatFxArpFromKnob();
+                }
+                maxAbsDy = 0;
+            };
+
+            const onDown = (e) => {
+                e.preventDefault();
+                downY = clientYOf(e);
+                startValAtDown = state.djBeatFx[key];
+                maxAbsDy = 0;
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('touchmove', onMove, { passive: false });
+                window.addEventListener('mouseup', onUp);
+                window.addEventListener('touchend', onUp);
+                window.addEventListener('touchcancel', onUp);
             };
 
             const bindEl = (el) => {
-                el.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    startY = e.clientY || 0;
-                    startVal = state.djBeatFx[key];
-                    window.addEventListener('mousemove', onMove);
-                    window.addEventListener('mouseup', onUp);
-                });
-                el.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    startY = e.touches ? e.touches[0].clientY : 0;
-                    startVal = state.djBeatFx[key];
-                    window.addEventListener('touchmove', onMove, { passive: false });
-                    window.addEventListener('touchend', onUp);
-                }, { passive: false });
+                el.addEventListener('mousedown', onDown);
+                el.addEventListener('touchstart', onDown, { passive: false });
                 el.addEventListener('dblclick', (e) => {
                     try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
                     updateVisuals(resetVal);
                     applyFn(resetVal);
+                    syncDjBeatFxKnobActiveDom(root);
                 });
             };
             bindEl(elA);
@@ -5509,14 +5633,16 @@ function randomGlowColor() {
 
         function wireDjBeatFxKnobs(root) {
             try { initAudio(); } catch (_) {}
-            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4 };
-            bindDjBeatFxKnobPair(root, 'tk', 200, 8000, 'tkHz', applyDjBeatFxTk, 1200, false);
-            bindDjBeatFxKnobPair(root, 'loop', 0, 8, 'loopBars', applyDjBeatFxLoop, 0, true);
-            bindDjBeatFxKnobPair(root, 'arp', 0, 16, 'arpHz', applyDjBeatFxArp, 4, false);
+            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false };
+            if (typeof state.djBeatFx.loopArm !== 'boolean') state.djBeatFx.loopArm = false;
+            bindDjBeatFxKnobPair(root, 'tk', 200, 8000, 'tkHz', applyDjBeatFxTk, 1200, false, 'tk');
+            bindDjBeatFxKnobPair(root, 'loop', 0, 8, 'loopBars', applyDjBeatFxLoop, 0, true, 'loop');
+            bindDjBeatFxKnobPair(root, 'arp', 0, 16, 'arpHz', applyDjBeatFxArp, 4, false, 'arp');
             try {
                 applyDjBeatFxTk(state.djBeatFx.tkHz);
                 applyDjBeatFxLoop(state.djBeatFx.loopBars);
                 applyDjBeatFxArp(state.djBeatFx.arpHz);
+                syncDjBeatFxKnobActiveDom(root);
             } catch (_) {}
         }
 
@@ -7879,6 +8005,7 @@ function stopAllAndShowStart() {
                     if (this.els.fxTrebleB) this.els.fxTrebleB.classList.toggle('on', mixOpenUi);
                     if (this.els.fxDistortA) this.els.fxDistortA.classList.toggle('on', stationOpenUi);
                     if (this.els.fxDistortB) this.els.fxDistortB.classList.toggle('on', stationOpenUi);
+                    if (this.root && typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(this.root);
                 } catch(_) {}
             }
 
@@ -11296,6 +11423,9 @@ function stopAllAndShowStart() {
             state.fx[key].on = !state.fx[key].on;
             if (btn) btn.classList.toggle('on', state.fx[key].on);
             rebuildEffectsChain();
+            if (key === 'tk') {
+                try { if (typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(); } catch (_) {}
+            }
         }
         if (fxLow) fxLow.addEventListener('click', () => toggleFx('low', fxLow));
         if (fxHigh) fxHigh.addEventListener('click', () => toggleFx('high', fxHigh));
@@ -11318,6 +11448,7 @@ function stopAllAndShowStart() {
                 // Enable/disable modulation depth (map to +/- 600 Hz)
                 state.fx.arp.lfoGain.gain.value = state.fx.arp.on ? 600 : 0;
                 rebuildEffectsChain();
+                try { if (typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(); } catch (_) {}
             });
         }
         if (fxTk) {
@@ -11325,6 +11456,7 @@ function stopAllAndShowStart() {
                 state.fx.tk.on = !state.fx.tk.on;
                 fxTk.classList.toggle('on', state.fx.tk.on);
                 rebuildEffectsChain();
+                try { if (typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(); } catch (_) {}
             });
         }
         // --- FIXED FX WAV LISTENER (Lightbulb) ---
