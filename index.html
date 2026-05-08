@@ -1127,6 +1127,10 @@
             background-size: 100% 100%;
             color: #fff;
         }
+        #dj-visual-root .btn.dj-sfx.sample-playing {
+            color: #FFD700;
+            text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 4px rgba(0,0,0,0.85), 0 0 10px rgba(0,0,0,0.55);
+        }
         /* Deck A indicator: matching Deck B visual is active */
         #dj-visual-root .btn.dj-fx.deck-b-active {
             color: #f5d20f;
@@ -2152,6 +2156,10 @@
             background-position: center;
             background-repeat: no-repeat;
             background-size: 100% 100%;
+        }
+        #mix-effects .btn.sample-playing {
+            color: #FFD700;
+            text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 4px rgba(0,0,0,0.85), 0 0 10px rgba(0,0,0,0.55);
         }
         /* BPM scope row */
         #mix-bpm-row {
@@ -11676,8 +11684,23 @@ function stopAllAndShowStart() {
                 try { if (typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(); } catch (_) {}
             });
         }
+        function attachSamplePlayingIndicator(btn, media) {
+            if (!btn || !media) return;
+            const sync = () => {
+                try {
+                    const playing = !media.paused && !media.ended;
+                    btn.classList.toggle('sample-playing', playing);
+                } catch (_) {}
+            };
+            ['play', 'pause', 'ended'].forEach((ev) => {
+                try { media.addEventListener(ev, sync); } catch (_) {}
+            });
+            sync();
+        }
+
         // --- FIXED FX WAV LISTENER (Lightbulb) ---
         if (fxWav) {
+            attachSamplePlayingIndicator(fxWav, audioElSample);
             fxWav.addEventListener('click', (e) => {
                 e.preventDefault();
                 try { audioElSample.loop = !!sampleLoop; } catch(_) {}
@@ -11693,10 +11716,7 @@ function stopAllAndShowStart() {
                     }
                 } catch(e) { console.warn(e); }
 
-                audioElSample.play().then(()=>{ 
-                    fxWav.classList.add('on'); 
-                    setTimeout(()=>fxWav.classList.remove('on'), 300); 
-                }).catch(()=>{});
+                audioElSample.play().catch(()=>{});
             });
             fxWav.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
@@ -11709,6 +11729,7 @@ function stopAllAndShowStart() {
         // --- FIXED BIND SAMPLE FUNCTION (Wav 1-6) ---
         function bindSample(btn, media, loopFlagKey, sourceKey) {
             if (!btn || !media) return;
+            attachSamplePlayingIndicator(btn, media);
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 try { media.loop = !!window[loopFlagKey]; } catch(_) {}
@@ -11724,10 +11745,7 @@ function stopAllAndShowStart() {
                     }
                 } catch(e) { console.warn(e); }
                 
-                media.play().then(()=>{ 
-                    btn.classList.add('on'); 
-                    setTimeout(()=>btn.classList.remove('on'), 300); 
-                }).catch(()=>{});
+                media.play().catch(()=>{});
             });
             btn.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
