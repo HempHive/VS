@@ -7009,8 +7009,8 @@ function stopAllAndShowStart() {
             btn.classList.toggle('dj-beat-pad-mode-once', !loop);
             const base = ((btn.textContent || '').trim()) || slot.label || 'Sample';
             btn.title = loop
-                ? (base + ' · Loop · Right-click: play mode')
-                : (base + ' · Solo · Right-click: play mode');
+                ? (base + ' · Loop · Long-press: loop · Right-click: load sample')
+                : (base + ' · Solo · Long-press: loop · Right-click: load sample');
         }
 
         function openDjBeatPadLoopMenu(clientX, clientY, slot, btn) {
@@ -7285,9 +7285,9 @@ function stopAllAndShowStart() {
                                 e.preventDefault();
                                 e.stopPropagation();
                             } catch (_) {}
-                            try {
-                                openDjBeatPadLoopMenu(e.clientX, e.clientY, slots[idx], btn);
-                            } catch (_) {}
+                            longFired = true;
+                            loadSlotIdx = idx;
+                            try { if (fi) fi.click(); } catch (_) {}
                         }, sig);
 
                         btn.addEventListener('pointerdown', (e) => {
@@ -7296,8 +7296,20 @@ function stopAllAndShowStart() {
                             holdT = setTimeout(() => {
                                 holdT = null;
                                 longFired = true;
-                                loadSlotIdx = idx;
-                                try { if (fi) fi.click(); } catch (_) {}
+                                const slot = slots[idx];
+                                if (!slot) return;
+                                slot.loopMode = true;
+                                try { applyDjBeatPadLoopVisual(btn, slot); } catch (_) {}
+                                ensureGraph(slot);
+                                clearEnded(slot);
+                                try { slot.audio.loop = true; } catch (_) {}
+                                try { slot.audio.playbackRate = getRate(); } catch (_) {}
+                                if (slot.audio.paused) {
+                                    try { slot.audio.currentTime = 0; } catch (_) {}
+                                    slot.audio.play().then(() => {
+                                        try { btn.classList.add('on'); } catch (_) {}
+                                    }).catch(() => {});
+                                }
                             }, 550);
                         }, sig);
 
