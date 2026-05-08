@@ -11343,9 +11343,17 @@ function stopAllAndShowStart() {
                      state.activeVisualizer.deckBVizMode === 'video' ||
                      state.activeVisualizer.deckBQueueVisible)
                 );
-                // In DJ mode: only show 🎧 when Deck B visual layer is active, as a quick "return to controls".
-                btn.classList.toggle('display-none', onDj && !deckBVisualActive);
-                btn.title = deckBVisualActive ? 'Return Deck B controls' : 'Open DJ Decks visual';
+                const deckBTextActive = (() => {
+                    try {
+                        if (typeof getDeckBStageEl !== 'function') return false;
+                        const stage = getDeckBStageEl();
+                        return !!(stage && stage.classList.contains('dj-deck-b-text-mode'));
+                    } catch (_) { return false; }
+                })();
+                const showReturn = onDj && (deckBVisualActive || deckBTextActive);
+                // In DJ mode: show 🎧 when a Deck B view is active (visual layer / queue / TEXT-IN) as a quick "return to controls".
+                btn.classList.toggle('display-none', onDj && !showReturn);
+                btn.title = showReturn ? 'Return Deck B controls' : 'Open DJ Decks visual';
             } catch (_) {}
         }
 
@@ -11413,6 +11421,28 @@ function stopAllAndShowStart() {
                          state.activeVisualizer.deckBVizMode === 'video' ||
                          state.activeVisualizer.deckBQueueVisible)
                     );
+                    const deckBTextActive = (() => {
+                        try {
+                            if (typeof getDeckBStageEl !== 'function') return false;
+                            const stage = getDeckBStageEl();
+                            return !!(stage && stage.classList.contains('dj-deck-b-text-mode'));
+                        } catch (_) { return false; }
+                    })();
+                    if (onDj && deckBTextActive) {
+                        try { if (typeof setTextAuto === 'function') setTextAuto(false); } catch (_) {}
+                        try { if (typeof setDeckBTextMode === 'function') setDeckBTextMode(false); } catch (_) {}
+                        try {
+                            const tip = document.getElementById('textin-panel');
+                            if (tip) delete tip.dataset.textTarget;
+                            const panelOpen = !!(tip && !tip.classList.contains('display-none') && tip.classList.contains('open'));
+                            if (panelOpen && typeof hideTextInPanel === 'function') {
+                                hideTextInPanel({ forceCloseDeckB: true });
+                            }
+                        } catch (_) {}
+                        try { if (typeof syncDjTextInDeckLights === 'function') syncDjTextInDeckLights(); } catch (_) {}
+                        resetIdleTimer();
+                        return;
+                    }
                     if (deckBVisualActive) {
                         try { if (state.activeVisualizer.deckBQueueVisible && typeof state.activeVisualizer.hideDeckBQueueView === 'function') state.activeVisualizer.hideDeckBQueueView(); } catch (_) {}
                         if (typeof state.activeVisualizer.tearDownDeckBViz === 'function') {
@@ -12256,6 +12286,7 @@ function stopAllAndShowStart() {
                 }
             }
             try { syncDjTextInDeckLights(); } catch(_) {}
+            try { if (typeof updateDjDecksShortcutVisibility === 'function') updateDjDecksShortcutVisibility(); } catch(_) {}
         }
         function syncDjTextInDeckLights() {
             try {
