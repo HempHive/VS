@@ -863,7 +863,7 @@
             justify-items: stretch;
             align-content: start;
         }
-        /* Sample pads: btn.png on top of wly.gif (deck SFX use same stacking). */
+        /* Sample pads: btn.png on top of wly.gif (deck SFX use same stacking). Black fallback if the gif is missing. */
         #dj-visual-root .dj-beatmap-pads .btn.dj-fx.dj-beat-pad {
             width: 100%;
             min-height: 40px;
@@ -876,6 +876,7 @@
             letter-spacing: 0.5px;
             padding: 8px 10px;
             line-height: 1.15;
+            background-color: #000;
             background-image: url('btn.png'), url('wly.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
@@ -1169,6 +1170,7 @@
             background-size: 100% 100%, cover;
         }
         #dj-visual-root .btn.dj-sfx {
+            background-color: #000;
             background-image: url('btn.png'), url('wly.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
@@ -2252,7 +2254,7 @@
             color: #FFD700;
             text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 4px rgba(0,0,0,0.85), 0 0 10px rgba(0,0,0,0.55);
         }
-        /* Mix panel wav sample buttons: btn.png over wly.gif */
+        /* Mix panel wav sample buttons: btn.png over wly.gif (black fallback if gif missing) */
         #mix-effects #fx-wav,
         #mix-effects #fx-wav1,
         #mix-effects #fx-wav2,
@@ -2260,6 +2262,7 @@
         #mix-effects #fx-wav4,
         #mix-effects #fx-wav5,
         #mix-effects #fx-wav6 {
+            background-color: #000;
             background-image: url('btn.png'), url('wly.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
@@ -8489,9 +8492,9 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-fx" id="dj-fx-low" title="Toggle Deck B video player">Video</button>
             <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Open or close the TEXT-IN panel (rising text on the main screen)">TEXT-IN</button>
 
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="IDEAS">IDEAS</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="KARAOKE">KARAOKE</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="YouTube">YouTube</button>
 
             <button type="button" class="dj-play" id="dj-play-a" title="Play or pause Deck A">Play</button>
             <button type="button" class="dj-tbtn" id="dj-a-next" title="Tune to another random station">Rand ⟶</button>
@@ -8590,9 +8593,9 @@ function stopAllAndShowStart() {
                 <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Toggle Deck B video player">Video</button>
                 <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Open or close TEXT-IN, displaying rising text inside the Deck B player">TEXT-IN</button>
 
-                <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
-                <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Left-click: play once • Right-click: loop (wav5)">WAAA</button>
-                <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Left-click: play once • Right-click: loop (wav6)">AIR📢</button>
+                <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="IDEAS">IDEAS</button>
+                <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="KARAOKE">KARAOKE</button>
+                <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="YouTube">YouTube</button>
 
                 <button type="button" class="dj-play" id="dj-play-b" title="Play or pause Deck B">Play</button>
                 <button type="button" class="dj-tbtn" id="dj-b-next" title="Tune deck B to another random station">Rand ⟶</button>
