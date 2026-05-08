@@ -96,6 +96,7 @@
             gap: 0;
         }
         .dj-deck-b-stage {
+            position: relative;
             flex: 1 1 auto;
             width: 100%;
             min-height: 0;
@@ -135,6 +136,40 @@
             align-items: stretch;
             justify-content: flex-start;
             pointer-events: auto;
+        }
+        .dj-deck-b-text-stage {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            display: none;
+            pointer-events: none;
+            z-index: 6;
+        }
+        .dj-deck-b-stage.dj-deck-b-text-mode .dj-deck-b-controls {
+            display: none;
+        }
+        .dj-deck-b-stage.dj-deck-b-text-mode .dj-deck-b-text-stage {
+            display: block;
+            position: relative;
+            flex: 1 1 auto;
+            width: 100%;
+            min-height: clamp(160px, 32vmin, 420px);
+            inset: auto;
+        }
+        .dj-deck-b-text-overlay-layer {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .dj-deck-b-text-overlay-layer .rising-text {
+            position: absolute;
+            left: 50%;
+            transform: translate(-50%, 0);
+            will-change: transform, opacity, text-shadow;
+            white-space: pre;
         }
         .dj-deck-b-queue-panel {
             flex: 1;
@@ -1958,6 +1993,18 @@
             border-radius: 6px;
         }
         .textin-btn:hover { background: #fff; color: #000; }
+        #ti-auto.on {
+            background: #FFD700;
+            color: #000;
+            border-color: #FFD700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.55), 0 0 18px rgba(255, 215, 0, 0.25) inset;
+            font-weight: 700;
+        }
+        #ti-auto.on:hover {
+            background: #fff48a;
+            color: #000;
+            border-color: #fff48a;
+        }
         .textin-num {
             width: 72px; padding: 6px 8px;
             border: 1px solid rgba(255,255,255,0.25);
@@ -3520,7 +3567,7 @@ const QUALITY = {
                 uiLockToggle.classList.add('on');
                 uiLockToggle.setAttribute('aria-pressed', 'true');
                 // Close any open panels/menus
-                try { hideTextInPanel(); } catch(_) {}
+                try { hideTextInPanel({ forceCloseDeckB: true }); } catch(_) {}
                 try { if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) closeTopMenuPanel(); } catch(_) {}
                 try { hideWebmSettingsPanel(); } catch(_) {}
                 try { closeBottomMenuPanel(); } catch(_) {}
@@ -6956,11 +7003,11 @@ function stopAllAndShowStart() {
                     { label: 'Clap', src: 'Clap.wav', defaultLoop: true },
                     { label: 'Perc', src: 'Perc.wav', defaultLoop: true },
                     { label: 'Tom', src: 'Tom.wav', defaultLoop: true },
-                    { label: 'WAA', src: 'wav4.mp3', defaultLoop: true },
-                    { label: 'WAAA', src: 'wav5.mp3', defaultLoop: true },
-                    { label: 'AIR📢', src: 'wav6.mp3', defaultLoop: true },
-                    { label: 'FX1', src: 'wav1.mp3', defaultLoop: true },
-                    { label: 'FX2', src: 'wav2.mp3', defaultLoop: true },
+                    { label: 'WAA', src: 'wav4.mp3', defaultLoop: false },
+                    { label: 'WAAA', src: 'wav5.mp3', defaultLoop: false },
+                    { label: 'AIR📢', src: 'wav6.mp3', defaultLoop: false },
+                    { label: 'FX1', src: 'wav1.mp3', defaultLoop: false },
+                    { label: 'FX2', src: 'wav2.mp3', defaultLoop: false },
                     { label: 'KEY', src: 'Key.wav', defaultLoop: false },
                     { label: 'KICK', src: 'Kick.wav', defaultLoop: false },
                     { label: 'BELL', src: 'Bell.wav', defaultLoop: false },
@@ -8204,8 +8251,9 @@ function stopAllAndShowStart() {
                     if (this.els.fxLowB) this.els.fxLowB.classList.toggle('on', videoOn);
                     if (this.els.queueA) this.els.queueA.classList.toggle('on', !!this.deckBQueueVisible);
                     if (this.els.queueB) this.els.queueB.classList.toggle('on', !!this.deckBQueueVisible);
-                    if (this.els.fxTk) this.els.fxTk.classList.toggle('on', kon);
-                    if (this.els.fxTkB) this.els.fxTkB.classList.toggle('on', kon);
+                    if (typeof syncDjTextInDeckLights === 'function') {
+                        try { syncDjTextInDeckLights(); } catch(_) {}
+                    }
                     if (this.els.fxHighA) this.els.fxHighA.classList.toggle('on', avatarOn);
                     if (this.els.fxHighB) this.els.fxHighB.classList.toggle('on', avatarOn);
                     if (this.els.fxTrebleA) this.els.fxTrebleA.classList.toggle('on', mixOpenUi);
@@ -8285,19 +8333,19 @@ function stopAllAndShowStart() {
                   <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="3">Perc</button>
                   <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="4">Tom</button>
                 </div>
-                <div class="dj-beatmap-col" aria-label="Deck A sample pads">
-                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="5">WAA</button>
-                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="6">WAAA</button>
-                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="7">AIR📢</button>
-                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="8">FX1</button>
-                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="9">FX2</button>
-                </div>
                 <div class="dj-beatmap-col" aria-label="Deck A key samples">
                   <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="10">KEY</button>
                   <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="11">KICK</button>
                   <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="12">BELL</button>
                   <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="13">RIM</button>
                   <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="14">HAR</button>
+                </div>
+                <div class="dj-beatmap-col" aria-label="Deck A sample pads">
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="5">WAA</button>
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="6">WAAA</button>
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="7">AIR📢</button>
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="8">FX1</button>
+                  <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="a" data-beat-slot="9">FX2</button>
                 </div>
               </div>
             </div>
@@ -8341,7 +8389,7 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Open or close station list (top menu)">Station</button>
 
             <button type="button" class="btn dj-fx" id="dj-fx-low" title="Toggle Deck B video player">Video</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Open or close the TEXT-IN panel (rising text on the main screen)">TEXT-IN</button>
             <button type="button" class="btn dj-fx" id="dj-a-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
 
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
@@ -8386,19 +8434,19 @@ function stopAllAndShowStart() {
                       <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="3">Perc</button>
                       <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="4">Tom</button>
                     </div>
-                    <div class="dj-beatmap-col" aria-label="Deck B sample pads">
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="5">WAA</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="6">WAAA</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="7">AIR📢</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="8">FX1</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="9">FX2</button>
-                    </div>
                     <div class="dj-beatmap-col" aria-label="Deck B key samples">
                       <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="10">KEY</button>
                       <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="11">KICK</button>
                       <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="12">BELL</button>
                       <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="13">RIM</button>
                       <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="14">HAR</button>
+                    </div>
+                    <div class="dj-beatmap-col" aria-label="Deck B sample pads">
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="5">WAA</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="6">WAAA</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="7">AIR📢</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="8">FX1</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="9">FX2</button>
                     </div>
                   </div>
                 </div>
@@ -8442,7 +8490,7 @@ function stopAllAndShowStart() {
                 <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Open or close station list (top menu)">Station</button>
 
                 <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Toggle Deck B video player">Video</button>
-                <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Tap: toggle · Hold to open graph, keep holding and drag to adjust freq/Q, release to close">TK-Filter</button>
+                <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Open or close TEXT-IN, displaying rising text inside the Deck B player">TEXT-IN</button>
                 <button type="button" class="btn dj-fx" id="dj-b-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
 
                 <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="Left-click: play once • Right-click: loop (wav4)">WAA</button>
@@ -8455,6 +8503,9 @@ function stopAllAndShowStart() {
               </div>
             </div>
           </div>
+        </div>
+        <div id="dj-deck-b-text-stage" class="dj-deck-b-text-stage" aria-hidden="true">
+          <div id="dj-deck-b-text-overlay-layer" class="dj-deck-b-text-overlay-layer"></div>
         </div>
         <div id="dj-deck-b-viz-layer" class="dj-deck-b-viz-layer" aria-hidden="true">
           <div id="dj-deck-b-viz-mount" class="dj-deck-b-viz-mount"></div>
@@ -8649,14 +8700,31 @@ function stopAllAndShowStart() {
                         this.syncFxLightsFromState();
                     } catch (_) {}
                 };
-                const djToggleTk = () => {
+                const djToggleTextInDeckA = () => {
                     try {
-                        initAudio();
-                        if (typeof toggleFx !== 'function') return;
-                        toggleFx('tk', typeof fxTk !== 'undefined' ? fxTk : null);
-                        const on = !!(state.fx && state.fx.tk && state.fx.tk.on);
-                        if (this.els.fxTk) this.els.fxTk.classList.toggle('on', on);
-                        if (this.els.fxTkB) this.els.fxTkB.classList.toggle('on', on);
+                        if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                        const stage = (typeof getDeckBStageEl === 'function') ? getDeckBStageEl() : null;
+                        const deckBOn = !!(stage && stage.classList.contains('dj-deck-b-text-mode'));
+                        if (deckBOn) {
+                            try { if (typeof setTextAuto === 'function') setTextAuto(false); } catch (_) {}
+                            try { if (typeof setDeckBTextMode === 'function') setDeckBTextMode(false); } catch (_) {}
+                            try { if (textInPanel) delete textInPanel.dataset.textTarget; } catch (_) {}
+                            const panelOpen = !!(textInPanel && !textInPanel.classList.contains('display-none') && textInPanel.classList.contains('open'));
+                            if (panelOpen) {
+                                try { hideTextInPanel({ forceCloseDeckB: true }); } catch (_) {}
+                            }
+                            try { if (typeof syncDjTextInDeckLights === 'function') syncDjTextInDeckLights(); } catch (_) {}
+                            return;
+                        }
+                        if (typeof openTextInForTarget === 'function') openTextInForTarget('global');
+                        if (typeof syncDjTextInDeckLights === 'function') syncDjTextInDeckLights();
+                    } catch (_) {}
+                };
+                const djToggleTextInDeckB = () => {
+                    try {
+                        if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                        if (typeof openTextInForTarget === 'function') openTextInForTarget('deck-b');
+                        if (typeof syncDjTextInDeckLights === 'function') syncDjTextInDeckLights();
                     } catch (_) {}
                 };
                 const djToggleAvatar = () => {
@@ -9068,8 +9136,14 @@ function stopAllAndShowStart() {
                         if (tkHoldUiOpen) closeTkHoldUi();
                     }, sig);
                 };
-                bindTkHoldForButton(this.els.fxTk);
-                bindTkHoldForButton(this.els.fxTkB);
+                if (this.els.fxTk) this.els.fxTk.addEventListener('click', (e) => {
+                    try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                    djToggleTextInDeckA();
+                }, sig);
+                if (this.els.fxTkB) this.els.fxTkB.addEventListener('click', (e) => {
+                    try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+                    djToggleTextInDeckB();
+                }, sig);
 
                 const djPrevA = root.querySelector('#dj-a-prev');
                 const djNextA = root.querySelector('#dj-a-next');
@@ -12032,23 +12106,114 @@ function stopAllAndShowStart() {
         }
 
         // --- TEXT-IN PANEL & OVERLAY ---
+        /** TEXT-IN routing: #textin-panel[data-text-target] (deck-b vs global). Persists while Deck B display stays on, even if the panel is hidden. */
+        function getTextInPanelTarget() {
+            try {
+                if (!textInPanel) return 'global';
+                return textInPanel.dataset.textTarget === 'deck-b' ? 'deck-b' : 'global';
+            } catch (_) {
+                return 'global';
+            }
+        }
+        function getTextInSpawnTarget() {
+            try {
+                if (!textInPanel) return 'global';
+                if (textInPanel.dataset.textTarget === 'deck-b') {
+                    const stage = getDeckBStageEl();
+                    if (stage && stage.classList.contains('dj-deck-b-text-mode')) return 'deck-b';
+                }
+                return 'global';
+            } catch (_) {
+                return 'global';
+            }
+        }
+        function getDeckBTextStageEl() { return document.getElementById('dj-deck-b-text-stage'); }
+        function getDeckBStageEl() {
+            const t = getDeckBTextStageEl();
+            return t ? t.closest('.dj-deck-b-stage') : null;
+        }
+        function setDeckBTextMode(on) {
+            const stage = getDeckBStageEl();
+            const ts = getDeckBTextStageEl();
+            const wasOn = !!(stage && stage.classList.contains('dj-deck-b-text-mode'));
+            if (stage) stage.classList.toggle('dj-deck-b-text-mode', !!on);
+            if (ts) ts.setAttribute('aria-hidden', on ? 'false' : 'true');
+            if (!on) {
+                if (wasOn) {
+                    try { if (typeof setTextAuto === 'function') setTextAuto(false); } catch(_) {}
+                }
+                const layer = document.getElementById('dj-deck-b-text-overlay-layer');
+                if (layer) {
+                    while (layer.firstChild) layer.removeChild(layer.firstChild);
+                }
+                if (Array.isArray(activeTextOverlays)) {
+                    for (let i = activeTextOverlays.length - 1; i >= 0; i--) {
+                        if (activeTextOverlays[i] && activeTextOverlays[i].target === 'deck-b') {
+                            try { activeTextOverlays[i].el.remove(); } catch(_) {}
+                            activeTextOverlays.splice(i, 1);
+                        }
+                    }
+                }
+            }
+            try { syncDjTextInDeckLights(); } catch(_) {}
+        }
+        function syncDjTextInDeckLights() {
+            try {
+                const panelOpen = !!(textInPanel && !textInPanel.classList.contains('display-none') && textInPanel.classList.contains('open'));
+                const tgt = getTextInPanelTarget();
+                const stage = getDeckBStageEl();
+                const deckBDisplayOn = !!(stage && stage.classList.contains('dj-deck-b-text-mode'));
+                const a = document.getElementById('dj-fx-tk');
+                const b = document.getElementById('dj-b-fx-tk');
+                if (a) a.classList.toggle('on', (panelOpen && tgt === 'global') || deckBDisplayOn);
+                if (b) b.classList.toggle('on', deckBDisplayOn && tgt === 'deck-b');
+            } catch(_) {}
+        }
+        function openTextInForTarget(target) {
+            if (uiLocked) return;
+            const t = (target === 'deck-b') ? 'deck-b' : 'global';
+            const open = !!(textInPanel && !textInPanel.classList.contains('display-none') && textInPanel.classList.contains('open'));
+            if (open && getTextInPanelTarget() === t) {
+                hideTextInPanel();
+                return;
+            }
+            try {
+                if (textInPanel) textInPanel.dataset.textTarget = t;
+            } catch (_) {}
+            setDeckBTextMode(t === 'deck-b');
+            if (!open) showTextInPanel();
+            syncDjTextInDeckLights();
+        }
         function showTextInPanel() {
             if (uiLocked) return;
             if (!textInPanel) return;
             textInPanel.classList.remove('display-none');
             void textInPanel.offsetWidth;
             textInPanel.classList.add('open');
+            try { syncDjTextInDeckLights(); } catch(_) {}
         }
-        function hideTextInPanel() {
+        function hideTextInPanel(opts) {
             if (!textInPanel) return;
+            const forceCloseDeckB = !!(opts && opts.forceCloseDeckB);
             textInPanel.classList.remove('open');
             setTimeout(() => { textInPanel.classList.add('display-none'); }, 350);
+            const keepDeckB = !forceCloseDeckB && textInPanel.dataset.textTarget === 'deck-b';
+            if (!keepDeckB) {
+                try { setDeckBTextMode(false); } catch(_) {}
+                try { delete textInPanel.dataset.textTarget; } catch (_) {}
+            }
+            try { syncDjTextInDeckLights(); } catch(_) {}
         }
         function toggleTextInPanel() {
             if (uiLocked) return;
             if (!textInPanel) return;
-            if (textInPanel.classList.contains('display-none') || !textInPanel.classList.contains('open')) showTextInPanel();
-            else hideTextInPanel();
+            if (textInPanel.classList.contains('display-none') || !textInPanel.classList.contains('open')) {
+                try {
+                    textInPanel.dataset.textTarget = 'global';
+                    setDeckBTextMode(false);
+                } catch (_) {}
+                showTextInPanel();
+            } else hideTextInPanel();
         }
         function applyTextStyles(el, cfg) {
             if (!el || !cfg) return;
@@ -12227,7 +12392,9 @@ function stopAllAndShowStart() {
             });
         }
         function spawnRisingText(cfg) {
-            const layer = textOverlayLayer;
+            const target = getTextInSpawnTarget();
+            const deckBLayer = document.getElementById('dj-deck-b-text-overlay-layer');
+            const layer = (target === 'deck-b' && deckBLayer) ? deckBLayer : textOverlayLayer;
             if (!layer) return;
             // Apply randomizations
             try {
@@ -12280,11 +12447,14 @@ function stopAllAndShowStart() {
                 cfg.size = Math.floor(min + Math.random() * (max - min + 1));
                 try { el.style.fontSize = cfg.size + 'px'; } catch(_) {}
             }
-            const startY = window.innerHeight + 20;
+            const containerHeight = (target === 'deck-b')
+                ? Math.max(1, layer.clientHeight || (layer.getBoundingClientRect && layer.getBoundingClientRect().height) || window.innerHeight)
+                : window.innerHeight;
+            const startY = containerHeight + 20;
             el.style.top = startY + 'px';
-            el.style.left = xPct + 'vw';
+            el.style.left = xPct + (target === 'deck-b' ? '%' : 'vw');
             layer.appendChild(el);
-            const item = { el, cfg, y: startY, start: performance.now(), last: performance.now() };
+            const item = { el, cfg, y: startY, start: performance.now(), last: performance.now(), target, height: containerHeight };
             activeTextOverlays.push(item);
             if (!textOverlayAnimId) requestTextOverlayFrame();
         }
@@ -12299,7 +12469,8 @@ function stopAllAndShowStart() {
                 it.y -= it.cfg.speed * dt;
                 it.el.style.transform = `translate(-50%, 0)`;
                 it.el.style.top = it.y + 'px';
-                const progress = Math.max(0, Math.min(1, ( (window.innerHeight + 20) - it.y ) / window.innerHeight ));
+                const refH = (it.target === 'deck-b') ? Math.max(1, it.height || window.innerHeight) : window.innerHeight;
+                const progress = Math.max(0, Math.min(1, ( (refH + 20) - it.y ) / refH ));
                 let opacity = 1 - progress;
                 if (it.cfg.flash && it.cfg.flashSpeed > 0) {
                     const phase = (ts - it.start) / 1000 * it.cfg.flashSpeed * Math.PI * 2;
