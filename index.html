@@ -863,7 +863,7 @@
             justify-items: stretch;
             align-content: start;
         }
-        /* Sample pads: bnt.png frame (deck controls use btn.png) */
+        /* Sample pads: btn.png on top of wly.gif (deck SFX use same stacking). */
         #dj-visual-root .dj-beatmap-pads .btn.dj-fx.dj-beat-pad {
             width: 100%;
             min-height: 40px;
@@ -876,22 +876,22 @@
             letter-spacing: 0.5px;
             padding: 8px 10px;
             line-height: 1.15;
-            background-image: url('bnt.png');
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: 100% 100%;
+            background-image: url('btn.png'), url('wly.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
         }
         #dj-visual-root .dj-beatmap-pads .btn.dj-fx.dj-beat-pad:hover {
-            background-image: url('bnt.png');
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: 100% 100%;
+            background-image: url('btn.png'), url('wly.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
         }
         #dj-visual-root .dj-beatmap-pads .btn.dj-fx.dj-beat-pad.on {
-            background-image: url('bnt.png');
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: 100% 100%;
+            background-image: url('btn.png'), url('wly.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
         }
         #dj-visual-root .dj-beatmap-pads .btn.dj-fx.dj-beat-pad.dj-beat-pad-mode-loop,
         #dj-visual-root .dj-beatmap-pads .btn.dj-fx.dj-beat-pad.dj-beat-pad-mode-once {
@@ -1162,7 +1162,23 @@
             background-size: 100% 100%;
             color: #fff;
         }
+        #dj-visual-root .btn.dj-sfx.on {
+            background-image: url('btn.png'), url('wly.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root .btn.dj-sfx {
+            background-image: url('btn.png'), url('wly.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
         #dj-visual-root .btn.dj-sfx.sample-playing {
+            background-image: url('btn.png'), url('wly.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
             color: #FFD700;
             text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 4px rgba(0,0,0,0.85), 0 0 10px rgba(0,0,0,0.55);
         }
@@ -1229,8 +1245,7 @@
             border-color: rgba(245, 210, 15, 0.3);
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
         }
-        #dj-visual-root .btn.dj-fx:hover,
-        #dj-visual-root .btn.dj-sfx:hover {
+        #dj-visual-root .btn.dj-fx:hover {
             filter: brightness(1.15);
             border-color: rgba(217,2,45,0.35);
             color: #f5d20f;
@@ -1238,6 +1253,15 @@
             background-position: center;
             background-repeat: no-repeat;
             background-size: 100% 100%;
+        }
+        #dj-visual-root .btn.dj-sfx:hover {
+            filter: brightness(1.15);
+            border-color: rgba(217,2,45,0.35);
+            color: #f5d20f;
+            background-image: url('btn.png'), url('wly.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
         }
         /* ProjectM / AUDIO:BAR: btn.png on top (transparent center), gif fills underneath */
         #dj-visual-root #dj-vis-pm2,
@@ -2227,6 +2251,59 @@
         #mix-effects .btn.sample-playing {
             color: #FFD700;
             text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 4px rgba(0,0,0,0.85), 0 0 10px rgba(0,0,0,0.55);
+        }
+        /* Mix panel wav sample buttons: btn.png over wly.gif */
+        #mix-effects #fx-wav,
+        #mix-effects #fx-wav1,
+        #mix-effects #fx-wav2,
+        #mix-effects #fx-wav3,
+        #mix-effects #fx-wav4,
+        #mix-effects #fx-wav5,
+        #mix-effects #fx-wav6 {
+            background-image: url('btn.png'), url('wly.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #mix-effects #fx-wav.on,
+        #mix-effects #fx-wav1.on,
+        #mix-effects #fx-wav2.on,
+        #mix-effects #fx-wav3.on,
+        #mix-effects #fx-wav4.on,
+        #mix-effects #fx-wav5.on,
+        #mix-effects #fx-wav6.on {
+            background-image: url('btn.png'), url('wly.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #mix-effects #fx-wav:hover,
+        #mix-effects #fx-wav1:hover,
+        #mix-effects #fx-wav2:hover,
+        #mix-effects #fx-wav3:hover,
+        #mix-effects #fx-wav4:hover,
+        #mix-effects #fx-wav5:hover,
+        #mix-effects #fx-wav6:hover {
+            background-color: rgba(217,2,45,0.1);
+            color: #f5d20f;
+            box-shadow: 0 0 10px rgba(255,255,255,0.15);
+            border-color: rgba(245,210,15,0.3);
+            background-image: url('btn.png'), url('wly.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #mix-effects #fx-wav.sample-playing,
+        #mix-effects #fx-wav1.sample-playing,
+        #mix-effects #fx-wav2.sample-playing,
+        #mix-effects #fx-wav3.sample-playing,
+        #mix-effects #fx-wav4.sample-playing,
+        #mix-effects #fx-wav5.sample-playing,
+        #mix-effects #fx-wav6.sample-playing {
+            background-image: url('btn.png'), url('wly.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
         }
         /* BPM scope row */
         #mix-bpm-row {
