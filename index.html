@@ -866,7 +866,7 @@
             width: 100%;
             margin: 0;
             padding: 8px 10px;
-            border: none;
+            border: 1px solid transparent;
             border-radius: 6px;
             background: rgba(255, 255, 255, 0.06);
             color: #fff;
@@ -874,9 +874,18 @@
             letter-spacing: 0.03em;
             text-align: left;
             cursor: pointer;
+            box-sizing: border-box;
         }
         .dj-beat-pad-loop-menu-item:hover {
             background: rgba(255, 255, 255, 0.14);
+        }
+        .dj-beat-pad-loop-menu-item--active {
+            border: 1px solid rgba(212, 175, 55, 0.9);
+            box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.2) inset;
+            background: rgba(212, 175, 55, 0.12);
+        }
+        .dj-beat-pad-loop-menu-item--active:hover {
+            background: rgba(212, 175, 55, 0.18);
         }
         #dj-visual-root .dj-deck-vol {
             -webkit-appearance: none;
@@ -6829,7 +6838,7 @@ function stopAllAndShowStart() {
             const base = ((btn.textContent || '').trim()) || slot.label || 'Sample';
             btn.title = loop
                 ? (base + ' · Loop · Right-click: play mode')
-                : (base + ' · Single play · Right-click: play mode');
+                : (base + ' · Solo · Right-click: play mode');
         }
 
         function openDjBeatPadLoopMenu(clientX, clientY, slot, btn) {
@@ -6843,6 +6852,10 @@ function stopAllAndShowStart() {
                 const b = document.createElement('button');
                 b.type = 'button';
                 b.className = 'dj-beat-pad-loop-menu-item';
+                if (!!slot.loopMode === modeLoop) {
+                    b.classList.add('dj-beat-pad-loop-menu-item--active');
+                    b.setAttribute('aria-current', 'true');
+                }
                 b.textContent = label;
                 b.addEventListener('click', (ev) => {
                     try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
@@ -6852,8 +6865,8 @@ function stopAllAndShowStart() {
                 });
                 return b;
             };
-            menu.appendChild(mkItem('Play once', false));
             menu.appendChild(mkItem('Loop', true));
+            menu.appendChild(mkItem('Solo', false));
 
             document.body.appendChild(menu);
             const pad = 8;
