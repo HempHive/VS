@@ -5870,6 +5870,10 @@ function randomGlowColor() {
                 let lastWheelAt = 0;
                 canvasEl.addEventListener('wheel', (e) => {
                     if (!state || !state.isPlaying) return;
+                    try {
+                        const t = e.target;
+                        if (t && t.closest && t.closest('.dj-jog-wrap')) return;
+                    } catch (_) {}
                     const guardUntil = (typeof window !== 'undefined' && window.__panelGuardUntilMs) ? window.__panelGuardUntilMs : 0;
                     const now = Date.now();
                     if (now < guardUntil) return;
@@ -9200,8 +9204,8 @@ function stopAllAndShowStart() {
         <div class="dj-autofade-panel" id="dj-autofade-panel" aria-hidden="true">
           <div class="dj-autofade-title">Auto-fade time</div>
           <div class="dj-autofade-row">
-            <input type="range" id="dj-autofade-duration" min="2" max="10" step="1" value="2" aria-label="Auto-fade duration seconds">
-            <span class="dj-autofade-readout" id="dj-autofade-readout">2s</span>
+            <input type="range" id="dj-autofade-duration" min="2" max="10" step="1" value="5" aria-label="Auto-fade duration seconds">
+            <span class="dj-autofade-readout" id="dj-autofade-readout">5s</span>
           </div>
         </div>
       </div>
@@ -9459,7 +9463,7 @@ function stopAllAndShowStart() {
                 let suppressAutoFadeClickUntil = 0;
                 let autoFadeLongPressFired = false;
                 const AUTOFADE_MS_KEY = 'dj.autofade.duration.ms.v1';
-                let autoFadeDurationMs = 2000;
+                let autoFadeDurationMs = 5000;
                 let autoMixEnabled = false;
                 let suppressAutoMixClickUntil = 0;
                 let autoMixLongPressFired = false;
@@ -9483,7 +9487,7 @@ function stopAllAndShowStart() {
                     autoMixEnabled = localStorage.getItem(AUTOMIX_ENABLED_KEY) === '1';
                 } catch (_) {}
                 const syncAutoFadeDurationUi = () => {
-                    const sec = Math.max(2, Math.min(10, Math.round((Number(autoFadeDurationMs) || 2000) / 1000)));
+                    const sec = Math.max(2, Math.min(10, Math.round((Number(autoFadeDurationMs) || 5000) / 1000)));
                     if (autoFadeDuration) autoFadeDuration.value = String(sec);
                     if (autoFadeReadout) autoFadeReadout.textContent = `${sec}s`;
                 };
@@ -9610,6 +9614,19 @@ function stopAllAndShowStart() {
                     jogEl.addEventListener('pointermove', onMove, sig);
                     jogEl.addEventListener('pointerup', end, sig);
                     jogEl.addEventListener('pointercancel', end, sig);
+                    jogEl.addEventListener('wheel', (ev) => {
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        const media = mediaForDeck();
+                        const bounds = getSeekBounds(media);
+                        if (!media || !media.src || !bounds) return;
+                        const dy = Number(ev.deltaY) || 0;
+                        if (!dy) return;
+                        const next = Math.max(bounds.start, Math.min(bounds.end, (Number(media.currentTime) || 0) + (dy * 0.08)));
+                        try { media.currentTime = next; } catch (_) {}
+                        if (deckKey === 'b') this.angleB += (dy * 0.45);
+                        else this.angleA += (dy * 0.45);
+                        try { jogEl.style.transform = `rotate(${deckKey === 'b' ? this.angleB : this.angleA}deg)`; } catch (_) {}
+                    }, { passive: false, signal: this.abortCtrl.signal });
                 };
                 attachJogSeek('a', this.els.jogA);
                 attachJogSeek('b', this.els.jogB);
@@ -9682,7 +9699,7 @@ function stopAllAndShowStart() {
                         this.autoFadeRafId = null;
                     }
                     if (btnAutoFade) btnAutoFade.classList.add('on');
-                    const durMs = Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 2000));
+                    const durMs = Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 5000));
                     const startTs = performance.now();
                     const tick = (ts) => {
                         const t = Math.max(0, Math.min(1, (ts - startTs) / durMs));
@@ -9737,7 +9754,7 @@ function stopAllAndShowStart() {
                         if (autoFadeReadout) autoFadeReadout.textContent = `${Math.round(sec)}s`;
                     }, sig);
                     autoFadeDuration.addEventListener('change', () => {
-                        try { localStorage.setItem(AUTOFADE_MS_KEY, String(Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 2000)))); } catch (_) {}
+                        try { localStorage.setItem(AUTOFADE_MS_KEY, String(Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 5000)))); } catch (_) {}
                     }, sig);
                 }
                 if (btnAutoMix) {
@@ -9769,7 +9786,11 @@ function stopAllAndShowStart() {
                         autoMixEnabled = !autoMixEnabled;
                         syncAutoMixUi();
                         try { localStorage.setItem(AUTOMIX_ENABLED_KEY, autoMixEnabled ? '1' : '0'); } catch (_) {}
-                        if (autoMixEnabled) scheduleNextAutoMix();
+                        if (autoMixEnabled) {
+                            const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
+                            ensureDeckStationPlayback(x < 0.5 ? 'a' : 'b');
+                            scheduleNextAutoMix();
+                        }
                         else clearAutoMixTimer();
                     }, sig);
                 }
