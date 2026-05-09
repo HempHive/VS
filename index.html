@@ -107,6 +107,70 @@
             max-width: min(92vw, 560px);
             height: 14px;
         }
+        #dj-visual-root .dj-autofade-btn {
+            flex-shrink: 0;
+            padding: 6px 10px;
+            border: 1px solid rgba(212, 175, 55, 0.45);
+            border-radius: 7px;
+            background: rgba(212, 175, 55, 0.1);
+            color: #f5e6b8;
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            cursor: pointer;
+            line-height: 1.1;
+        }
+        #dj-visual-root .dj-autofade-btn:hover {
+            filter: brightness(1.08);
+        }
+        #dj-visual-root .dj-autofade-btn.on {
+            box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.55), 0 0 14px rgba(212, 175, 55, 0.22);
+            background: rgba(212, 175, 55, 0.2);
+            color: #fff4ca;
+        }
+        #dj-visual-root .dj-autofade-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+        #dj-visual-root .dj-autofade-panel {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 6px);
+            z-index: 65;
+            min-width: 172px;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(212, 175, 55, 0.45);
+            background: rgba(10, 10, 16, 0.96);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+        #dj-visual-root .dj-autofade-panel.is-open {
+            display: block;
+        }
+        #dj-visual-root .dj-autofade-title {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.72);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        #dj-visual-root .dj-autofade-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+        #dj-visual-root .dj-autofade-row input[type="range"] {
+            width: 100%;
+            min-width: 118px;
+        }
+        #dj-visual-root .dj-autofade-readout {
+            font-size: 11px;
+            color: #f5e6b8;
+            min-width: 34px;
+            text-align: right;
+        }
         .dj-deck-body-b {
             flex-direction: column !important;
             align-items: stretch !important;
@@ -866,6 +930,36 @@
         #dj-visual-root .dj-beatmap-fx-knobs .knob-wrap {
             width: calc(67.5px * var(--dj-control-scale) * var(--dj-knob-scale));
             height: calc(67.5px * var(--dj-control-scale) * var(--dj-knob-scale));
+        }
+        /* TK / Loop / Arp: darker chassis + calmer pointer vs EQ knobs */
+        #dj-visual-root #dj-knob-a-tk,
+        #dj-visual-root #dj-knob-a-loop,
+        #dj-visual-root #dj-knob-a-arp,
+        #dj-visual-root #dj-knob-b-tk,
+        #dj-visual-root #dj-knob-b-loop,
+        #dj-visual-root #dj-knob-b-arp {
+            background: radial-gradient(110% 110% at 50% 16%, #282828 0%, #060606 92%);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            box-shadow:
+                0 5px 12px rgba(0, 0, 0, 0.82),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+        #dj-visual-root #dj-knob-a-tk .knob-indicator,
+        #dj-visual-root #dj-knob-a-loop .knob-indicator,
+        #dj-visual-root #dj-knob-a-arp .knob-indicator,
+        #dj-visual-root #dj-knob-b-tk .knob-indicator,
+        #dj-visual-root #dj-knob-b-loop .knob-indicator,
+        #dj-visual-root #dj-knob-b-arp .knob-indicator {
+            box-shadow: 0 0 6px var(--knob-color, #fff);
+            filter: brightness(1.22) saturate(1.2);
+        }
+        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-a-tk) .eq-label,
+        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-a-loop) .eq-label,
+        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-a-arp) .eq-label,
+        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-tk) .eq-label,
+        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-loop) .eq-label,
+        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-arp) .eq-label {
+            color: rgba(255, 255, 255, 0.4);
         }
         #dj-visual-root .dj-beatmap-fx-knobs .eq-label {
             font-size: 8px;
@@ -2929,7 +3023,7 @@
             width: 32px; height: 32px;
             border-radius: 50%;
             background: radial-gradient(100% 100% at 50% 20%, #444 0%, #111 100%);
-            border: 1px solid #555;
+            border: 1px solid rgba(255, 255, 255, 0.32);
             box-shadow: 0 4px 6px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.2);
             cursor: ns-resize; /* Indicates drag up/down */
         }
@@ -7529,6 +7623,8 @@ function stopAllAndShowStart() {
                 this.deckBVideoList = [];
                 this.deckBVideoIndex = 0;
                 this.deckBVideoEl = null;
+                this.autoFadeRafId = null;
+                this.autoFadeHoldTimer = null;
                 this.deckBVizResizeObs = null;
                 this.deckVolResizeObs = null;
                 this.deckBQueueVisible = false;
@@ -8742,10 +8838,10 @@ function stopAllAndShowStart() {
                 } catch (_) {}
             }
 
-            toggleDeckBYouTubeEmbed() {
+            toggleDeckBKBopEmbed() {
                 try {
                     if (typeof uiLocked !== 'undefined' && uiLocked) return;
-                    if (this.deckBVizMode === 'youtube') {
+                    if (this.deckBVizMode === 'kbop') {
                         this.tearDownDeckBViz();
                         this.syncDeckBVisualButtons();
                         this.updateStationTitles();
@@ -8754,7 +8850,7 @@ function stopAllAndShowStart() {
                         return;
                     }
                     if (this.deckBQueueVisible) this.hideDeckBQueueView();
-                    this.startDeckBEmbed('https://www.youtube.com/', 'youtube', { iframeTitle: 'YouTube', backLabel: 'YouTube' });
+                    this.startDeckBEmbed('https://www.kbop.us/', 'kbop', { iframeTitle: 'K-BOP', backLabel: 'K-BOP' });
                     this.syncDeckBVisualButtons();
                     this.updateStationTitles();
                     this.syncFxLightsFromState();
@@ -8838,7 +8934,7 @@ function stopAllAndShowStart() {
                         this.els.playB.textContent = bPlaying ? 'Pause' : 'Play';
                         this.els.playB.classList.toggle('is-playing', bPlaying);
                     }
-                    const visualActiveOnDeckB = (this.deckBVizMode === 'bars' || this.deckBVizMode === 'projectm' || this.deckBVizMode === 'blank' || this.deckBVizMode === 'video' || this.deckBVizMode === 'karaoke' || this.deckBVizMode === 'youtube');
+                    const visualActiveOnDeckB = (this.deckBVizMode === 'bars' || this.deckBVizMode === 'projectm' || this.deckBVizMode === 'blank' || this.deckBVizMode === 'video' || this.deckBVizMode === 'karaoke' || this.deckBVizMode === 'kbop');
                     const hideDeckBFader = visualActiveOnDeckB && !bPlaying;
                     const deckBFader = this.root && this.root.querySelector('.dj-deck-b .dj-fader-strip');
                     if (deckBFader) deckBFader.classList.toggle('display-none', hideDeckBFader);
@@ -8882,7 +8978,7 @@ function stopAllAndShowStart() {
                     }
                     if (this.els.titleA) this.els.titleA.textContent = na;
                     if (this.els.titleB) {
-                        this.els.titleB.classList.toggle('display-none', this.deckBVizMode === 'video' || this.deckBVizMode === 'karaoke' || this.deckBVizMode === 'youtube');
+                        this.els.titleB.classList.toggle('display-none', this.deckBVizMode === 'video' || this.deckBVizMode === 'karaoke' || this.deckBVizMode === 'kbop');
                         this.els.titleB.textContent = nb;
                         this.els.titleB.classList.toggle('is-deck-b-label', nb === 'DECK B');
                     }
@@ -8897,11 +8993,11 @@ function stopAllAndShowStart() {
                         const ytA = this.root && this.root.querySelector('#dj-a-sfx-w2');
                         const ytB = this.root && this.root.querySelector('#dj-b-sfx-w2');
                         const karaOn = this.deckBVizMode === 'karaoke';
-                        const ytOn = this.deckBVizMode === 'youtube';
+                        const kbopOn = this.deckBVizMode === 'kbop';
                         if (karaA) karaA.classList.toggle('on', karaOn);
                         if (karaB) karaB.classList.toggle('on', karaOn);
-                        if (ytA) ytA.classList.toggle('on', ytOn);
-                        if (ytB) ytB.classList.toggle('on', ytOn);
+                        if (ytA) ytA.classList.toggle('on', kbopOn);
+                        if (ytB) ytB.classList.toggle('on', kbopOn);
                     } catch (_) {}
                     if (!state || !state.fx) return;
                     const videoOn = this.deckBVizMode === 'video';
@@ -8983,9 +9079,9 @@ function stopAllAndShowStart() {
           <div class="dj-beatmap-strip" aria-label="Deck A beat map">
             <div class="dj-beatmap-main">
               <div class="dj-beatmap-fx-knobs" aria-label="Deck A beat FX">
-                <div class="eq-col eq-strip" aria-label="TK filter frequency"><div class="knob-wrap" id="dj-knob-a-tk" style="--knob-color:#f5d20f"><div class="knob-indicator"></div><div class="knob-value">1200</div></div><div class="eq-label">TK</div></div>
-                <div class="eq-col eq-strip" aria-label="Musical loop bars"><div class="knob-wrap" id="dj-knob-a-loop" style="--knob-color:#58f5ff"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label">Loop</div></div>
-                <div class="eq-col eq-strip" aria-label="Arpeggiator rate"><div class="knob-wrap" id="dj-knob-a-arp" style="--knob-color:#d580ff"><div class="knob-indicator"></div><div class="knob-value">4</div></div><div class="eq-label">Arp</div></div>
+                <div class="eq-col eq-strip" aria-label="TK filter frequency"><div class="knob-wrap" id="dj-knob-a-tk" style="--knob-color:#b8980c"><div class="knob-indicator"></div><div class="knob-value">1200</div></div><div class="eq-label">TK</div></div>
+                <div class="eq-col eq-strip" aria-label="Musical loop bars"><div class="knob-wrap" id="dj-knob-a-loop" style="--knob-color:#2a8fa0"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label">Loop</div></div>
+                <div class="eq-col eq-strip" aria-label="Arpeggiator rate"><div class="knob-wrap" id="dj-knob-a-arp" style="--knob-color:#8647a8"><div class="knob-indicator"></div><div class="knob-value">4</div></div><div class="eq-label">Arp</div></div>
               </div>
               <div class="dj-beatmap-pads">
                 <div class="dj-beatmap-col" aria-label="Deck A beat layers">
@@ -9056,7 +9152,7 @@ function stopAllAndShowStart() {
 
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="IDEAS">IDEAS</button>
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Open Karaoke Nerds in Deck B (toggle)">KARAOKE</button>
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Open YouTube in Deck B (toggle)">YouTube</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Open K-BOP in Deck B (toggle)">K-BOP</button>
 
             <button type="button" class="dj-play" id="dj-play-a" title="Play or pause Deck A">Play</button>
             <button type="button" class="dj-tbtn" id="dj-a-next" title="Tune to another random station">Rand ⟶</button>
@@ -9073,6 +9169,16 @@ function stopAllAndShowStart() {
         <input type="range" id="dj-crossfader" min="0" max="1" step="0.01" value="0" aria-label="Crossfade from A to B" />
       </div>
       <span class="dj-fader-label-b">B</span>
+      <div class="dj-autofade-wrap">
+        <button type="button" class="dj-autofade-btn" id="dj-autofade" title="Auto-fade to the opposite deck (long-press for duration)">Auto-Fade</button>
+        <div class="dj-autofade-panel" id="dj-autofade-panel" aria-hidden="true">
+          <div class="dj-autofade-title">Auto-fade time</div>
+          <div class="dj-autofade-row">
+            <input type="range" id="dj-autofade-duration" min="2" max="10" step="1" value="2" aria-label="Auto-fade duration seconds">
+            <span class="dj-autofade-readout" id="dj-autofade-readout">2s</span>
+          </div>
+        </div>
+      </div>
     </div>
     <button type="button" class="dj-visual-title-btn display-none" id="dj-b-visual-back-btn">DECK B</button>
     <div class="dj-station-title" id="dj-station-b-title">—</div>
@@ -9084,9 +9190,9 @@ function stopAllAndShowStart() {
               <div class="dj-beatmap-strip" aria-label="Deck B beat map">
                 <div class="dj-beatmap-main">
                   <div class="dj-beatmap-fx-knobs" aria-label="Deck B beat FX">
-                    <div class="eq-col eq-strip" aria-label="TK filter frequency"><div class="knob-wrap" id="dj-knob-b-tk" style="--knob-color:#f5d20f"><div class="knob-indicator"></div><div class="knob-value">1200</div></div><div class="eq-label">TK</div></div>
-                    <div class="eq-col eq-strip" aria-label="Musical loop bars"><div class="knob-wrap" id="dj-knob-b-loop" style="--knob-color:#58f5ff"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label">Loop</div></div>
-                    <div class="eq-col eq-strip" aria-label="Arpeggiator rate"><div class="knob-wrap" id="dj-knob-b-arp" style="--knob-color:#d580ff"><div class="knob-indicator"></div><div class="knob-value">4</div></div><div class="eq-label">Arp</div></div>
+                    <div class="eq-col eq-strip" aria-label="TK filter frequency"><div class="knob-wrap" id="dj-knob-b-tk" style="--knob-color:#b8980c"><div class="knob-indicator"></div><div class="knob-value">1200</div></div><div class="eq-label">TK</div></div>
+                    <div class="eq-col eq-strip" aria-label="Musical loop bars"><div class="knob-wrap" id="dj-knob-b-loop" style="--knob-color:#2a8fa0"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label">Loop</div></div>
+                    <div class="eq-col eq-strip" aria-label="Arpeggiator rate"><div class="knob-wrap" id="dj-knob-b-arp" style="--knob-color:#8647a8"><div class="knob-indicator"></div><div class="knob-value">4</div></div><div class="eq-label">Arp</div></div>
                   </div>
                   <div class="dj-beatmap-pads">
                     <div class="dj-beatmap-col" aria-label="Deck B beat layers">
@@ -9157,7 +9263,7 @@ function stopAllAndShowStart() {
 
                 <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="IDEAS">IDEAS</button>
                 <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Open Karaoke Nerds in Deck B (toggle)">KARAOKE</button>
-                <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Open YouTube in Deck B (toggle)">YouTube</button>
+                <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Open K-BOP in Deck B (toggle)">K-BOP</button>
 
                 <button type="button" class="dj-play" id="dj-play-b" title="Play or pause Deck B">Play</button>
                 <button type="button" class="dj-tbtn" id="dj-b-next" title="Tune deck B to another random station">Rand ⟶</button>
@@ -9293,6 +9399,36 @@ function stopAllAndShowStart() {
                 this.els.deckVolA = root.querySelector('#dj-deck-a-vol');
                 this.els.deckVolB = root.querySelector('#dj-deck-b-vol');
                 const djCross = root.querySelector('#dj-crossfader');
+                const btnAutoFade = root.querySelector('#dj-autofade');
+                const autoFadeWrap = root.querySelector('.dj-autofade-wrap');
+                const autoFadePanel = root.querySelector('#dj-autofade-panel');
+                const autoFadeDuration = root.querySelector('#dj-autofade-duration');
+                const autoFadeReadout = root.querySelector('#dj-autofade-readout');
+                let suppressAutoFadeClickUntil = 0;
+                let autoFadeLongPressFired = false;
+                const AUTOFADE_MS_KEY = 'dj.autofade.duration.ms.v1';
+                let autoFadeDurationMs = 2000;
+                try {
+                    const stored = Number(localStorage.getItem(AUTOFADE_MS_KEY));
+                    if (Number.isFinite(stored) && stored >= 2000 && stored <= 10000) autoFadeDurationMs = stored;
+                } catch (_) {}
+                const syncAutoFadeDurationUi = () => {
+                    const sec = Math.max(2, Math.min(10, Math.round((Number(autoFadeDurationMs) || 2000) / 1000)));
+                    if (autoFadeDuration) autoFadeDuration.value = String(sec);
+                    if (autoFadeReadout) autoFadeReadout.textContent = `${sec}s`;
+                };
+                const closeAutoFadePanel = () => {
+                    if (!autoFadePanel) return;
+                    autoFadePanel.classList.remove('is-open');
+                    autoFadePanel.setAttribute('aria-hidden', 'true');
+                };
+                const openAutoFadePanel = () => {
+                    if (!autoFadePanel) return;
+                    syncAutoFadeDurationUi();
+                    autoFadePanel.classList.add('is-open');
+                    autoFadePanel.setAttribute('aria-hidden', 'false');
+                };
+                syncAutoFadeDurationUi();
 
                 const mirrorPairs = [
                     ['dj-knob-a-low', 'knob-a-low'],
@@ -9327,6 +9463,158 @@ function stopAllAndShowStart() {
                         } catch (_) {}
                     }, sig);
                 }
+
+                const getSeekBounds = (media) => {
+                    if (!media) return null;
+                    try {
+                        if (media.seekable && media.seekable.length > 0) {
+                            const start = Number(media.seekable.start(0));
+                            const end = Number(media.seekable.end(media.seekable.length - 1));
+                            if (Number.isFinite(start) && Number.isFinite(end) && end > start) return { start, end };
+                        }
+                    } catch (_) {}
+                    try {
+                        const d = Number(media.duration);
+                        if (Number.isFinite(d) && d > 0) return { start: 0, end: d };
+                    } catch (_) {}
+                    return null;
+                };
+                const attachJogSeek = (deckKey, jogEl) => {
+                    if (!jogEl) return;
+                    const mediaForDeck = () => (deckKey === 'b' ? audioElB : audioEl);
+                    let ptrId = null;
+                    let baseTime = 0;
+                    let startX = 0;
+                    let baseAngle = 0;
+                    const secPerPx = 0.06;
+                    const degPerPx = 0.9;
+                    const onMove = (ev) => {
+                        if (ptrId == null || ev.pointerId !== ptrId) return;
+                        const media = mediaForDeck();
+                        const bounds = getSeekBounds(media);
+                        if (!media || !bounds) return;
+                        const dx = Number(ev.clientX) - startX;
+                        const target = Math.max(bounds.start, Math.min(bounds.end, baseTime + (dx * secPerPx)));
+                        try { media.currentTime = target; } catch (_) {}
+                        if (deckKey === 'b') this.angleB = baseAngle + (dx * degPerPx);
+                        else this.angleA = baseAngle + (dx * degPerPx);
+                        try { jogEl.style.transform = `rotate(${deckKey === 'b' ? this.angleB : this.angleA}deg)`; } catch (_) {}
+                    };
+                    const end = (ev) => {
+                        if (ptrId == null || ev.pointerId !== ptrId) return;
+                        try { jogEl.releasePointerCapture(ptrId); } catch (_) {}
+                        ptrId = null;
+                    };
+                    jogEl.addEventListener('pointerdown', (ev) => {
+                        const media = mediaForDeck();
+                        const bounds = getSeekBounds(media);
+                        if (!media || !media.src || !bounds) return;
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        ptrId = ev.pointerId;
+                        startX = Number(ev.clientX) || 0;
+                        baseTime = Number(media.currentTime) || 0;
+                        baseAngle = deckKey === 'b' ? this.angleB : this.angleA;
+                        try { jogEl.setPointerCapture(ptrId); } catch (_) {}
+                    }, sig);
+                    jogEl.addEventListener('pointermove', onMove, sig);
+                    jogEl.addEventListener('pointerup', end, sig);
+                    jogEl.addEventListener('pointercancel', end, sig);
+                };
+                attachJogSeek('a', this.els.jogA);
+                attachJogSeek('b', this.els.jogB);
+
+                const ensureDeckStationPlayback = (deckKey) => {
+                    if (deckKey === 'b') {
+                        try { state.deckSourceMode.b = 'radio'; } catch (_) {}
+                        try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
+                    } else {
+                        try { state.deckSourceMode.a = 'radio'; } catch (_) {}
+                        try {
+                            if (typeof setStation === 'function') {
+                                const idx = (typeof currentStationIndex === 'number' && currentStationIndex >= 0) ? currentStationIndex : 0;
+                                setStation(idx);
+                            } else if (typeof playRadio === 'function') {
+                                playRadio();
+                            }
+                        } catch (_) {}
+                    }
+                };
+                const runAutoFade = (toDeck) => {
+                    const targetDeck = toDeck === 'a' ? 'a' : 'b';
+                    ensureDeckStationPlayback(targetDeck);
+                    const startVal = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
+                    const endVal = targetDeck === 'b' ? 1 : 0;
+                    if (Math.abs(endVal - startVal) < 0.001) return;
+                    if (this.autoFadeRafId) {
+                        try { cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
+                        this.autoFadeRafId = null;
+                    }
+                    if (btnAutoFade) btnAutoFade.classList.add('on');
+                    const durMs = Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 2000));
+                    const startTs = performance.now();
+                    const tick = (ts) => {
+                        const t = Math.max(0, Math.min(1, (ts - startTs) / durMs));
+                        const eased = 1 - Math.pow(1 - t, 3);
+                        const val = startVal + ((endVal - startVal) * eased);
+                        try { if (typeof applyCrossfade === 'function') applyCrossfade(val); } catch (_) {}
+                        if (t >= 1) {
+                            this.autoFadeRafId = null;
+                            if (btnAutoFade) btnAutoFade.classList.remove('on');
+                            return;
+                        }
+                        this.autoFadeRafId = requestAnimationFrame(tick);
+                    };
+                    this.autoFadeRafId = requestAnimationFrame(tick);
+                };
+                if (btnAutoFade) {
+                    btnAutoFade.addEventListener('pointerdown', () => {
+                        autoFadeLongPressFired = false;
+                        if (this.autoFadeHoldTimer) {
+                            try { clearTimeout(this.autoFadeHoldTimer); } catch (_) {}
+                            this.autoFadeHoldTimer = null;
+                        }
+                        this.autoFadeHoldTimer = setTimeout(() => {
+                            this.autoFadeHoldTimer = null;
+                            autoFadeLongPressFired = true;
+                            suppressAutoFadeClickUntil = Date.now() + 450;
+                            openAutoFadePanel();
+                        }, 450);
+                    }, sig);
+                    const clearAutoFadeHold = () => {
+                        if (this.autoFadeHoldTimer) {
+                            try { clearTimeout(this.autoFadeHoldTimer); } catch (_) {}
+                            this.autoFadeHoldTimer = null;
+                        }
+                    };
+                    btnAutoFade.addEventListener('pointerup', clearAutoFadeHold, sig);
+                    btnAutoFade.addEventListener('pointercancel', clearAutoFadeHold, sig);
+                    btnAutoFade.addEventListener('pointerleave', clearAutoFadeHold, sig);
+                    btnAutoFade.addEventListener('click', () => {
+                        if (autoFadeLongPressFired || Date.now() < suppressAutoFadeClickUntil) return;
+                        closeAutoFadePanel();
+                        const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
+                        runAutoFade(x < 0.5 ? 'b' : 'a');
+                    }, sig);
+                }
+                if (autoFadeDuration) {
+                    autoFadeDuration.addEventListener('input', () => {
+                        const sec = Math.max(2, Math.min(10, Number(autoFadeDuration.value) || 2));
+                        autoFadeDurationMs = Math.round(sec * 1000);
+                        if (autoFadeReadout) autoFadeReadout.textContent = `${Math.round(sec)}s`;
+                    }, sig);
+                    autoFadeDuration.addEventListener('change', () => {
+                        try { localStorage.setItem(AUTOFADE_MS_KEY, String(Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 2000)))); } catch (_) {}
+                    }, sig);
+                }
+                document.addEventListener('click', (ev) => {
+                    if (!autoFadePanel || !autoFadePanel.classList.contains('is-open')) return;
+                    const t = ev.target;
+                    if (autoFadeWrap && autoFadeWrap.contains(t)) return;
+                    closeAutoFadePanel();
+                }, { capture: true, signal: this.abortCtrl.signal });
+                document.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Escape') closeAutoFadePanel();
+                }, sig);
 
                 const clampVol = (v) => Math.max(0, Math.min(1, Number(v) || 0));
                 const setDeckVolA = (v) => {
@@ -9923,15 +10211,15 @@ function stopAllAndShowStart() {
                 } catch (_) {}
 
                 try {
-                    const ytA = root.querySelector('#dj-a-sfx-w2');
-                    const ytB = root.querySelector('#dj-b-sfx-w2');
-                    const onYouTubeClick = (e) => {
+                    const kbopBtnA = root.querySelector('#dj-a-sfx-w2');
+                    const kbopBtnB = root.querySelector('#dj-b-sfx-w2');
+                    const onKBopClick = (e) => {
                         try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
                         try { window.__suppressNextClick = true; } catch (_) {}
-                        this.toggleDeckBYouTubeEmbed();
+                        this.toggleDeckBKBopEmbed();
                     };
-                    if (ytA) ytA.addEventListener('click', onYouTubeClick, sig);
-                    if (ytB) ytB.addEventListener('click', onYouTubeClick, sig);
+                    if (kbopBtnA) kbopBtnA.addEventListener('click', onKBopClick, sig);
+                    if (kbopBtnB) kbopBtnB.addEventListener('click', onKBopClick, sig);
                 } catch (_) {}
 
                 try { this.bindDeckBeatMaps(root, sig); } catch (_) {}
@@ -10078,6 +10366,10 @@ function stopAllAndShowStart() {
             destroy() {
                 try { cancelAnimationFrame(this.animId); } catch(_) {}
                 this.animId = null;
+                try { if (this.autoFadeRafId) cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
+                this.autoFadeRafId = null;
+                try { if (this.autoFadeHoldTimer) clearTimeout(this.autoFadeHoldTimer); } catch (_) {}
+                this.autoFadeHoldTimer = null;
                 try {
                     window.removeEventListener('resize', this.resizeHandler);
                     window.removeEventListener('orientationchange', this.resizeHandler);
@@ -11962,7 +12254,7 @@ function stopAllAndShowStart() {
                      state.activeVisualizer.deckBVizMode === 'blank' ||
                      state.activeVisualizer.deckBVizMode === 'video' ||
                      state.activeVisualizer.deckBVizMode === 'karaoke' ||
-                     state.activeVisualizer.deckBVizMode === 'youtube' ||
+                     state.activeVisualizer.deckBVizMode === 'kbop' ||
                      state.activeVisualizer.deckBQueueVisible)
                 );
                 const deckBTextActive = (() => {
@@ -12042,7 +12334,7 @@ function stopAllAndShowStart() {
                          state.activeVisualizer.deckBVizMode === 'blank' ||
                          state.activeVisualizer.deckBVizMode === 'video' ||
                          state.activeVisualizer.deckBVizMode === 'karaoke' ||
-                         state.activeVisualizer.deckBVizMode === 'youtube' ||
+                         state.activeVisualizer.deckBVizMode === 'kbop' ||
                          state.activeVisualizer.deckBQueueVisible)
                     );
                     const deckBTextActive = (() => {
