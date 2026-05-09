@@ -12787,6 +12787,17 @@ function stopAllAndShowStart() {
             }
         }
         refreshMixStationB();
+        if (mixStationB) {
+            mixStationB.addEventListener('change', () => {
+                try {
+                    const idx = Math.max(0, Math.min(stations.length - 1, parseInt(mixStationB.value || '0', 10) || 0));
+                    currentStationBIndex = idx;
+                    mixStationB.value = String(idx);
+                    if (typeof playRadioB === 'function') playRadioB();
+                    if (typeof resetIdleTimer === 'function') resetIdleTimer();
+                } catch (_) {}
+            });
+        }
         // Crossfader handler (equal-power)
         function applyCrossfade(val) {
             let x = Math.max(0, Math.min(1, Number(val)||0));
