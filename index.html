@@ -9630,6 +9630,25 @@ function stopAllAndShowStart() {
                         } catch (_) {}
                     }
                 };
+                const retuneDeckStationForAutoMix = (deckKey) => {
+                    try {
+                        if (!Array.isArray(stations) || stations.length === 0) return;
+                        if (deckKey === 'b') {
+                            const cur = (typeof currentStationBIndex === 'number' && Number.isFinite(currentStationBIndex)) ? currentStationBIndex : 0;
+                            const eligible = (typeof getCycleEligibleStationIndexes === 'function') ? getCycleEligibleStationIndexes(cur) : [];
+                            const idx = eligible.length ? eligible[Math.floor(Math.random() * eligible.length)] : cur;
+                            currentStationBIndex = Math.max(0, Math.min(stations.length - 1, Number(idx) || 0));
+                            try { if (typeof refreshMixStationB === 'function') refreshMixStationB(); } catch (_) {}
+                            try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
+                        } else {
+                            const cur = (typeof currentStationIndex === 'number' && Number.isFinite(currentStationIndex)) ? currentStationIndex : 0;
+                            const eligible = (typeof getCycleEligibleStationIndexes === 'function') ? getCycleEligibleStationIndexes(cur) : [];
+                            const idx = eligible.length ? eligible[Math.floor(Math.random() * eligible.length)] : cur;
+                            if (typeof setStation === 'function') setStation(Math.max(0, Math.min(stations.length - 1, Number(idx) || 0)));
+                            else if (typeof playRadio === 'function') playRadio();
+                        }
+                    } catch (_) {}
+                };
                 const clearAutoMixTimer = () => {
                     if (this.autoMixTimerId) {
                         try { clearTimeout(this.autoMixTimerId); } catch (_) {}
@@ -9646,7 +9665,9 @@ function stopAllAndShowStart() {
                     this.autoMixTimerId = setTimeout(() => {
                         this.autoMixTimerId = null;
                         const xNow = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
-                        runAutoFade(xNow < 0.5 ? 'b' : 'a');
+                        const targetDeck = xNow < 0.5 ? 'b' : 'a';
+                        retuneDeckStationForAutoMix(targetDeck);
+                        runAutoFade(targetDeck);
                         scheduleNextAutoMix();
                     }, waitMs);
                 };
