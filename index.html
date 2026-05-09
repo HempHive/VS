@@ -7656,6 +7656,7 @@ function stopAllAndShowStart() {
                 this.deckBVideoList = [];
                 this.deckBVideoIndex = 0;
                 this.deckBVideoEl = null;
+                this._deckBVideoUiAbortCtrl = null;
                 this.autoFadeRafId = null;
                 this.autoFadeHoldTimer = null;
                 this.autoMixTimerId = null;
@@ -8086,6 +8087,12 @@ function stopAllAndShowStart() {
 
             tearDownDeckBViz(opts) {
                 try {
+                    if (this._deckBVideoUiAbortCtrl) {
+                        this._deckBVideoUiAbortCtrl.abort();
+                        this._deckBVideoUiAbortCtrl = null;
+                    }
+                } catch (_) {}
+                try {
                     if (typeof this._deckBVizMountFsCleanup === 'function') {
                         try { this._deckBVizMountFsCleanup(); } catch (_) {}
                         this._deckBVizMountFsCleanup = null;
@@ -8248,6 +8255,14 @@ function stopAllAndShowStart() {
                 deckBVideoUserIdle = false;
                 const list = getDeckBVideoPlaybackSources();
                 this.tearDownDeckBViz();
+                try {
+                    if (this._deckBVideoUiAbortCtrl) {
+                        this._deckBVideoUiAbortCtrl.abort();
+                        this._deckBVideoUiAbortCtrl = null;
+                    }
+                } catch (_) {}
+                this._deckBVideoUiAbortCtrl = new AbortController();
+                const uiSig = { signal: this._deckBVideoUiAbortCtrl.signal };
                 this.deckBVizMode = 'video';
                 this.deckBVideoList = list;
                 this.deckBVideoIndex = 0;
@@ -8532,7 +8547,7 @@ function stopAllAndShowStart() {
                             this.deckBVideoIndex = 0;
                             applyCurrent();
                         }
-                    });
+                    }, uiSig);
                     btnStop.addEventListener('click', () => {
                         deckBVideoLoopEnabled = false;
                         deckBVideoShuffleEnabled = false;
@@ -8550,7 +8565,7 @@ function stopAllAndShowStart() {
                         }
                         if (src.type === 'url') enqueueDeckUrl('a', src.entry.url, src.entry.name);
                         else if (src.type === 'file') enqueueDeckLocalFiles('a', [src.file]);
-                    });
+                    }, uiSig);
                     if (btnLoadQB) btnLoadQB.addEventListener('click', () => {
                         const src = urlOrPendingToEntry();
                         if (!src) return;
@@ -8561,8 +8576,8 @@ function stopAllAndShowStart() {
                         }
                         if (src.type === 'url') enqueueDeckUrl('b', src.entry.url, src.entry.name);
                         else if (src.type === 'file') enqueueDeckLocalFiles('b', [src.file]);
-                    });
-                    if (btnLoadFile) btnLoadFile.addEventListener('click', () => { try { fiVideo.click(); } catch (_) {} });
+                    }, uiSig);
+                    if (btnLoadFile) btnLoadFile.addEventListener('click', () => { try { fiVideo.click(); } catch (_) {} }, uiSig);
                     fiVideo.addEventListener('change', (ev) => {
                         const f = (ev.target.files && ev.target.files[0]) || null;
                         try { ev.target.value = ''; } catch (_) {}
@@ -10617,6 +10632,12 @@ function stopAllAndShowStart() {
                 } catch (_) {}
                 try { this.abortCtrl && this.abortCtrl.abort(); } catch(_) {}
                 this.abortCtrl = null;
+                try {
+                    if (this._deckBVideoUiAbortCtrl) {
+                        this._deckBVideoUiAbortCtrl.abort();
+                        this._deckBVideoUiAbortCtrl = null;
+                    }
+                } catch (_) {}
                 try { window.__refreshDjQueueUi = null; } catch (_) {}
                 this.root = null;
                 this.els = {};
