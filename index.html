@@ -10107,7 +10107,16 @@ function stopAllAndShowStart() {
                         pendingQueueLocalVideoFile = f;
                         clearPendingQueueLocalBlob();
                         try { pendingQueueLocalBlobUrl = URL.createObjectURL(f); } catch (_) { pendingQueueLocalBlobUrl = ''; }
-                        if (sharedQueueUrlInput) sharedQueueUrlInput.value = pendingQueueLocalBlobUrl || '';
+                        if (pendingQueueLocalBlobUrl) {
+                            const nm = f.name || 'Local video';
+                            upsertMediaVideoQueueEntry(pendingQueueLocalBlobUrl, nm);
+                            registerDeckVideoFeed('b', pendingQueueLocalBlobUrl, nm, false);
+                            pendingQueueLocalVideoFile = null;
+                            if (sharedQueueUrlInput) sharedQueueUrlInput.value = '';
+                            try { this.refreshQueueUi(); } catch (_) {}
+                        } else if (sharedQueueUrlInput) {
+                            sharedQueueUrlInput.value = '';
+                        }
                     }, sig);
                     if (btnVideoLoad) btnVideoLoad.addEventListener('click', () => {
                         const src = getQueueInputSource();
