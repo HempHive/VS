@@ -10031,6 +10031,9 @@ function stopAllAndShowStart() {
 
                     const sharedQueueUrlInput = root.querySelector('#dj-b-video-input');
                     const btnVideoLoad = root.querySelector('#dj-b-video-load');
+                    const btnVideoLocal = root.querySelector('#dj-b-video-local');
+                    const btnVideoQueueA = root.querySelector('#dj-b-video-q-a');
+                    const btnVideoQueueB = root.querySelector('#dj-b-video-q-b');
                     const btnRadioToggle = root.querySelector('#dj-b-video-radio');
                     const radioPopout = root.querySelector('#dj-radio-url-popout');
                     const radioUrlInput = root.querySelector('#dj-radio-url-input');
@@ -10039,6 +10042,43 @@ function stopAllAndShowStart() {
                     const mediaList = root.querySelector('#dj-media-queue-list');
                     const btnMediaLoop = root.querySelector('#dj-media-loop');
                     const btnMediaShuffle = root.querySelector('#dj-media-shuffle');
+                    let pendingQueueLocalVideoFile = null;
+                    let pendingQueueLocalBlobUrl = '';
+                    const fiQueueVideo = document.createElement('input');
+                    fiQueueVideo.type = 'file';
+                    fiQueueVideo.accept = 'video/*';
+                    fiQueueVideo.multiple = false;
+                    fiQueueVideo.style.display = 'none';
+                    fiQueueVideo.setAttribute('aria-hidden', 'true');
+                    root.appendChild(fiQueueVideo);
+                    const clearPendingQueueLocalBlob = () => {
+                        if (!pendingQueueLocalBlobUrl) return;
+                        try { URL.revokeObjectURL(pendingQueueLocalBlobUrl); } catch (_) {}
+                        pendingQueueLocalBlobUrl = '';
+                    };
+                    try {
+                        this.abortCtrl.signal.addEventListener('abort', () => {
+                            clearPendingQueueLocalBlob();
+                        }, { once: true });
+                    } catch (_) {}
+                    const getQueueInputSource = () => {
+                        if (pendingQueueLocalVideoFile) {
+                            return { type: 'file', file: pendingQueueLocalVideoFile, name: pendingQueueLocalVideoFile.name || 'Video file' };
+                        }
+                        const clean = sanitizeUrlForAudio(sharedQueueUrlInput ? sharedQueueUrlInput.value : '');
+                        if (!clean) return null;
+                        if (isLikelyRadioStreamUrl(clean)) {
+                            addUserRadioStation(clean, deriveNameFromUrl(clean));
+                            if (sharedQueueUrlInput) sharedQueueUrlInput.value = '';
+                            return { type: 'radio' };
+                        }
+                        if (!isVideoQueueEligibleUrl(clean)) {
+                            return { type: 'audiourl', url: clean, name: deriveNameFromUrl(clean) };
+                        }
+                        upsertMediaVideoQueueEntry(clean, deriveNameFromUrl(clean));
+                        registerDeckVideoFeed('b', clean, deriveNameFromUrl(clean), false);
+                        return { type: 'url', entry: { url: clean, name: deriveNameFromUrl(clean) } };
+                    };
                     const closeRadioPopout = () => {
                         if (!radioPopout) return;
                         radioPopout.classList.remove('is-open');
@@ -10057,6 +10097,59 @@ function stopAllAndShowStart() {
                         else openRadioPopout();
                     }, sig);
                     if (btnRadioUrlClose) btnRadioUrlClose.addEventListener('click', () => { closeRadioPopout(); }, sig);
+                    if (btnVideoLocal) btnVideoLocal.addEventListener('click', () => {
+                        try { fiQueueVideo.click(); } catch (_) {}
+                    }, sig);
+                    fiQueueVideo.addEventListener('change', (ev) => {
+                        const f = (ev.target.files && ev.target.files[0]) || null;
+                        try { ev.target.value = ''; } catch (_) {}
+                        if (!f) return;
+                        pendingQueueLocalVideoFile = f;
+                        clearPendingQueueLocalBlob();
+                        try { pendingQueueLocalBlobUrl = URL.createObjectURL(f); } catch (_) { pendingQueueLocalBlobUrl = ''; }
+                        if (sharedQueueUrlInput) sharedQueueUrlInput.value = pendingQueueLocalBlobUrl || '';
+                    }, sig);
+                    if (btnVideoLoad) btnVideoLoad.addEventListener('click', () => {
+                        const src = getQueueInputSource();
+                        if (!src) return;
+                        if (src.type === 'radio') {
+                            try { this.refreshQueueUi(); } catch (_) {}
+                            return;
+                        }
+                        if (src.type === 'audiourl') {
+                            enqueueDeckUrl('b', src.url, src.name);
+                            try { this.refreshQueueUi(); } catch (_) {}
+                            return;
+                        }
+                        if (src.type === 'url') {
+                            const mqIdx = mediaVideoQueue.findIndex((x) => x && x.url === src.entry.url);
+                            this.startDeckBVideoVisual({ mediaQueueIndex: mqIdx >= 0 ? mqIdx : 0 });
+                        } else if (src.type === 'file') {
+                            enqueueDeckLocalFiles('b', [src.file]);
+                            playDeckBTrackFromQueue();
+                            pendingQueueLocalVideoFile = null;
+                            clearPendingQueueLocalBlob();
+                            if (sharedQueueUrlInput) sharedQueueUrlInput.value = '';
+                            this.startDeckBVideoVisual({ mediaQueueIndex: 0 });
+                        }
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
+                    if (btnVideoQueueA) btnVideoQueueA.addEventListener('click', () => {
+                        const src = getQueueInputSource();
+                        if (!src || src.type === 'radio') return;
+                        if (src.type === 'audiourl') enqueueDeckUrl('a', src.url, src.name);
+                        else if (src.type === 'url') enqueueDeckUrl('a', src.entry.url, src.entry.name);
+                        else if (src.type === 'file') enqueueDeckLocalFiles('a', [src.file]);
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
+                    if (btnVideoQueueB) btnVideoQueueB.addEventListener('click', () => {
+                        const src = getQueueInputSource();
+                        if (!src || src.type === 'radio') return;
+                        if (src.type === 'audiourl') enqueueDeckUrl('b', src.url, src.name);
+                        else if (src.type === 'url') enqueueDeckUrl('b', src.entry.url, src.entry.name);
+                        else if (src.type === 'file') enqueueDeckLocalFiles('b', [src.file]);
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    }, sig);
                     if (btnRadioUrlAdd) btnRadioUrlAdd.addEventListener('click', () => {
                         const clean = sanitizeUrlForAudio(radioUrlInput ? radioUrlInput.value : '');
                         if (!clean) return;
