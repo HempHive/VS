@@ -583,12 +583,30 @@
         /* Col 1 = samples + tempo: keep compact so cols 4–6 (AUDIO:BAR grid) gain width */
         #dj-visual-root .dj-deck-mosaic {
             display: grid;
-            grid-template-columns: minmax(260px, min(26vw, 300px)) auto minmax(36px, 44px) repeat(3, minmax(0, 1fr));
-            grid-template-rows: repeat(6, minmax(30px, auto));
+            --dj-control-scale: 1;
+            --dj-btn-height-mult: 1.62;
+            --dj-knob-scale: 0.6;
+            grid-template-columns: minmax(calc(220px * var(--dj-control-scale)), min(26vw, calc(300px * var(--dj-control-scale)))) auto minmax(calc(30px * var(--dj-control-scale)), calc(44px * var(--dj-control-scale))) repeat(3, minmax(0, 1fr));
+            grid-template-rows: repeat(6, minmax(calc(24px * var(--dj-control-scale)), auto));
             gap: 1px;
             width: 100%;
             /* stretch so deck volume column spans full knob + button stack (center would shrink column to ~track height) */
             align-items: stretch;
+        }
+        /*
+         * Landscape: each deck is ~half the viewport wide. Beat-map col used min(26vw,…) vs *viewport* — ~52% of a half-width deck,
+         * starving the AUDIO:BAR…PREV grid. Cap beat-map as a % of *this* deck and trim jog max so the right grid keeps usable width.
+         */
+        #dj-visual-root.dj-mode-landscape .dj-deck-mosaic {
+            grid-template-columns:
+                minmax(calc(148px * var(--dj-control-scale)), min(31%, calc(216px * var(--dj-control-scale))))
+                auto
+                minmax(calc(28px * var(--dj-control-scale)), calc(42px * var(--dj-control-scale)))
+                repeat(3, minmax(0, 1fr));
+        }
+        #dj-visual-root.dj-mode-landscape .dj-deck-mosaic .dj-jog {
+            width: clamp(calc(68px * var(--dj-control-scale)), calc(17vmin * var(--dj-control-scale)), calc(132px * var(--dj-control-scale)));
+            height: clamp(calc(68px * var(--dj-control-scale)), calc(17vmin * var(--dj-control-scale)), calc(132px * var(--dj-control-scale)));
         }
         #dj-visual-root .dj-deck-mosaic > .dj-beatmap-strip {
             grid-column: 1;
@@ -617,7 +635,7 @@
             align-self: stretch;
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            grid-template-rows: repeat(6, minmax(30px, auto));
+            grid-template-rows: repeat(6, minmax(calc(24px * var(--dj-control-scale)), auto));
             gap: 1px;
             align-items: stretch;
             justify-items: stretch;
@@ -648,8 +666,8 @@
             gap: 0;
         }
         #dj-visual-root .dj-deck-mosaic .knob-wrap {
-            width: 67.5px;
-            height: 67.5px;
+            width: calc(67.5px * var(--dj-control-scale) * var(--dj-knob-scale));
+            height: calc(67.5px * var(--dj-control-scale) * var(--dj-knob-scale));
         }
         #dj-visual-root .dj-deck-vol-col {
             display: flex;
@@ -719,8 +737,8 @@
         }
         /* Match Deck EQ knobs (Lo / Med / High / Gain): 67.5px */
         #dj-visual-root .dj-beatmap-fx-knobs .knob-wrap {
-            width: 67.5px;
-            height: 67.5px;
+            width: calc(67.5px * var(--dj-control-scale) * var(--dj-knob-scale));
+            height: calc(67.5px * var(--dj-control-scale) * var(--dj-knob-scale));
         }
         #dj-visual-root .dj-beatmap-fx-knobs .eq-label {
             font-size: 8px;
@@ -754,9 +772,9 @@
         }
         /* Tempo column: same width band as Deck VOL column */
         #dj-visual-root .dj-beatmap-tempo-col {
-            flex: 0 0 minmax(36px, 44px);
-            min-width: 36px;
-            max-width: 44px;
+            flex: 0 0 minmax(calc(30px * var(--dj-control-scale)), calc(44px * var(--dj-control-scale)));
+            min-width: calc(30px * var(--dj-control-scale));
+            max-width: calc(44px * var(--dj-control-scale));
             display: flex;
             flex-direction: column;
             align-items: stretch;
@@ -815,7 +833,7 @@
         #dj-visual-root .dj-beatmap-bpm-slider {
             -webkit-appearance: none;
             appearance: none;
-            width: 210px;
+            width: calc(210px * var(--dj-control-scale));
             height: 14px;
             transform: rotate(-90deg);
             transform-origin: center center;
@@ -826,17 +844,17 @@
         #dj-visual-root .dj-beatmap-bpm-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 46px;
-            height: 46px;
+            width: calc(46px * var(--dj-control-scale));
+            height: calc(46px * var(--dj-control-scale));
             background: transparent url('vol.png') center center / 100% 100% no-repeat;
             border: none;
             border-radius: 50%;
-            margin-top: calc((14px - 46px) / 2);
+            margin-top: calc((14px - (46px * var(--dj-control-scale))) / 2);
             box-shadow: none;
         }
         #dj-visual-root .dj-beatmap-bpm-slider::-moz-range-thumb {
-            width: 46px;
-            height: 46px;
+            width: calc(46px * var(--dj-control-scale));
+            height: calc(46px * var(--dj-control-scale));
             background: transparent url('vol.png') center center / 100% 100% no-repeat;
             border: none;
             border-radius: 50%;
@@ -856,7 +874,7 @@
         }
         #dj-visual-root .dj-beatmap-col {
             display: grid;
-            grid-template-rows: repeat(5, minmax(40px, auto));
+            grid-template-rows: repeat(5, minmax(calc(28px * var(--dj-control-scale) * var(--dj-btn-height-mult)), auto));
             gap: 1px;
             min-height: 0;
             align-items: stretch;
@@ -866,15 +884,15 @@
         /* Sample pads (left-side beat-map grid): bnt.png frame over wly.gif. Black fallback if the gif is missing. */
         #dj-visual-root .dj-beatmap-pads .btn.dj-fx.dj-beat-pad {
             width: 100%;
-            min-height: 40px;
+            min-height: calc(28px * var(--dj-control-scale) * var(--dj-btn-height-mult));
             box-sizing: border-box;
             touch-action: manipulation;
             white-space: normal;
             word-break: break-word;
-            font-size: 14px;
+            font-size: calc(11px * var(--dj-control-scale));
             font-weight: 700;
             letter-spacing: 0.5px;
-            padding: 8px 10px;
+            padding: calc(8px * var(--dj-control-scale)) calc(6px * var(--dj-control-scale));
             line-height: 1.15;
             background-color: #000;
             background-image: url('bnt.png'), url('wly.gif');
@@ -941,7 +959,7 @@
         #dj-visual-root .dj-deck-vol {
             -webkit-appearance: none;
             appearance: none;
-            width: 210px;
+            width: calc(210px * var(--dj-control-scale));
             height: 14px;
             transform: rotate(-90deg);
             transform-origin: center center;
@@ -952,17 +970,17 @@
         #dj-visual-root .dj-deck-vol::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 46px;
-            height: 46px;
+            width: calc(46px * var(--dj-control-scale));
+            height: calc(46px * var(--dj-control-scale));
             background: transparent url('vol.png') center center / 100% 100% no-repeat;
             border: none;
             border-radius: 50%;
-            margin-top: calc((14px - 46px) / 2);
+            margin-top: calc((14px - (46px * var(--dj-control-scale))) / 2);
             box-shadow: none;
         }
         #dj-visual-root .dj-deck-vol::-moz-range-thumb {
-            width: 46px;
-            height: 46px;
+            width: calc(46px * var(--dj-control-scale));
+            height: calc(46px * var(--dj-control-scale));
             background: transparent url('vol.png') center center / 100% 100% no-repeat;
             border: none;
             border-radius: 50%;
@@ -1077,8 +1095,8 @@
             touch-action: none;
         }
         .dj-jog {
-            width: clamp(120px, 26vmin, 200px);
-            height: clamp(120px, 26vmin, 200px);
+            width: clamp(calc(88px * var(--dj-control-scale)), calc(26vmin * var(--dj-control-scale)), calc(200px * var(--dj-control-scale)));
+            height: clamp(calc(88px * var(--dj-control-scale)), calc(26vmin * var(--dj-control-scale)), calc(200px * var(--dj-control-scale)));
             border-radius: 50%;
             background:
                 radial-gradient(circle at 35% 30%, rgba(255,255,255,0.14), transparent 42%),
@@ -1104,7 +1122,7 @@
         /* DJ Deck buttons: align with Mixer Settings (#mix-panel .btn / #mix-effects .btn) — btn.png */
         #dj-visual-root .dj-play,
         #dj-visual-root .dj-tbtn {
-            padding: 6px 12px;
+            padding: calc(4px * var(--dj-control-scale)) calc(8px * var(--dj-control-scale));
             border: 1px solid rgba(255,255,255,0.25);
             background-color: rgba(255,255,255,0.08);
             background-image: url('btn.png');
@@ -1114,29 +1132,29 @@
             color: #fff;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: calc(10px * var(--dj-control-scale));
             font-weight: 700;
             letter-spacing: 1px;
             text-transform: uppercase;
             transition: all 0.2s ease;
-            min-height: 40px;
+            min-height: calc(28px * var(--dj-control-scale) * var(--dj-btn-height-mult));
         }
         #dj-visual-root .dj-play {
-            min-width: 96px;
-            height: 40px;
-            max-height: 40px;
+            min-width: calc(70px * var(--dj-control-scale));
+            height: calc(28px * var(--dj-control-scale) * var(--dj-btn-height-mult));
+            max-height: calc(28px * var(--dj-control-scale) * var(--dj-btn-height-mult));
             box-sizing: border-box;
-            padding: 0 12px;
+            padding: 0 calc(8px * var(--dj-control-scale));
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: calc(10px * var(--dj-control-scale));
             line-height: 1;
             letter-spacing: 0.08em;
         }
         #dj-visual-root .btn.dj-fx,
         #dj-visual-root .btn.dj-sfx {
-            padding: 10px;
+            padding: calc(6px * var(--dj-control-scale));
             border: 1px solid rgba(255,0,0,0.25);
             background-color: rgba(0,0,0,0.25);
             background-image: url('btn.png');
@@ -1146,7 +1164,7 @@
             color: #fff;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: calc(10px * var(--dj-control-scale));
             font-weight: 700;
             letter-spacing: 0.5px;
             text-transform: uppercase;
@@ -1306,6 +1324,120 @@
             background-image: url('btn.png'), url('aub.gif');
             background-size: 100% 100%, cover;
             filter: brightness(1.12);
+        }
+        #dj-visual-root #dj-a-sfx-w1,
+        #dj-visual-root #dj-b-sfx-w1 {
+            background-image: url('btn.png'), url('kar.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-a-sfx-w1:hover,
+        #dj-visual-root #dj-b-sfx-w1:hover,
+        #dj-visual-root #dj-a-sfx-w1.on,
+        #dj-visual-root #dj-b-sfx-w1.on {
+            background-image: url('btn.png'), url('kar.gif');
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-fx-high,
+        #dj-visual-root #dj-b-fx-high {
+            background-image: url('btn.png'), url('ava.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-fx-high:hover,
+        #dj-visual-root #dj-b-fx-high:hover,
+        #dj-visual-root #dj-fx-high.on,
+        #dj-visual-root #dj-b-fx-high.on {
+            background-image: url('btn.png'), url('ava.gif');
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-fx-low,
+        #dj-visual-root #dj-b-fx-low {
+            background-image: url('btn.png'), url('vid.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-fx-low:hover,
+        #dj-visual-root #dj-b-fx-low:hover,
+        #dj-visual-root #dj-fx-low.on,
+        #dj-visual-root #dj-b-fx-low.on {
+            background-image: url('btn.png'), url('vid.gif');
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-fx-treble,
+        #dj-visual-root #dj-b-fx-treble {
+            background-image: url('btn.png'), url('mix.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-fx-treble:hover,
+        #dj-visual-root #dj-b-fx-treble:hover,
+        #dj-visual-root #dj-fx-treble.on,
+        #dj-visual-root #dj-b-fx-treble.on {
+            background-image: url('btn.png'), url('mix.gif');
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-a-queue,
+        #dj-visual-root #dj-b-queue {
+            background-image: url('btn.png'), url('que.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-a-queue:hover,
+        #dj-visual-root #dj-b-queue:hover,
+        #dj-visual-root #dj-a-queue.on,
+        #dj-visual-root #dj-b-queue.on {
+            background-image: url('btn.png'), url('que.gif');
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-fx-tk,
+        #dj-visual-root #dj-b-fx-tk {
+            background-image: url('btn.png'), url('tin.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-fx-tk:hover,
+        #dj-visual-root #dj-b-fx-tk:hover,
+        #dj-visual-root #dj-fx-tk.on,
+        #dj-visual-root #dj-b-fx-tk.on {
+            background-image: url('btn.png'), url('tin.gif');
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-fx-distort,
+        #dj-visual-root #dj-b-fx-distort {
+            background-image: url('btn.png'), url('sta.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-fx-distort:hover,
+        #dj-visual-root #dj-b-fx-distort:hover,
+        #dj-visual-root #dj-fx-distort.on,
+        #dj-visual-root #dj-b-fx-distort.on {
+            background-image: url('btn.png'), url('sta.gif');
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-a-sfx-w2,
+        #dj-visual-root #dj-b-sfx-w2 {
+            background-image: url('btn.png'), url('you.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
+        }
+        #dj-visual-root #dj-a-sfx-w2:hover,
+        #dj-visual-root #dj-b-sfx-w2:hover,
+        #dj-visual-root #dj-a-sfx-w2.on,
+        #dj-visual-root #dj-b-sfx-w2.on,
+        #dj-visual-root #dj-a-sfx-w2.sample-playing,
+        #dj-visual-root #dj-b-sfx-w2.sample-playing {
+            background-image: url('btn.png'), url('you.gif');
+            background-size: 100% 100%, cover;
         }
         /* No Visual shortcut: nvi.gif backdrop with btn frame */
         #dj-visual-root #dj-vis-blank,
@@ -1503,8 +1635,8 @@
             align-items: center;
             justify-content: center;
             line-height: 1.1;
-            min-height: 40px;
-            padding: 8px 10px;
+            min-height: calc(28px * var(--dj-control-scale) * var(--dj-btn-height-mult));
+            padding: calc(8px * var(--dj-control-scale)) calc(6px * var(--dj-control-scale));
         }
         #dj-visual-root .dj-controls-grid .dj-play,
         #dj-visual-root .dj-controls-grid .dj-tbtn,
@@ -8278,6 +8410,29 @@ function stopAllAndShowStart() {
                 } catch (_) {}
             }
 
+            syncDeckMosaicScale() {
+                if (!this.root) return;
+                try {
+                    const landscape = this.root.classList.contains('dj-mode-landscape');
+                    /* Portrait: one deck spans ~full width → baseline 860. Landscape: two decks side‑by‑side → each mosaic is ~half as wide; use ~half baseline so fitW is not crushed (fixes tiny right button grid). */
+                    const baselineW = landscape ? 440 : 860;
+                    const scaleMin = landscape ? 0.82 : 0.72;
+                    const mosaics = Array.from(this.root.querySelectorAll('.dj-deck-mosaic'));
+                    if (!mosaics.length) return;
+                    mosaics.forEach((mosaic) => {
+                        const rect = mosaic.getBoundingClientRect();
+                        const w = Math.max(1, Math.floor(rect.width || 0));
+                        const h = Math.max(1, Math.floor(rect.height || 0));
+                        const fitW = w / baselineW;
+                        const fitH = h / 235;
+                        const widthBiased = Math.min(1.28, fitW);
+                        const heightBiased = Math.min(1.28, fitH);
+                        const scale = Math.max(scaleMin, Math.min(1.28, (widthBiased * 0.52) + (heightBiased * 0.48)));
+                        mosaic.style.setProperty('--dj-control-scale', scale.toFixed(3));
+                    });
+                } catch (_) {}
+            }
+
             onResize() {
                 if (!this.root) return;
                 const land = window.innerWidth > window.innerHeight;
@@ -8288,8 +8443,14 @@ function stopAllAndShowStart() {
                         this.deckBVizPmResize();
                     }
                 } catch (_) {}
+                this.syncDeckMosaicScale();
                 this.syncDeckVolumeSliderLengths();
-                requestAnimationFrame(() => { try { this.syncDeckVolumeSliderLengths(); } catch (_) {} });
+                requestAnimationFrame(() => {
+                    try {
+                        this.syncDeckMosaicScale();
+                        this.syncDeckVolumeSliderLengths();
+                    } catch (_) {}
+                });
             }
 
             syncPlayLabels() {
@@ -8687,7 +8848,10 @@ function stopAllAndShowStart() {
                 try {
                     if (typeof ResizeObserver !== 'undefined') {
                         this.deckVolResizeObs = new ResizeObserver(() => {
-                            try { this.syncDeckVolumeSliderLengths(); } catch (_) {}
+                            try {
+                                this.syncDeckMosaicScale();
+                                this.syncDeckVolumeSliderLengths();
+                            } catch (_) {}
                         });
                         root.querySelectorAll('.dj-deck-mosaic').forEach((el) => this.deckVolResizeObs.observe(el));
                     }
@@ -9462,6 +9626,7 @@ function stopAllAndShowStart() {
                 document.getElementById('mode-sub').innerText = 'Dual decks • Mixer-linked FX';
 
                 this.syncDeckBVisualButtons();
+                this.syncDeckMosaicScale();
                 this.syncDeckVolumeSliderLengths();
 
                 try {
