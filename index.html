@@ -496,6 +496,27 @@
             overflow: hidden;
             pointer-events: auto;
         }
+        /* Karaoke / embedded web page in Deck B viz mount (iframe may be blocked by remote X-Frame-Options) */
+        #dj-visual-root .dj-deck-b-embed-shell {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: auto;
+            background: #0a0a10;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #dj-visual-root .dj-deck-b-embed-frame {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            border: 0;
+            display: block;
+            background: #000;
+        }
         #dj-visual-root .dj-video-player {
             width: 100%;
             height: 100%;
@@ -693,7 +714,8 @@
             line-height: 1;
             flex-shrink: 0;
         }
-        #dj-visual-root .dj-deck-vol-wrap {
+        #dj-visual-root .dj-deck-vol-wrap,
+        #dj-visual-root .dj-beatmap-tempo-slider-wrap {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -792,15 +814,6 @@
             gap: 4px;
             width: 100%;
         }
-        #dj-visual-root .dj-beatmap-tempo-slider-wrap {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            flex: 1 1 auto;
-            min-height: 0;
-            overflow: visible;
-        }
         /* Same vertical span behavior as .dj-deck-vol-stack: slider grows, one compact footer row (cf. VOL caption) */
         #dj-visual-root .dj-beatmap-tempo-footer {
             display: flex;
@@ -828,37 +841,6 @@
             flex-shrink: 0;
             white-space: nowrap;
             line-height: 1.1;
-        }
-        /* Tempo slider: identical dimensions & thumb to .dj-deck-vol */
-        #dj-visual-root .dj-beatmap-bpm-slider {
-            -webkit-appearance: none;
-            appearance: none;
-            width: calc(210px * var(--dj-control-scale));
-            height: 14px;
-            transform: rotate(-90deg);
-            transform-origin: center center;
-            background: rgba(255,255,255,0.08);
-            border-radius: 7px;
-            border: none;
-        }
-        #dj-visual-root .dj-beatmap-bpm-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: calc(46px * var(--dj-control-scale));
-            height: calc(46px * var(--dj-control-scale));
-            background: transparent url('vol.png') center center / 100% 100% no-repeat;
-            border: none;
-            border-radius: 50%;
-            margin-top: calc((14px - (46px * var(--dj-control-scale))) / 2);
-            box-shadow: none;
-        }
-        #dj-visual-root .dj-beatmap-bpm-slider::-moz-range-thumb {
-            width: calc(46px * var(--dj-control-scale));
-            height: calc(46px * var(--dj-control-scale));
-            background: transparent url('vol.png') center center / 100% 100% no-repeat;
-            border: none;
-            border-radius: 50%;
-            box-shadow: none;
         }
         /* Match .dj-btn-block: 1px gutters; row height from content (same as btn rows minmax(30px, auto)), not 1fr stretch */
         #dj-visual-root .dj-beatmap-pads {
@@ -956,7 +938,9 @@
         .dj-beat-pad-loop-menu-item--active:hover {
             background: rgba(212, 175, 55, 0.18);
         }
-        #dj-visual-root .dj-deck-vol {
+        /* Deck VOL + beat-map tempo: same track, thumb, rotation (length also synced in JS to match) */
+        #dj-visual-root .dj-deck-vol,
+        #dj-visual-root .dj-beatmap-bpm-slider {
             -webkit-appearance: none;
             appearance: none;
             width: calc(210px * var(--dj-control-scale));
@@ -967,7 +951,8 @@
             border-radius: 7px;
             border: none;
         }
-        #dj-visual-root .dj-deck-vol::-webkit-slider-thumb {
+        #dj-visual-root .dj-deck-vol::-webkit-slider-thumb,
+        #dj-visual-root .dj-beatmap-bpm-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: calc(46px * var(--dj-control-scale));
@@ -978,7 +963,8 @@
             margin-top: calc((14px - (46px * var(--dj-control-scale))) / 2);
             box-shadow: none;
         }
-        #dj-visual-root .dj-deck-vol::-moz-range-thumb {
+        #dj-visual-root .dj-deck-vol::-moz-range-thumb,
+        #dj-visual-root .dj-beatmap-bpm-slider::-moz-range-thumb {
             width: calc(46px * var(--dj-control-scale));
             height: calc(46px * var(--dj-control-scale));
             background: transparent url('vol.png') center center / 100% 100% no-repeat;
@@ -4402,7 +4388,7 @@ const QUALITY = {
             if (drawScopeAndUpdateBpm._ctr % 15 === 0) {
                 const estComb = (env) => {
                     if (!env || env.length < 120) return null;
-                    const minBpm = 60, maxBpm = 180, fps = 60;
+                    const minBpm = 60, maxBpm = 240, fps = 60;
                     // Normalize envelope
                     const mean = env.reduce((a,b)=>a+b,0)/env.length;
                     const std = Math.sqrt(Math.max(1e-6, env.reduce((a,b)=>a+(b-mean)*(b-mean),0)/env.length));
@@ -8394,19 +8380,109 @@ function stopAllAndShowStart() {
                 } catch (_) {}
             }
 
+            startDeckBEmbed(url, mode, opts) {
+                if (!this.root) return;
+                let href = (url && String(url).trim()) || '';
+                if (!href) href = 'about:blank';
+                else if (!/^https?:\/\//i.test(href)) href = 'https://' + href.replace(/^\/+/, '');
+                const iframeTitle = (opts && opts.iframeTitle) || 'Web content';
+                const backLabel = (opts && opts.backLabel) || 'Web';
+                this.tearDownDeckBViz();
+                this.deckBVizMode = mode;
+                try {
+                    const stage = this.root.querySelector('.dj-deck-b-stage');
+                    if (stage) stage.classList.add('dj-deck-b-visual-mode');
+                    const layer = this.root.querySelector('#dj-deck-b-viz-layer');
+                    if (layer) layer.setAttribute('aria-hidden', 'false');
+                    const mount = this.root.querySelector('#dj-deck-b-viz-mount');
+                    const ph = this.root.querySelector('#dj-deck-b-viz-placeholder');
+                    if (!mount) return;
+                    mount.innerHTML = '';
+                    if (ph) ph.classList.add('display-none');
+                    const shell = document.createElement('div');
+                    shell.className = 'dj-deck-b-embed-shell';
+                    const iframe = document.createElement('iframe');
+                    iframe.className = 'dj-deck-b-embed-frame';
+                    iframe.setAttribute('title', iframeTitle);
+                    iframe.setAttribute(
+                        'sandbox',
+                        'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals'
+                    );
+                    iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+                    iframe.src = href;
+                    shell.appendChild(iframe);
+                    mount.appendChild(shell);
+                    this.showDeckBVisualBackButton(backLabel);
+                    this.attachDeckBVizMountFullscreen(mount);
+                } catch (_) {}
+            }
+
+            startDeckBKaraokeEmbed(url) {
+                this.startDeckBEmbed(
+                    url || 'https://www.karaokenerds.com/',
+                    'karaoke',
+                    { iframeTitle: 'Karaoke Nerds', backLabel: 'Karaoke' }
+                );
+            }
+
+            toggleDeckBKaraokeEmbed() {
+                try {
+                    if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                    if (this.deckBVizMode === 'karaoke') {
+                        this.tearDownDeckBViz();
+                        this.syncDeckBVisualButtons();
+                        this.updateStationTitles();
+                        this.syncFxLightsFromState();
+                        try { updateDjDecksShortcutVisibility(); } catch (_) {}
+                        return;
+                    }
+                    if (this.deckBQueueVisible) this.hideDeckBQueueView();
+                    this.startDeckBKaraokeEmbed('https://www.karaokenerds.com/');
+                    this.syncDeckBVisualButtons();
+                    this.updateStationTitles();
+                    this.syncFxLightsFromState();
+                    try { updateDjDecksShortcutVisibility(); } catch (_) {}
+                } catch (_) {}
+            }
+
+            toggleDeckBYouTubeEmbed() {
+                try {
+                    if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                    if (this.deckBVizMode === 'youtube') {
+                        this.tearDownDeckBViz();
+                        this.syncDeckBVisualButtons();
+                        this.updateStationTitles();
+                        this.syncFxLightsFromState();
+                        try { updateDjDecksShortcutVisibility(); } catch (_) {}
+                        return;
+                    }
+                    if (this.deckBQueueVisible) this.hideDeckBQueueView();
+                    this.startDeckBEmbed('https://www.youtube.com/', 'youtube', { iframeTitle: 'YouTube', backLabel: 'YouTube' });
+                    this.syncDeckBVisualButtons();
+                    this.updateStationTitles();
+                    this.syncFxLightsFromState();
+                    try { updateDjDecksShortcutVisibility(); } catch (_) {}
+                } catch (_) {}
+            }
+
             syncDeckVolumeSliderLengths() {
                 if (!this.root) return;
                 try {
                     const blocks = Array.from(this.root.querySelectorAll('.dj-btn-block'));
                     if (!blocks.length) return;
-                    // Knob row is already inside .dj-btn-block — use its full height only.
+                    /* Knob row is inside .dj-btn-block — span matches full button-stack height (same as before). */
                     const target = Math.max(...blocks.map((el) => Math.floor(el.getBoundingClientRect().height || 0)));
                     if (!target || target <= 0) return;
-                    const len = Math.max(200, target + 32); /* padding for vol.png thumb past track ends */
+                    /* Slightly shorter than target+32 so the track isn’t quite as tall; thumb still clears track ends */
+                    const len = Math.max(200, target + 22);
                     const volA = this.root.querySelector('#dj-deck-a-vol');
                     const volB = this.root.querySelector('#dj-deck-b-vol');
+                    const bpmA = this.root.querySelector('#dj-a-beat-bpm');
+                    const bpmB = this.root.querySelector('#dj-b-beat-bpm');
                     if (volA) volA.style.width = `${len}px`;
                     if (volB) volB.style.width = `${len}px`;
+                    if (bpmA) bpmA.style.width = `${len}px`;
+                    if (bpmB) bpmB.style.width = `${len}px`;
                 } catch (_) {}
             }
 
@@ -8465,7 +8541,7 @@ function stopAllAndShowStart() {
                         this.els.playB.textContent = bPlaying ? 'Pause' : 'Play';
                         this.els.playB.classList.toggle('is-playing', bPlaying);
                     }
-                    const visualActiveOnDeckB = (this.deckBVizMode === 'bars' || this.deckBVizMode === 'projectm' || this.deckBVizMode === 'blank' || this.deckBVizMode === 'video');
+                    const visualActiveOnDeckB = (this.deckBVizMode === 'bars' || this.deckBVizMode === 'projectm' || this.deckBVizMode === 'blank' || this.deckBVizMode === 'video' || this.deckBVizMode === 'karaoke' || this.deckBVizMode === 'youtube');
                     const hideDeckBFader = visualActiveOnDeckB && !bPlaying;
                     const deckBFader = this.root && this.root.querySelector('.dj-deck-b .dj-fader-strip');
                     if (deckBFader) deckBFader.classList.toggle('display-none', hideDeckBFader);
@@ -8509,7 +8585,7 @@ function stopAllAndShowStart() {
                     }
                     if (this.els.titleA) this.els.titleA.textContent = na;
                     if (this.els.titleB) {
-                        this.els.titleB.classList.toggle('display-none', this.deckBVizMode === 'video');
+                        this.els.titleB.classList.toggle('display-none', this.deckBVizMode === 'video' || this.deckBVizMode === 'karaoke' || this.deckBVizMode === 'youtube');
                         this.els.titleB.textContent = nb;
                         this.els.titleB.classList.toggle('is-deck-b-label', nb === 'DECK B');
                     }
@@ -8518,6 +8594,18 @@ function stopAllAndShowStart() {
 
             syncFxLightsFromState() {
                 try {
+                    try {
+                        const karaA = this.root && this.root.querySelector('#dj-a-sfx-w1');
+                        const karaB = this.root && this.root.querySelector('#dj-b-sfx-w1');
+                        const ytA = this.root && this.root.querySelector('#dj-a-sfx-w2');
+                        const ytB = this.root && this.root.querySelector('#dj-b-sfx-w2');
+                        const karaOn = this.deckBVizMode === 'karaoke';
+                        const ytOn = this.deckBVizMode === 'youtube';
+                        if (karaA) karaA.classList.toggle('on', karaOn);
+                        if (karaB) karaB.classList.toggle('on', karaOn);
+                        if (ytA) ytA.classList.toggle('on', ytOn);
+                        if (ytB) ytB.classList.toggle('on', ytOn);
+                    } catch (_) {}
                     if (!state || !state.fx) return;
                     const videoOn = this.deckBVizMode === 'video';
                     const kon = !!(state.fx.tk && state.fx.tk.on);
@@ -8538,7 +8626,7 @@ function stopAllAndShowStart() {
                     if (this.els.fxDistortA) this.els.fxDistortA.classList.toggle('on', stationOpenUi);
                     if (this.els.fxDistortB) this.els.fxDistortB.classList.toggle('on', stationOpenUi);
                     if (this.root && typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(this.root);
-                } catch(_) {}
+                } catch (_) {}
             }
 
             animateFrame() {
@@ -8630,7 +8718,7 @@ function stopAllAndShowStart() {
             <div class="dj-beatmap-tempo-col">
               <div class="dj-beatmap-tempo-stack">
                 <div class="dj-beatmap-tempo-slider-wrap">
-                  <input type="range" id="dj-a-beat-bpm" class="dj-beatmap-bpm-slider" min="60" max="180" step="1" value="120" aria-label="Deck A beat tempo BPM" />
+                  <input type="range" id="dj-a-beat-bpm" class="dj-beatmap-bpm-slider" min="60" max="240" step="1" value="120" aria-label="Deck A beat tempo BPM" />
                 </div>
                 <div class="dj-beatmap-tempo-footer">
                   <span class="dj-beatmap-bpm-readout" id="dj-a-beat-bpm-out">120</span>
@@ -8663,15 +8751,15 @@ function stopAllAndShowStart() {
 
             <button type="button" class="btn dj-fx" id="dj-fx-high" title="Toggle avatar / WebM overlay">Avatar</button>
             <button type="button" class="btn dj-fx" id="dj-a-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Open or close station list (top menu)">Station</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Open or close station list (top menu)">Stations</button>
 
             <button type="button" class="btn dj-fx" id="dj-fx-treble" title="Open or close Mix Settings (bottom panel)">Mixer</button>
             <button type="button" class="btn dj-fx" id="dj-fx-low" title="Toggle Deck B video player">Video</button>
             <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Open or close the TEXT-IN panel (rising text on the main screen)">TEXT-IN</button>
 
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="IDEAS">IDEAS</button>
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="KARAOKE">KARAOKE</button>
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="YouTube">YouTube</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Open Karaoke Nerds in Deck B (toggle)">KARAOKE</button>
+            <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Open YouTube in Deck B (toggle)">YouTube</button>
 
             <button type="button" class="dj-play" id="dj-play-a" title="Play or pause Deck A">Play</button>
             <button type="button" class="dj-tbtn" id="dj-a-next" title="Tune to another random station">Rand ⟶</button>
@@ -8731,7 +8819,7 @@ function stopAllAndShowStart() {
                 <div class="dj-beatmap-tempo-col">
                   <div class="dj-beatmap-tempo-stack">
                     <div class="dj-beatmap-tempo-slider-wrap">
-                      <input type="range" id="dj-b-beat-bpm" class="dj-beatmap-bpm-slider" min="60" max="180" step="1" value="120" aria-label="Deck B beat tempo BPM" />
+                      <input type="range" id="dj-b-beat-bpm" class="dj-beatmap-bpm-slider" min="60" max="240" step="1" value="120" aria-label="Deck B beat tempo BPM" />
                     </div>
                     <div class="dj-beatmap-tempo-footer">
                       <span class="dj-beatmap-bpm-readout" id="dj-b-beat-bpm-out">120</span>
@@ -8764,15 +8852,15 @@ function stopAllAndShowStart() {
 
                 <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="Toggle avatar / WebM overlay">Avatar</button>
                 <button type="button" class="btn dj-fx" id="dj-b-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
-                <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Open or close station list (top menu)">Station</button>
+                <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Open or close station list (top menu)">Stations</button>
 
                 <button type="button" class="btn dj-fx" id="dj-b-fx-treble" title="Open or close Mix Settings (bottom panel)">Mixer</button>
                 <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Toggle Deck B video player">Video</button>
                 <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Open or close TEXT-IN, displaying rising text inside the Deck B player">TEXT-IN</button>
 
                 <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="IDEAS">IDEAS</button>
-                <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="KARAOKE">KARAOKE</button>
-                <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="YouTube">YouTube</button>
+                <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Open Karaoke Nerds in Deck B (toggle)">KARAOKE</button>
+                <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Open YouTube in Deck B (toggle)">YouTube</button>
 
                 <button type="button" class="dj-play" id="dj-play-b" title="Play or pause Deck B">Play</button>
                 <button type="button" class="dj-tbtn" id="dj-b-next" title="Tune deck B to another random station">Rand ⟶</button>
@@ -9487,12 +9575,32 @@ function stopAllAndShowStart() {
                 try {
                     if (typeof bindSample === 'function') {
                         bindSample(root.querySelector('#dj-a-sfx-wav'), audioElSample4, 'sampleLoop4', 'sourceNodeSample4');
-                        bindSample(root.querySelector('#dj-a-sfx-w1'), audioElSample5, 'sampleLoop5', 'sourceNodeSample5');
-                        bindSample(root.querySelector('#dj-a-sfx-w2'), audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
                         bindSample(root.querySelector('#dj-b-sfx-wav'), audioElSample4, 'sampleLoop4', 'sourceNodeSample4');
-                        bindSample(root.querySelector('#dj-b-sfx-w1'), audioElSample5, 'sampleLoop5', 'sourceNodeSample5');
-                        bindSample(root.querySelector('#dj-b-sfx-w2'), audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
                     }
+                } catch (_) {}
+
+                try {
+                    const karaA = root.querySelector('#dj-a-sfx-w1');
+                    const karaB = root.querySelector('#dj-b-sfx-w1');
+                    const onKaraokeClick = (e) => {
+                        try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+                        try { window.__suppressNextClick = true; } catch (_) {}
+                        this.toggleDeckBKaraokeEmbed();
+                    };
+                    if (karaA) karaA.addEventListener('click', onKaraokeClick, sig);
+                    if (karaB) karaB.addEventListener('click', onKaraokeClick, sig);
+                } catch (_) {}
+
+                try {
+                    const ytA = root.querySelector('#dj-a-sfx-w2');
+                    const ytB = root.querySelector('#dj-b-sfx-w2');
+                    const onYouTubeClick = (e) => {
+                        try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+                        try { window.__suppressNextClick = true; } catch (_) {}
+                        this.toggleDeckBYouTubeEmbed();
+                    };
+                    if (ytA) ytA.addEventListener('click', onYouTubeClick, sig);
+                    if (ytB) ytB.addEventListener('click', onYouTubeClick, sig);
                 } catch (_) {}
 
                 try { this.bindDeckBeatMaps(root, sig); } catch (_) {}
@@ -11522,6 +11630,8 @@ function stopAllAndShowStart() {
                      state.activeVisualizer.deckBVizMode === 'projectm' ||
                      state.activeVisualizer.deckBVizMode === 'blank' ||
                      state.activeVisualizer.deckBVizMode === 'video' ||
+                     state.activeVisualizer.deckBVizMode === 'karaoke' ||
+                     state.activeVisualizer.deckBVizMode === 'youtube' ||
                      state.activeVisualizer.deckBQueueVisible)
                 );
                 const deckBTextActive = (() => {
@@ -11600,6 +11710,8 @@ function stopAllAndShowStart() {
                          state.activeVisualizer.deckBVizMode === 'projectm' ||
                          state.activeVisualizer.deckBVizMode === 'blank' ||
                          state.activeVisualizer.deckBVizMode === 'video' ||
+                         state.activeVisualizer.deckBVizMode === 'karaoke' ||
+                         state.activeVisualizer.deckBVizMode === 'youtube' ||
                          state.activeVisualizer.deckBQueueVisible)
                     );
                     const deckBTextActive = (() => {
