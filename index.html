@@ -6944,6 +6944,22 @@ function randomGlowColor() {
                     ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, dc);
                 }
             }
+            // Peak-normalize so ConvolverNode wet path is clearly audible in parallel with dry
+            let peak = 0;
+            for (let c = 0; c < buf.numberOfChannels; c++) {
+                const ch = buf.getChannelData(c);
+                for (let i = 0; i < len; i++) {
+                    const a = Math.abs(ch[i]);
+                    if (a > peak) peak = a;
+                }
+            }
+            if (peak > 1e-8) {
+                const scale = 0.95 / peak;
+                for (let c = 0; c < buf.numberOfChannels; c++) {
+                    const ch = buf.getChannelData(c);
+                    for (let i = 0; i < len; i++) ch[i] *= scale;
+                }
+            }
             return buf;
         }
         function initAudio() {
@@ -7078,9 +7094,15 @@ function randomGlowColor() {
                     on: false,
                     delay: state.audioCtx.createDelay(0.08),
                     feedbackGain: state.audioCtx.createGain(),
+                    dryTap: state.audioCtx.createGain(),
+                    wetTap: state.audioCtx.createGain(),
+                    outMix: state.audioCtx.createGain(),
                     lfo: state.audioCtx.createOscillator(),
                     lfoDepth: state.audioCtx.createGain()
                 };
+                state.fx.flanger.dryTap.gain.value = 0.65;
+                state.fx.flanger.wetTap.gain.value = 0.65;
+                state.fx.flanger.outMix.gain.value = 1;
                 state.fx.flanger.delay.delayTime.value = 0.004;
                 state.fx.flanger.feedbackGain.gain.value = 0;
                 state.fx.flanger.lfo.type = 'sine';
@@ -7130,6 +7152,7 @@ function randomGlowColor() {
                 bindKnob('knob-b-high', -20, 20, eqState.b.high, eqState.b, 'high', v => { if(state.eqB.high) state.eqB.high.gain.value = v; });
                 bindKnob('knob-b-mid', -20, 20, eqState.b.mid, eqState.b, 'mid', v => { if(state.eqB.mid) state.eqB.mid.gain.value = v; });
                 bindKnob('knob-b-low', -20, 20, eqState.b.low, eqState.b, 'low', v => { if(state.eqB.low) state.eqB.low.gain.value = v; });
+                try { rebuildEffectsChain(); } catch (_) {}
             }
             if(state.audioCtx.state === 'suspended') state.audioCtx.resume();
         }
@@ -7156,6 +7179,9 @@ function randomGlowColor() {
                 if (state.fx && state.fx.flanger) {
                     try { state.fx.flanger.delay.disconnect(); } catch (_) {}
                     try { state.fx.flanger.feedbackGain.disconnect(); } catch (_) {}
+                    if (state.fx.flanger.dryTap) try { state.fx.flanger.dryTap.disconnect(); } catch (_) {}
+                    if (state.fx.flanger.wetTap) try { state.fx.flanger.wetTap.disconnect(); } catch (_) {}
+                    if (state.fx.flanger.outMix) try { state.fx.flanger.outMix.disconnect(); } catch (_) {}
                 }
                 if (state.fx && state.fx.reverb) {
                     try { state.fx.reverb.dryGain.disconnect(); } catch (_) {}
@@ -7205,18 +7231,27 @@ function randomGlowColor() {
                 last = state.fx.noVocal.f3;
                 try { applyDeckBNoVocalPeakingGains(); } catch (_) {}
             }
-            if (state.fx.flanger && state.fx.flanger.on) {
+            if (state.fx.flanger && state.fx.flanger.on && state.fx.flanger.dryTap && state.fx.flanger.wetTap && state.fx.flanger.outMix) {
                 try { last.disconnect(); } catch (_) {}
                 const fp = (state.djBeatFx && typeof state.djBeatFx.flangerPct === 'number') ? state.djBeatFx.flangerPct : 50;
                 const ft = Math.max(0, Math.min(1, fp / 100));
-                state.fx.flanger.feedbackGain.gain.value = 0.15 + 0.54 * ft;
-                state.fx.flanger.lfoDepth.gain.value = 0.001 + 0.008 * ft;
+                state.fx.flanger.feedbackGain.gain.value = 0.12 + 0.48 * ft;
+                state.fx.flanger.lfoDepth.gain.value = 0.002 + 0.012 * ft;
+                state.fx.flanger.dryTap.gain.value = 0.52 + 0.38 * (1 - ft * 0.35);
+                state.fx.flanger.wetTap.gain.value = 0.32 + 0.58 * ft;
                 try { state.fx.flanger.delay.disconnect(); } catch (_) {}
                 try { state.fx.flanger.feedbackGain.disconnect(); } catch (_) {}
+                try { state.fx.flanger.dryTap.disconnect(); } catch (_) {}
+                try { state.fx.flanger.wetTap.disconnect(); } catch (_) {}
+                try { state.fx.flanger.outMix.disconnect(); } catch (_) {}
                 last.connect(state.fx.flanger.delay);
+                last.connect(state.fx.flanger.dryTap);
+                state.fx.flanger.dryTap.connect(state.fx.flanger.outMix);
                 state.fx.flanger.delay.connect(state.fx.flanger.feedbackGain);
                 state.fx.flanger.feedbackGain.connect(state.fx.flanger.delay);
-                last = state.fx.flanger.delay;
+                state.fx.flanger.delay.connect(state.fx.flanger.wetTap);
+                state.fx.flanger.wetTap.connect(state.fx.flanger.outMix);
+                last = state.fx.flanger.outMix;
             } else if (state.fx.flanger) {
                 state.fx.flanger.feedbackGain.gain.value = 0;
                 state.fx.flanger.lfoDepth.gain.value = 0;
