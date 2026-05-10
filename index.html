@@ -8769,23 +8769,42 @@ function stopAllAndShowStart() {
                     { label: 'RIM', src: 'Rim.wav', defaultLoop: false },
                     { label: 'HAR', src: 'Vocal.wav', defaultLoop: false },
                 ];
+                /** Deck B: independent samples/labels; shared short placeholder until user loads clips */
+                const BEAT_MAP_DEFAULTS_B = [
+                    { label: 'CHR', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'CYM', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'SYN', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'HARM', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'HARP', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'FX3', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'FX4', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'FX5', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'FX6', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'FX7', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'SRE', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'BME', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'HRN', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'CRW', src: 'Perc.wav', defaultLoop: false },
+                    { label: 'CHG', src: 'Perc.wav', defaultLoop: false },
+                ];
                 this.beatMapSlots = { a: [], b: [] };
 
                 const setupDeck = (deckKey) => {
                     const prefix = deckKey === 'a' ? 'dj-a' : 'dj-b';
+                    const defs = deckKey === 'b' ? BEAT_MAP_DEFAULTS_B : BEAT_MAP_DEFAULTS;
                     const slots = [];
-                    for (let i = 0; i < BEAT_MAP_DEFAULTS.length; i++) {
+                    for (let i = 0; i < defs.length; i++) {
                         const el = new Audio();
                         el.preload = 'auto';
-                        el.src = BEAT_MAP_DEFAULTS[i].src;
+                        el.src = defs[i].src;
                         try { el.muted = false; el.volume = 1; } catch (_) {}
                         slots.push({
                             audio: el,
                             sourceNode: null,
                             blobUrl: '',
-                            defaultSrc: BEAT_MAP_DEFAULTS[i].src,
-                            label: BEAT_MAP_DEFAULTS[i].label,
-                            loopMode: BEAT_MAP_DEFAULTS[i].defaultLoop !== undefined ? !!BEAT_MAP_DEFAULTS[i].defaultLoop : true,
+                            defaultSrc: defs[i].src,
+                            label: defs[i].label,
+                            loopMode: defs[i].defaultLoop !== undefined ? !!defs[i].defaultLoop : true,
                             _beatEnded: null,
                         });
                     }
@@ -10617,26 +10636,26 @@ function stopAllAndShowStart() {
                     <div class="eq-col eq-strip" aria-label="Arpeggiator rate"><div class="knob-wrap" id="dj-knob-b-arp" style="--knob-color:#8647a8"><div class="knob-indicator"></div><div class="knob-value">4</div></div><div class="eq-label">Arp</div></div>
                   </div>
                   <div class="dj-beatmap-pads">
-                    <div class="dj-beatmap-col" aria-label="Deck B beat layers">
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="0">High</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="1">Drum</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="2">Clap</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="3">Perc</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="4">Tom</button>
+                    <div class="dj-beatmap-col" aria-label="Deck B CHR–HARP">
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="0">CHR</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="1">CYM</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="2">SYN</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="3">HARM</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="4">HARP</button>
                     </div>
-                    <div class="dj-beatmap-col" aria-label="Deck B key samples">
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="10">KEY</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="11">KICK</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="12">BELL</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="13">RIM</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="14">HAR</button>
+                    <div class="dj-beatmap-col" aria-label="Deck B SRE–CHG">
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="10">SRE</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="11">BME</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="12">HRN</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="13">CRW</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="14">CHG</button>
                     </div>
-                    <div class="dj-beatmap-col" aria-label="Deck B sample pads">
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="5">WAA</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="6">WAAA</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="7">AIR📢</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="8">FX1</button>
-                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="9">FX2</button>
+                    <div class="dj-beatmap-col" aria-label="Deck B FX3–FX7">
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="5">FX3</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="6">FX4</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="7">FX5</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="8">FX6</button>
+                      <button type="button" class="btn dj-fx dj-beat-pad" data-beat-deck="b" data-beat-slot="9">FX7</button>
                     </div>
                   </div>
                 </div>
