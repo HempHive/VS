@@ -270,6 +270,17 @@
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
             display: none;
         }
+        #dj-visual-root .dj-autofade-panel.is-fixed-popup {
+            position: fixed;
+            right: auto;
+            top: auto;
+        }
+        #dj-visual-root .dj-automix-panel.is-fixed-popup {
+            position: fixed;
+            right: auto;
+            top: auto;
+            border-color: rgba(130, 200, 255, 0.4);
+        }
         #dj-visual-root .dj-automix-panel { min-width: 208px; }
         #dj-visual-root .dj-autofade-panel.is-open,
         #dj-visual-root .dj-automix-panel.is-open {
@@ -301,6 +312,27 @@
             color: #f5e6b8;
             min-width: 34px;
             text-align: right;
+        }
+        #dj-visual-root .dj-automix-limit-section {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        #dj-visual-root .dj-automix-check-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.85);
+            cursor: pointer;
+            user-select: none;
+        }
+        #dj-visual-root .dj-automix-check-row input {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            accent-color: rgba(130, 200, 255, 0.9);
         }
         .dj-deck-body-b {
             flex-direction: column !important;
@@ -7856,6 +7888,9 @@ function stopAllAndShowStart() {
                 this.autoFadeHoldTimer = null;
                 this.autoMixTimerId = null;
                 this.autoMixHoldTimer = null;
+                this.autoMixSessionLimitTimerId = null;
+                this.masterFadeOutRafId = null;
+                this._panelPointerPos = null;
                 this.deckBVizResizeObs = null;
                 this.deckVolResizeObs = null;
                 this.deckBQueueVisible = false;
@@ -9563,7 +9598,7 @@ function stopAllAndShowStart() {
       </div>
       <span class="dj-fader-label-b">B</span>
       <div class="dj-automix-wrap">
-        <button type="button" class="dj-automix-btn" id="dj-automix" title="Toggle auto-mix (long-press for min/max interval)">Auto-Mix</button>
+        <button type="button" class="dj-automix-btn" id="dj-automix" title="Toggle auto-mix (long-press for interval, session limit, and fade-out)">Auto-Mix</button>
         <div class="dj-automix-panel" id="dj-automix-panel" aria-hidden="true">
           <div class="dj-automix-title">Auto-mix interval</div>
           <div class="dj-automix-row">
@@ -9573,6 +9608,17 @@ function stopAllAndShowStart() {
           <div class="dj-automix-row">
             <input type="range" id="dj-automix-max" min="2" max="20" step="1" value="20" aria-label="Auto-mix maximum minutes">
             <span class="dj-automix-readout" id="dj-automix-max-readout">20m</span>
+          </div>
+          <div class="dj-automix-limit-section">
+            <div class="dj-automix-title">Session limit</div>
+            <label class="dj-automix-check-row">
+              <input type="checkbox" id="dj-automix-limit-en" aria-label="Hold auto-mix to a session time limit">
+              <span>Limit session length</span>
+            </label>
+            <div class="dj-automix-row">
+              <input type="range" id="dj-automix-limit-min" min="5" max="300" step="1" value="60" aria-label="Auto-mix session time limit minutes">
+              <span class="dj-automix-readout" id="dj-automix-limit-readout">1h</span>
+            </div>
           </div>
         </div>
       </div>
@@ -9814,6 +9860,9 @@ function stopAllAndShowStart() {
                 const autoMixMax = root.querySelector('#dj-automix-max');
                 const autoMixMinReadout = root.querySelector('#dj-automix-min-readout');
                 const autoMixMaxReadout = root.querySelector('#dj-automix-max-readout');
+                const autoMixLimitEn = root.querySelector('#dj-automix-limit-en');
+                const autoMixLimitMinEl = root.querySelector('#dj-automix-limit-min');
+                const autoMixLimitReadout = root.querySelector('#dj-automix-limit-readout');
                 let suppressAutoFadeClickUntil = 0;
                 let autoFadeLongPressFired = false;
                 const AUTOFADE_MS_KEY = 'dj.autofade.duration.ms.v1';
@@ -9824,8 +9873,13 @@ function stopAllAndShowStart() {
                 const AUTOMIX_ENABLED_KEY = 'dj.automix.enabled.v1';
                 const AUTOMIX_MIN_KEY = 'dj.automix.min.min.v1';
                 const AUTOMIX_MAX_KEY = 'dj.automix.max.min.v1';
+                const AUTOMIX_LIMIT_EN_KEY = 'dj.automix.limit.enabled.v1';
+                const AUTOMIX_LIMIT_MIN_KEY = 'dj.automix.limit.minutes.v1';
                 let autoMixMinMin = 2;
                 let autoMixMaxMin = 20;
+                let autoMixLimitEnabled = false;
+                let autoMixLimitMin = 60;
+                let autoMixSessionStartedAt = 0;
                 try {
                     const stored = Number(localStorage.getItem(AUTOFADE_MS_KEY));
                     if (Number.isFinite(stored) && stored >= 2000 && stored <= 10000) autoFadeDurationMs = stored;
@@ -9838,6 +9892,11 @@ function stopAllAndShowStart() {
                     if (autoMixMinMin > autoMixMaxMin) autoMixMaxMin = autoMixMinMin;
                 } catch (_) {}
                 try {
+                    autoMixLimitEnabled = localStorage.getItem(AUTOMIX_LIMIT_EN_KEY) === '1';
+                    const limStored = Number(localStorage.getItem(AUTOMIX_LIMIT_MIN_KEY));
+                    if (Number.isFinite(limStored) && limStored >= 5 && limStored <= 300) autoMixLimitMin = Math.round(limStored);
+                } catch (_) {}
+                try {
                     autoMixEnabled = localStorage.getItem(AUTOMIX_ENABLED_KEY) === '1';
                 } catch (_) {}
                 const syncAutoFadeDurationUi = () => {
@@ -9845,36 +9904,83 @@ function stopAllAndShowStart() {
                     if (autoFadeDuration) autoFadeDuration.value = String(sec);
                     if (autoFadeReadout) autoFadeReadout.textContent = `${sec}s`;
                 };
+                const formatLimitMinutesReadout = (m) => {
+                    const n = Math.max(5, Math.min(300, Math.round(Number(m) || 60)));
+                    if (n < 60) return `${n}m`;
+                    const h = Math.floor(n / 60);
+                    const r = n % 60;
+                    if (r === 0) return h === 1 ? '1h' : `${h}h`;
+                    return `${h}h ${r}m`;
+                };
                 const syncAutoMixUi = () => {
                     autoMixMinMin = Math.max(2, Math.min(20, Math.round(Number(autoMixMinMin) || 2)));
                     autoMixMaxMin = Math.max(autoMixMinMin, Math.min(20, Math.round(Number(autoMixMaxMin) || 20)));
+                    autoMixLimitMin = Math.max(5, Math.min(300, Math.round(Number(autoMixLimitMin) || 60)));
                     if (autoMixMin) autoMixMin.value = String(autoMixMinMin);
                     if (autoMixMax) autoMixMax.value = String(autoMixMaxMin);
                     if (autoMixMinReadout) autoMixMinReadout.textContent = `${autoMixMinMin}m`;
                     if (autoMixMaxReadout) autoMixMaxReadout.textContent = `${autoMixMaxMin}m`;
+                    if (autoMixLimitMinEl) autoMixLimitMinEl.value = String(autoMixLimitMin);
+                    if (autoMixLimitEn) autoMixLimitEn.checked = !!autoMixLimitEnabled;
+                    if (autoMixLimitReadout) autoMixLimitReadout.textContent = formatLimitMinutesReadout(autoMixLimitMin);
                     if (btnAutoMix) btnAutoMix.classList.toggle('on', !!autoMixEnabled);
+                };
+                const resetPopupPanelStyles = (panel) => {
+                    if (!panel) return;
+                    panel.classList.remove('is-fixed-popup');
+                    panel.style.position = '';
+                    panel.style.left = '';
+                    panel.style.top = '';
+                    panel.style.right = '';
+                };
+                const positionPopupPanelAtPointer = (panel, clientX, clientY) => {
+                    if (!panel) return;
+                    const px = Number(clientX);
+                    const py = Number(clientY);
+                    panel.classList.add('is-fixed-popup');
+                    panel.style.position = 'fixed';
+                    panel.style.right = 'auto';
+                    const place = () => {
+                        const rect = panel.getBoundingClientRect();
+                        const pad = 8;
+                        let left = (Number.isFinite(px) ? px : window.innerWidth / 2) + 4;
+                        let top = (Number.isFinite(py) ? py : window.innerHeight / 2) + 4;
+                        if (left + rect.width > window.innerWidth - pad) left = window.innerWidth - pad - rect.width;
+                        if (left < pad) left = pad;
+                        if (top + rect.height > window.innerHeight - pad) top = window.innerHeight - pad - rect.height;
+                        if (top < pad) top = pad;
+                        panel.style.left = `${Math.round(left)}px`;
+                        panel.style.top = `${Math.round(top)}px`;
+                    };
+                    requestAnimationFrame(() => requestAnimationFrame(place));
                 };
                 const closeAutoFadePanel = () => {
                     if (!autoFadePanel) return;
                     autoFadePanel.classList.remove('is-open');
                     autoFadePanel.setAttribute('aria-hidden', 'true');
+                    resetPopupPanelStyles(autoFadePanel);
                 };
                 const closeAutoMixPanel = () => {
                     if (!autoMixPanel) return;
                     autoMixPanel.classList.remove('is-open');
                     autoMixPanel.setAttribute('aria-hidden', 'true');
+                    resetPopupPanelStyles(autoMixPanel);
                 };
                 const openAutoFadePanel = () => {
                     if (!autoFadePanel) return;
                     syncAutoFadeDurationUi();
                     autoFadePanel.classList.add('is-open');
                     autoFadePanel.setAttribute('aria-hidden', 'false');
+                    const p = this._panelPointerPos;
+                    positionPopupPanelAtPointer(autoFadePanel, p && p.x, p && p.y);
                 };
                 const openAutoMixPanel = () => {
                     if (!autoMixPanel) return;
                     syncAutoMixUi();
                     autoMixPanel.classList.add('is-open');
                     autoMixPanel.setAttribute('aria-hidden', 'false');
+                    const p = this._panelPointerPos;
+                    positionPopupPanelAtPointer(autoMixPanel, p && p.x, p && p.y);
                 };
                 syncAutoFadeDurationUi();
                 syncAutoMixUi();
@@ -10042,6 +10148,76 @@ function stopAllAndShowStart() {
                         this.autoMixTimerId = null;
                     }
                 };
+                const clearAutoMixSessionLimitTimer = () => {
+                    if (this.autoMixSessionLimitTimerId) {
+                        try { clearTimeout(this.autoMixSessionLimitTimerId); } catch (_) {}
+                        this.autoMixSessionLimitTimerId = null;
+                    }
+                };
+                const scheduleAutoMixSessionLimit = () => {
+                    clearAutoMixSessionLimitTimer();
+                    if (!autoMixEnabled || !autoMixLimitEnabled) return;
+                    const limitMs = Math.max(5, Math.min(300, Number(autoMixLimitMin) || 60)) * 60 * 1000;
+                    if (!autoMixSessionStartedAt) autoMixSessionStartedAt = Date.now();
+                    const elapsed = Date.now() - autoMixSessionStartedAt;
+                    const remaining = Math.max(0, limitMs - elapsed);
+                    this.autoMixSessionLimitTimerId = setTimeout(() => {
+                        this.autoMixSessionLimitTimerId = null;
+                        try { onAutoMixSessionLimitReached(); } catch (_) {}
+                    }, remaining);
+                };
+                const runMasterFadeOut = (durMs, onDone) => {
+                    if (this.masterFadeOutRafId) {
+                        try { cancelAnimationFrame(this.masterFadeOutRafId); } catch (_) {}
+                        this.masterFadeOutRafId = null;
+                    }
+                    if (this.autoFadeRafId) {
+                        try { cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
+                        this.autoFadeRafId = null;
+                        if (btnAutoFade) btnAutoFade.classList.remove('on');
+                    }
+                    const d = Math.max(200, Math.min(120000, Number(durMs) || 5000));
+                    let startGa = 0;
+                    let startGb = 0;
+                    try {
+                        if (state.streamAGain) startGa = Number(state.streamAGain.gain.value) || 0;
+                        if (state.streamBGain) startGb = Number(state.streamBGain.gain.value) || 0;
+                    } catch (_) {}
+                    const startTs = performance.now();
+                    const tick = (ts) => {
+                        const t = Math.max(0, Math.min(1, (ts - startTs) / d));
+                        const k = 1 - t;
+                        try {
+                            if (state.streamAGain) state.streamAGain.gain.value = startGa * k;
+                            if (state.streamBGain) state.streamBGain.gain.value = startGb * k;
+                        } catch (_) {}
+                        if (t >= 1) {
+                            this.masterFadeOutRafId = null;
+                            try { if (typeof onDone === 'function') onDone(); } catch (_) {}
+                            return;
+                        }
+                        this.masterFadeOutRafId = requestAnimationFrame(tick);
+                    };
+                    this.masterFadeOutRafId = requestAnimationFrame(tick);
+                };
+                const onAutoMixSessionLimitReached = () => {
+                    if (!autoMixEnabled) return;
+                    const fadeDur = Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 5000));
+                    runMasterFadeOut(fadeDur, () => {
+                        autoMixEnabled = false;
+                        clearAutoMixTimer();
+                        clearAutoMixSessionLimitTimer();
+                        autoMixSessionStartedAt = 0;
+                        try { localStorage.setItem(AUTOMIX_ENABLED_KEY, '0'); } catch (_) {}
+                        syncAutoMixUi();
+                        try { if (audioEl) audioEl.pause(); } catch (_) {}
+                        try { if (audioElB) audioElB.pause(); } catch (_) {}
+                        try {
+                            const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
+                            if (typeof applyCrossfade === 'function') applyCrossfade(x);
+                        } catch (_) {}
+                    });
+                };
                 const scheduleNextAutoMix = () => {
                     clearAutoMixTimer();
                     if (!autoMixEnabled) return;
@@ -10086,7 +10262,8 @@ function stopAllAndShowStart() {
                     this.autoFadeRafId = requestAnimationFrame(tick);
                 };
                 if (btnAutoFade) {
-                    btnAutoFade.addEventListener('pointerdown', () => {
+                    btnAutoFade.addEventListener('pointerdown', (ev) => {
+                        try { this._panelPointerPos = { x: ev.clientX, y: ev.clientY }; } catch (_) {}
                         autoFadeLongPressFired = false;
                         if (this.autoFadeHoldTimer) {
                             try { clearTimeout(this.autoFadeHoldTimer); } catch (_) {}
@@ -10128,7 +10305,8 @@ function stopAllAndShowStart() {
                     }, sig);
                 }
                 if (btnAutoMix) {
-                    btnAutoMix.addEventListener('pointerdown', () => {
+                    btnAutoMix.addEventListener('pointerdown', (ev) => {
+                        try { this._panelPointerPos = { x: ev.clientX, y: ev.clientY }; } catch (_) {}
                         autoMixLongPressFired = false;
                         if (this.autoMixHoldTimer) {
                             try { clearTimeout(this.autoMixHoldTimer); } catch (_) {}
@@ -10157,11 +10335,17 @@ function stopAllAndShowStart() {
                         syncAutoMixUi();
                         try { localStorage.setItem(AUTOMIX_ENABLED_KEY, autoMixEnabled ? '1' : '0'); } catch (_) {}
                         if (autoMixEnabled) {
+                            autoMixSessionStartedAt = Date.now();
                             const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                             ensureDeckStationPlayback(x < 0.5 ? 'a' : 'b');
                             scheduleNextAutoMix();
+                            scheduleAutoMixSessionLimit();
                         }
-                        else clearAutoMixTimer();
+                        else {
+                            clearAutoMixTimer();
+                            clearAutoMixSessionLimitTimer();
+                            autoMixSessionStartedAt = 0;
+                        }
                     }, sig);
                 }
                 if (autoMixMin) {
@@ -10188,6 +10372,34 @@ function stopAllAndShowStart() {
                         if (autoMixEnabled) scheduleNextAutoMix();
                     }, sig);
                 }
+                if (autoMixLimitEn) {
+                    autoMixLimitEn.addEventListener('change', () => {
+                        autoMixLimitEnabled = !!autoMixLimitEn.checked;
+                        try { localStorage.setItem(AUTOMIX_LIMIT_EN_KEY, autoMixLimitEnabled ? '1' : '0'); } catch (_) {}
+                        if (autoMixEnabled) {
+                            if (autoMixLimitEnabled) {
+                                autoMixSessionStartedAt = Date.now();
+                                scheduleAutoMixSessionLimit();
+                            } else {
+                                clearAutoMixSessionLimitTimer();
+                            }
+                        }
+                    }, sig);
+                }
+                if (autoMixLimitMinEl) {
+                    autoMixLimitMinEl.addEventListener('input', () => {
+                        autoMixLimitMin = Math.max(5, Math.min(300, Number(autoMixLimitMinEl.value) || 60));
+                        if (autoMixLimitReadout) autoMixLimitReadout.textContent = formatLimitMinutesReadout(autoMixLimitMin);
+                    }, sig);
+                    autoMixLimitMinEl.addEventListener('change', () => {
+                        autoMixLimitMin = Math.max(5, Math.min(300, Number(autoMixLimitMinEl.value) || 60));
+                        try { localStorage.setItem(AUTOMIX_LIMIT_MIN_KEY, String(autoMixLimitMin)); } catch (_) {}
+                        if (autoMixEnabled && autoMixLimitEnabled) {
+                            autoMixSessionStartedAt = Date.now();
+                            scheduleAutoMixSessionLimit();
+                        }
+                    }, sig);
+                }
                 document.addEventListener('click', (ev) => {
                     const t = ev.target;
                     if (autoFadePanel && autoFadePanel.classList.contains('is-open')) {
@@ -10203,7 +10415,11 @@ function stopAllAndShowStart() {
                         closeAutoMixPanel();
                     }
                 }, sig);
-                if (autoMixEnabled) scheduleNextAutoMix();
+                if (autoMixEnabled) {
+                    autoMixSessionStartedAt = Date.now();
+                    scheduleNextAutoMix();
+                    scheduleAutoMixSessionLimit();
+                }
 
                 const clampVol = (v) => Math.max(0, Math.min(1, Number(v) || 0));
                 const setDeckVolA = (v) => {
@@ -11101,6 +11317,10 @@ function stopAllAndShowStart() {
                 this.autoFadeHoldTimer = null;
                 try { if (this.autoMixTimerId) clearTimeout(this.autoMixTimerId); } catch (_) {}
                 this.autoMixTimerId = null;
+                try { if (this.autoMixSessionLimitTimerId) clearTimeout(this.autoMixSessionLimitTimerId); } catch (_) {}
+                this.autoMixSessionLimitTimerId = null;
+                try { if (this.masterFadeOutRafId) cancelAnimationFrame(this.masterFadeOutRafId); } catch (_) {}
+                this.masterFadeOutRafId = null;
                 try { if (this.autoMixHoldTimer) clearTimeout(this.autoMixHoldTimer); } catch (_) {}
                 this.autoMixHoldTimer = null;
                 try {
