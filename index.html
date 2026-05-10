@@ -1306,13 +1306,13 @@
             width: calc(67.5px * var(--dj-control-scale) * var(--dj-knob-scale));
             height: calc(67.5px * var(--dj-control-scale) * var(--dj-knob-scale));
         }
-        /* TK / Loop / Arp (Deck A) + Deck B mirror FX (Reverb / Flanger / No vocal): darker chassis */
+        /* TK / Loop / Arp (Deck A) + Deck B mirror FX (Reverb / Flanger / CUT): darker chassis */
         #dj-visual-root #dj-knob-a-tk,
         #dj-visual-root #dj-knob-a-loop,
         #dj-visual-root #dj-knob-a-arp,
         #dj-visual-root #dj-knob-b-reverb,
         #dj-visual-root #dj-knob-b-flanger,
-        #dj-visual-root #dj-knob-b-novocal {
+        #dj-visual-root #dj-knob-b-cut {
             background: radial-gradient(110% 110% at 50% 16%, #282828 0%, #060606 92%);
             border: 1px solid rgba(255, 255, 255, 0.28);
             box-shadow:
@@ -1328,7 +1328,7 @@
         #dj-visual-root #dj-knob-a-arp .knob-indicator,
         #dj-visual-root #dj-knob-b-reverb .knob-indicator,
         #dj-visual-root #dj-knob-b-flanger .knob-indicator,
-        #dj-visual-root #dj-knob-b-novocal .knob-indicator {
+        #dj-visual-root #dj-knob-b-cut .knob-indicator {
             box-shadow: 0 0 6px var(--knob-color, #fff);
             filter: brightness(1.22) saturate(1.2);
         }
@@ -1337,7 +1337,7 @@
         #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-a-arp) .eq-label,
         #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-reverb) .eq-label,
         #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-flanger) .eq-label,
-        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-novocal) .eq-label {
+        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-cut) .eq-label {
             color: rgba(255, 255, 255, 0.4);
         }
         #dj-visual-root .dj-beatmap-fx-knobs .eq-label {
@@ -3427,7 +3427,7 @@
             background-repeat: no-repeat;
             background-size: 100% 100%;
         }
-        /* Mixer FX grid only (Low-pass … NO VOCAL): btn.png over xim.gif */
+        /* Mixer FX grid only (Low-pass … FLANGER / NO VOCAL): btn.png over xim.gif */
         #mix-effects .btn {
             position: relative;
             overflow: hidden;
@@ -4649,9 +4649,10 @@
                     <button class="btn" id="fx-distort">Distortion</button>
                     <button class="btn" id="fx-arp">Arpeggiator</button>
                     <button class="btn" id="fx-tk">TK-Filter</button>
-                    <button class="btn" id="fx-cut" title="Same as Deck B NO VOCAL: toggle vocal-reduction (tap knob on deck for strength)">CUT</button>
+                    <button class="btn" id="fx-cut" title="Rhythmic gate: sharp chops synced to BPM when detected (Deck B CUT knob is vocal-reduction strength)">CUT</button>
                     <button class="btn" id="fx-reverb" title="Hall-style convolution reverb (wet/dry mix)">REVERB</button>
                     <button class="btn" id="fx-flanger" title="Modulated delay (flanger)">FLANGER</button>
+                    <button class="btn" id="fx-novocal" title="Approximate instrumental: mid-range vocal cut (mono mix; tap Deck B CUT knob for strength)">NO VOCAL</button>
                 </div>
             </div>
         </div>
@@ -5039,6 +5040,7 @@ const QUALITY = {
         const fxCut = document.getElementById('fx-cut');
         const fxReverb = document.getElementById('fx-reverb');
         const fxFlanger = document.getElementById('fx-flanger');
+        const fxNoVocal = document.getElementById('fx-novocal');
         // BPM scope refs/state
         const bpmBtnA = document.getElementById('mix-bpm-a');
         const bpmBtnB = document.getElementById('mix-bpm-b');
@@ -5135,6 +5137,7 @@ const QUALITY = {
                             bpmSmoothA = d.bpm;
                             nextBeatTsA = (d.next || 0) * 1000;
                             if (bpmOutA) bpmOutA.textContent = bpmSmoothA ? String(Math.round(bpmSmoothA)) : '--';
+                            try { applyRhythmCutGateRate(); } catch (_) {}
                         }
                     };
                 };
@@ -5165,6 +5168,7 @@ const QUALITY = {
                             bpmSmoothB = d.bpm;
                             nextBeatTsB = (d.next || 0) * 1000;
                             if (bpmOutB) bpmOutB.textContent = bpmSmoothB ? String(Math.round(bpmSmoothB)) : '--';
+                            try { applyRhythmCutGateRate(); } catch (_) {}
                         }
                     };
                 };
@@ -5831,8 +5835,8 @@ const QUALITY = {
                 setNextTs(now + 60000 / bpm);
             }
         }
-        if (tapBtnA) tapBtnA.addEventListener('click', (e)=>{ e.preventDefault(); handleTap(tapTimesA, (v)=>{ bpmSmoothA=v; if (bpmOutA) bpmOutA.textContent=String(Math.round(v)); }, (t)=>{ lastBeatTsA=t; }, (n)=>{ nextBeatTsA=n; }); updateBpmRunLoop(); });
-        if (tapBtnB) tapBtnB.addEventListener('click', (e)=>{ e.preventDefault(); handleTap(tapTimesB, (v)=>{ bpmSmoothB=v; if (bpmOutB) bpmOutB.textContent=String(Math.round(v)); }, (t)=>{ lastBeatTsB=t; }, (n)=>{ nextBeatTsB=n; }); updateBpmRunLoop(); });
+        if (tapBtnA) tapBtnA.addEventListener('click', (e)=>{ e.preventDefault(); handleTap(tapTimesA, (v)=>{ bpmSmoothA=v; if (bpmOutA) bpmOutA.textContent=String(Math.round(v)); }, (t)=>{ lastBeatTsA=t; }, (n)=>{ nextBeatTsA=n; }); updateBpmRunLoop(); try { applyRhythmCutGateRate(); } catch (_) {} });
+        if (tapBtnB) tapBtnB.addEventListener('click', (e)=>{ e.preventDefault(); handleTap(tapTimesB, (v)=>{ bpmSmoothB=v; if (bpmOutB) bpmOutB.textContent=String(Math.round(v)); }, (t)=>{ lastBeatTsB=t; }, (n)=>{ nextBeatTsB=n; }); updateBpmRunLoop(); try { applyRhythmCutGateRate(); } catch (_) {} });
         if (nudgeBm) nudgeBm.addEventListener('click', (e)=>{ e.preventDefault(); phaseOffsetBms -= 10; });
         if (nudgeBp) nudgeBp.addEventListener('click', (e)=>{ e.preventDefault(); phaseOffsetBms += 10; });
         // Helper to bind a visual knob to a value and callback
@@ -7263,6 +7267,24 @@ function randomGlowColor() {
                     state.fx.reverb.convolver.buffer = makeReverbImpulseBuffer(state.audioCtx);
                 } catch (_) {}
 
+                // Rhythmic CUT: square-wave amplitude gate (16th-note rate follows BPM when available)
+                state.fx.rhythmCut = {
+                    on: false,
+                    gateGain: state.audioCtx.createGain(),
+                    lfo: state.audioCtx.createOscillator(),
+                    lfoScale: state.audioCtx.createGain(),
+                    offset: state.audioCtx.createConstantSource(),
+                    _running: false
+                };
+                state.fx.rhythmCut.gateGain.gain.value = 1;
+                state.fx.rhythmCut.lfo.type = 'square';
+                state.fx.rhythmCut.lfo.frequency.value = 8;
+                state.fx.rhythmCut.lfoScale.gain.value = 0.5;
+                state.fx.rhythmCut.offset.offset.value = 0.5;
+                try {
+                    state.fx.rhythmCut.lfo.connect(state.fx.rhythmCut.lfoScale);
+                } catch (_) {}
+
                 // Master Output
                 try { state.mixInput.disconnect(); } catch(_) {}
                 state.mixInput.connect(state.analyserNode);
@@ -7303,11 +7325,41 @@ function randomGlowColor() {
                 state.fx.noVocal.f3.gain.value = -12 * m;
             } catch (_) {}
         }
+        function applyRhythmCutGateRate() {
+            if (!state.fx || !state.fx.rhythmCut || !state.fx.rhythmCut.lfo) return;
+            let bpm = 120;
+            try {
+                if (typeof bpmSmoothB === 'number' && bpmSmoothB > 40 && bpmSmoothB < 300) bpm = bpmSmoothB;
+                else if (typeof bpmSmoothA === 'number' && bpmSmoothA > 40 && bpmSmoothA < 300) bpm = bpmSmoothA;
+            } catch (_) {}
+            const hz = (bpm / 60) * 4;
+            try {
+                state.fx.rhythmCut.lfo.frequency.value = Math.max(0.5, Math.min(32, hz));
+            } catch (_) {}
+        }
+
+        function setRhythmCutModulationActive(active) {
+            const rc = state.fx && state.fx.rhythmCut;
+            if (!rc || !rc.gateGain || !rc.lfoScale || !rc.offset) return;
+            try { rc.lfoScale.disconnect(rc.gateGain.gain); } catch (_) {}
+            try { rc.offset.disconnect(rc.gateGain.gain); } catch (_) {}
+            if (active) {
+                try { rc.gateGain.gain.value = 0; } catch (_) {}
+                try { rc.lfoScale.connect(rc.gateGain.gain); } catch (_) {}
+                try { rc.offset.connect(rc.gateGain.gain); } catch (_) {}
+            } else {
+                try { rc.gateGain.gain.value = 1; } catch (_) {}
+            }
+        }
+
         function rebuildEffectsChain() {
             if (!state.audioCtx) return;
             // Disconnect everything from mixInput forward
             try { state.mixInput.disconnect(); } catch(_) {}
             try {
+                if (state.fx && state.fx.rhythmCut && state.fx.rhythmCut.gateGain) {
+                    try { state.fx.rhythmCut.gateGain.disconnect(); } catch (_) {}
+                }
                 if (state.fx && state.fx.noVocal) {
                     try { state.fx.noVocal.f1.disconnect(); } catch (_) {}
                     try { state.fx.noVocal.f2.disconnect(); } catch (_) {}
@@ -7409,8 +7461,24 @@ function randomGlowColor() {
                 state.fx.reverb.dryGain.gain.value = 1;
                 state.fx.reverb.wetGain.gain.value = 0;
             }
+            setRhythmCutModulationActive(false);
             try { last.disconnect(); } catch(_) {}
-            last.connect(state.analyserNode);
+            if (state.fx && state.fx.rhythmCut && state.fx.rhythmCut.on) {
+                const rc = state.fx.rhythmCut;
+                try {
+                    if (!rc._running) {
+                        rc.offset.start();
+                        rc.lfo.start();
+                        rc._running = true;
+                    }
+                } catch (_) {}
+                applyRhythmCutGateRate();
+                try { last.connect(rc.gateGain); } catch (_) {}
+                try { rc.gateGain.connect(state.analyserNode); } catch (_) {}
+                setRhythmCutModulationActive(true);
+            } else {
+                try { last.connect(state.analyserNode); } catch (_) {}
+            }
             // Ensure analyser -> master gain -> dest remains
             try { state.analyserNode.disconnect(); } catch(_) {}
             state.analyserNode.connect(state.gainNode);
@@ -7490,14 +7558,25 @@ function randomGlowColor() {
                 });
                 const kbRev = root.querySelector('#dj-knob-b-reverb');
                 const kbFl = root.querySelector('#dj-knob-b-flanger');
-                const kbNv = root.querySelector('#dj-knob-b-novocal');
+                const kbCut = root.querySelector('#dj-knob-b-cut');
                 if (kbRev) kbRev.classList.toggle('dj-beatfx-on', revOn);
                 if (kbFl) kbFl.classList.toggle('dj-beatfx-on', flOn);
-                if (kbNv) kbNv.classList.toggle('dj-beatfx-on', nvOn);
+                if (kbCut) kbCut.classList.toggle('dj-beatfx-on', nvOn);
                 try {
-                    const fxCutBtn = document.getElementById('fx-cut');
-                    if (fxCutBtn) fxCutBtn.classList.toggle('on', nvOn);
+                    const fxNvBtn = document.getElementById('fx-novocal');
+                    if (fxNvBtn) fxNvBtn.classList.toggle('on', nvOn);
                 } catch (_) {}
+            } catch (_) {}
+        }
+
+        function toggleRhythmCutFx() {
+            try { initAudio(); } catch (_) {}
+            if (!state.fx || !state.fx.rhythmCut) return;
+            state.fx.rhythmCut.on = !state.fx.rhythmCut.on;
+            rebuildEffectsChain();
+            try {
+                const b = document.getElementById('fx-cut');
+                if (b) b.classList.toggle('on', !!state.fx.rhythmCut.on);
             } catch (_) {}
         }
 
@@ -7575,8 +7654,8 @@ function randomGlowColor() {
             rebuildEffectsChain();
             try {
                 if (fxKey === 'noVocal') {
-                    const cutBtn = document.getElementById('fx-cut');
-                    if (cutBtn) cutBtn.classList.toggle('on', state.fx.noVocal.on);
+                    const nvBtn = document.getElementById('fx-novocal');
+                    if (nvBtn) nvBtn.classList.toggle('on', state.fx.noVocal.on);
                 } else {
                     const btn = document.getElementById('fx-' + fxKey);
                     if (btn) btn.classList.toggle('on', state.fx[fxKey].on);
@@ -7783,7 +7862,7 @@ function randomGlowColor() {
             bindDjBeatFxKnobPair(root, 'arp', 0, 16, 'arpHz', applyDjBeatFxArp, 4, false, 'arp');
             bindDeckBMixerFxKnob(root, 'reverb', 0, 100, 'reverbPct', applyDjBeatFxDeckBReverbPct, 50, true, 'reverb');
             bindDeckBMixerFxKnob(root, 'flanger', 0, 100, 'flangerPct', applyDjBeatFxDeckBFlangerPct, 50, true, 'flanger');
-            bindDeckBMixerFxKnob(root, 'novocal', 0, 100, 'noVocalPct', applyDjBeatFxDeckBNoVocalPct, 100, true, 'noVocal');
+            bindDeckBMixerFxKnob(root, 'cut', 0, 100, 'noVocalPct', applyDjBeatFxDeckBNoVocalPct, 100, true, 'noVocal');
             try {
                 applyDjBeatFxTk(state.djBeatFx.tkHz);
                 applyDjBeatFxLoop(state.djBeatFx.loopBars);
@@ -11021,7 +11100,7 @@ function stopAllAndShowStart() {
                   <div class="dj-beatmap-fx-knobs" aria-label="Deck B beat FX">
                     <div class="eq-col eq-strip" aria-label="Reverb wet mix"><div class="knob-wrap" id="dj-knob-b-reverb" style="--knob-color:#ff4040"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">REVERB</div></div>
                     <div class="eq-col eq-strip" aria-label="Flanger depth"><div class="knob-wrap" id="dj-knob-b-flanger" style="--knob-color:#3fff00"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">FLANGER</div></div>
-                    <div class="eq-col eq-strip" aria-label="No vocal reduction strength"><div class="knob-wrap" id="dj-knob-b-novocal" style="--knob-color:#bada55"><div class="knob-indicator"></div><div class="knob-value">100</div></div><div class="eq-label">NO VOCAL</div></div>
+                    <div class="eq-col eq-strip" aria-label="CUT vocal-reduction strength (tap toggles; drag adjusts)"><div class="knob-wrap" id="dj-knob-b-cut" style="--knob-color:#bada55"><div class="knob-indicator"></div><div class="knob-value">100</div></div><div class="eq-label">CUT</div></div>
                   </div>
                   <div class="dj-beatmap-pads">
                     <div class="dj-beatmap-col" aria-label="Deck B CHR–HARP">
@@ -15473,7 +15552,8 @@ function stopAllAndShowStart() {
                 try { if (typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(); } catch (_) {}
             });
         }
-        if (fxCut) fxCut.addEventListener('click', () => toggleDeckBMixerFxFromKnob('noVocal'));
+        if (fxCut) fxCut.addEventListener('click', () => toggleRhythmCutFx());
+        if (fxNoVocal) fxNoVocal.addEventListener('click', () => toggleDeckBMixerFxFromKnob('noVocal'));
         if (fxFlanger) fxFlanger.addEventListener('click', () => toggleFx('flanger', fxFlanger));
         if (fxReverb) fxReverb.addEventListener('click', () => toggleFx('reverb', fxReverb));
         function attachSamplePlayingIndicator(btn, media) {
