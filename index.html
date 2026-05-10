@@ -6581,6 +6581,10 @@ function randomGlowColor() {
                     }
                     // Horizontal swipe: close floating/side panels first, then change visual
                     if (adx > SWIPE_PX && adx > ady) {
+                        try {
+                            if (e.target && e.target.closest && e.target.closest('#dj-deck-splitter')) return;
+                            if (pDownTarget && pDownTarget.closest && pDownTarget.closest('#dj-deck-splitter')) return;
+                        } catch (_) {}
                         if (pDownTarget && typeof pDownTarget.closest === 'function' && pDownTarget.closest('#dj-visual-root')) {
                             return;
                         }
@@ -6666,8 +6670,10 @@ function randomGlowColor() {
                         else prevWebm();
                     }
                 };
-                // Pointer listeners (mouse + touch via pointer events)
-                canvasEl.addEventListener('pointerdown', onPointerDown, { passive: true });
+                // Pointer listeners (mouse + touch via pointer events).
+                // Capture pointerdown so pDownTarget gets the real target (e.g. #dj-deck-splitter) before a child’s
+                // stopPropagation() — otherwise stale canvas targets caused horizontal drags on the splitter to change visuals.
+                canvasEl.addEventListener('pointerdown', onPointerDown, { passive: true, capture: true });
                 canvasEl.addEventListener('pointerup', onPointerUpCanvas, { passive: false });
                 if (webmOverlay) {
                     webmOverlay.addEventListener('pointerdown', onPointerDown, { passive: true });
