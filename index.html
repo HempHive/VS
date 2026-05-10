@@ -799,6 +799,9 @@
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.03);
             padding: 8px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
         .dj-deck-b-media-panel .dj-queue-tools {
             display: grid;
@@ -819,10 +822,36 @@
             margin: 0 0 6px 0;
         }
         .dj-deck-b-media-panel .dj-station-cycle-list {
-            overflow: visible;
-            display: grid;
+            overflow-x: hidden;
+            overflow-y: auto;
+            max-height: min(42vh, 280px);
+            display: flex;
+            flex-direction: column;
             gap: 4px;
-            flex-shrink: 0;
+            flex: 1 1 auto;
+            min-height: 0;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
+            scrollbar-width: thin;
+            scrollbar-color: #5a5a68 #12121a;
+        }
+        .dj-deck-b-media-panel .dj-station-cycle-list::-webkit-scrollbar {
+            width: 10px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .dj-deck-b-media-panel .dj-station-cycle-list::-webkit-scrollbar-track {
+            background: rgba(18, 18, 26, 0.95);
+            border-radius: 6px;
+        }
+        .dj-deck-b-media-panel .dj-station-cycle-list::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #5c5c6e 0%, #383844 100%);
+            border-radius: 6px;
+            border: 2px solid rgba(0, 0, 0, 0.35);
+            min-height: 36px;
+        }
+        .dj-deck-b-media-panel .dj-station-cycle-list::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #717184 0%, #4a4a58 100%);
         }
         .dj-deck-b-media-panel .dj-station-cycle-item {
             display: flex;
@@ -832,9 +861,24 @@
             line-height: 1.2;
             color: #fff;
             user-select: none;
+            flex-shrink: 0;
+        }
+        .dj-deck-b-media-panel .dj-station-cycle-name {
+            flex: 1;
+            min-width: 0;
+            cursor: pointer;
+            text-decoration: none;
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin: -2px -4px;
+        }
+        .dj-deck-b-media-panel .dj-station-cycle-name:hover {
+            color: #f5e6b8;
+            background: rgba(212, 175, 55, 0.12);
         }
         .dj-deck-b-media-panel .dj-station-cycle-item input[type="checkbox"] {
             accent-color: #D4AF37;
+            flex-shrink: 0;
         }
         .dj-deck-b-media-panel .dj-station-cycle-empty {
             font-size: 11px;
@@ -1002,6 +1046,19 @@
         #dj-visual-root #dj-b-video-local {
             border: 2px solid #39FF14;
             box-shadow: 0 0 6px rgba(57, 255, 20, 0.55), 0 0 0 1px rgba(57, 255, 20, 0.35);
+        }
+        #dj-visual-root #dj-b-video-folder {
+            border: 2px solid #9803FC;
+            box-shadow: 0 0 0 1px rgba(152, 3, 252, 0.45);
+        }
+        #dj-visual-root #dj-b-video-q-a {
+            border: 2px solid #FF0B55;
+            box-shadow: 0 0 10px rgba(255, 11, 85, 0.65), 0 0 0 1px rgba(255, 11, 85, 0.45);
+            color: #ffc6d9;
+        }
+        #dj-visual-root #dj-b-video-q-b {
+            border: 2px solid #9803FC;
+            box-shadow: 0 0 0 1px rgba(152, 3, 252, 0.45);
         }
         .dj-deck-b-media-panel .dj-media-list {
             list-style: none;
@@ -9760,21 +9817,41 @@ function stopAllAndShowStart() {
                 }
                 stations.forEach((st, idx) => {
                     if (!st || !st.url) return;
-                    const row = document.createElement('label');
+                    const row = document.createElement('div');
                     row.className = 'dj-station-cycle-item';
                     const cb = document.createElement('input');
                     cb.type = 'checkbox';
                     cb.checked = stationCycleEnabledByUrl.get(st.url) !== false;
-                    cb.setAttribute('aria-label', 'Include station ' + (st.name || ('Station ' + (idx + 1))) + ' in lists (uncheck to remove)');
+                    cb.title = 'Include in Deck B random / cycle (uncheck to exclude from cycle only)';
+                    cb.setAttribute(
+                        'aria-label',
+                        'Include ' + (st.name || ('Station ' + (idx + 1))) + ' in Deck B station cycle'
+                    );
+                    cb.addEventListener('click', (ev) => {
+                        try { ev.stopPropagation(); } catch (_) {}
+                    });
                     cb.addEventListener('change', () => {
-                        if (!cb.checked) {
-                            removeRadioStationAtIndex(idx);
-                            return;
-                        }
-                        stationCycleEnabledByUrl.set(st.url, true);
+                        stationCycleEnabledByUrl.set(st.url, !!cb.checked);
                     });
                     const txt = document.createElement('span');
+                    txt.className = 'dj-station-cycle-name';
                     txt.textContent = st.name || ('Station ' + (idx + 1));
+                    txt.title = 'Play this station on Deck A';
+                    txt.setAttribute('role', 'button');
+                    txt.tabIndex = 0;
+                    txt.addEventListener('click', (ev) => {
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        try {
+                            if (typeof setStation === 'function') setStation(idx);
+                        } catch (_) {}
+                    });
+                    txt.addEventListener('keydown', (ev) => {
+                        if (ev.key !== 'Enter' && ev.key !== ' ') return;
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        try {
+                            if (typeof setStation === 'function') setStation(idx);
+                        } catch (_) {}
+                    });
                     row.appendChild(cb);
                     row.appendChild(txt);
                     listEl.appendChild(row);
