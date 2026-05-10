@@ -4649,7 +4649,7 @@
                     <button class="btn" id="fx-distort">Distortion</button>
                     <button class="btn" id="fx-arp">Arpeggiator</button>
                     <button class="btn" id="fx-tk">TK-Filter</button>
-                    <button class="btn" id="fx-cut" title="Rhythmic gate: sharp chops synced to BPM when detected (Deck B CUT knob is vocal-reduction strength)">CUT</button>
+                    <button class="btn" id="fx-cut" title="Rhythmic gate: sharp chops synced to BPM (Deck B CUT knob toggles + chop rate)">CUT</button>
                     <button class="btn" id="fx-reverb" title="Hall-style convolution reverb (wet/dry mix)">REVERB</button>
                     <button class="btn" id="fx-flanger" title="Modulated delay (flanger)">FLANGER</button>
                     <button class="btn" id="fx-novocal" title="Approximate instrumental: mid-range vocal cut (mono mix; tap Deck B CUT knob for strength)">NO VOCAL</button>
@@ -7208,7 +7208,7 @@ function randomGlowColor() {
                     state.fx.loopMusical.delay.connect(state.fx.loopMusical.feedback);
                     state.fx.loopMusical.feedback.connect(state.fx.loopMusical.delay);
                 } catch (_) {}
-                state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false, reverbPct: 50, flangerPct: 50, noVocalPct: 100 };
+                state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false, reverbPct: 50, flangerPct: 50, noVocalPct: 100, cutRatePct: 50 };
                 const curveLen = 44100; const curve = new Float32Array(curveLen); const amount = 120;
                 for (let i=0;i<curveLen;i++){ const x = i/curveLen*2-1; curve[i] = ((3+amount)*x*20*Math.PI/180)/(Math.PI+amount*Math.abs(x)); }
                 state.fx.distort.node.curve = curve; state.fx.distort.node.oversample = '4x';
@@ -7332,7 +7332,12 @@ function randomGlowColor() {
                 if (typeof bpmSmoothB === 'number' && bpmSmoothB > 40 && bpmSmoothB < 300) bpm = bpmSmoothB;
                 else if (typeof bpmSmoothA === 'number' && bpmSmoothA > 40 && bpmSmoothA < 300) bpm = bpmSmoothA;
             } catch (_) {}
-            const hz = (bpm / 60) * 4;
+            let mult = 1;
+            try {
+                const pct = (state.djBeatFx && typeof state.djBeatFx.cutRatePct === 'number') ? state.djBeatFx.cutRatePct : 50;
+                mult = 0.25 + (pct / 100) * 1.75;
+            } catch (_) {}
+            const hz = (bpm / 60) * 4 * mult;
             try {
                 state.fx.rhythmCut.lfo.frequency.value = Math.max(0.5, Math.min(32, hz));
             } catch (_) {}
@@ -7548,6 +7553,7 @@ function randomGlowColor() {
                 const revOn = !!(state.fx.reverb && state.fx.reverb.on);
                 const flOn = !!(state.fx.flanger && state.fx.flanger.on);
                 const nvOn = !!(state.fx.noVocal && state.fx.noVocal.on);
+                const rcOn = !!(state.fx.rhythmCut && state.fx.rhythmCut.on);
                 ['a', 'b'].forEach((d) => {
                     const tk = root.querySelector('#dj-knob-' + d + '-tk');
                     const loop = root.querySelector('#dj-knob-' + d + '-loop');
@@ -7561,7 +7567,7 @@ function randomGlowColor() {
                 const kbCut = root.querySelector('#dj-knob-b-cut');
                 if (kbRev) kbRev.classList.toggle('dj-beatfx-on', revOn);
                 if (kbFl) kbFl.classList.toggle('dj-beatfx-on', flOn);
-                if (kbCut) kbCut.classList.toggle('dj-beatfx-on', nvOn);
+                if (kbCut) kbCut.classList.toggle('dj-beatfx-on', rcOn);
                 try {
                     const fxNvBtn = document.getElementById('fx-novocal');
                     if (fxNvBtn) fxNvBtn.classList.toggle('on', nvOn);
@@ -7578,6 +7584,7 @@ function randomGlowColor() {
                 const b = document.getElementById('fx-cut');
                 if (b) b.classList.toggle('on', !!state.fx.rhythmCut.on);
             } catch (_) {}
+            try { syncDjBeatFxKnobActiveDom(); } catch (_) {}
         }
 
         function refreshDjBeatLoopKnobVisuals(root) {
@@ -7682,10 +7689,16 @@ function randomGlowColor() {
             }
         }
 
+        function applyDjBeatFxDeckBCutRatePct(val) {
+            if (!state.djBeatFx) return;
+            state.djBeatFx.cutRatePct = Math.round(Math.max(0, Math.min(100, val)));
+            try { applyRhythmCutGateRate(); } catch (_) {}
+        }
+
         function bindDeckBMixerFxKnob(root, suffix, min, max, key, applyFn, resetVal, loopIntegerUi, toggleKind) {
             const el = root.querySelector('#dj-knob-b-' + suffix);
             if (!el) return;
-            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false, reverbPct: 50, flangerPct: 50, noVocalPct: 100 };
+            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false, reverbPct: 50, flangerPct: 50, noVocalPct: 100, cutRatePct: 50 };
             const TH = 6;
             let downY = 0;
             let startValAtDown = 0;
@@ -7734,6 +7747,7 @@ function randomGlowColor() {
                     if (toggleKind === 'reverb') toggleDeckBMixerFxFromKnob('reverb');
                     else if (toggleKind === 'flanger') toggleDeckBMixerFxFromKnob('flanger');
                     else if (toggleKind === 'noVocal') toggleDeckBMixerFxFromKnob('noVocal');
+                    else if (toggleKind === 'rhythmCut') toggleRhythmCutFx();
                 }
                 maxAbsDy = 0;
             };
@@ -7764,7 +7778,7 @@ function randomGlowColor() {
             const elA = root.querySelector('#dj-knob-a-' + suffix);
             const elB = root.querySelector('#dj-knob-b-' + suffix);
             if (!elA && !elB) return;
-            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false, reverbPct: 50, flangerPct: 50, noVocalPct: 100 };
+            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false, reverbPct: 50, flangerPct: 50, noVocalPct: 100, cutRatePct: 50 };
             const TH = 6;
             let downY = 0;
             let startValAtDown = 0;
@@ -7852,17 +7866,18 @@ function randomGlowColor() {
 
         function wireDjBeatFxKnobs(root) {
             try { initAudio(); } catch (_) {}
-            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false, reverbPct: 50, flangerPct: 50, noVocalPct: 100 };
+            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false, reverbPct: 50, flangerPct: 50, noVocalPct: 100, cutRatePct: 50 };
             if (typeof state.djBeatFx.loopArm !== 'boolean') state.djBeatFx.loopArm = false;
             if (typeof state.djBeatFx.reverbPct !== 'number') state.djBeatFx.reverbPct = 50;
             if (typeof state.djBeatFx.flangerPct !== 'number') state.djBeatFx.flangerPct = 50;
             if (typeof state.djBeatFx.noVocalPct !== 'number') state.djBeatFx.noVocalPct = 100;
+            if (typeof state.djBeatFx.cutRatePct !== 'number') state.djBeatFx.cutRatePct = 50;
             bindDjBeatFxKnobPair(root, 'tk', 200, 8000, 'tkHz', applyDjBeatFxTk, 1200, false, 'tk');
             bindDjBeatFxKnobPair(root, 'loop', 0, 8, 'loopBars', applyDjBeatFxLoop, 0, true, 'loop');
             bindDjBeatFxKnobPair(root, 'arp', 0, 16, 'arpHz', applyDjBeatFxArp, 4, false, 'arp');
             bindDeckBMixerFxKnob(root, 'reverb', 0, 100, 'reverbPct', applyDjBeatFxDeckBReverbPct, 50, true, 'reverb');
             bindDeckBMixerFxKnob(root, 'flanger', 0, 100, 'flangerPct', applyDjBeatFxDeckBFlangerPct, 50, true, 'flanger');
-            bindDeckBMixerFxKnob(root, 'cut', 0, 100, 'noVocalPct', applyDjBeatFxDeckBNoVocalPct, 100, true, 'noVocal');
+            bindDeckBMixerFxKnob(root, 'cut', 0, 100, 'cutRatePct', applyDjBeatFxDeckBCutRatePct, 50, true, 'rhythmCut');
             try {
                 applyDjBeatFxTk(state.djBeatFx.tkHz);
                 applyDjBeatFxLoop(state.djBeatFx.loopBars);
@@ -11100,7 +11115,7 @@ function stopAllAndShowStart() {
                   <div class="dj-beatmap-fx-knobs" aria-label="Deck B beat FX">
                     <div class="eq-col eq-strip" aria-label="Reverb wet mix"><div class="knob-wrap" id="dj-knob-b-reverb" style="--knob-color:#ff4040"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">REVERB</div></div>
                     <div class="eq-col eq-strip" aria-label="Flanger depth"><div class="knob-wrap" id="dj-knob-b-flanger" style="--knob-color:#3fff00"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">FLANGER</div></div>
-                    <div class="eq-col eq-strip" aria-label="CUT vocal-reduction strength (tap toggles; drag adjusts)"><div class="knob-wrap" id="dj-knob-b-cut" style="--knob-color:#bada55"><div class="knob-indicator"></div><div class="knob-value">100</div></div><div class="eq-label">CUT</div></div>
+                    <div class="eq-col eq-strip" aria-label="Rhythmic CUT: tap toggles gate; drag adjusts chop rate vs BPM"><div class="knob-wrap" id="dj-knob-b-cut" style="--knob-color:#bada55"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">CUT</div></div>
                   </div>
                   <div class="dj-beatmap-pads">
                     <div class="dj-beatmap-col" aria-label="Deck B CHR–HARP">
