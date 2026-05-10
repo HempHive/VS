@@ -130,11 +130,11 @@
         .dj-head-datetime {
             flex: 0 0 auto;
             font-size: 10px;
-            font-weight: 600;
+            font-weight: 700;
             letter-spacing: 0.06em;
-            opacity: 0.78;
+            opacity: 1;
             white-space: nowrap;
-            color: rgba(255, 255, 255, 0.85);
+            color: #FFFF00;
         }
         .dj-head-video-inline {
             display: inline-flex;
@@ -150,8 +150,9 @@
             font-size: 11px;
             letter-spacing: 0.2em;
             font-weight: 700;
-            opacity: 0.9;
-            color: #D4AF37;
+            opacity: 1;
+            color: #39FF14;
+            text-shadow: 0 0 10px rgba(57, 255, 20, 0.45);
             white-space: nowrap;
         }
         .dj-head-video-title {
@@ -951,9 +952,9 @@
             flex-direction: column;
             align-items: stretch;
             justify-content: center;
-            min-height: 52px;
-            padding: 6px 12px;
-            gap: 8px;
+            min-height: 34px;
+            padding: 2px 8px;
+            gap: 4px;
             border-bottom: 1px solid rgba(88, 0, 255, 0.28);
             background: rgba(0, 0, 0, 0.4);
         }
@@ -964,13 +965,17 @@
             box-sizing: border-box;
             display: flex;
             flex-wrap: wrap;
-            gap: 4px 8px;
+            gap: 3px 6px;
             justify-content: center;
             align-items: center;
-            padding: 2px 4px;
+            padding: 1px 2px;
             pointer-events: auto;
             background: transparent;
             border-bottom: none;
+        }
+        #dj-visual-root #dj-b-video-transport-mount .dj-video-btn {
+            padding: 3px 8px;
+            font-size: 10px;
         }
         #dj-visual-root #dj-b-video-transport-mount.dj-video-fs-hide-controls .dj-video-controls {
             opacity: 0;
@@ -9378,6 +9383,15 @@ function stopAllAndShowStart() {
                                     if (c) {
                                         vt = String(c.label || (c.url && typeof deriveNameFromUrl === 'function' ? deriveNameFromUrl(c.url) : '') || '—');
                                     }
+                                }
+                                const idleName = String(DECK_B_IDLE_LOGO_URL || 'logo.mp4').replace(/^.*\//, '');
+                                const blankTitle = !String(vt).trim() || vt === '—';
+                                if (blankTitle && this.deckBVideoEl) {
+                                    try {
+                                        const vu = String(this.deckBVideoEl.currentSrc || this.deckBVideoEl.src || '').trim();
+                                        const pathOnly = vu.split('?')[0].toLowerCase();
+                                        if (pathOnly.endsWith(idleName.toLowerCase())) vt = idleName;
+                                    } catch (_) {}
                                 }
                             }
                             vEl.textContent = vt;
