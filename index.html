@@ -557,6 +557,23 @@
             overflow: auto;
             gap: 10px;
             overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: #3d3d48 rgba(8, 8, 12, 0.65);
+        }
+        .dj-deck-b-queue-panel::-webkit-scrollbar {
+            width: 10px;
+        }
+        .dj-deck-b-queue-panel::-webkit-scrollbar-track {
+            background: rgba(8, 8, 12, 0.65);
+            border-radius: 6px;
+        }
+        .dj-deck-b-queue-panel::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4a4a56 0%, #32323c 100%);
+            border-radius: 6px;
+            border: 2px solid rgba(0, 0, 0, 0.35);
+        }
+        .dj-deck-b-queue-panel::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #5c5c6a 0%, #3e3e4a 100%);
         }
         .dj-deck-b-queue-panel .dj-queue-header {
             font-weight: 700;
@@ -672,6 +689,38 @@
         .dj-deck-b-queue-panel li.dj-queue-item button.dj-queue-remove:hover {
             background: rgba(255, 80, 80, 0.35);
             border-color: rgba(255, 160, 160, 0.45);
+        }
+        .dj-deck-b-queue-panel li.dj-queue-item button.dj-queue-to-deck {
+            flex-shrink: 0;
+            min-width: 1.6em;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            background: rgba(0, 0, 0, 0.35);
+            color: #fff;
+            cursor: pointer;
+            line-height: 1.1;
+        }
+        .dj-deck-b-queue-panel li.dj-queue-item button.dj-queue-to-deck.dj-queue-to-deck--to-b {
+            border-color: rgba(88, 0, 255, 0.45);
+            color: #c9b3ff;
+            background: rgba(88, 0, 255, 0.12);
+        }
+        .dj-deck-b-queue-panel li.dj-queue-item button.dj-queue-to-deck.dj-queue-to-deck--to-b:hover {
+            background: rgba(88, 0, 255, 0.22);
+            border-color: rgba(140, 90, 255, 0.55);
+        }
+        .dj-deck-b-queue-panel li.dj-queue-item button.dj-queue-to-deck.dj-queue-to-deck--to-a {
+            border-color: rgba(255, 11, 85, 0.45);
+            color: #ffb3c8;
+            background: rgba(255, 11, 85, 0.1);
+        }
+        .dj-deck-b-queue-panel li.dj-queue-item button.dj-queue-to-deck.dj-queue-to-deck--to-a:hover {
+            background: rgba(255, 11, 85, 0.2);
+            border-color: rgba(255, 120, 160, 0.5);
         }
         .dj-deck-b-queue-panel .dj-queue-add {
             padding: 6px 10px;
@@ -8164,6 +8213,24 @@ function randomGlowColor() {
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
 
+        function moveQueuedTrackToOtherDeck(deckKey, index) {
+            const src = deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
+            const dstKey = deckKey === 'b' ? 'a' : 'b';
+            const dst = dstKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
+            if (index < 0 || index >= src.length) return;
+            const item = src.splice(index, 1)[0];
+            if (!item || !item.url) return;
+            dst.push({
+                name: item.name || 'Track',
+                url: item.url,
+                isVideo: !!item.isVideo
+            });
+            if (item.isVideo) {
+                try { registerDeckVideoFeed(dstKey, item.url, item.name, true); } catch (_) {}
+            }
+            try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+        }
+
         function playQueuedTrackNow(deckKey, index) {
             initAudio();
             const q = deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
@@ -9533,6 +9600,16 @@ function stopAllAndShowStart() {
                                 playQueuedTrackNow(deckKey, idx);
                                 try { this.refreshQueueUi(); } catch (_) {}
                             });
+                            const toOther = document.createElement('button');
+                            toOther.type = 'button';
+                            toOther.className = 'dj-queue-to-deck ' + (deckKey === 'a' ? 'dj-queue-to-deck--to-b' : 'dj-queue-to-deck--to-a');
+                            toOther.textContent = deckKey === 'a' ? 'B' : 'A';
+                            toOther.title = deckKey === 'a' ? 'Send to Deck B queue' : 'Send to Deck A queue';
+                            toOther.setAttribute('aria-label', toOther.title);
+                            toOther.addEventListener('click', (ev) => {
+                                try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                                moveQueuedTrackToOtherDeck(deckKey, idx);
+                            });
                             const rm = document.createElement('button');
                             rm.type = 'button';
                             rm.className = 'dj-queue-remove';
@@ -9546,6 +9623,7 @@ function stopAllAndShowStart() {
                             li.appendChild(idxSpan);
                             li.appendChild(nameSpan);
                             li.appendChild(play);
+                            li.appendChild(toOther);
                             li.appendChild(rm);
                             ul.appendChild(li);
                         });
