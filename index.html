@@ -4294,7 +4294,7 @@
             <span id="station-banner-meta-wrap" class="display-none" aria-live="polite">
                 <span class="station-banner-dot" aria-hidden="true">·</span>
                 <span id="station-banner-nowplaying"></span>
-                <button type="button" id="btn-banner-shazam" title="Search this track on Shazam (opens new tab)">Shazam</button>
+                <button type="button" id="btn-banner-shazam" title="Search this track (Apple Music catalog / Shazam, new tab)">Shazam</button>
             </span>
         </div>
     </div>
@@ -15738,12 +15738,23 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             btnBannerShazam.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const q = (currentNowPlayingICY || '').trim();
+                let q = (currentNowPlayingICY || '').trim();
+                if (!q && stationBannerNowplayingEl) q = (stationBannerNowplayingEl.textContent || '').trim();
                 if (!q) return;
-                const url = 'https://www.shazam.com/search?q=' + encodeURIComponent(q);
+                /* Shazam’s old ?search?q= URL no longer loads a working results page in browsers; Apple Music search uses the same catalog and opens reliably. */
+                const appleMusicSearch = 'https://music.apple.com/search?term=' + encodeURIComponent(q);
+                const googleShazamFallback =
+                    'https://www.google.com/search?q=' + encodeURIComponent(q + ' song Shazam');
                 try {
-                    window.open(url, '_blank', 'noopener,noreferrer');
-                } catch (_) {}
+                    const w = window.open(appleMusicSearch, '_blank', 'noopener,noreferrer');
+                    if (!w || (typeof w.closed === 'boolean' && w.closed)) {
+                        window.open(googleShazamFallback, '_blank', 'noopener,noreferrer');
+                    }
+                } catch (_) {
+                    try {
+                        window.open(googleShazamFallback, '_blank', 'noopener,noreferrer');
+                    } catch (_2) {}
+                }
             });
         }
         document.addEventListener('click', (e) => {
