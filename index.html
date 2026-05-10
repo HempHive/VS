@@ -10498,8 +10498,9 @@ function stopAllAndShowStart() {
                     }, uiSig);
                     if (btnLoadFile) btnLoadFile.addEventListener('click', () => { try { fiVideo.click(); } catch (_) {} }, uiSig);
                     fiVideo.addEventListener('change', (ev) => {
+                        const picked = ev.target.files ? Array.from(ev.target.files) : [];
                         try { ev.target.value = ''; } catch (_) {}
-                        addVideoFilesToMediaQueue(ev.target.files);
+                        addVideoFilesToMediaQueue(picked);
                         deckBVideoUserIdle = false;
                         if (loadInput) loadInput.value = '';
                         this.deckBVideoList = getDeckBVideoPlaybackSources();
@@ -12781,14 +12782,16 @@ function stopAllAndShowStart() {
                         try { fiQueueVideoFolder.click(); } catch (_) {}
                     }, sig);
                     fiQueueVideo.addEventListener('change', (ev) => {
+                        const picked = ev.target.files ? Array.from(ev.target.files) : [];
                         try { ev.target.value = ''; } catch (_) {}
-                        addVideoFilesToMediaQueue(ev.target.files);
+                        addVideoFilesToMediaQueue(picked);
                         if (sharedQueueUrlInput) sharedQueueUrlInput.value = '';
                         try { this.refreshQueueUi(); } catch (_) {}
                     }, sig);
                     fiQueueVideoFolder.addEventListener('change', (ev) => {
+                        const picked = ev.target.files ? Array.from(ev.target.files) : [];
                         try { ev.target.value = ''; } catch (_) {}
-                        addVideoFilesToMediaQueue(ev.target.files);
+                        addVideoFilesToMediaQueue(picked);
                         if (sharedQueueUrlInput) sharedQueueUrlInput.value = '';
                         try { this.refreshQueueUi(); } catch (_) {}
                     }, sig);
