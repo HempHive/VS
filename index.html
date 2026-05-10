@@ -125,8 +125,8 @@
             line-height: 1.2;
             padding: 0;
         }
-        .dj-head-station-name--a { color: #FF0B55; }
-        .dj-head-station-name--b { color: #fafafa; }
+        .dj-head-station-name--a { color: #9803FC; }
+        .dj-head-station-name--b { color: #FF0B55; }
         .dj-head-datetime {
             flex: 0 0 auto;
             font-size: 10px;
@@ -136,14 +136,14 @@
             white-space: nowrap;
             color: rgba(255, 255, 255, 0.85);
         }
-        .dj-head-line--video {
-            display: flex;
+        .dj-head-video-inline {
+            display: inline-flex;
             flex-wrap: nowrap;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
+            gap: 6px;
             min-width: 0;
-            width: 100%;
+            flex-shrink: 1;
+            max-width: min(420px, 45vw);
         }
         .dj-head-video-badge {
             flex-shrink: 0;
@@ -9280,10 +9280,10 @@ function stopAllAndShowStart() {
                         && !this.deckBVideoEl.paused && !this.deckBVideoEl.ended);
 
                     let nb = '—';
-                    let showDeckBBadge = false;
+                    const showDeckBRadioHeader = !!(radioModeB && bPlaying);
+                    let showDeckBBadge = showDeckBRadioHeader;
 
                     if (radioModeB) {
-                        showDeckBBadge = true;
                         if (stations && stations.length) {
                             let idxB = (typeof currentStationBIndex === 'number' && !isNaN(currentStationBIndex)) ? currentStationBIndex : 0;
                             if (typeof mixStationB !== 'undefined' && mixStationB && mixStationB.value !== undefined && mixStationB.value !== '') {
@@ -9311,7 +9311,6 @@ function stopAllAndShowStart() {
                         else if (m === 'karaoke') parts.push('KARAOKE');
                         else if (m === 'kbop') parts.push('K-BOP');
                         else if (m === 'blank') parts.push('BLANK');
-                        if (m === 'video' && vidPlaying) parts.push('VIDEO');
                         if (parts.length) {
                             nb = parts.join(' · ');
                         } else if (bPlaying && ((state.deckSourceMode && state.deckSourceMode.b === 'local') || isBlobB)) {
@@ -9330,10 +9329,11 @@ function stopAllAndShowStart() {
                     if (this.els.titleB) {
                         this.els.titleB.textContent = nb;
                         this.els.titleB.classList.toggle('is-deck-b-label', !radioModeB);
+                        this.els.titleB.classList.toggle('display-none', !!(radioModeB && !bPlaying));
                     }
                     try {
                         const vEl = this.root && this.root.querySelector('#dj-head-video-title');
-                        if (this.els.headLineVideo) this.els.headLineVideo.classList.toggle('display-none', !vidPlaying);
+                        if (this.els.headVideoInline) this.els.headVideoInline.classList.toggle('display-none', !vidPlaying);
                         if (vEl) {
                             let vt = '—';
                             if (vidPlaying) {
@@ -9444,13 +9444,13 @@ function stopAllAndShowStart() {
       </span>
       <span class="dj-head-datetime" id="dj-head-datetime"></span>
       <span class="dj-head-cluster dj-head-cluster--b">
-        <span class="dj-deck-badge dj-deck-badge--b dj-deck-badge--head" id="dj-head-deck-b-badge">DECK B</span>
-        <span class="dj-head-station-name dj-head-station-name--b dj-station-title--b" id="dj-station-b-title">—</span>
+        <span class="dj-deck-badge dj-deck-badge--b dj-deck-badge--head display-none" id="dj-head-deck-b-badge">DECK B</span>
+        <span class="dj-head-station-name dj-head-station-name--b dj-station-title--b display-none" id="dj-station-b-title">—</span>
+        <span class="dj-head-video-inline display-none" id="dj-head-video-inline">
+          <span class="dj-head-video-badge">VIDEO</span>
+          <span class="dj-head-video-title" id="dj-head-video-title">—</span>
+        </span>
       </span>
-    </div>
-    <div class="dj-head-line dj-head-line--video display-none" id="dj-head-line-video">
-      <span class="dj-head-video-badge">VIDEO</span>
-      <span class="dj-head-video-title" id="dj-head-video-title">—</span>
     </div>
   </div>
   <div class="dj-deck-columns">
@@ -9781,7 +9781,7 @@ function stopAllAndShowStart() {
                 this.els.titleA = root.querySelector('#dj-station-a-title');
                 this.els.titleB = root.querySelector('#dj-station-b-title');
                 this.els.headBadgeB = root.querySelector('#dj-head-deck-b-badge');
-                this.els.headLineVideo = root.querySelector('#dj-head-line-video');
+                this.els.headVideoInline = root.querySelector('#dj-head-video-inline');
                 this.els.visualBackBtn = root.querySelector('#dj-b-visual-back-btn');
                 this.els.playA = root.querySelector('#dj-play-a');
                 this.els.playB = root.querySelector('#dj-play-b');
