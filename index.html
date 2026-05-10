@@ -2969,6 +2969,36 @@
             background: rgba(57, 255, 20, 0.1);
             color: #e8ffe8;
         }
+        /* Avatar / WebM overlay keys (neon pink) */
+        .kbd-key.kbd-lit-avatar {
+            border-color: rgba(255, 45, 170, 0.9);
+            background: rgba(255, 45, 170, 0.14);
+            color: #ffe8f4;
+            box-shadow: 0 0 14px rgba(255, 45, 170, 0.4), 0 2px 0 rgba(0, 0, 0, 0.35);
+        }
+        .kbd-key.kbd-lit-avatar .kbd-hint {
+            color: #ffb8e4;
+        }
+        /* Deck B — QUEUE / VIDEO / KARAOKE (neon purple) */
+        .kbd-key.kbd-lit-deckb {
+            border-color: rgba(186, 85, 255, 0.92);
+            background: rgba(140, 70, 255, 0.16);
+            color: #f4e8ff;
+            box-shadow: 0 0 14px rgba(170, 90, 255, 0.45), 0 2px 0 rgba(0, 0, 0, 0.35);
+        }
+        .kbd-key.kbd-lit-deckb .kbd-hint {
+            color: #d4b8ff;
+        }
+        /* Top menu / Mixer (neon red) */
+        .kbd-key.kbd-lit-hot {
+            border-color: rgba(255, 65, 105, 0.92);
+            background: rgba(255, 55, 95, 0.14);
+            color: #ffeef2;
+            box-shadow: 0 0 14px rgba(255, 65, 105, 0.42), 0 2px 0 rgba(0, 0, 0, 0.35);
+        }
+        .kbd-key.kbd-lit-hot .kbd-hint {
+            color: #ffb0c4;
+        }
         .kbd-key.kbd-wide { min-width: 120px; flex: 1; max-width: 200px; }
         .kbd-key.kbd-arrow { min-width: 36px; font-size: 15px; }
         .kbd-key.kbd-esc-lead { margin-right: 10px; }
@@ -2982,7 +3012,7 @@
             max-width: 72px;
             word-break: break-word;
         }
-        .kbd-key:not(.kbd-lit) .kbd-hint { color: #555; }
+        .kbd-key:not(.kbd-lit):not(.kbd-lit-avatar):not(.kbd-lit-deckb):not(.kbd-lit-hot) .kbd-hint { color: #555; }
         .kbd-shortcut-groups {
             display: grid;
             gap: 12px;
@@ -4275,47 +4305,47 @@
                 <div class="kbd-board-title">Quick map</div>
                 <div class="kbd-row">
                     <div class="kbd-key kbd-lit kbd-esc-lead"><span class="kbd-cap">Esc</span><span class="kbd-hint">Close panels · then start</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">Q</span><span class="kbd-hint">Avatar speed −</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">W</span><span class="kbd-hint">Toggle avatar overlay</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">E</span><span class="kbd-hint">Avatar speed +</span></div>
+                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">Q</span><span class="kbd-hint">Avatar speed −</span></div>
+                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">W</span><span class="kbd-hint">Toggle avatar overlay</span></div>
+                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">E</span><span class="kbd-hint">Avatar speed +</span></div>
                     <div class="kbd-key"><span class="kbd-cap">R</span><span class="kbd-hint">—</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">T</span><span class="kbd-hint">Text-In panel</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">Y</span><span class="kbd-hint">Text-In Auto</span></div>
                     <div class="kbd-key"><span class="kbd-cap">U</span><span class="kbd-hint">—</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">I</span><span class="kbd-hint">Send rising text</span></div>
                     <div class="kbd-key"><span class="kbd-cap">O</span><span class="kbd-hint">—</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">P</span><span class="kbd-hint">Avatar settings</span></div>
+                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">P</span><span class="kbd-hint">Avatar settings</span></div>
                 </div>
                 <div class="kbd-row">
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">A</span><span class="kbd-hint">Prev clip</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">S</span><span class="kbd-hint">Reset layout</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">D</span><span class="kbd-hint">Next clip</span></div>
+                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">A</span><span class="kbd-hint">Prev clip</span></div>
+                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">S</span><span class="kbd-hint">Reset layout</span></div>
+                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">D</span><span class="kbd-hint">Next clip</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">F</span><span class="kbd-hint">Fullscreen</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">G</span><span class="kbd-hint">Options</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">H</span><span class="kbd-hint">Deck B QUEUE</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">J</span><span class="kbd-hint">Deck B VIDEO</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">K</span><span class="kbd-hint">Deck B KARAOKE</span></div>
+                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">H</span><span class="kbd-hint">Deck B QUEUE</span></div>
+                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">J</span><span class="kbd-hint">Deck B VIDEO</span></div>
+                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">K</span><span class="kbd-hint">Deck B KARAOKE</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">L</span><span class="kbd-hint">Lock UI</span></div>
                 </div>
                 <div class="kbd-row">
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">Z</span><span class="kbd-hint">Opacity −</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">X</span><span class="kbd-hint">Opacity +</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">C</span><span class="kbd-hint">Next preset</span></div>
+                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">Z</span><span class="kbd-hint">Opacity −</span></div>
+                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">X</span><span class="kbd-hint">Opacity +</span></div>
+                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">C</span><span class="kbd-hint">Next preset</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">V</span><span class="kbd-hint">Random station</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">B</span><span class="kbd-hint">Prev station</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">N</span><span class="kbd-hint">Top menu</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">M</span><span class="kbd-hint">Mixer</span></div>
+                    <div class="kbd-key kbd-lit-hot"><span class="kbd-cap">N</span><span class="kbd-hint">Top menu</span></div>
+                    <div class="kbd-key kbd-lit-hot"><span class="kbd-cap">M</span><span class="kbd-hint">Mixer</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">,</span><span class="kbd-hint">Prev visual</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">.</span><span class="kbd-hint">Next visual</span></div>
                 </div>
                 <div class="kbd-row">
                     <div class="kbd-key kbd-lit kbd-wide"><span class="kbd-cap">Space</span><span class="kbd-hint">Play / pause Deck A</span></div>
-                    <div class="kbd-key kbd-lit kbd-arrow"><span class="kbd-cap">←</span><span class="kbd-hint">Move avatar</span></div>
-                    <div class="kbd-key kbd-lit kbd-arrow"><span class="kbd-cap">→</span><span class="kbd-hint">Move avatar</span></div>
-                    <div class="kbd-key kbd-lit kbd-arrow"><span class="kbd-cap">↑</span><span class="kbd-hint">Move avatar</span></div>
-                    <div class="kbd-key kbd-lit kbd-arrow"><span class="kbd-cap">↓</span><span class="kbd-hint">Move avatar</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">−</span><span class="kbd-hint">Smaller</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">=</span><span class="kbd-hint">Bigger</span></div>
+                    <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">←</span><span class="kbd-hint">Move avatar</span></div>
+                    <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">→</span><span class="kbd-hint">Move avatar</span></div>
+                    <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">↑</span><span class="kbd-hint">Move avatar</span></div>
+                    <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">↓</span><span class="kbd-hint">Move avatar</span></div>
+                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">−</span><span class="kbd-hint">Smaller</span></div>
+                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">=</span><span class="kbd-hint">Bigger</span></div>
                 </div>
             </div>
             <div class="kbd-shortcut-groups">
