@@ -9105,8 +9105,9 @@ function stopAllAndShowStart() {
             }
 
             startDeckBProjectM() {
-                if (!this.root || !state || !state.audioCtx || typeof butterchurn === 'undefined') return;
+                if (!this.root || !state || typeof butterchurn === 'undefined') return;
                 try { initAudio(); } catch (_) {}
+                if (!state.audioCtx) return;
                 this.tearDownDeckBViz();
                 this.deckBVizMode = 'projectm';
                 try {
@@ -9172,7 +9173,8 @@ function stopAllAndShowStart() {
                 this.deckBVizPmVisualizer = viz;
                 this.deckBVizPmCanvas = canvas;
                 try {
-                    viz.connectAudio(state.analyserNodeA || state.analyserNode);
+                    // Master post-mix analyser (includes sample players on mixInput); deck A tap misses samples
+                    viz.connectAudio(state.analyserNode);
                 } catch (_) {}
 
                 const loadPmPreset = (idx) => {
@@ -9275,7 +9277,8 @@ function stopAllAndShowStart() {
                 const loop = () => {
                     this.deckBVizBarsAnimId = requestAnimationFrame(loop);
                     try {
-                        const an = state.analyserNodeA || state.analyserNode;
+                        // Master analyser: beat pads / IDEAS samples route through mixInput, not deck A/B taps
+                        const an = state.analyserNode || state.analyserNodeA;
                         if (!an) return;
                         if (!dataArray || dataArray.length !== an.frequencyBinCount) {
                             dataArray = new Uint8Array(an.frequencyBinCount);
@@ -13514,6 +13517,7 @@ function stopAllAndShowStart() {
             if(state.activeVisualizer && typeof state.activeVisualizer.nextPreset === 'function') skipBtn.classList.remove('display-none');
             else skipBtn.classList.add('display-none');
 
+            try { initAudio(); } catch (_) {}
             state.activeVisualizer.init();
             // Randomize bottom text color each time a mode loads
             setBottomTextRandomColor();
@@ -14055,19 +14059,19 @@ function stopAllAndShowStart() {
             attachSamplePlayingIndicator(btn, media);
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
+                try { initAudio(); } catch (_) {}
                 try { media.loop = !!window[loopFlagKey]; } catch(_) {}
                 try { media.currentTime = 0; } catch(_) {}
                 
-                // Fix: Connect to mixInput (always on) instead of streamBGain
+                // Route through main mix (same bus as ProjectM / AUDIO:BAR master analyser)
                 try {
-                    if (state.audioCtx) {
+                    if (state.audioCtx && state.mixInput) {
                         if (!state[sourceKey]) {
                             state[sourceKey] = state.audioCtx.createMediaElementSource(media);
                             state[sourceKey].connect(state.mixInput);
                         }
                     }
                 } catch(e) { console.warn(e); }
-                
                 media.play().catch(()=>{});
             });
             btn.addEventListener('contextmenu', (e) => {
