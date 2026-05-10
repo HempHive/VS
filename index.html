@@ -1057,6 +1057,11 @@
             pointer-events: none;
             transition: opacity 0.4s ease;
         }
+        /* Deck B video fullscreen: hide cursor after idle (toggled from JS; see scheduleFsCtrlHide in startDeckBVideoVisual) */
+        html.dj-deck-b-video-fs-cursor-idle,
+        html.dj-deck-b-video-fs-cursor-idle body {
+            cursor: none !important;
+        }
         #dj-visual-root .dj-video-loader-input {
             width: 100%;
             box-sizing: border-box;
@@ -9465,16 +9470,30 @@ function stopAllAndShowStart() {
                             }
                         } catch (_) {}
                     };
+                    const setCursorFsIdle = (idle) => {
+                        try {
+                            if (idle) document.documentElement.classList.add('dj-deck-b-video-fs-cursor-idle');
+                            else document.documentElement.classList.remove('dj-deck-b-video-fs-cursor-idle');
+                        } catch (_) {}
+                    };
                     const scheduleFsCtrlHide = () => {
                         clearFsHideTimer();
                         setFsHideUi(false);
+                        setCursorFsIdle(false);
                         if (!isShellFs()) return;
                         fsCtrlHideTimer = setTimeout(() => {
                             fsCtrlHideTimer = null;
-                            if (isShellFs()) setFsHideUi(true);
+                            if (isShellFs()) {
+                                setFsHideUi(true);
+                                setCursorFsIdle(true);
+                            }
                         }, 3000);
                     };
                     const onFsShellActivity = () => {
+                        if (!isShellFs()) return;
+                        scheduleFsCtrlHide();
+                    };
+                    const onFsDocumentMove = () => {
                         if (!isShellFs()) return;
                         scheduleFsCtrlHide();
                     };
@@ -9489,10 +9508,12 @@ function stopAllAndShowStart() {
                         else {
                             clearFsHideTimer();
                             setFsHideUi(false);
+                            setCursorFsIdle(false);
                         }
                     };
                     document.addEventListener('fullscreenchange', onFsChange);
                     document.addEventListener('webkitfullscreenchange', onFsChange);
+                    document.addEventListener('mousemove', onFsDocumentMove, uiSig);
                     shell.addEventListener('mousemove', onFsShellActivity);
                     shell.addEventListener('touchstart', onFsShellActivity, { passive: true });
                     if (transportMount) {
@@ -9512,10 +9533,38 @@ function stopAllAndShowStart() {
                             }
                         }
                     });
+                    try {
+                        vid.title = 'Double-click video for fullscreen · Esc to exit';
+                    } catch (_) {}
+                    vid.addEventListener(
+                        'dblclick',
+                        (e) => {
+                            try {
+                                if (e.target && e.target.closest && e.target.closest('#dj-deck-splitter')) return;
+                            } catch (_) {}
+                            try {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                e.stopImmediatePropagation();
+                            } catch (_) {}
+                            if (isShellFs()) {
+                                try {
+                                    if (document.exitFullscreen) document.exitFullscreen();
+                                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                                } catch (_) {}
+                            } else {
+                                const req = shell.requestFullscreen || shell.webkitRequestFullscreen;
+                                if (req) try { req.call(shell); } catch (_) {}
+                            }
+                        },
+                        { capture: true, signal: uiSig.signal }
+                    );
                     this._deckBVideoFullscreenCleanup = () => {
                         clearFsHideTimer();
+                        try { setCursorFsIdle(false); } catch (_) {}
                         document.removeEventListener('fullscreenchange', onFsChange);
                         document.removeEventListener('webkitfullscreenchange', onFsChange);
+                        try { document.removeEventListener('mousemove', onFsDocumentMove); } catch (_) {}
                         try { shell.removeEventListener('mousemove', onFsShellActivity); } catch (_) {}
                         try { shell.removeEventListener('touchstart', onFsShellActivity); } catch (_) {}
                         try {
