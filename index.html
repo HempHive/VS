@@ -194,6 +194,24 @@
         }
         .dj-head-station-name--a { color: #9803FC; }
         .dj-head-station-name--b { color: #FF0B55; }
+        .dj-head-station-name.dj-head-station--local {
+            text-transform: none;
+            letter-spacing: 0.04em;
+        }
+        .dj-head-station-name .dj-local-prefix {
+            font-size: 11px;
+            font-weight: 700;
+            opacity: 0.92;
+            letter-spacing: 0.18em;
+            margin-right: 0.35em;
+            color: rgba(250, 250, 250, 0.95);
+        }
+        .dj-head-station-name .dj-local-filename {
+            color: #FF0B55;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-shadow: 0 0 12px rgba(255, 11, 85, 0.55), 0 0 22px rgba(255, 11, 85, 0.2);
+        }
         .dj-head-datetime {
             flex: 0 0 auto;
             font-size: 10px;
@@ -4814,8 +4832,18 @@ const QUALITY = {
             idleTimer: null,
             mediaStream: null,
             /** Deck A/B playback source: affects queue advance vs radio */
-            deckSourceMode: { a: 'radio', b: 'radio' }
+            deckSourceMode: { a: 'radio', b: 'radio' },
+            /** Human-readable filename for the current local track (DJ head titles). */
+            deckLocalDisplayName: { a: '', b: '' }
         };
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
 
         /** Waiting local tracks per deck ({ name, url } blob URLs). Current track is not in queue. */
         const deckFileQueues = { a: [], b: [] };
@@ -7976,8 +8004,13 @@ function randomGlowColor() {
             if (!media) return false;
             initAudio();
             try {
-                if (deckKey === 'b') state.deckSourceMode.b = 'local';
-                else state.deckSourceMode.a = 'local';
+                if (deckKey === 'b') {
+                    state.deckSourceMode.b = 'local';
+                    try { state.deckLocalDisplayName.b = label ? String(label) : ''; } catch (_) {}
+                } else {
+                    state.deckSourceMode.a = 'local';
+                    try { state.deckLocalDisplayName.a = label ? String(label) : ''; } catch (_) {}
+                }
                 revokeBlobSrc(media);
                 try { media.pause(); } catch (_) {}
                 media.crossOrigin = 'anonymous';
@@ -8021,6 +8054,7 @@ function randomGlowColor() {
             try {
                 if (deckKey === 'b') {
                     state.deckSourceMode.b = 'local';
+                    try { state.deckLocalDisplayName.b = item.name ? String(item.name) : ''; } catch (_) {}
                     revokeBlobSrc(audioElB);
                     try { audioElB.pause(); } catch (_) {}
                     audioElB.src = item.url;
@@ -8037,6 +8071,7 @@ function randomGlowColor() {
                     }).catch(() => {});
                 } else {
                     state.deckSourceMode.a = 'local';
+                    try { state.deckLocalDisplayName.a = item.name ? String(item.name) : ''; } catch (_) {}
                     revokeBlobSrc(audioEl);
                     try { audioEl.pause(); } catch (_) {}
                     audioEl.src = item.url;
@@ -8069,6 +8104,8 @@ function randomGlowColor() {
             try {
                 state.deckSourceMode.a = 'radio';
                 state.deckSourceMode.b = 'radio';
+                state.deckLocalDisplayName.a = '';
+                state.deckLocalDisplayName.b = '';
             } catch (_) {}
         }
 
@@ -8079,6 +8116,7 @@ function randomGlowColor() {
             const q = deckFileQueues.a;
             if (!q.length) {
                 state.deckSourceMode.a = 'radio';
+                try { state.deckLocalDisplayName.a = ''; } catch (_) {}
                 try {
                     audioEl.removeAttribute('src');
                     audioEl.load();
@@ -8089,6 +8127,7 @@ function randomGlowColor() {
             }
             const item = q.shift();
             state.deckSourceMode.a = 'local';
+            try { state.deckLocalDisplayName.a = item.name ? String(item.name) : ''; } catch (_) {}
             try { audioEl.crossOrigin = 'anonymous'; } catch (_) {}
             audioEl.src = item.url;
             if (item.isVideo) registerDeckVideoFeed('a', item.url, item.name, true);
@@ -8104,6 +8143,7 @@ function randomGlowColor() {
             }).catch((e) => {
                 console.warn('Deck A local playback failed:', e);
                 state.deckSourceMode.a = 'radio';
+                try { state.deckLocalDisplayName.a = ''; } catch (_) {}
                 try { playRadio(); } catch (_) {}
             });
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
@@ -8115,6 +8155,7 @@ function randomGlowColor() {
             const q = deckFileQueues.b;
             if (!q.length) {
                 state.deckSourceMode.b = 'radio';
+                try { state.deckLocalDisplayName.b = ''; } catch (_) {}
                 try {
                     audioElB.removeAttribute('src');
                     audioElB.load();
@@ -8125,6 +8166,7 @@ function randomGlowColor() {
             }
             const item = q.shift();
             state.deckSourceMode.b = 'local';
+            try { state.deckLocalDisplayName.b = item.name ? String(item.name) : ''; } catch (_) {}
             try { audioElB.crossOrigin = 'anonymous'; } catch (_) {}
             audioElB.src = item.url;
             if (item.isVideo) registerDeckVideoFeed('b', item.url, item.name, true);
@@ -8141,6 +8183,7 @@ function randomGlowColor() {
             }).catch((e) => {
                 console.warn('Deck B local playback failed:', e);
                 state.deckSourceMode.b = 'radio';
+                try { state.deckLocalDisplayName.b = ''; } catch (_) {}
                 try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
             });
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
@@ -8165,6 +8208,7 @@ function randomGlowColor() {
         function playRadio() {
             initAudio();
             state.deckSourceMode.a = 'radio';
+            try { state.deckLocalDisplayName.a = ''; } catch (_) {}
             revokeBlobSrc(audioEl);
             let url = '';
             try {
@@ -10570,13 +10614,22 @@ function stopAllAndShowStart() {
 
             updateStationTitles() {
                 try {
+                    const srcA = (audioEl && String(audioEl.currentSrc || audioEl.src || '')) || '';
+                    const titleAUseLocal = !!(state && state.deckSourceMode && state.deckSourceMode.a === 'local' && audioEl && audioEl.src);
                     let na = 'Deck A';
-                    if (typeof currentStationIndex === 'number' && currentStationIndex >= 0 && stations[currentStationIndex]) {
-                        na = stations[currentStationIndex].name || na;
-                    } else if (radioInputEl && radioInputEl.value && typeof deriveTitleFromUrl === 'function') {
-                        na = deriveTitleFromUrl(radioInputEl.value);
-                    } else if (audioEl && audioEl.src && typeof deriveTitleFromUrl === 'function') {
-                        na = deriveTitleFromUrl(audioEl.src);
+                    let titleALocalFile = '';
+                    if (titleAUseLocal) {
+                        const raw = (state.deckLocalDisplayName && state.deckLocalDisplayName.a) || '';
+                        titleALocalFile = (raw && String(raw).trim()) ? String(raw).trim() : (typeof deriveTitleFromUrl === 'function' ? deriveTitleFromUrl(srcA) : 'Track');
+                        if (!String(titleALocalFile || '').trim()) titleALocalFile = 'Track';
+                    } else {
+                        if (typeof currentStationIndex === 'number' && currentStationIndex >= 0 && stations[currentStationIndex]) {
+                            na = stations[currentStationIndex].name || na;
+                        } else if (radioInputEl && radioInputEl.value && typeof deriveTitleFromUrl === 'function') {
+                            na = deriveTitleFromUrl(radioInputEl.value);
+                        } else if (audioEl && audioEl.src && typeof deriveTitleFromUrl === 'function') {
+                            na = deriveTitleFromUrl(audioEl.src);
+                        }
                     }
                     const radioModeB = !!(state && state.deckSourceMode && state.deckSourceMode.b === 'radio');
                     const bPlaying = !!(audioElB && audioElB.src && !audioElB.paused && !audioElB.ended);
@@ -10587,6 +10640,8 @@ function stopAllAndShowStart() {
                         && !this.deckBVideoEl.paused && !this.deckBVideoEl.ended);
 
                     let nb = '—';
+                    let titleBUseLocal = false;
+                    let titleBLocalFile = '';
                     const showDeckBRadioHeader = !!(radioModeB && bPlaying);
                     let showDeckBBadge = showDeckBRadioHeader;
 
@@ -10621,21 +10676,36 @@ function stopAllAndShowStart() {
                         if (parts.length) {
                             nb = parts.join(' · ');
                         } else if (bPlaying && ((state.deckSourceMode && state.deckSourceMode.b === 'local') || isBlobB)) {
-                            if (srcB && typeof deriveTitleFromUrl === 'function' && !isBlobB) {
-                                nb = deriveTitleFromUrl(srcB);
-                            } else {
-                                nb = 'Local file';
-                            }
+                            titleBUseLocal = true;
+                            const raw = (state.deckLocalDisplayName && state.deckLocalDisplayName.b) || '';
+                            titleBLocalFile = (raw && String(raw).trim()) ? String(raw).trim() : (srcB && typeof deriveTitleFromUrl === 'function' && !isBlobB ? deriveTitleFromUrl(srcB) : 'Track');
+                            if (!String(titleBLocalFile || '').trim()) titleBLocalFile = 'Track';
+                            nb = '';
                         } else {
                             nb = '—';
                         }
                     }
 
-                    if (this.els.titleA) this.els.titleA.textContent = na;
+                    if (this.els.titleA) {
+                        if (titleAUseLocal) {
+                            this.els.titleA.classList.add('dj-head-station--local');
+                            this.els.titleA.innerHTML = '<span class="dj-local-prefix">LOCAL</span><span class="dj-local-filename">' + escapeHtml(titleALocalFile) + '</span>';
+                        } else {
+                            this.els.titleA.classList.remove('dj-head-station--local');
+                            this.els.titleA.textContent = na;
+                        }
+                    }
                     if (this.els.headBadgeB) this.els.headBadgeB.classList.toggle('display-none', !showDeckBBadge);
                     if (this.els.titleB) {
-                        this.els.titleB.textContent = nb;
-                        this.els.titleB.classList.toggle('is-deck-b-label', !radioModeB);
+                        if (titleBUseLocal) {
+                            this.els.titleB.classList.add('dj-head-station--local');
+                            this.els.titleB.classList.remove('is-deck-b-label');
+                            this.els.titleB.innerHTML = '<span class="dj-local-prefix">LOCAL</span><span class="dj-local-filename">' + escapeHtml(titleBLocalFile) + '</span>';
+                        } else {
+                            this.els.titleB.classList.remove('dj-head-station--local');
+                            this.els.titleB.textContent = nb;
+                            this.els.titleB.classList.toggle('is-deck-b-label', !radioModeB);
+                        }
                         this.els.titleB.classList.toggle('display-none', !!(radioModeB && !bPlaying));
                     }
                     try {
@@ -12746,9 +12816,15 @@ function stopAllAndShowStart() {
                             audioEl.addEventListener(ev, () => {
                                 try { this.syncPlayLabels(); } catch (_) {}
                                 try { this.refreshDeckBVideoSource(); } catch (_) {}
+                                try { this.updateStationTitles(); } catch (_) {}
                             }, sig);
                         }
-                        if (audioElB) audioElB.addEventListener(ev, () => this.syncPlayLabels(), sig);
+                        if (audioElB) {
+                            audioElB.addEventListener(ev, () => {
+                                try { this.syncPlayLabels(); } catch (_) {}
+                                try { this.updateStationTitles(); } catch (_) {}
+                            }, sig);
+                        }
                     });
                 } catch(_) {}
 
@@ -15429,6 +15505,7 @@ function stopAllAndShowStart() {
         function playRadioB() {
             initAudio();
             state.deckSourceMode.b = 'radio';
+            try { state.deckLocalDisplayName.b = ''; } catch (_) {}
             revokeBlobSrc(audioElB);
 
             let val = parseInt((mixStationB?.value)||'0', 10);
@@ -15461,6 +15538,7 @@ function stopAllAndShowStart() {
         }
         function stopRadioB() {
             try { state.deckSourceMode.b = 'radio'; } catch (_) {}
+            try { state.deckLocalDisplayName.b = ''; } catch (_) {}
             // Stop the persistent DOM element
             if (audioElB) {
                 try { audioElB.pause(); } catch(_) {}
