@@ -9,10 +9,16 @@
 		<link rel="preload" href="pta.gif" as="image">
 		<link rel="preload" href="tap.gif" as="image">
 		<link rel="preload" href="sta.gif" as="image">
+		<link rel="preload" href="xim.gif" as="image">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
     <style>
 		body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Quicksand', sans-serif; color: white; cursor: none; }
+        /* Bottom HUD (#ui-layer): one value for reserve space so DJ decks sit above the bar */
+        :root {
+            --ui-bottom-hud-inner: clamp(46px, 5.6vh, 70px);
+            --ui-bottom-hud-clearance: calc(var(--ui-bottom-hud-inner) + env(safe-area-inset-bottom, 0px));
+        }
 		/* Tiled start-screen GIF: hidden until load/decode, then fades in (see ensurePtaGifLoaded / fadeInPtaStartBg) */
 		#pta-start-bg {
 			position: fixed;
@@ -55,7 +61,7 @@
             box-sizing: border-box;
             padding: clamp(8px, 2vmin, 16px);
             /* Clear persistent #ui-layer at bottom (z-index 50) so Deck B controls stay tappable */
-            padding-bottom: calc(clamp(52px, 7.5vh, 94px) + env(safe-area-inset-bottom, 0px));
+            padding-bottom: var(--ui-bottom-hud-clearance);
             gap: 8px;
         }
         #dj-visual-root button,
@@ -335,6 +341,14 @@
             flex-shrink: 0;
             accent-color: rgba(130, 200, 255, 0.9);
         }
+        #dj-visual-root .dj-automix-limit-remaining {
+            margin-left: 6px;
+            font-weight: 600;
+            font-size: 11px;
+            color: rgba(255, 215, 120, 0.95);
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
         .dj-deck-body-b {
             flex-direction: column !important;
             align-items: stretch !important;
@@ -423,7 +437,7 @@
             display: flex;
             flex-direction: column;
             padding: 10px 12px;
-            padding-bottom: calc(10px + clamp(52px, 7.5vh, 94px) + env(safe-area-inset-bottom, 0px));
+            padding-bottom: calc(10px + var(--ui-bottom-hud-clearance));
             box-sizing: border-box;
             color: #eaeaf4;
             font-size: 12px;
@@ -803,7 +817,7 @@
             overflow: auto;
         }
         #dj-visual-root.dj-mode-portrait .dj-deck-b-queue-panel {
-            padding-bottom: calc(10px + clamp(88px, 13vh, 138px) + env(safe-area-inset-bottom, 0px));
+            padding-bottom: calc(10px + var(--ui-bottom-hud-clearance) + clamp(20px, 4vh, 40px));
         }
         .dj-deck-b-viz-mount {
             position: absolute;
@@ -2273,10 +2287,15 @@
 
         #ui-layer {
             position: absolute; bottom: 0; left: 0; width: 100%;
-            min-height: clamp(52px, 7vh, 96px);
+            min-height: 0;
             display: flex; justify-content: space-between; align-items: center;
-            padding: 0 clamp(12px, 3vw, 40px); box-sizing: border-box;
-            background: linear-gradient(to top, rgba(0,0,0,1), transparent);
+            padding: 2px clamp(12px, 3vw, 40px) max(0px, env(safe-area-inset-bottom, 0px));
+            box-sizing: border-box;
+            /* Shorter fade so less black blocks the canvas behind the bar */
+            background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.35) 55%, transparent 100%);
+            background-size: 100% min(100%, 72px);
+            background-repeat: no-repeat;
+            background-position: bottom center;
             z-index: 50;
             transition: opacity 1s ease-in-out;
             opacity: 1;
@@ -2346,9 +2365,15 @@
 			box-shadow: 0 0 24px rgba(255,20,147,0.95), 0 0 6px rgba(255,20,147,0.9);
         }
 
-        /* Navigation Arrows */
+        /* Navigation Arrows (bottom HUD prev/next only — keep compact so the bar stays low) */
         .nav-btn {
             font-size: clamp(36px, 6vw, 64px); opacity: 0.3; transition: 0.3s; user-select: none; padding: clamp(10px, 2vh, 20px);
+        }
+        #ui-layer > .nav-btn {
+            font-size: clamp(22px, 3.8vw, 40px);
+            padding: clamp(2px, 0.8vh, 8px) clamp(6px, 1.5vw, 14px);
+            flex-shrink: 0;
+            align-self: center;
         }
         .nav-btn:hover { opacity: 1; text-shadow: 0 0 15px #fff; transform: scale(1.1); }
 
@@ -2890,7 +2915,7 @@
             height: 48px;
         }
         #mix-effects { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 3px; }
-        /* Generic Button Style for Mix Panel */
+        /* Generic Mix Panel buttons (Play B, BPM row, etc.): btn.png only — no xim.gif */
         #mix-panel .btn {
             padding: 6px 12px;
             border: 1px solid rgba(255,255,255,0.25);
@@ -2908,8 +2933,7 @@
             background-size: 100% 100%;
         }
         #mix-panel .btn:hover {
-            /* Make background slightly lighter transparent white, keep text white */
-            background: rgba(217,2,45,0.1); 
+            background: rgba(217,2,45,0.1);
             color: #f5d20f;
             box-shadow: 0 0 10px rgba(255,255,255,0.15);
             border-color: rgba(245,210,15,0.3);
@@ -2918,15 +2942,16 @@
             background-repeat: no-repeat;
             background-size: 100% 100%;
         }
+        /* Mixer FX grid only (Low-pass … NO VOCAL): btn.png over xim.gif */
         #mix-effects .btn {
             position: relative;
             padding: 10px;
             border: 1px solid rgba(255,0,0,0.25);
             background-color: rgba(0,0,0,0.25);
-            background-image: url('btn.png');
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: 100% 100%; /* stretch to fill entire button */
+            background-image: url('btn.png'), url('xim.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
             color: #fff;
             border-radius: 6px;
             font-size: 14px;
@@ -2936,65 +2961,25 @@
             border-color: rgba(212,175,55,0.8);
             box-shadow: 0 0 12px rgba(212,175,55,0.25) inset;
             background-color: rgba(212,175,55,0.12);
-            background-image: url('btn.png');
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: 100% 100%;
+            background-image: url('btn.png'), url('xim.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, cover;
         }
         #mix-effects .btn.sample-playing {
             color: #FFD700;
             text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 4px rgba(0,0,0,0.85), 0 0 10px rgba(0,0,0,0.55);
-        }
-        /* Mix panel wav sample buttons: btn.png over wly.gif (black fallback if gif missing) */
-        #mix-effects #fx-wav,
-        #mix-effects #fx-wav1,
-        #mix-effects #fx-wav2,
-        #mix-effects #fx-wav3,
-        #mix-effects #fx-wav4,
-        #mix-effects #fx-wav5,
-        #mix-effects #fx-wav6 {
-            background-color: #000;
-            background-image: url('btn.png'), url('wly.gif');
+            background-image: url('btn.png'), url('xim.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
             background-size: 100% 100%, cover;
         }
-        #mix-effects #fx-wav.on,
-        #mix-effects #fx-wav1.on,
-        #mix-effects #fx-wav2.on,
-        #mix-effects #fx-wav3.on,
-        #mix-effects #fx-wav4.on,
-        #mix-effects #fx-wav5.on,
-        #mix-effects #fx-wav6.on {
-            background-image: url('btn.png'), url('wly.gif');
-            background-position: center, center;
-            background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
-        }
-        #mix-effects #fx-wav:hover,
-        #mix-effects #fx-wav1:hover,
-        #mix-effects #fx-wav2:hover,
-        #mix-effects #fx-wav3:hover,
-        #mix-effects #fx-wav4:hover,
-        #mix-effects #fx-wav5:hover,
-        #mix-effects #fx-wav6:hover {
+        #mix-effects .btn:hover {
             background-color: rgba(217,2,45,0.1);
             color: #f5d20f;
             box-shadow: 0 0 10px rgba(255,255,255,0.15);
             border-color: rgba(245,210,15,0.3);
-            background-image: url('btn.png'), url('wly.gif');
-            background-position: center, center;
-            background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
-        }
-        #mix-effects #fx-wav.sample-playing,
-        #mix-effects #fx-wav1.sample-playing,
-        #mix-effects #fx-wav2.sample-playing,
-        #mix-effects #fx-wav3.sample-playing,
-        #mix-effects #fx-wav4.sample-playing,
-        #mix-effects #fx-wav5.sample-playing,
-        #mix-effects #fx-wav6.sample-playing {
-            background-image: url('btn.png'), url('wly.gif');
+            background-image: url('btn.png'), url('xim.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
             background-size: 100% 100%, cover;
@@ -4141,9 +4126,6 @@
             </div>
             <div>
                 <div id="mix-effects">
-                    <button class="btn" id="fx-wav4" title="Left-click: play once • Right-click: loop">Waa📯</button>
-                    <button class="btn" id="fx-wav5" title="Left-click: play once • Right-click: loop">Waaa📣</button>
-                    <button class="btn" id="fx-wav6" title="Left-click: play once • Right-click: loop">Air📢</button>
                     <button class="btn" id="fx-lowpass">Low-pass</button>
                     <button class="btn" id="fx-bass">Bass-Boost</button>
                     <button class="btn" id="fx-highpass">High-pass</button>
@@ -4152,7 +4134,10 @@
                     <button class="btn" id="fx-distort">Distortion</button>
                     <button class="btn" id="fx-arp">Arpeggiator</button>
                     <button class="btn" id="fx-tk">TK-Filter</button>
-                    <button class="btn" id="fx-wav" title="Left-click: play once • Right-click: loop">💭💡</button>
+                    <button class="btn" id="fx-cut" title="Kill / mute main mix output while on">CUT</button>
+                    <button class="btn" id="fx-reverb" title="Hall-style convolution reverb (wet/dry mix)">REVERB</button>
+                    <button class="btn" id="fx-flanger" title="Modulated delay (flanger)">FLANGER</button>
+                    <button class="btn" id="fx-novocal" title="Approximate instrumental: strong mid-range vocal cut (mono mix; not full stem separation)">NO VOCAL</button>
                 </div>
             </div>
         </div>
@@ -4411,13 +4396,10 @@ const QUALITY = {
         const fxDist = document.getElementById('fx-distort');
         const fxArp = document.getElementById('fx-arp');
         const fxTk = document.getElementById('fx-tk');
-        const fxWav = document.getElementById('fx-wav');
-        const fxWav1 = document.getElementById('fx-wav1');
-        const fxWav2 = document.getElementById('fx-wav2');
-        const fxWav3 = document.getElementById('fx-wav3');
-        const fxWav4 = document.getElementById('fx-wav4');
-        const fxWav5 = document.getElementById('fx-wav5');
-        const fxWav6 = document.getElementById('fx-wav6');
+        const fxCut = document.getElementById('fx-cut');
+        const fxReverb = document.getElementById('fx-reverb');
+        const fxFlanger = document.getElementById('fx-flanger');
+        const fxNoVocal = document.getElementById('fx-novocal');
         // BPM scope refs/state
         const bpmBtnA = document.getElementById('mix-bpm-a');
         const bpmBtnB = document.getElementById('mix-bpm-b');
@@ -4586,6 +4568,11 @@ const QUALITY = {
         audioElSample6.preload = 'auto';
         audioElSample6.src = 'wav6.mp3';
         let sampleLoop = false, sampleLoop1 = false, sampleLoop2 = false, sampleLoop3 = false;
+        try {
+            window.sampleLoop4 = false;
+            window.sampleLoop5 = false;
+            window.sampleLoop6 = false;
+        } catch (_) {}
         // Ensure media elements don't double-play outside the WebAudio graph
         // Allow HTML elements to output so MediaElementSource has signal; mixing is controlled in WebAudio
         try { audioEl.muted = false; } catch(_) {}
@@ -4706,6 +4693,79 @@ const QUALITY = {
             try { renderStationList(); } catch (_) {}
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
             return true;
+        }
+        /** After removing station at removedIdx, map old list index to new index (or -1 if empty). */
+        function reindexStationCursor(prevIdx, removedIdx) {
+            if (!Array.isArray(stations) || stations.length === 0) return -1;
+            if (typeof prevIdx !== 'number' || !Number.isFinite(prevIdx)) return 0;
+            if (prevIdx < removedIdx) return prevIdx;
+            if (prevIdx === removedIdx) return Math.min(removedIdx, stations.length - 1);
+            return prevIdx - 1;
+        }
+        /** Remove a station from the in-memory list, user-saved list, cycle map, top menu, and mix dropdown. */
+        function removeRadioStationAtIndex(idx) {
+            if (!Array.isArray(stations) || idx < 0 || idx >= stations.length) return;
+            const removed = stations[idx];
+            if (!removed || !removed.url) return;
+            const rawUrl = removed.url;
+            const clean = sanitizeUrlForAudio(String(rawUrl));
+            const prevA = (typeof currentStationIndex === 'number') ? currentStationIndex : -1;
+            const prevB = (typeof currentStationBIndex === 'number') ? currentStationBIndex : 0;
+            const oldBUrl = stations[prevB] ? sanitizeUrlForAudio(String(stations[prevB].url || '')) : '';
+
+            stations.splice(idx, 1);
+            try {
+                stationCycleEnabledByUrl.delete(rawUrl);
+                stationCycleEnabledByUrl.delete(clean);
+            } catch (_) {}
+
+            userRadioStations = userRadioStations.filter((u) => {
+                if (!u || !u.url) return false;
+                return sanitizeUrlForAudio(u.url) !== clean;
+            });
+            saveUserRadioStations();
+
+            stationHistory = stationHistory
+                .filter((h) => h !== idx)
+                .map((h) => (h > idx ? h - 1 : h));
+
+            if (!stations.length) {
+                currentStationIndex = -1;
+                currentStationBIndex = 0;
+                try { if (radioInputEl) radioInputEl.value = ''; } catch (_) {}
+                try { if (audioEl) { audioEl.pause(); audioEl.removeAttribute('src'); audioEl.load(); } } catch (_) {}
+                try { if (audioElB) { audioElB.pause(); audioElB.removeAttribute('src'); audioElB.load(); } } catch (_) {}
+            } else {
+                currentStationIndex = reindexStationCursor(prevA, idx);
+                currentStationBIndex = Math.max(0, Math.min(stations.length - 1, reindexStationCursor(prevB, idx)));
+
+                if (prevA === idx && currentStationIndex >= 0 && stations[currentStationIndex]) {
+                    suppressHistoryPush = true;
+                    try {
+                        const s = stations[currentStationIndex];
+                        if (radioInputEl) radioInputEl.value = s.url;
+                        if (typeof showStationBanner === 'function') showStationBanner(s.name);
+                        if (typeof playRadio === 'function') playRadio();
+                        try { if (typeof updateStationActiveHighlight === 'function') updateStationActiveHighlight(); } catch (_) {}
+                    } finally {
+                        suppressHistoryPush = false;
+                    }
+                } else {
+                    try { if (typeof updateStationActiveHighlight === 'function') updateStationActiveHighlight(); } catch (_) {}
+                }
+
+                const newBUrl = stations[currentStationBIndex]
+                    ? sanitizeUrlForAudio(String(stations[currentStationBIndex].url || ''))
+                    : '';
+                if (oldBUrl !== newBUrl) {
+                    try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
+                }
+            }
+
+            try { renderStationList(); } catch (_) {}
+            try { refreshMixStationB(); } catch (_) {}
+            try { updateStationActiveHighlight(); } catch (_) {}
+            try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
         function upsertMediaVideoQueueEntry(url, label) {
             const clean = sanitizeUrlForAudio(url);
@@ -6232,6 +6292,20 @@ function randomGlowColor() {
         }
 
         // --- AUDIO ENGINE ---
+        function makeReverbImpulseBuffer(audioCtx, durationSec, decay) {
+            const d = Math.max(0.5, Math.min(4.5, Number(durationSec) || 2.2));
+            const dc = Math.max(1.2, Math.min(5, Number(decay) || 2.45));
+            const rate = audioCtx.sampleRate;
+            const len = Math.floor(rate * d);
+            const buf = audioCtx.createBuffer(2, len, rate);
+            for (let c = 0; c < buf.numberOfChannels; c++) {
+                const ch = buf.getChannelData(c);
+                for (let i = 0; i < len; i++) {
+                    ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, dc);
+                }
+            }
+            return buf;
+        }
         function initAudio() {
             if(!state.audioCtx) {
                 state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -6340,6 +6414,56 @@ function randomGlowColor() {
                 for (let i=0;i<curveLen;i++){ const x = i/curveLen*2-1; curve[i] = ((3+amount)*x*20*Math.PI/180)/(Math.PI+amount*Math.abs(x)); }
                 state.fx.distort.node.curve = curve; state.fx.distort.node.oversample = '4x';
 
+                state.fx.cut = { node: state.audioCtx.createGain(), on: false };
+                state.fx.cut.node.gain.value = 1;
+                state.fx.noVocal = {
+                    on: false,
+                    f1: state.audioCtx.createBiquadFilter(),
+                    f2: state.audioCtx.createBiquadFilter(),
+                    f3: state.audioCtx.createBiquadFilter()
+                };
+                state.fx.noVocal.f1.type = 'peaking';
+                state.fx.noVocal.f1.frequency.value = 450;
+                state.fx.noVocal.f1.Q.value = 0.55;
+                state.fx.noVocal.f1.gain.value = -14;
+                state.fx.noVocal.f2.type = 'peaking';
+                state.fx.noVocal.f2.frequency.value = 1400;
+                state.fx.noVocal.f2.Q.value = 0.48;
+                state.fx.noVocal.f2.gain.value = -17;
+                state.fx.noVocal.f3.type = 'peaking';
+                state.fx.noVocal.f3.frequency.value = 3200;
+                state.fx.noVocal.f3.Q.value = 0.52;
+                state.fx.noVocal.f3.gain.value = -12;
+                state.fx.flanger = {
+                    on: false,
+                    delay: state.audioCtx.createDelay(0.08),
+                    feedbackGain: state.audioCtx.createGain(),
+                    lfo: state.audioCtx.createOscillator(),
+                    lfoDepth: state.audioCtx.createGain()
+                };
+                state.fx.flanger.delay.delayTime.value = 0.004;
+                state.fx.flanger.feedbackGain.gain.value = 0;
+                state.fx.flanger.lfo.type = 'sine';
+                state.fx.flanger.lfo.frequency.value = 0.42;
+                state.fx.flanger.lfoDepth.gain.value = 0;
+                try {
+                    state.fx.flanger.lfo.connect(state.fx.flanger.lfoDepth);
+                    state.fx.flanger.lfoDepth.connect(state.fx.flanger.delay.delayTime);
+                } catch (_) {}
+                try { state.fx.flanger.lfo.start(); } catch (_) {}
+                state.fx.reverb = {
+                    on: false,
+                    dryGain: state.audioCtx.createGain(),
+                    wetGain: state.audioCtx.createGain(),
+                    convolver: state.audioCtx.createConvolver(),
+                    sum: state.audioCtx.createGain()
+                };
+                state.fx.reverb.dryGain.gain.value = 1;
+                state.fx.reverb.wetGain.gain.value = 0;
+                try {
+                    state.fx.reverb.convolver.buffer = makeReverbImpulseBuffer(state.audioCtx);
+                } catch (_) {}
+
                 // Master Output
                 try { state.mixInput.disconnect(); } catch(_) {}
                 state.mixInput.connect(state.analyserNode);
@@ -6373,6 +6497,26 @@ function randomGlowColor() {
             if (!state.audioCtx) return;
             // Disconnect everything from mixInput forward
             try { state.mixInput.disconnect(); } catch(_) {}
+            try {
+                if (state.fx && state.fx.noVocal) {
+                    try { state.fx.noVocal.f1.disconnect(); } catch (_) {}
+                    try { state.fx.noVocal.f2.disconnect(); } catch (_) {}
+                    try { state.fx.noVocal.f3.disconnect(); } catch (_) {}
+                }
+                if (state.fx && state.fx.flanger) {
+                    try { state.fx.flanger.delay.disconnect(); } catch (_) {}
+                    try { state.fx.flanger.feedbackGain.disconnect(); } catch (_) {}
+                }
+                if (state.fx && state.fx.reverb) {
+                    try { state.fx.reverb.dryGain.disconnect(); } catch (_) {}
+                    try { state.fx.reverb.wetGain.disconnect(); } catch (_) {}
+                    try { state.fx.reverb.convolver.disconnect(); } catch (_) {}
+                    try { state.fx.reverb.sum.disconnect(); } catch (_) {}
+                }
+                if (state.fx && state.fx.cut && state.fx.cut.node) {
+                    try { state.fx.cut.node.disconnect(); } catch (_) {}
+                }
+            } catch (_) {}
             const enabled = [];
             if (state.fx.low.on) enabled.push(state.fx.low.node);
             if (state.fx.high.on) enabled.push(state.fx.high.node);
@@ -6402,6 +6546,50 @@ function randomGlowColor() {
                 try { last.disconnect(); } catch(_) {}
                 last.connect(node);
                 last = node;
+            }
+            if (state.fx.noVocal && state.fx.noVocal.on) {
+                try { last.disconnect(); } catch (_) {}
+                last.connect(state.fx.noVocal.f1);
+                state.fx.noVocal.f1.connect(state.fx.noVocal.f2);
+                state.fx.noVocal.f2.connect(state.fx.noVocal.f3);
+                last = state.fx.noVocal.f3;
+            }
+            if (state.fx.flanger && state.fx.flanger.on) {
+                try { last.disconnect(); } catch (_) {}
+                state.fx.flanger.feedbackGain.gain.value = 0.42;
+                state.fx.flanger.lfoDepth.gain.value = 0.005;
+                try { state.fx.flanger.delay.disconnect(); } catch (_) {}
+                try { state.fx.flanger.feedbackGain.disconnect(); } catch (_) {}
+                last.connect(state.fx.flanger.delay);
+                state.fx.flanger.delay.connect(state.fx.flanger.feedbackGain);
+                state.fx.flanger.feedbackGain.connect(state.fx.flanger.delay);
+                last = state.fx.flanger.delay;
+            } else if (state.fx.flanger) {
+                state.fx.flanger.feedbackGain.gain.value = 0;
+                state.fx.flanger.lfoDepth.gain.value = 0;
+            }
+            if (state.fx.reverb && state.fx.reverb.on) {
+                try { last.disconnect(); } catch (_) {}
+                state.fx.reverb.dryGain.gain.value = 0.78;
+                state.fx.reverb.wetGain.gain.value = 0.38;
+                try { state.fx.reverb.dryGain.disconnect(); } catch (_) {}
+                try { state.fx.reverb.wetGain.disconnect(); } catch (_) {}
+                try { state.fx.reverb.convolver.disconnect(); } catch (_) {}
+                last.connect(state.fx.reverb.dryGain);
+                last.connect(state.fx.reverb.convolver);
+                state.fx.reverb.convolver.connect(state.fx.reverb.wetGain);
+                state.fx.reverb.dryGain.connect(state.fx.reverb.sum);
+                state.fx.reverb.wetGain.connect(state.fx.reverb.sum);
+                last = state.fx.reverb.sum;
+            } else if (state.fx.reverb) {
+                state.fx.reverb.dryGain.gain.value = 1;
+                state.fx.reverb.wetGain.gain.value = 0;
+            }
+            if (state.fx.cut && state.fx.cut.node) {
+                try { last.disconnect(); } catch (_) {}
+                state.fx.cut.node.gain.value = state.fx.cut.on ? 0 : 1;
+                last.connect(state.fx.cut.node);
+                last = state.fx.cut.node;
             }
             try { last.disconnect(); } catch(_) {}
             last.connect(state.analyserNode);
@@ -7894,6 +8082,7 @@ function stopAllAndShowStart() {
                 this.autoMixTimerId = null;
                 this.autoMixHoldTimer = null;
                 this.autoMixSessionLimitTimerId = null;
+                this.autoMixSessionRemainingIntervalId = null;
                 this.masterFadeOutRafId = null;
                 this._panelPointerPos = null;
                 this.deckBVizResizeObs = null;
@@ -8280,9 +8469,13 @@ function stopAllAndShowStart() {
                     const cb = document.createElement('input');
                     cb.type = 'checkbox';
                     cb.checked = stationCycleEnabledByUrl.get(st.url) !== false;
-                    cb.setAttribute('aria-label', 'Cycle station ' + (st.name || ('Station ' + (idx + 1))));
+                    cb.setAttribute('aria-label', 'Include station ' + (st.name || ('Station ' + (idx + 1))) + ' in lists (uncheck to remove)');
                     cb.addEventListener('change', () => {
-                        stationCycleEnabledByUrl.set(st.url, !!cb.checked);
+                        if (!cb.checked) {
+                            removeRadioStationAtIndex(idx);
+                            return;
+                        }
+                        stationCycleEnabledByUrl.set(st.url, true);
                     });
                     const txt = document.createElement('span');
                     txt.textContent = st.name || ('Station ' + (idx + 1));
@@ -9627,7 +9820,7 @@ function stopAllAndShowStart() {
             <div class="dj-automix-title">Session limit</div>
             <label class="dj-automix-check-row">
               <input type="checkbox" id="dj-automix-limit-en" aria-label="Hold auto-mix to a session time limit">
-              <span>Limit session length</span>
+              <span>Limit session length <span id="dj-automix-limit-remaining" class="dj-automix-limit-remaining" aria-live="polite"></span></span>
             </label>
             <div class="dj-automix-row">
               <input type="range" id="dj-automix-limit-min" min="5" max="300" step="1" value="60" aria-label="Auto-mix session time limit minutes">
@@ -9877,6 +10070,7 @@ function stopAllAndShowStart() {
                 const autoMixLimitEn = root.querySelector('#dj-automix-limit-en');
                 const autoMixLimitMinEl = root.querySelector('#dj-automix-limit-min');
                 const autoMixLimitReadout = root.querySelector('#dj-automix-limit-readout');
+                const autoMixLimitRemainingEl = root.querySelector('#dj-automix-limit-remaining');
                 let suppressAutoFadeClickUntil = 0;
                 let autoFadeLongPressFired = false;
                 const AUTOFADE_MS_KEY = 'dj.autofade.duration.ms.v1';
@@ -9926,6 +10120,47 @@ function stopAllAndShowStart() {
                     if (r === 0) return h === 1 ? '1h' : `${h}h`;
                     return `${h}h ${r}m`;
                 };
+                const formatSessionRemainingClock = (ms) => {
+                    if (!Number.isFinite(ms) || ms <= 0) return '0:00';
+                    const totalSec = Math.max(0, Math.ceil(ms / 1000));
+                    const h = Math.floor(totalSec / 3600);
+                    const m = Math.floor((totalSec % 3600) / 60);
+                    const sec = totalSec % 60;
+                    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+                    return `${m}:${String(sec).padStart(2, '0')}`;
+                };
+                const updateAutoMixSessionRemainingUi = () => {
+                    if (!autoMixLimitRemainingEl) return;
+                    if (!autoMixEnabled || !autoMixLimitEnabled || !autoMixSessionStartedAt) {
+                        autoMixLimitRemainingEl.textContent = '';
+                        return;
+                    }
+                    const limitMs = Math.max(5, Math.min(300, Number(autoMixLimitMin) || 60)) * 60 * 1000;
+                    const elapsed = Date.now() - autoMixSessionStartedAt;
+                    const left = Math.max(0, limitMs - elapsed);
+                    autoMixLimitRemainingEl.textContent = left <= 0 ? ' · 0:00 left' : ` · ${formatSessionRemainingClock(left)} left`;
+                };
+                const clearAutoMixSessionRemainingTick = () => {
+                    if (this.autoMixSessionRemainingIntervalId) {
+                        try { clearInterval(this.autoMixSessionRemainingIntervalId); } catch (_) {}
+                        this.autoMixSessionRemainingIntervalId = null;
+                    }
+                    if (autoMixLimitRemainingEl) autoMixLimitRemainingEl.textContent = '';
+                };
+                const syncAutoMixSessionLimitDisplay = () => {
+                    if (this.autoMixSessionRemainingIntervalId) {
+                        try { clearInterval(this.autoMixSessionRemainingIntervalId); } catch (_) {}
+                        this.autoMixSessionRemainingIntervalId = null;
+                    }
+                    if (!autoMixEnabled || !autoMixLimitEnabled) {
+                        if (autoMixLimitRemainingEl) autoMixLimitRemainingEl.textContent = '';
+                        return;
+                    }
+                    updateAutoMixSessionRemainingUi();
+                    this.autoMixSessionRemainingIntervalId = setInterval(() => {
+                        try { updateAutoMixSessionRemainingUi(); } catch (_) {}
+                    }, 1000);
+                };
                 const syncAutoMixUi = () => {
                     autoMixMinMin = Math.max(2, Math.min(20, Math.round(Number(autoMixMinMin) || 2)));
                     autoMixMaxMin = Math.max(autoMixMinMin, Math.min(20, Math.round(Number(autoMixMaxMin) || 20)));
@@ -9938,6 +10173,7 @@ function stopAllAndShowStart() {
                     if (autoMixLimitEn) autoMixLimitEn.checked = !!autoMixLimitEnabled;
                     if (autoMixLimitReadout) autoMixLimitReadout.textContent = formatLimitMinutesReadout(autoMixLimitMin);
                     if (btnAutoMix) btnAutoMix.classList.toggle('on', !!autoMixEnabled);
+                    try { updateAutoMixSessionRemainingUi(); } catch (_) {}
                 };
                 const resetPopupPanelStyles = (panel) => {
                     if (!panel) return;
@@ -10162,15 +10398,22 @@ function stopAllAndShowStart() {
                         this.autoMixTimerId = null;
                     }
                 };
-                const clearAutoMixSessionLimitTimer = () => {
+                const clearAutoMixSessionLimitTimeoutOnly = () => {
                     if (this.autoMixSessionLimitTimerId) {
                         try { clearTimeout(this.autoMixSessionLimitTimerId); } catch (_) {}
                         this.autoMixSessionLimitTimerId = null;
                     }
                 };
+                const clearAutoMixSessionLimitTimer = () => {
+                    clearAutoMixSessionLimitTimeoutOnly();
+                    clearAutoMixSessionRemainingTick();
+                };
                 const scheduleAutoMixSessionLimit = () => {
-                    clearAutoMixSessionLimitTimer();
-                    if (!autoMixEnabled || !autoMixLimitEnabled) return;
+                    clearAutoMixSessionLimitTimeoutOnly();
+                    if (!autoMixEnabled || !autoMixLimitEnabled) {
+                        clearAutoMixSessionRemainingTick();
+                        return;
+                    }
                     const limitMs = Math.max(5, Math.min(300, Number(autoMixLimitMin) || 60)) * 60 * 1000;
                     if (!autoMixSessionStartedAt) autoMixSessionStartedAt = Date.now();
                     const elapsed = Date.now() - autoMixSessionStartedAt;
@@ -10179,6 +10422,7 @@ function stopAllAndShowStart() {
                         this.autoMixSessionLimitTimerId = null;
                         try { onAutoMixSessionLimitReached(); } catch (_) {}
                     }, remaining);
+                    syncAutoMixSessionLimitDisplay();
                 };
                 const runMasterFadeOut = (durMs, onDone) => {
                     if (this.masterFadeOutRafId) {
@@ -13788,6 +14032,10 @@ function stopAllAndShowStart() {
                 try { if (typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(); } catch (_) {}
             });
         }
+        if (fxCut) fxCut.addEventListener('click', () => toggleFx('cut', fxCut));
+        if (fxNoVocal) fxNoVocal.addEventListener('click', () => toggleFx('noVocal', fxNoVocal));
+        if (fxFlanger) fxFlanger.addEventListener('click', () => toggleFx('flanger', fxFlanger));
+        if (fxReverb) fxReverb.addEventListener('click', () => toggleFx('reverb', fxReverb));
         function attachSamplePlayingIndicator(btn, media) {
             if (!btn || !media) return;
             const sync = () => {
@@ -13802,35 +14050,6 @@ function stopAllAndShowStart() {
             sync();
         }
 
-        // --- FIXED FX WAV LISTENER (Lightbulb) ---
-        if (fxWav) {
-            attachSamplePlayingIndicator(fxWav, audioElSample);
-            fxWav.addEventListener('click', (e) => {
-                e.preventDefault();
-                try { audioElSample.loop = !!sampleLoop; } catch(_) {}
-                try { audioElSample.currentTime = 0; } catch(_) {}
-                
-                // Fix: Connect to mixInput (always on) instead of streamBGain
-                try {
-                    if (state.audioCtx) {
-                        if (!state.sourceNodeSample) {
-                            state.sourceNodeSample = state.audioCtx.createMediaElementSource(audioElSample);
-                            state.sourceNodeSample.connect(state.mixInput);
-                        }
-                    }
-                } catch(e) { console.warn(e); }
-
-                audioElSample.play().catch(()=>{});
-            });
-            fxWav.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                sampleLoop = !sampleLoop;
-                try { audioElSample.loop = !!sampleLoop; } catch(_) {}
-                fxWav.classList.toggle('on', sampleLoop);
-            });
-        }
-
-        // --- FIXED BIND SAMPLE FUNCTION (Wav 1-6) ---
         function bindSample(btn, media, loopFlagKey, sourceKey) {
             if (!btn || !media) return;
             attachSamplePlayingIndicator(btn, media);
@@ -13859,12 +14078,6 @@ function stopAllAndShowStart() {
                 btn.classList.toggle('on', nv);
             });
         }
-        bindSample(fxWav1, audioElSample1, 'sampleLoop1', 'sourceNodeSample1');
-        bindSample(fxWav2, audioElSample2, 'sampleLoop2', 'sourceNodeSample2');
-        bindSample(fxWav3, audioElSample3, 'sampleLoop3', 'sourceNodeSample3');
-        bindSample(fxWav4, audioElSample4, 'sampleLoop4', 'sourceNodeSample4');
-        bindSample(fxWav5, audioElSample5, 'sampleLoop5', 'sourceNodeSample5');
-        bindSample(fxWav6, audioElSample6, 'sampleLoop6', 'sourceNodeSample6');
         // Play/Stop B
         // Play/Stop B
         // Play/Stop B
