@@ -4513,7 +4513,7 @@
             </div>
             <div style="flex:1; display:flex; align-items:center; gap:8px; min-width:0;">
                 <span style="font-size:12px; color:#FF0B55; font-weight:bold">A</span>
-                <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%; cursor:pointer; min-width:0;" title="Drag: crossfade. Right-click hold: temporary cut to the opposite deck; release returns here." aria-label="Crossfade from A to B">
+                <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%; cursor:pointer; min-width:0;" title="Drag: crossfade. Right-click hold: cut to the position under the pointer; release restores the previous position." aria-label="Crossfade from A to B">
                 <span style="font-size:12px; color:#5800FF; font-weight:bold">B</span>
             </div>
             <span id="midi-status" style="font-size:10px; color:#889; white-space:nowrap; flex-shrink:0; max-width:140px; overflow:hidden; text-overflow:ellipsis; cursor:pointer;" title="Bluetooth/USB MIDI (Web MIDI API). Default: CC54=crossfader; Ch.1 CC7=Gain A; Ch.2 CC7=Gain B; Note 36/37=Play A/B. Custom: localStorage key omniMidiMap (JSON). Click to enable MIDI or reopen this prompt (same as OMNI “M” on the start screen).">MIDI · …</span>
@@ -8964,6 +8964,17 @@ function stopAllAndShowStart() {
             };
         }
 
+        /** Map horizontal pointer position on a range input to its value (for right-click cut preview). */
+        function crossfadeValueFromPointerOnRange(rangeEl, clientX) {
+            if (!rangeEl || !Number.isFinite(Number(clientX))) return 0;
+            const rect = rangeEl.getBoundingClientRect();
+            const w = Math.max(1, rect.width);
+            const t = (Number(clientX) - rect.left) / w;
+            const min = Number(rangeEl.min) || 0;
+            const max = Number(rangeEl.max) || 1;
+            return Math.max(min, Math.min(max, min + t * (max - min)));
+        }
+
         /** Full-screen DJ UI: dual decks (A/B radio), crossfader, FX mirrors Mixer Settings */
         class DjDecksEngine {
             constructor() {
@@ -10873,7 +10884,7 @@ function stopAllAndShowStart() {
       </div>
       <span class="dj-fader-label-a">A</span>
       <div class="dj-crossfader-mount">
-        <input type="range" id="dj-crossfader" min="0" max="1" step="0.01" value="0" aria-label="Crossfade from A to B" title="Drag: crossfade. Right-click hold: temporary cut to the opposite deck; release returns here." />
+        <input type="range" id="dj-crossfader" min="0" max="1" step="0.01" value="0" aria-label="Crossfade from A to B" title="Drag: crossfade. Right-click hold: cut to the position under the pointer; release restores the previous position." />
       </div>
       <span class="dj-fader-label-b">B</span>
       <div class="dj-automix-wrap">
@@ -11471,7 +11482,7 @@ function stopAllAndShowStart() {
                     } catch (_) {}
                 };
 
-                /** Right-click hold: instant cut to full opposite deck; on release the fader snaps back. */
+                /** Right-click hold: instant cut to the fader position under the cursor; on release it snaps back. */
                 let cutFadeHoldActive = false;
                 let cutFadeHoldRestore = 0;
                 let cutFadeHoldPointerId = null;
@@ -11490,7 +11501,7 @@ function stopAllAndShowStart() {
                         if (ev.button !== 2) return;
                         try { ev.preventDefault(); } catch (_) {}
                         cutFadeHoldRestore = Math.max(0, Math.min(1, Number(djCross.value) || 0));
-                        const cutTo = cutFadeHoldRestore < 0.5 ? 1 : 0;
+                        const cutTo = crossfadeValueFromPointerOnRange(djCross, ev.clientX);
                         cutFadeHoldActive = true;
                         cutFadeHoldPointerId = ev.pointerId;
                         try {
@@ -15068,7 +15079,7 @@ function stopAllAndShowStart() {
                 if (ev.button !== 2) return;
                 try { ev.preventDefault(); } catch (_) {}
                 cutFadeHoldRestore = Math.max(0, Math.min(1, Number(mixCross.value) || 0));
-                const cutTo = cutFadeHoldRestore < 0.5 ? 1 : 0;
+                const cutTo = crossfadeValueFromPointerOnRange(mixCross, ev.clientX);
                 cutFadeHoldActive = true;
                 cutFadeHoldPointerId = ev.pointerId;
                 try { applyCrossfade(cutTo); } catch (_) {}
