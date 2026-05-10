@@ -3440,13 +3440,19 @@
             text-shadow: 0 0 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.6);
         }
         #mix-effects .btn.on {
-            border-color: rgba(212,175,55,0.8);
-            box-shadow: 0 0 12px rgba(212,175,55,0.25) inset;
-            background-color: rgba(212,175,55,0.12);
+            border-color: rgba(255, 55, 72, 0.65);
+            box-shadow: 0 0 12px rgba(255, 45, 60, 0.22) inset, 0 0 14px rgba(255, 40, 55, 0.18);
+            background-color: rgba(255, 35, 55, 0.08);
             background-image: url('btn.png'), url('xim.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
             background-size: 100% 100%, 100% 100%;
+            color: #ff2a3d;
+            text-shadow:
+                0 0 10px rgba(255, 55, 70, 0.95),
+                0 0 20px rgba(255, 35, 50, 0.45),
+                0 0 4px rgba(0, 0, 0, 0.9),
+                0 0 10px rgba(0, 0, 0, 0.55);
         }
         #mix-effects .btn.sample-playing {
             color: #FFD700;
@@ -3461,6 +3467,21 @@
             color: #f5d20f;
             box-shadow: 0 0 10px rgba(255,255,255,0.15);
             border-color: rgba(245,210,15,0.3);
+            background-image: url('btn.png'), url('xim.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, 100% 100%;
+        }
+        #mix-effects .btn.on:hover {
+            color: #ff5063;
+            border-color: rgba(255, 80, 95, 0.75);
+            box-shadow: 0 0 14px rgba(255, 55, 70, 0.28) inset, 0 0 18px rgba(255, 45, 60, 0.22);
+            background-color: rgba(255, 45, 60, 0.1);
+            text-shadow:
+                0 0 12px rgba(255, 75, 88, 0.95),
+                0 0 22px rgba(255, 50, 65, 0.5),
+                0 0 4px rgba(0, 0, 0, 0.9),
+                0 0 10px rgba(0, 0, 0, 0.55);
             background-image: url('btn.png'), url('xim.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
