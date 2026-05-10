@@ -11124,6 +11124,17 @@ function stopAllAndShowStart() {
                 attachJogSeek('a', this.els.jogA);
                 attachJogSeek('b', this.els.jogB);
 
+                /** Keep deck audio elements playing whenever the crossfader gives them audible gain (fixes mismatches after interrupted/completed auto-fades). */
+                const ensureCrossfadeDeckPlayback = () => {
+                    try {
+                        const xv = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
+                        const ga = 1 - xv;
+                        const gb = xv;
+                        const thresh = 0.03;
+                        if (ga > thresh && audioEl && audioEl.src && audioEl.paused) audioEl.play().catch(() => {});
+                        if (gb > thresh && audioElB && audioElB.src && audioElB.paused) audioElB.play().catch(() => {});
+                    } catch (_) {}
+                };
                 const ensureDeckStationPlayback = (deckKey) => {
                     if (deckKey === 'b') {
                         try { state.deckSourceMode.b = 'radio'; } catch (_) {}
@@ -11293,9 +11304,12 @@ function stopAllAndShowStart() {
                         const eased = 1 - Math.pow(1 - t, 3);
                         const val = startVal + ((endVal - startVal) * eased);
                         try { if (typeof applyCrossfade === 'function') applyCrossfade(val); } catch (_) {}
+                        try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                         if (t >= 1) {
                             this.autoFadeRafId = null;
                             if (btnAutoFade) btnAutoFade.classList.remove('on');
+                            try { ensureDeckStationPlayback(targetDeck); } catch (_) {}
+                            try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                             return;
                         }
                         this.autoFadeRafId = requestAnimationFrame(tick);
@@ -11332,6 +11346,7 @@ function stopAllAndShowStart() {
                         closeAutoMixPanel();
                         const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                         runAutoFade(x < 0.5 ? 'b' : 'a');
+                        try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                         if (autoMixEnabled) scheduleNextAutoMix();
                     }, sig);
                 }
