@@ -1316,19 +1316,19 @@
             background-image: url('bnt.png'), url('wly.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root .dj-beatmap-pads .btn.dj-fx.dj-beat-pad:hover {
             background-image: url('bnt.png'), url('wly.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root .dj-beatmap-pads .btn.dj-fx.dj-beat-pad.on {
             background-image: url('bnt.png'), url('wly.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
             color: #FFD700;
             text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 4px rgba(0,0,0,0.85), 0 0 10px rgba(0,0,0,0.55);
         }
@@ -1546,6 +1546,7 @@
         /* DJ Deck buttons: align with Mixer Settings (#mix-panel .btn / #mix-effects .btn) — btn.png */
         #dj-visual-root .dj-play,
         #dj-visual-root .dj-tbtn {
+            overflow: hidden;
             padding: calc(4px * var(--dj-control-scale)) calc(8px * var(--dj-control-scale));
             border: 1px solid rgba(255,255,255,0.25);
             background-color: rgba(255,255,255,0.08);
@@ -1578,6 +1579,7 @@
         }
         #dj-visual-root .btn.dj-fx,
         #dj-visual-root .btn.dj-sfx {
+            overflow: hidden;
             padding: calc(6px * var(--dj-control-scale));
             border: 1px solid rgba(255,0,0,0.25);
             background-color: rgba(0,0,0,0.25);
@@ -1611,20 +1613,20 @@
             background-image: url('btn.png'), url('ytu.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root .btn.dj-sfx {
             background-color: #000;
             background-image: url('btn.png'), url('ytu.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root .btn.dj-sfx.sample-playing {
             background-image: url('btn.png'), url('ytu.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
             color: #FFD700;
             text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 4px rgba(0,0,0,0.85), 0 0 10px rgba(0,0,0,0.55);
         }
@@ -1655,26 +1657,26 @@
             background-image: url('btn.png'), url('pre.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-a-next,
         #dj-visual-root #dj-b-next {
             background-image: url('btn.png'), url('ran.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-play-a:not(.is-playing),
         #dj-visual-root #dj-play-b:not(.is-playing) {
             background-image: url('btn.png'), url('ylp.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-play-a:not(.is-playing):hover,
         #dj-visual-root #dj-play-b:not(.is-playing):hover {
             background-image: url('btn.png'), url('ylp.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         /* Pause label: gold text on ply.gif backdrop (no brighter “white” idle fill). */
         #dj-visual-root #dj-play-a.is-playing,
@@ -1683,7 +1685,7 @@
             background-image: url('btn.png'), url('ply.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
             color: #FFD700;
             text-shadow: 0 0 6px rgba(255, 215, 0, 0.4), 0 0 4px rgba(0, 0, 0, 0.9);
         }
@@ -1691,7 +1693,7 @@
         #dj-visual-root #dj-play-b.is-playing:hover {
             background-color: rgba(217, 2, 45, 0.1);
             background-image: url('btn.png'), url('ply.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
             color: #f5d20f;
             border-color: rgba(245, 210, 15, 0.3);
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
@@ -1712,7 +1714,7 @@
             background-image: url('btn.png'), url('ytu.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         /* ProjectM / AUDIO:BAR: btn.png on top (transparent center), gif fills underneath */
         #dj-visual-root #dj-vis-pm2,
@@ -1720,18 +1722,18 @@
             background-image: url('btn.png'), url('prm.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
             background-color: rgba(0, 0, 0, 0.45);
         }
         #dj-visual-root #dj-vis-pm2.on,
         #dj-visual-root #dj-b-vis-pm2.on {
             background-image: url('btn.png'), url('prm.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-vis-pm2:hover,
         #dj-visual-root #dj-b-vis-pm2:hover {
             background-image: url('btn.png'), url('prm.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
             filter: brightness(1.12);
         }
         /* Audio Bars visual shortcut: aub.gif backdrop */
@@ -1740,119 +1742,264 @@
             background-image: url('btn.png'), url('aub.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
             background-color: rgba(0, 0, 0, 0.45);
         }
         #dj-visual-root #dj-vis-bars:hover,
         #dj-visual-root #dj-b-vis-bars:hover {
             background-image: url('btn.png'), url('aub.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
             filter: brightness(1.12);
+        }
+        @keyframes karaokeLabelNeonCycle {
+            0% {
+                color: #ff66ee;
+                text-shadow:
+                    0 0 10px rgba(255, 90, 230, 0.98),
+                    0 0 20px rgba(220, 60, 255, 0.65),
+                    0 0 2px rgba(90, 0, 70, 0.9);
+            }
+            12.5% {
+                color: #ffffff;
+                text-shadow:
+                    0 0 2px rgba(0, 0, 0, 0.95),
+                    0 1px 3px rgba(0, 0, 0, 0.85),
+                    0 0 12px rgba(255, 255, 255, 1),
+                    0 0 22px rgba(220, 235, 255, 0.55);
+            }
+            25% {
+                color: #c877ff;
+                text-shadow:
+                    0 0 10px rgba(200, 120, 255, 0.98),
+                    0 0 20px rgba(160, 80, 255, 0.55),
+                    0 0 2px rgba(60, 0, 100, 0.85);
+            }
+            37.5% {
+                color: #060608;
+                text-shadow:
+                    0 0 4px rgba(255, 255, 255, 0.95),
+                    0 0 10px rgba(255, 255, 255, 0.65),
+                    0 0 18px rgba(200, 210, 255, 0.35),
+                    0 0 2px rgba(255, 255, 255, 0.9);
+            }
+            50% {
+                color: #66f5ff;
+                text-shadow:
+                    0 0 10px rgba(90, 240, 255, 0.98),
+                    0 0 20px rgba(60, 200, 255, 0.5),
+                    0 0 2px rgba(0, 70, 90, 0.85);
+            }
+            62.5% {
+                color: #f8f8fb;
+                text-shadow:
+                    0 0 2px rgba(0, 0, 0, 0.88),
+                    0 0 10px rgba(255, 255, 255, 0.95),
+                    0 0 20px rgba(230, 240, 255, 0.45);
+            }
+            75% {
+                color: #ffa8ff;
+                text-shadow:
+                    0 0 10px rgba(255, 170, 255, 0.98),
+                    0 0 20px rgba(255, 130, 230, 0.55),
+                    0 0 2px rgba(100, 0, 80, 0.85);
+            }
+            87.5% {
+                color: #000000;
+                text-shadow:
+                    0 0 5px rgba(255, 255, 255, 0.92),
+                    0 0 14px rgba(255, 255, 255, 0.45),
+                    0 0 22px rgba(180, 190, 255, 0.25);
+            }
+            100% {
+                color: #ff66ee;
+                text-shadow:
+                    0 0 10px rgba(255, 90, 230, 0.98),
+                    0 0 20px rgba(220, 60, 255, 0.65),
+                    0 0 2px rgba(90, 0, 70, 0.9);
+            }
         }
         #dj-visual-root #dj-a-sfx-w1,
         #dj-visual-root #dj-b-sfx-w1 {
             background-image: url('btn.png'), url('kar.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-a-sfx-w1:hover,
         #dj-visual-root #dj-b-sfx-w1:hover,
         #dj-visual-root #dj-a-sfx-w1.on,
         #dj-visual-root #dj-b-sfx-w1.on {
             background-image: url('btn.png'), url('kar.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
+        }
+        #dj-visual-root #dj-a-sfx-w1,
+        #dj-visual-root #dj-a-sfx-w1:hover,
+        #dj-visual-root #dj-a-sfx-w1.on,
+        #dj-visual-root #dj-b-sfx-w1,
+        #dj-visual-root #dj-b-sfx-w1:hover,
+        #dj-visual-root #dj-b-sfx-w1.on {
+            animation: karaokeLabelNeonCycle 6.5s ease-in-out infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #dj-visual-root #dj-a-sfx-w1,
+            #dj-visual-root #dj-a-sfx-w1:hover,
+            #dj-visual-root #dj-a-sfx-w1.on,
+            #dj-visual-root #dj-b-sfx-w1,
+            #dj-visual-root #dj-b-sfx-w1:hover,
+            #dj-visual-root #dj-b-sfx-w1.on {
+                animation: none;
+                color: #e6c2ff;
+                text-shadow:
+                    0 0 8px rgba(200, 110, 255, 0.95),
+                    0 0 16px rgba(170, 70, 255, 0.55),
+                    0 0 2px rgba(50, 0, 80, 0.85);
+            }
         }
         #dj-visual-root #dj-fx-high,
         #dj-visual-root #dj-b-fx-high {
             background-image: url('btn.png'), url('ava.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-fx-high:hover,
         #dj-visual-root #dj-b-fx-high:hover,
         #dj-visual-root #dj-fx-high.on,
         #dj-visual-root #dj-b-fx-high.on {
             background-image: url('btn.png'), url('ava.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-fx-low,
         #dj-visual-root #dj-b-fx-low {
             background-image: url('btn.png'), url('vid.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-fx-low:hover,
         #dj-visual-root #dj-b-fx-low:hover,
         #dj-visual-root #dj-fx-low.on,
         #dj-visual-root #dj-b-fx-low.on {
             background-image: url('btn.png'), url('vid.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-fx-treble,
         #dj-visual-root #dj-b-fx-treble {
             background-image: url('btn.png'), url('mix.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-fx-treble:hover,
         #dj-visual-root #dj-b-fx-treble:hover,
         #dj-visual-root #dj-fx-treble.on,
         #dj-visual-root #dj-b-fx-treble.on {
             background-image: url('btn.png'), url('mix.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
+        }
+        @keyframes queueGoldGlowPulse {
+            0%, 100% {
+                color: #00edff;
+                -webkit-text-stroke-width: 0.35px;
+                -webkit-text-stroke-color: rgba(212, 175, 55, 0.4);
+                text-shadow:
+                    0 0 3px rgba(255, 215, 120, 0.55),
+                    0 0 8px rgba(212, 175, 55, 0.45),
+                    0 0 14px rgba(212, 175, 55, 0.22),
+                    0 0 10px rgba(0, 235, 255, 0.95),
+                    0 0 22px rgba(0, 210, 255, 0.55),
+                    0 0 34px rgba(0, 180, 255, 0.28),
+                    0 0 2px rgba(0, 35, 55, 0.95);
+            }
+            50% {
+                color: #00edff;
+                -webkit-text-stroke-width: 0.85px;
+                -webkit-text-stroke-color: rgba(255, 228, 160, 0.98);
+                text-shadow:
+                    0 0 8px rgba(255, 235, 190, 1),
+                    0 0 18px rgba(212, 175, 55, 0.95),
+                    0 0 32px rgba(255, 210, 120, 0.55),
+                    0 0 48px rgba(212, 175, 55, 0.28),
+                    0 0 12px rgba(0, 235, 255, 0.95),
+                    0 0 26px rgba(0, 210, 255, 0.65),
+                    0 0 2px rgba(0, 35, 55, 0.95);
+            }
         }
         #dj-visual-root #dj-a-queue,
         #dj-visual-root #dj-b-queue {
             background-image: url('btn.png'), url('que.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-a-queue:hover,
         #dj-visual-root #dj-b-queue:hover,
         #dj-visual-root #dj-a-queue.on,
         #dj-visual-root #dj-b-queue.on {
             background-image: url('btn.png'), url('que.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
+        }
+        #dj-visual-root #dj-a-queue,
+        #dj-visual-root #dj-a-queue:hover,
+        #dj-visual-root #dj-a-queue.on,
+        #dj-visual-root #dj-b-queue,
+        #dj-visual-root #dj-b-queue:hover,
+        #dj-visual-root #dj-b-queue.on {
+            paint-order: stroke fill;
+            animation: queueGoldGlowPulse 2.8s ease-in-out infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #dj-visual-root #dj-a-queue,
+            #dj-visual-root #dj-a-queue:hover,
+            #dj-visual-root #dj-a-queue.on,
+            #dj-visual-root #dj-b-queue,
+            #dj-visual-root #dj-b-queue:hover,
+            #dj-visual-root #dj-b-queue.on {
+                animation: none;
+                -webkit-text-stroke-width: 0.5px;
+                -webkit-text-stroke-color: rgba(212, 175, 55, 0.75);
+                color: #00edff;
+                text-shadow:
+                    0 0 10px rgba(0, 235, 255, 1),
+                    0 0 22px rgba(0, 210, 255, 0.75),
+                    0 0 34px rgba(0, 180, 255, 0.4),
+                    0 0 2px rgba(0, 35, 55, 0.95);
+            }
         }
         #dj-visual-root #dj-fx-tk,
         #dj-visual-root #dj-b-fx-tk {
             background-image: url('btn.png'), url('tin.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-fx-tk:hover,
         #dj-visual-root #dj-b-fx-tk:hover,
         #dj-visual-root #dj-fx-tk.on,
         #dj-visual-root #dj-b-fx-tk.on {
             background-image: url('btn.png'), url('tin.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-fx-distort,
         #dj-visual-root #dj-b-fx-distort {
             background-image: url('btn.png'), url('sta.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-fx-distort:hover,
         #dj-visual-root #dj-b-fx-distort:hover,
         #dj-visual-root #dj-fx-distort.on,
         #dj-visual-root #dj-b-fx-distort.on {
             background-image: url('btn.png'), url('sta.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-a-sfx-w2,
         #dj-visual-root #dj-b-sfx-w2 {
             background-image: url('btn.png'), url('you.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-a-sfx-w2:hover,
         #dj-visual-root #dj-b-sfx-w2:hover,
@@ -1861,7 +2008,7 @@
         #dj-visual-root #dj-a-sfx-w2.sample-playing,
         #dj-visual-root #dj-b-sfx-w2.sample-playing {
             background-image: url('btn.png'), url('you.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         /* No Visual shortcut: nvi.gif backdrop with btn frame */
         #dj-visual-root #dj-vis-blank,
@@ -1869,14 +2016,23 @@
             background-image: url('btn.png'), url('nvi.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
             background-color: rgba(0, 0, 0, 0.45);
         }
         #dj-visual-root #dj-vis-blank:hover,
         #dj-visual-root #dj-b-vis-blank:hover {
             background-image: url('btn.png'), url('nvi.gif');
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
             filter: brightness(1.12);
+        }
+        #dj-visual-root #dj-vis-blank,
+        #dj-visual-root #dj-vis-blank:hover,
+        #dj-visual-root #dj-vis-blank.on,
+        #dj-visual-root #dj-b-vis-blank,
+        #dj-visual-root #dj-b-vis-blank:hover,
+        #dj-visual-root #dj-b-vis-blank.on {
+            color: #000000;
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.88), 0 1px 2px rgba(255, 255, 255, 0.45);
         }
         /* TK filter: long-press editor — position set in JS at cursor */
         #dj-visual-root .dj-tk-hold-panel {
@@ -2061,6 +2217,13 @@
             line-height: 1.1;
             min-height: calc(28px * var(--dj-control-scale) * var(--dj-btn-height-mult));
             padding: calc(8px * var(--dj-control-scale)) calc(6px * var(--dj-control-scale));
+        }
+        /* Deck A/B right grid: slightly larger labels (AUDIO:BAR … Prev); keep IDEAS sample slot at default size */
+        #dj-visual-root .dj-controls-grid > .btn.dj-fx,
+        #dj-visual-root .dj-controls-grid > .btn.dj-sfx:not(#dj-a-sfx-wav):not(#dj-b-sfx-wav),
+        #dj-visual-root .dj-controls-grid > .dj-play,
+        #dj-visual-root .dj-controls-grid > .dj-tbtn {
+            font-size: calc(12px * var(--dj-control-scale));
         }
         #dj-visual-root .dj-controls-grid .dj-play,
         #dj-visual-root .dj-controls-grid .dj-tbtn,
@@ -3112,13 +3275,14 @@
         /* Mixer FX grid only (Low-pass … NO VOCAL): btn.png over xim.gif */
         #mix-effects .btn {
             position: relative;
+            overflow: hidden;
             padding: 10px;
             border: 1px solid rgba(255,0,0,0.25);
             background-color: rgba(0,0,0,0.25);
             background-image: url('btn.png'), url('xim.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
             color: #fff;
             border-radius: 6px;
             font-size: 14px;
@@ -3131,7 +3295,7 @@
             background-image: url('btn.png'), url('xim.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #mix-effects .btn.sample-playing {
             color: #FFD700;
@@ -3139,7 +3303,7 @@
             background-image: url('btn.png'), url('xim.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         #mix-effects .btn:hover {
             background-color: rgba(217,2,45,0.1);
@@ -3149,7 +3313,7 @@
             background-image: url('btn.png'), url('xim.gif');
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, cover;
+            background-size: 100% 100%, 100% 100%;
         }
         /* BPM scope row */
         #mix-bpm-row {
@@ -4017,7 +4181,7 @@
     <div id="options-panel" class="display-none" aria-label="Options Panel">
         <div id="options-modal">
             <div id="options-grid">
-                <button class="tri-btn tri-top"    id="opt-top"    title="Open Top Menu"><span class="tri-label">Top Menu</span></button>
+                <button class="tri-btn tri-top"    id="opt-top"    title="Open Radio Stations"><span class="tri-label">Radio Stations</span></button>
                 <button class="tri-btn tri-left"   id="opt-left"   title="Open Text-In"><span class="tri-label">Text-In</span></button>
                 <button class="tri-btn tri-right"  id="opt-right"  title="Open Avatar Settings"><span class="tri-label">Avatar</span></button>
                 <button class="tri-btn tri-bottom" id="opt-bottom" title="Open Mix Settings"><span class="tri-label">Mixer</span></button>
