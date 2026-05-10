@@ -1035,6 +1035,26 @@
             width: clamp(calc(68px * var(--dj-control-scale)), calc(17vmin * var(--dj-control-scale)), calc(132px * var(--dj-control-scale)));
             height: clamp(calc(68px * var(--dj-control-scale)), calc(17vmin * var(--dj-control-scale)), calc(132px * var(--dj-control-scale)));
         }
+        /*
+         * Landscape: Deck A’s body centers its mosaic (content-sized .dj-stack). Deck B wraps controls in
+         * .dj-deck-b-controls { flex: 1 }, which stretched them to the column top. Let the controls block
+         * size to content and vertically center it under the crossfader strip — matches Deck A alignment.
+         * Also center the crossfader strip + body as one block (body had flex:1, which pinned the fader
+         * to the top). Skip when Deck B stage is in visual / queue / text mode — those need a full-height column.
+         */
+        #dj-visual-root.dj-mode-landscape .dj-deck-b:not(:has(.dj-deck-b-stage:is(.dj-deck-b-visual-mode, .dj-deck-b-queue-mode, .dj-deck-b-text-mode))) {
+            justify-content: center;
+        }
+        #dj-visual-root.dj-mode-landscape .dj-deck-b:not(:has(.dj-deck-b-stage:is(.dj-deck-b-visual-mode, .dj-deck-b-queue-mode, .dj-deck-b-text-mode))) > .dj-deck-body {
+            flex: 0 1 auto;
+        }
+        #dj-visual-root.dj-mode-landscape .dj-deck-b-stage:not(.dj-deck-b-visual-mode):not(.dj-deck-b-queue-mode):not(.dj-deck-b-text-mode) {
+            justify-content: center;
+            flex: 0 1 auto;
+        }
+        #dj-visual-root.dj-mode-landscape .dj-deck-b-stage:not(.dj-deck-b-visual-mode):not(.dj-deck-b-queue-mode):not(.dj-deck-b-text-mode) .dj-deck-b-controls {
+            flex: 0 1 auto;
+        }
         #dj-visual-root .dj-deck-mosaic > .dj-beatmap-strip {
             grid-column: 1;
             grid-row: 1 / 7;
