@@ -6211,6 +6211,21 @@ function randomGlowColor() {
             return true;
         }
 
+        /** Reliable hit-test for Deck B ProjectM / AUDIO:BAR canvas — WebGL targets sometimes skip closest() from container. */
+        function isEventOnDeckBVizMount(e) {
+            try {
+                if (e && e.target && typeof e.target.closest === 'function' && e.target.closest('#dj-deck-b-viz-mount')) return true;
+                if (e && typeof e.composedPath === 'function') {
+                    const path = e.composedPath();
+                    for (let i = 0; i < path.length; i++) {
+                        const n = path[i];
+                        if (n && n.nodeType === 1 && n.id === 'dj-deck-b-viz-mount') return true;
+                    }
+                }
+            } catch (_) {}
+            return false;
+        }
+
         function forceResize() {
             if(state.activeVisualizer && state.activeVisualizer.onResize) {
                 state.activeVisualizer.onResize();
@@ -6720,8 +6735,7 @@ function randomGlowColor() {
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
                         try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch(_) {}
                         try {
-                            const t = e.target;
-                            if (t && typeof t.closest === 'function' && t.closest('#dj-deck-b-viz-mount')) {
+                            if (isEventOnDeckBVizMount(e)) {
                                 toggleDeckBVizMountFullscreen();
                             } else {
                                 toggleFullscreen();
@@ -6774,12 +6788,15 @@ function randomGlowColor() {
                     webmOverlay.addEventListener('pointerdown', onPointerDown, { passive: true });
                     webmOverlay.addEventListener('pointerup', onPointerUpWebm, { passive: false });
                 }
-                // Double click: fullscreen DJ canvas — except Deck B viz mount (handled there → mount FS only)
+                // Double click: Deck B viz mount → fullscreen mount only; elsewhere → fullscreen DJ canvas
                 canvasEl.addEventListener('dblclick', (e) => {
                     if (!state || !state.isPlaying) return;
-                    try {
-                        if (e.target && typeof e.target.closest === 'function' && e.target.closest('#dj-deck-b-viz-mount')) return;
-                    } catch (_) {}
+                    if (isEventOnDeckBVizMount(e)) {
+                        try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+                        try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch (_) {}
+                        try { toggleDeckBVizMountFullscreen(); } catch (_) {}
+                        return;
+                    }
                     try {
                         if (e.target && typeof e.target.closest === 'function' && e.target.closest('#dj-deck-splitter')) return;
                     } catch (_) {}
