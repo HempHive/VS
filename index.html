@@ -6188,6 +6188,29 @@ function randomGlowColor() {
             }
         }
 
+        /** Fullscreen only `#dj-deck-b-viz-mount` (ProjectM / AUDIO:BAR / No Visual), not the whole DJ canvas. */
+        function toggleDeckBVizMountFullscreen() {
+            const mount = document.getElementById('dj-deck-b-viz-mount');
+            if (!mount) return false;
+            const getFs = () => document.fullscreenElement || document.webkitFullscreenElement;
+            try {
+                if (getFs() === mount) {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen().then(() => setTimeout(() => forceResize(), 200)).catch(() => {});
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                        setTimeout(() => forceResize(), 200);
+                    }
+                } else {
+                    const req = mount.requestFullscreen || mount.webkitRequestFullscreen;
+                    if (req) {
+                        req.call(mount).then(() => setTimeout(() => forceResize(), 200)).catch(() => {});
+                    }
+                }
+            } catch (_) {}
+            return true;
+        }
+
         function forceResize() {
             if(state.activeVisualizer && state.activeVisualizer.onResize) {
                 state.activeVisualizer.onResize();
@@ -6696,7 +6719,14 @@ function randomGlowColor() {
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
                         try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch(_) {}
-                        try { toggleFullscreen(); } catch(_) {}
+                        try {
+                            const t = e.target;
+                            if (t && typeof t.closest === 'function' && t.closest('#dj-deck-b-viz-mount')) {
+                                toggleDeckBVizMountFullscreen();
+                            } else {
+                                toggleFullscreen();
+                            }
+                        } catch (_) {}
                         lastTapTime = 0; // reset
                         return;
                     }
@@ -6744,9 +6774,12 @@ function randomGlowColor() {
                     webmOverlay.addEventListener('pointerdown', onPointerDown, { passive: true });
                     webmOverlay.addEventListener('pointerup', onPointerUpWebm, { passive: false });
                 }
-                // Double click: toggle Fullscreen
+                // Double click: fullscreen DJ canvas — except Deck B viz mount (handled there → mount FS only)
                 canvasEl.addEventListener('dblclick', (e) => {
                     if (!state || !state.isPlaying) return;
+                    try {
+                        if (e.target && typeof e.target.closest === 'function' && e.target.closest('#dj-deck-b-viz-mount')) return;
+                    } catch (_) {}
                     try {
                         if (e.target && typeof e.target.closest === 'function' && e.target.closest('#dj-deck-splitter')) return;
                     } catch (_) {}
@@ -9439,6 +9472,7 @@ function stopAllAndShowStart() {
                 this.deckBVizPmVisualizer = null;
                 this.deckBVizPmCanvas = null;
                 this.deckBVizPmResize = null;
+                this.nextDeckBProjectMPreset = null;
                 this.deckBVideoEl = null;
                 this.deckBVideoList = [];
                 this.deckBVideoIndex = 0;
@@ -9463,6 +9497,7 @@ function stopAllAndShowStart() {
                     }
                 } catch (_) {}
                 try { this.syncPlayLabels(); } catch (_) {}
+                try { updateSkipPresetButtonVisibility(); } catch (_) {}
             }
 
             showDeckBVisualBackButton(label) {
@@ -9489,6 +9524,7 @@ function stopAllAndShowStart() {
                         if (pmA) pmA.classList.remove('deck-b-active');
                         if (blankA) blankA.classList.remove('deck-b-active');
                         try { updateDjDecksShortcutVisibility(); } catch (_) {}
+                        try { updateSkipPresetButtonVisibility(); } catch (_) {}
                         return;
                     }
                     const m = this.deckBVizMode || 'idle';
@@ -9499,6 +9535,7 @@ function stopAllAndShowStart() {
                     if (pmA) pmA.classList.toggle('deck-b-active', m === 'projectm');
                     if (blankA) blankA.classList.toggle('deck-b-active', m === 'blank');
                     try { updateDjDecksShortcutVisibility(); } catch (_) {}
+                    try { updateSkipPresetButtonVisibility(); } catch (_) {}
                 } catch (_) {}
             }
 
@@ -9536,17 +9573,16 @@ function stopAllAndShowStart() {
                         else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
                     } catch (_) {}
                 };
-                const enterFs = () => {
-                    const req = mount.requestFullscreen || mount.webkitRequestFullscreen;
-                    if (req) try { req.call(mount); } catch (_) {}
-                };
                 const onDblClick = (e) => {
                     try {
                         if (e.target && typeof e.target.closest === 'function' && e.target.closest('#dj-deck-splitter')) return;
                     } catch (_) {}
-                    try { e.preventDefault(); } catch (_) {}
-                    if (getFs() === mount) exitFs();
-                    else enterFs();
+                    try {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                    } catch (_) {}
+                    try { toggleDeckBVizMountFullscreen(); } catch (_) {}
                 };
                 const onKeyDown = (e) => {
                     if (e.key !== 'Escape') return;
@@ -10087,6 +10123,7 @@ function stopAllAndShowStart() {
                     currentPresetIdx = next;
                     loadPmPreset(currentPresetIdx);
                 };
+                this.nextDeckBProjectMPreset = () => nextPmPreset();
 
                 const restartPmCycle = () => {
                     try {
@@ -10118,6 +10155,7 @@ function stopAllAndShowStart() {
                 };
                 loop();
                 this.attachDeckBVizMountFullscreen(mount);
+                try { updateSkipPresetButtonVisibility(); } catch (_) {}
             }
 
             startDeckBAudioBars() {
@@ -10194,6 +10232,10 @@ function stopAllAndShowStart() {
                     if (mount) mount.innerHTML = '';
                     const ph = this.root.querySelector('#dj-deck-b-viz-placeholder');
                     if (ph) ph.classList.add('display-none');
+                } catch (_) {}
+                try {
+                    const mount = this.root.querySelector('#dj-deck-b-viz-mount');
+                    if (mount) this.attachDeckBVizMountFullscreen(mount);
                 } catch (_) {}
             }
 
@@ -14456,6 +14498,22 @@ function stopAllAndShowStart() {
             new MilkdropPresetEngine("Rainbow (Invert)", (k) => /rainbow|color|colour|spectrum|palette/i.test(k), { invert: true })
         ];
 
+        function updateSkipPresetButtonVisibility() {
+            try {
+                const skipBtn = document.getElementById('btn-skip-preset');
+                if (!skipBtn) return;
+                const av = state.activeVisualizer;
+                const mainHasNext = !!(av && typeof av.nextPreset === 'function');
+                const deckBProjectM =
+                    !!(av &&
+                        av.name === 'DJ Decks' &&
+                        av.deckBVizMode === 'projectm' &&
+                        typeof av.nextDeckBProjectMPreset === 'function');
+                if (mainHasNext || deckBProjectM) skipBtn.classList.remove('display-none');
+                else skipBtn.classList.add('display-none');
+            } catch (_) {}
+        }
+
         function updateDjDecksShortcutVisibility() {
             try {
                 const btn = document.getElementById('btn-dj-decks');
@@ -14507,10 +14565,7 @@ function stopAllAndShowStart() {
                 document.getElementById('mode-sub').innerText = "3D Interactive";
             }
             
-            // Show/Hide Skip Button
-            const skipBtn = document.getElementById('btn-skip-preset');
-            if(state.activeVisualizer && typeof state.activeVisualizer.nextPreset === 'function') skipBtn.classList.remove('display-none');
-            else skipBtn.classList.add('display-none');
+            updateSkipPresetButtonVisibility();
 
             try { initAudio(); } catch (_) {}
             state.activeVisualizer.init();
@@ -15193,10 +15248,15 @@ function stopAllAndShowStart() {
             }
         });
         
-        // Skip Preset Button Logic
+        // Skip Preset Button Logic (main visual ProjectM / Milkdrop, or Deck B ProjectM)
         document.getElementById('btn-skip-preset').addEventListener('click', () => {
-            if(state.activeVisualizer && state.activeVisualizer.nextPreset) {
-                state.activeVisualizer.nextPreset();
+            const av = state.activeVisualizer;
+            if (av && av.name === 'DJ Decks' && av.deckBVizMode === 'projectm' && typeof av.nextDeckBProjectMPreset === 'function') {
+                try { av.nextDeckBProjectMPreset(); } catch (_) {}
+                return;
+            }
+            if (av && typeof av.nextPreset === 'function') {
+                try { av.nextPreset(); } catch (_) {}
             }
         });
 
@@ -16024,10 +16084,13 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 var resetBtn = document.getElementById('btn-webm-reset');
                 if (resetBtn) { resetBtn.click(); }
             } else if (e.key === 'c' || e.key === 'C') {
-                // ProjectM: next visual preset
-                if (state && state.activeVisualizer && typeof state.activeVisualizer.nextPreset === 'function') {
+                const av = state && state.activeVisualizer;
+                if (av && av.name === 'DJ Decks' && av.deckBVizMode === 'projectm' && typeof av.nextDeckBProjectMPreset === 'function') {
                     e.preventDefault();
-                    state.activeVisualizer.nextPreset();
+                    try { av.nextDeckBProjectMPreset(); } catch (_) {}
+                } else if (av && typeof av.nextPreset === 'function') {
+                    e.preventDefault();
+                    try { av.nextPreset(); } catch (_) {}
                 }
             } else if (e.key === 'Escape') {
                 // Close any open panels first; if none open, return to start
