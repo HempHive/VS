@@ -11644,7 +11644,8 @@ function stopAllAndShowStart() {
                         if (t >= 1) {
                             this.autoFadeRafId = null;
                             if (btnAutoFade) btnAutoFade.classList.remove('on');
-                            try { ensureDeckStationPlayback(targetDeck); } catch (_) {}
+                            // Do not call ensureDeckStationPlayback here: setStation/playRadioB reload the
+                            // stream and cause a second silence gap after the fader has already arrived.
                             try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                             return;
                         }
