@@ -4645,7 +4645,7 @@
                     <button class="btn" id="fx-distort">Distortion</button>
                     <button class="btn" id="fx-arp">Arpeggiator</button>
                     <button class="btn" id="fx-tk">TK-Filter</button>
-                    <button class="btn" id="fx-cut" title="Kill / mute main mix output while on">CUT</button>
+                    <button class="btn" id="fx-cut" title="Same as Deck B NO VOCAL: toggle vocal-reduction (tap knob on deck for strength)">CUT</button>
                     <button class="btn" id="fx-reverb" title="Hall-style convolution reverb (wet/dry mix)">REVERB</button>
                     <button class="btn" id="fx-flanger" title="Modulated delay (flanger)">FLANGER</button>
                     <button class="btn" id="fx-novocal" title="Approximate instrumental: strong mid-range vocal cut (mono mix; not full stem separation)">NO VOCAL</button>
@@ -7207,8 +7207,6 @@ function randomGlowColor() {
                 for (let i=0;i<curveLen;i++){ const x = i/curveLen*2-1; curve[i] = ((3+amount)*x*20*Math.PI/180)/(Math.PI+amount*Math.abs(x)); }
                 state.fx.distort.node.curve = curve; state.fx.distort.node.oversample = '4x';
 
-                state.fx.cut = { node: state.audioCtx.createGain(), on: false };
-                state.fx.cut.node.gain.value = 1;
                 state.fx.noVocal = {
                     on: false,
                     f1: state.audioCtx.createBiquadFilter(),
@@ -7326,9 +7324,6 @@ function randomGlowColor() {
                     try { state.fx.reverb.convolver.disconnect(); } catch (_) {}
                     try { state.fx.reverb.sum.disconnect(); } catch (_) {}
                 }
-                if (state.fx && state.fx.cut && state.fx.cut.node) {
-                    try { state.fx.cut.node.disconnect(); } catch (_) {}
-                }
             } catch (_) {}
             const enabled = [];
             if (state.fx.low.on) enabled.push(state.fx.low.node);
@@ -7411,12 +7406,6 @@ function randomGlowColor() {
             } else if (state.fx.reverb) {
                 state.fx.reverb.dryGain.gain.value = 1;
                 state.fx.reverb.wetGain.gain.value = 0;
-            }
-            if (state.fx.cut && state.fx.cut.node) {
-                try { last.disconnect(); } catch (_) {}
-                state.fx.cut.node.gain.value = state.fx.cut.on ? 0 : 1;
-                last.connect(state.fx.cut.node);
-                last = state.fx.cut.node;
             }
             try { last.disconnect(); } catch(_) {}
             last.connect(state.analyserNode);
@@ -7503,6 +7492,10 @@ function randomGlowColor() {
                 if (kbRev) kbRev.classList.toggle('dj-beatfx-on', revOn);
                 if (kbFl) kbFl.classList.toggle('dj-beatfx-on', flOn);
                 if (kbNv) kbNv.classList.toggle('dj-beatfx-on', nvOn);
+                try {
+                    const fxCutBtn = document.getElementById('fx-cut');
+                    if (fxCutBtn) fxCutBtn.classList.toggle('on', nvOn);
+                } catch (_) {}
             } catch (_) {}
         }
 
@@ -7582,6 +7575,10 @@ function randomGlowColor() {
                 const btnId = fxKey === 'noVocal' ? 'fx-novocal' : ('fx-' + fxKey);
                 const btn = document.getElementById(btnId);
                 if (btn) btn.classList.toggle('on', state.fx[fxKey].on);
+                if (fxKey === 'noVocal') {
+                    const cutBtn = document.getElementById('fx-cut');
+                    if (cutBtn) cutBtn.classList.toggle('on', state.fx.noVocal.on);
+                }
             } catch (_) {}
             syncDjBeatFxKnobActiveDom();
         }
@@ -11021,7 +11018,7 @@ function stopAllAndShowStart() {
                 <div class="dj-beatmap-main">
                   <div class="dj-beatmap-fx-knobs" aria-label="Deck B beat FX">
                     <div class="eq-col eq-strip" aria-label="Reverb wet mix"><div class="knob-wrap" id="dj-knob-b-reverb" style="--knob-color:#ff4040"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">REVERB</div></div>
-                    <div class="eq-col eq-strip" aria-label="Flanger depth"><div class="knob-wrap" id="dj-knob-b-flanger" style="--knob-color:#f0f8ff"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">FLANGER</div></div>
+                    <div class="eq-col eq-strip" aria-label="Flanger depth"><div class="knob-wrap" id="dj-knob-b-flanger" style="--knob-color:#bfdd50"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">FLANGER</div></div>
                     <div class="eq-col eq-strip" aria-label="No vocal reduction strength"><div class="knob-wrap" id="dj-knob-b-novocal" style="--knob-color:#bada55"><div class="knob-indicator"></div><div class="knob-value">100</div></div><div class="eq-label">NO VOCAL</div></div>
                   </div>
                   <div class="dj-beatmap-pads">
@@ -15474,8 +15471,8 @@ function stopAllAndShowStart() {
                 try { if (typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(); } catch (_) {}
             });
         }
-        if (fxCut) fxCut.addEventListener('click', () => toggleFx('cut', fxCut));
-        if (fxNoVocal) fxNoVocal.addEventListener('click', () => toggleFx('noVocal', fxNoVocal));
+        if (fxCut) fxCut.addEventListener('click', () => toggleDeckBMixerFxFromKnob('noVocal'));
+        if (fxNoVocal) fxNoVocal.addEventListener('click', () => toggleDeckBMixerFxFromKnob('noVocal'));
         if (fxFlanger) fxFlanger.addEventListener('click', () => toggleFx('flanger', fxFlanger));
         if (fxReverb) fxReverb.addEventListener('click', () => toggleFx('reverb', fxReverb));
         function attachSamplePlayingIndicator(btn, media) {
