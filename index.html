@@ -2249,10 +2249,29 @@
 			0%, 100% { transform: translate(-50%, -52%) scale(1.055); }
 			50% { transform: translate(-50%, -52%) scale(1.115); }
 		}
+		/* Pulse the start-screen “>” caret (click starts radio) */
+		#logo-omni .logo-letter.logo-start {
+			animation: omniCaretPulse 1.15s ease-in-out infinite;
+		}
+		@keyframes omniCaretPulse {
+			0%, 100% {
+				opacity: 1;
+				transform: translateX(0) scale(1);
+				filter: brightness(1);
+			}
+			50% {
+				opacity: 0.82;
+				transform: translateX(4px) scale(1.08);
+				filter: brightness(1.22);
+			}
+		}
 		@media (prefers-reduced-motion: reduce) {
 			#logo-omni .logo-letter.omni-letter-hover-active::before {
 				animation: none;
 				opacity: 0.88;
+			}
+			#logo-omni .logo-letter.logo-start {
+				animation: none;
 			}
 		}
 		#logo-omni.logo-animate {
