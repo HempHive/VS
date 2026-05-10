@@ -1319,6 +1319,10 @@
                 0 5px 12px rgba(0, 0, 0, 0.82),
                 inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
+        /* Deck B Flanger: ensure indicator line color wins over generic knob rules */
+        #dj-visual-root #dj-knob-b-flanger {
+            --knob-color: #3fff00;
+        }
         #dj-visual-root #dj-knob-a-tk .knob-indicator,
         #dj-visual-root #dj-knob-a-loop .knob-indicator,
         #dj-visual-root #dj-knob-a-arp .knob-indicator,
@@ -4648,7 +4652,6 @@
                     <button class="btn" id="fx-cut" title="Same as Deck B NO VOCAL: toggle vocal-reduction (tap knob on deck for strength)">CUT</button>
                     <button class="btn" id="fx-reverb" title="Hall-style convolution reverb (wet/dry mix)">REVERB</button>
                     <button class="btn" id="fx-flanger" title="Modulated delay (flanger)">FLANGER</button>
-                    <button class="btn" id="fx-novocal" title="Approximate instrumental: strong mid-range vocal cut (mono mix; not full stem separation)">NO VOCAL</button>
                 </div>
             </div>
         </div>
@@ -5036,7 +5039,6 @@ const QUALITY = {
         const fxCut = document.getElementById('fx-cut');
         const fxReverb = document.getElementById('fx-reverb');
         const fxFlanger = document.getElementById('fx-flanger');
-        const fxNoVocal = document.getElementById('fx-novocal');
         // BPM scope refs/state
         const bpmBtnA = document.getElementById('mix-bpm-a');
         const bpmBtnB = document.getElementById('mix-bpm-b');
@@ -7572,12 +7574,12 @@ function randomGlowColor() {
             state.fx[fxKey].on = !state.fx[fxKey].on;
             rebuildEffectsChain();
             try {
-                const btnId = fxKey === 'noVocal' ? 'fx-novocal' : ('fx-' + fxKey);
-                const btn = document.getElementById(btnId);
-                if (btn) btn.classList.toggle('on', state.fx[fxKey].on);
                 if (fxKey === 'noVocal') {
                     const cutBtn = document.getElementById('fx-cut');
                     if (cutBtn) cutBtn.classList.toggle('on', state.fx.noVocal.on);
+                } else {
+                    const btn = document.getElementById('fx-' + fxKey);
+                    if (btn) btn.classList.toggle('on', state.fx[fxKey].on);
                 }
             } catch (_) {}
             syncDjBeatFxKnobActiveDom();
@@ -11018,7 +11020,7 @@ function stopAllAndShowStart() {
                 <div class="dj-beatmap-main">
                   <div class="dj-beatmap-fx-knobs" aria-label="Deck B beat FX">
                     <div class="eq-col eq-strip" aria-label="Reverb wet mix"><div class="knob-wrap" id="dj-knob-b-reverb" style="--knob-color:#ff4040"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">REVERB</div></div>
-                    <div class="eq-col eq-strip" aria-label="Flanger depth"><div class="knob-wrap" id="dj-knob-b-flanger" style="--knob-color:#bfdd50"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">FLANGER</div></div>
+                    <div class="eq-col eq-strip" aria-label="Flanger depth"><div class="knob-wrap" id="dj-knob-b-flanger" style="--knob-color:#3fff00"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">FLANGER</div></div>
                     <div class="eq-col eq-strip" aria-label="No vocal reduction strength"><div class="knob-wrap" id="dj-knob-b-novocal" style="--knob-color:#bada55"><div class="knob-indicator"></div><div class="knob-value">100</div></div><div class="eq-label">NO VOCAL</div></div>
                   </div>
                   <div class="dj-beatmap-pads">
@@ -15472,7 +15474,6 @@ function stopAllAndShowStart() {
             });
         }
         if (fxCut) fxCut.addEventListener('click', () => toggleDeckBMixerFxFromKnob('noVocal'));
-        if (fxNoVocal) fxNoVocal.addEventListener('click', () => toggleDeckBMixerFxFromKnob('noVocal'));
         if (fxFlanger) fxFlanger.addEventListener('click', () => toggleFx('flanger', fxFlanger));
         if (fxReverb) fxReverb.addEventListener('click', () => toggleFx('reverb', fxReverb));
         function attachSamplePlayingIndicator(btn, media) {
