@@ -6514,6 +6514,10 @@ function randomGlowColor() {
                 const webmOverlay = document.getElementById('webm-overlay');
                 if (!canvasEl) return;
                 const SWIPE_PX = 40;
+                /** Horizontal vs vertical: require dominant axis to beat the other by this factor (reduces diagonal mis-classification). */
+                const SWIPE_AXIS_DOMINANCE = 1.85;
+                /** After any canvas swipe changes visuals or opens/closes menus, ignore competing gestures (esp. trackpad wheel). */
+                const CANVAS_GESTURE_COOLDOWN_MS = 500;
                 const TAP_MAX_MOVE = 8;
                 const DOUBLE_TAP_MS = 300;
                 let pDownX = 0, pDownY = 0, pDownTime = 0;
@@ -6522,6 +6526,10 @@ function randomGlowColor() {
                 let handledSwipe = false;
                 // Suppress random-station click when we just handled a swipe/double-tap
                 window.__suppressNextClick = false;
+                const canvasGestureLocked = () => Date.now() < (window.__canvasGestureLockUntil || 0);
+                const lockCanvasGestures = () => {
+                    window.__canvasGestureLockUntil = Date.now() + CANVAS_GESTURE_COOLDOWN_MS;
+                };
                 const onPointerDown = (e) => {
                     pDownTarget = e.target || null;
                     pDownX = e.clientX || (e.touches && e.touches[0]?.clientX) || 0;
@@ -6539,8 +6547,11 @@ function randomGlowColor() {
                     const dx = x - pDownX;
                     const dy = y - pDownY;
                     const adx = Math.abs(dx), ady = Math.abs(dy);
+                    const swipeVerticalIntent = ady > SWIPE_PX && ady > adx * SWIPE_AXIS_DOMINANCE;
+                    const swipeHorizontalIntent = adx > SWIPE_PX && adx > ady * SWIPE_AXIS_DOMINANCE;
                     // Vertical swipe: down/up closes open panel first; only opens target if none open
-                    if (ady > SWIPE_PX && ady > adx) {
+                    if (swipeVerticalIntent) {
+                        if (canvasGestureLocked()) return;
                         handledSwipe = true;
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
@@ -6557,30 +6568,58 @@ function randomGlowColor() {
                         const kbdSheetOpen = (typeof isKeyboardShortcutsPanelOpen === 'function') && isKeyboardShortcutsPanelOpen();
 
                         // PRIORITY: Close any open panel before opening a new one (top menu → Text-In → Avatar)
-                        if (topOpen) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
+                        if (topOpen) {
+                            if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel();
+                            lockCanvasGestures();
+                            return;
+                        }
                         const tipEl = document.getElementById('textin-panel');
                         const textInOpenVert = !!(tipEl && !tipEl.classList.contains('display-none') && tipEl.classList.contains('open'));
-                        if (textInOpenVert) { if (typeof hideTextInPanel === 'function') hideTextInPanel(); return; }
-                        if (avatarOpen) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
+                        if (textInOpenVert) {
+                            if (typeof hideTextInPanel === 'function') hideTextInPanel();
+                            lockCanvasGestures();
+                            return;
+                        }
+                        if (avatarOpen) {
+                            if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel();
+                            lockCanvasGestures();
+                            return;
+                        }
                         
                         const vertFromDj = pDownTarget && typeof pDownTarget.closest === 'function' && pDownTarget.closest('#dj-visual-root');
 
                         if (dy > 0) { // SWIPE DOWN
-                            if (kbdSheetOpen) { try { closeKeyboardShortcutsPanel(); } catch (_) {} return; }
+                            if (kbdSheetOpen) {
+                                try { closeKeyboardShortcutsPanel(); } catch (_) {}
+                                lockCanvasGestures();
+                                return;
+                            }
                             // If Mix Panel is open at the bottom, swipe down should close it
-                            if (mixOpen) { toggleMixPanel(); return; }
+                            if (mixOpen) {
+                                toggleMixPanel();
+                                lockCanvasGestures();
+                                return;
+                            }
                             // Do not open Top Menu from vertical drags that started on DJ deck (e.g. TK filter pad)
                             if (vertFromDj) return;
                             if (typeof openTopMenuPanel === 'function') openTopMenuPanel();
+                            lockCanvasGestures();
                         } else { // SWIPE UP
                             // Open Mix Settings (instead of Avatar/WebM)
-                            if (kbdSheetOpen) { try { closeKeyboardShortcutsPanel(); } catch (_) {} return; }
-                            if (!mixOpen && !vertFromDj) toggleMixPanel();
+                            if (kbdSheetOpen) {
+                                try { closeKeyboardShortcutsPanel(); } catch (_) {}
+                                lockCanvasGestures();
+                                return;
+                            }
+                            if (!mixOpen && !vertFromDj) {
+                                toggleMixPanel();
+                                lockCanvasGestures();
+                            }
                         }
                         return;
                     }
                     // Horizontal swipe: close floating/side panels first, then change visual
-                    if (adx > SWIPE_PX && adx > ady) {
+                    if (swipeHorizontalIntent) {
                         try {
                             if (e.target && e.target.closest && e.target.closest('#dj-deck-splitter')) return;
                             if (pDownTarget && pDownTarget.closest && pDownTarget.closest('#dj-deck-splitter')) return;
@@ -6588,6 +6627,7 @@ function randomGlowColor() {
                         if (pDownTarget && typeof pDownTarget.closest === 'function' && pDownTarget.closest('#dj-visual-root')) {
                             return;
                         }
+                        if (canvasGestureLocked()) return;
                         handledSwipe = true;
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
@@ -6599,13 +6639,30 @@ function randomGlowColor() {
                         const textInOpenH = !!(tipH && !tipH.classList.contains('display-none') && tipH.classList.contains('open'));
                         const avatarOpenH = (typeof isBottomMenuOpen === 'function') && isBottomMenuOpen();
 
-                        if (topOpenH) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
-                        if ((typeof isKeyboardShortcutsPanelOpen === 'function') && isKeyboardShortcutsPanelOpen()) { try { closeKeyboardShortcutsPanel(); } catch (_) {} return; }
-                        if (textInOpenH) { if (typeof hideTextInPanel === 'function') hideTextInPanel(); return; }
-                        if (avatarOpenH) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
+                        if (topOpenH) {
+                            if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel();
+                            lockCanvasGestures();
+                            return;
+                        }
+                        if ((typeof isKeyboardShortcutsPanelOpen === 'function') && isKeyboardShortcutsPanelOpen()) {
+                            try { closeKeyboardShortcutsPanel(); } catch (_) {}
+                            lockCanvasGestures();
+                            return;
+                        }
+                        if (textInOpenH) {
+                            if (typeof hideTextInPanel === 'function') hideTextInPanel();
+                            lockCanvasGestures();
+                            return;
+                        }
+                        if (avatarOpenH) {
+                            if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel();
+                            lockCanvasGestures();
+                            return;
+                        }
 
                         if (dx < 0) loadMode(state.currentModeIdx + 1);
                         else loadMode(state.currentModeIdx - 1);
+                        lockCanvasGestures();
                         return;
                     }
                     // Double tap toggles Fullscreen (no station change, no WebM)
@@ -6648,7 +6705,9 @@ function randomGlowColor() {
                     const dx = x - pDownX;
                     const dy = y - pDownY;
                     const adx = Math.abs(dx), ady = Math.abs(dy);
-                    if (adx > SWIPE_PX && adx > ady) {
+                    const webmHorizontalIntent = adx > SWIPE_PX && adx > ady * SWIPE_AXIS_DOMINANCE;
+                    if (webmHorizontalIntent) {
+                        if (canvasGestureLocked()) return;
                         handledSwipe = true;
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
@@ -6668,6 +6727,7 @@ function randomGlowColor() {
                         // Only within overlay area: navigate webms
                         if (dx < 0) nextWebm();
                         else prevWebm();
+                        lockCanvasGestures();
                     }
                 };
                 // Pointer listeners (mouse + touch via pointer events).
@@ -6715,6 +6775,7 @@ function randomGlowColor() {
                     const guardUntil = (typeof window !== 'undefined' && window.__panelGuardUntilMs) ? window.__panelGuardUntilMs : 0;
                     const now = Date.now();
                     if (now < guardUntil) return;
+                    if (canvasGestureLocked()) return;
                     if (now - lastWheelAt < 250) return;
                     lastWheelAt = now;
                     
