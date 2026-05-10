@@ -83,6 +83,67 @@
         }
         #dj-visual-root.dj-mode-portrait .dj-deck-columns { flex-direction: column; }
         #dj-visual-root.dj-mode-landscape .dj-deck-columns { flex-direction: row; }
+        /* Landscape: flex-grow weights (--dj-landscape-split-a/b) set by drag handle; portrait ignores vars */
+        #dj-visual-root.dj-mode-landscape .dj-deck-a {
+            flex: var(--dj-landscape-split-a, 1) 1 0%;
+            min-width: 0;
+        }
+        #dj-visual-root.dj-mode-landscape .dj-deck-b {
+            flex: var(--dj-landscape-split-b, 1) 1 0%;
+            min-width: 0;
+        }
+        #dj-visual-root.dj-mode-portrait .dj-deck-a,
+        #dj-visual-root.dj-mode-portrait .dj-deck-b {
+            flex: 1 1 0%;
+        }
+        #dj-visual-root .dj-deck-splitter {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 12px;
+            width: 12px;
+            min-width: 12px;
+            align-self: stretch;
+            cursor: col-resize;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: inherit;
+            font: inherit;
+        }
+        #dj-visual-root.dj-mode-landscape .dj-deck-splitter {
+            display: flex;
+            position: relative;
+            z-index: 20;
+        }
+        #dj-visual-root .dj-deck-splitter:focus {
+            outline: none;
+        }
+        #dj-visual-root .dj-deck-splitter:focus-visible .dj-deck-splitter-grip {
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.55);
+        }
+        #dj-visual-root .dj-deck-splitter-grip {
+            display: block;
+            width: 6px;
+            height: min(120px, 38vh);
+            min-height: 40px;
+            border-radius: 4px;
+            background: rgba(212, 175, 55, 0.26);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            pointer-events: none;
+            flex-shrink: 0;
+        }
+        #dj-visual-root .dj-deck-splitter:hover .dj-deck-splitter-grip,
+        #dj-visual-root .dj-deck-splitter.is-dragging .dj-deck-splitter-grip {
+            background: rgba(212, 175, 55, 0.42);
+            border-color: rgba(212, 175, 55, 0.62);
+        }
         .dj-deck-head-row {
             display: flex;
             flex-direction: column;
@@ -6553,7 +6614,15 @@ function randomGlowColor() {
                                 lastTapTime = now;
                                 return;
                             }
+                            if (elTap && elTap.closest && elTap.closest('#dj-deck-splitter')) {
+                                lastTapTime = now;
+                                return;
+                            }
                             if (pDownTarget && pDownTarget.closest && pDownTarget.closest('.knob-wrap')) {
+                                lastTapTime = now;
+                                return;
+                            }
+                            if (pDownTarget && pDownTarget.closest && pDownTarget.closest('#dj-deck-splitter')) {
                                 lastTapTime = now;
                                 return;
                             }
@@ -6608,6 +6677,9 @@ function randomGlowColor() {
                 canvasEl.addEventListener('dblclick', (e) => {
                     if (!state || !state.isPlaying) return;
                     try {
+                        if (e.target && typeof e.target.closest === 'function' && e.target.closest('#dj-deck-splitter')) return;
+                    } catch (_) {}
+                    try {
                         if (e.target && typeof e.target.closest === 'function' && e.target.closest('.knob-wrap')) return;
                     } catch (_) {}
                     try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
@@ -6617,6 +6689,9 @@ function randomGlowColor() {
                 // Double click on WebM overlay: toggle Fullscreen
                 if (webmOverlay) {
                     webmOverlay.addEventListener('dblclick', (e) => {
+                        try {
+                            if (e.target && typeof e.target.closest === 'function' && e.target.closest('#dj-deck-splitter')) return;
+                        } catch (_) {}
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
                         try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch(_) {}
                         try { toggleFullscreen(); } catch(_) {}
@@ -9194,6 +9269,9 @@ function stopAllAndShowStart() {
                     if (req) try { req.call(mount); } catch (_) {}
                 };
                 const onDblClick = (e) => {
+                    try {
+                        if (e.target && typeof e.target.closest === 'function' && e.target.closest('#dj-deck-splitter')) return;
+                    } catch (_) {}
                     try { e.preventDefault(); } catch (_) {}
                     if (getFs() === mount) exitFs();
                     else enterFs();
@@ -9909,6 +9987,78 @@ function stopAllAndShowStart() {
                 } catch (_) {}
             }
 
+            applyLandscapeDeckSplit(ratio) {
+                const r = Math.max(0.15, Math.min(0.85, ratio));
+                this.landscapeDeckSplit = r;
+                if (!this.root) return;
+                this.root.style.setProperty('--dj-landscape-split-a', String(r));
+                this.root.style.setProperty('--dj-landscape-split-b', String(1 - r));
+                const spl = this.root.querySelector('#dj-deck-splitter');
+                if (spl) spl.setAttribute('aria-valuenow', String(Math.round(r * 100)));
+                try {
+                    localStorage.setItem('dj.landscapeDeckSplit.v1', String(r));
+                } catch (_) {}
+                requestAnimationFrame(() => {
+                    try {
+                        this.syncDeckMosaicScale();
+                        this.syncDeckVolumeSliderLengths();
+                    } catch (_) {}
+                });
+            }
+
+            bindLandscapeDeckSplitter() {
+                if (!this.root) return;
+                const splitter = this.root.querySelector('#dj-deck-splitter');
+                const columns = this.root.querySelector('.dj-deck-columns');
+                if (!splitter || !columns) return;
+                splitter.addEventListener(
+                    'pointerdown',
+                    (e) => {
+                        if (e.button !== 0) return;
+                        e.preventDefault();
+                        try {
+                            e.stopPropagation();
+                        } catch (_) {}
+                        const dragStartX = e.clientX;
+                        const dragStartRatio = this.landscapeDeckSplit;
+                        const trackW = columns.getBoundingClientRect().width || 1;
+                        splitter.classList.add('is-dragging');
+                        try {
+                            splitter.setPointerCapture(e.pointerId);
+                        } catch (_) {}
+                        const onMove = (ev) => {
+                            const dx = ev.clientX - dragStartX;
+                            this.applyLandscapeDeckSplit(dragStartRatio + dx / trackW);
+                        };
+                        const onUp = () => {
+                            splitter.classList.remove('is-dragging');
+                            try {
+                                splitter.releasePointerCapture(e.pointerId);
+                            } catch (_) {}
+                            window.removeEventListener('pointermove', onMove);
+                            window.removeEventListener('pointerup', onUp);
+                            window.removeEventListener('pointercancel', onUp);
+                        };
+                        window.addEventListener('pointermove', onMove);
+                        window.addEventListener('pointerup', onUp);
+                        window.addEventListener('pointercancel', onUp);
+                    },
+                    true
+                );
+                splitter.addEventListener(
+                    'dblclick',
+                    (e) => {
+                        try {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.stopImmediatePropagation();
+                        } catch (_) {}
+                        this.applyLandscapeDeckSplit(0.5);
+                    },
+                    true
+                );
+            }
+
             syncDeckMosaicScale() {
                 if (!this.root) return;
                 try {
@@ -10284,6 +10434,15 @@ function stopAllAndShowStart() {
       </div>
     </div>
   </section>
+  <button type="button" class="dj-deck-splitter" id="dj-deck-splitter"
+    aria-label="Resize Deck A and Deck B"
+    aria-orientation="vertical"
+    aria-valuemin="15"
+    aria-valuemax="85"
+    aria-valuenow="50"
+    title="Drag sideways to give Deck A more or less room vs Deck B and the fader. Double-click for equal columns.">
+    <span class="dj-deck-splitter-grip" aria-hidden="true"></span>
+  </button>
   <section class="dj-deck dj-deck-b">
     <div id="dj-b-video-transport-mount" class="dj-b-video-transport-mount display-none" aria-hidden="true"></div>
     <div class="dj-fader-strip">
@@ -10499,6 +10658,16 @@ function stopAllAndShowStart() {
 
                 container.appendChild(root);
                 this.root = root;
+                this.landscapeDeckSplit = 0.5;
+                try {
+                    const raw = localStorage.getItem('dj.landscapeDeckSplit.v1');
+                    if (raw != null) {
+                        const x = parseFloat(raw);
+                        if (!Number.isNaN(x)) this.landscapeDeckSplit = Math.max(0.15, Math.min(0.85, x));
+                    }
+                } catch (_) {}
+                this.applyLandscapeDeckSplit(this.landscapeDeckSplit);
+                this.bindLandscapeDeckSplitter();
                 this.onResize();
                 window.addEventListener('resize', this.resizeHandler);
                 window.addEventListener('orientationchange', this.resizeHandler);
