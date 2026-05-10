@@ -509,6 +509,8 @@
             align-items: stretch;
             justify-content: flex-start;
             pointer-events: auto;
+            min-height: 0;
+            flex: 1 1 auto;
         }
         .dj-deck-b-text-stage {
             position: absolute;
@@ -547,6 +549,7 @@
         .dj-deck-b-queue-panel {
             flex: 1;
             min-height: 0;
+            max-height: 100%;
             display: flex;
             flex-direction: column;
             padding: 10px 12px;
@@ -554,26 +557,39 @@
             box-sizing: border-box;
             color: #eaeaf4;
             font-size: 12px;
-            overflow: auto;
+            overflow-x: hidden;
+            overflow-y: scroll;
             gap: 10px;
             overscroll-behavior: contain;
-            scrollbar-width: thin;
-            scrollbar-color: #3d3d48 rgba(8, 8, 12, 0.65);
+            scrollbar-gutter: stable;
+            color-scheme: dark;
+            scrollbar-width: auto;
+            scrollbar-color: #5a5a68 #12121a;
+            position: relative;
+            z-index: 1;
         }
         .dj-deck-b-queue-panel::-webkit-scrollbar {
-            width: 10px;
+            width: 12px;
+            -webkit-appearance: none;
+            appearance: none;
         }
         .dj-deck-b-queue-panel::-webkit-scrollbar-track {
-            background: rgba(8, 8, 12, 0.65);
-            border-radius: 6px;
+            background: linear-gradient(180deg, #0d0d12 0%, #15151c 100%);
+            border-radius: 7px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            margin: 4px 2px 4px 0;
         }
         .dj-deck-b-queue-panel::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #4a4a56 0%, #32323c 100%);
-            border-radius: 6px;
-            border: 2px solid rgba(0, 0, 0, 0.35);
+            background: linear-gradient(180deg, #5c5c6e 0%, #383844 100%);
+            border-radius: 7px;
+            border: 2px solid rgba(0, 0, 0, 0.45);
+            min-height: 48px;
         }
         .dj-deck-b-queue-panel::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(180deg, #5c5c6a 0%, #3e3e4a 100%);
+            background: linear-gradient(180deg, #717184 0%, #4a4a58 100%);
+        }
+        .dj-deck-b-queue-panel::-webkit-scrollbar-corner {
+            background: transparent;
         }
         .dj-deck-b-queue-panel .dj-queue-header {
             font-weight: 700;
@@ -640,9 +656,8 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
-            max-height: min(36vh, 280px);
-            overflow: auto;
-            overscroll-behavior: contain;
+            overflow: visible;
+            flex-shrink: 0;
         }
         .dj-deck-b-queue-panel li.dj-queue-item {
             display: flex;
@@ -786,11 +801,10 @@
             margin: 0 0 6px 0;
         }
         .dj-deck-b-queue-panel .dj-station-cycle-list {
-            max-height: min(26vh, 180px);
-            overflow: auto;
-            overscroll-behavior: contain;
+            overflow: visible;
             display: grid;
             gap: 4px;
+            flex-shrink: 0;
         }
         .dj-deck-b-queue-panel .dj-station-cycle-item {
             display: flex;
@@ -852,9 +866,8 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
-            max-height: min(24vh, 170px);
-            overflow: auto;
-            overscroll-behavior: contain;
+            overflow: visible;
+            flex-shrink: 0;
         }
         .dj-deck-b-queue-panel .dj-url-item {
             display: flex;
@@ -979,9 +992,8 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
-            max-height: min(26vh, 190px);
-            overflow: auto;
-            overscroll-behavior: contain;
+            overflow: visible;
+            flex-shrink: 0;
         }
         #dj-visual-root.dj-mode-portrait .dj-deck-b-queue-panel {
             padding-bottom: calc(10px + var(--ui-bottom-hud-clearance) + clamp(20px, 4vh, 40px));
@@ -1738,6 +1750,40 @@
             transform-origin: 50% 318%;
             box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
             pointer-events: none;
+            z-index: 3;
+        }
+        .dj-jog-progress-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            transform-origin: 50% 50%;
+            overflow: visible;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        .dj-jog-progress-svg.dj-jog-progress-svg--hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .dj-jog-progress-svg circle.dj-jog-progress-track,
+        .dj-jog-progress-svg circle.dj-jog-progress-bar {
+            pointer-events: none;
+        }
+        .dj-jog-progress-svg circle.dj-jog-progress-hit {
+            pointer-events: stroke;
+            cursor: pointer;
+            touch-action: none;
+        }
+        .dj-jog-progress-svg--a .dj-jog-progress-bar {
+            stroke: #FF0B55;
+            filter: drop-shadow(0 0 3px rgba(255, 11, 85, 0.9)) drop-shadow(0 0 10px rgba(255, 11, 85, 0.45));
+        }
+        .dj-jog-progress-svg--b .dj-jog-progress-bar {
+            stroke: #5800FF;
+            filter: drop-shadow(0 0 3px rgba(88, 0, 255, 0.95)) drop-shadow(0 0 10px rgba(88, 0, 255, 0.45));
         }
         /* DJ Deck buttons: align with Mixer Settings (#mix-panel .btn / #mix-effects .btn) — btn.png */
         #dj-visual-root .dj-play,
@@ -10795,6 +10841,46 @@ function stopAllAndShowStart() {
                 } catch (_) {}
             }
 
+            updateLocalJogProgressRings() {
+                try {
+                    if (this.els.jogAProgressSvg) this.els.jogAProgressSvg.style.transform = `rotate(${-this.angleA}deg)`;
+                    if (this.els.jogBProgressSvg) this.els.jogBProgressSvg.style.transform = `rotate(${-this.angleB}deg)`;
+                } catch (_) {}
+                const jogRingLen = 2 * Math.PI * 40;
+                const step = (deckKey, barEl, svgEl, media) => {
+                    if (!barEl || !svgEl) return;
+                    let local = false;
+                    try {
+                        local = !!(state && state.deckSourceMode && state.deckSourceMode[deckKey === 'b' ? 'b' : 'a'] === 'local');
+                    } catch (_) {}
+                    let dur = NaN;
+                    let t = 0;
+                    try {
+                        if (media) {
+                            dur = Number(media.duration);
+                            t = Number(media.currentTime) || 0;
+                        }
+                    } catch (_) {}
+                    const ok = local && media && media.src && Number.isFinite(dur) && dur > 0 && dur < 1e9;
+                    if (!ok) {
+                        svgEl.classList.add('dj-jog-progress-svg--hidden');
+                        try {
+                            barEl.style.strokeDasharray = String(jogRingLen);
+                            barEl.style.strokeDashoffset = String(jogRingLen);
+                        } catch (_) {}
+                        return;
+                    }
+                    const p = Math.max(0, Math.min(1, t / dur));
+                    try {
+                        barEl.style.strokeDasharray = String(jogRingLen);
+                        barEl.style.strokeDashoffset = String(jogRingLen * (1 - p));
+                    } catch (_) {}
+                    svgEl.classList.remove('dj-jog-progress-svg--hidden');
+                };
+                try { step('a', this.els.jogAProgressBar, this.els.jogAProgressSvg, audioEl); } catch (_) {}
+                try { step('b', this.els.jogBProgressBar, this.els.jogBProgressSvg, audioElB); } catch (_) {}
+            }
+
             syncPlayLabels() {
                 try {
                     const aPlaying = !!(audioEl && audioEl.src && !audioEl.paused && !audioEl.ended);
@@ -11003,6 +11089,7 @@ function stopAllAndShowStart() {
                         if (this.els.jogB) this.els.jogB.style.transform = `rotate(${this.angleB}deg)`;
                     }
                 } catch(_) {}
+                try { this.updateLocalJogProgressRings(); } catch (_) {}
                 this.syncPlayLabels();
                 this.updateStationTitles();
                 this.syncFxLightsFromState();
@@ -11088,7 +11175,16 @@ function stopAllAndShowStart() {
             </div>
           </div>
           <div class="dj-jog-wrap">
-            <div class="dj-jog" id="dj-jog-a" aria-hidden="true"><span class="dj-jog-marker"></span></div>
+            <div class="dj-jog" id="dj-jog-a" aria-hidden="true">
+              <svg class="dj-jog-progress-svg dj-jog-progress-svg--a dj-jog-progress-svg--hidden" id="dj-jog-a-progress" viewBox="0 0 100 100" aria-hidden="true">
+                <g transform="translate(50 50) rotate(-90)">
+                  <circle class="dj-jog-progress-track" r="40" cx="0" cy="0" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2.4" />
+                  <circle id="dj-jog-a-progress-bar" class="dj-jog-progress-bar" r="40" cx="0" cy="0" fill="none" stroke-width="2.4" stroke-linecap="round" />
+                  <circle class="dj-jog-progress-hit" r="40" cx="0" cy="0" fill="none" stroke="rgba(0,0,0,0)" stroke-width="14" />
+                </g>
+              </svg>
+              <span class="dj-jog-marker"></span>
+            </div>
           </div>
           <div class="dj-deck-vol-col" aria-label="Deck A volume">
             <div class="dj-deck-vol-stack">
@@ -11240,7 +11336,16 @@ function stopAllAndShowStart() {
                 </div>
               </div>
               <div class="dj-jog-wrap">
-                <div class="dj-jog" id="dj-jog-b" aria-hidden="true"><span class="dj-jog-marker"></span></div>
+                <div class="dj-jog" id="dj-jog-b" aria-hidden="true">
+                  <svg class="dj-jog-progress-svg dj-jog-progress-svg--b dj-jog-progress-svg--hidden" id="dj-jog-b-progress" viewBox="0 0 100 100" aria-hidden="true">
+                    <g transform="translate(50 50) rotate(-90)">
+                      <circle class="dj-jog-progress-track" r="40" cx="0" cy="0" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2.4" />
+                      <circle id="dj-jog-b-progress-bar" class="dj-jog-progress-bar" r="40" cx="0" cy="0" fill="none" stroke-width="2.4" stroke-linecap="round" />
+                      <circle class="dj-jog-progress-hit" r="40" cx="0" cy="0" fill="none" stroke="rgba(0,0,0,0)" stroke-width="14" />
+                    </g>
+                  </svg>
+                  <span class="dj-jog-marker"></span>
+                </div>
               </div>
               <div class="dj-deck-vol-col" aria-label="Deck B volume">
                 <div class="dj-deck-vol-stack">
@@ -11409,6 +11514,10 @@ function stopAllAndShowStart() {
                 this.els.playB = root.querySelector('#dj-play-b');
                 this.els.jogA = root.querySelector('#dj-jog-a');
                 this.els.jogB = root.querySelector('#dj-jog-b');
+                this.els.jogAProgressSvg = root.querySelector('#dj-jog-a-progress');
+                this.els.jogBProgressSvg = root.querySelector('#dj-jog-b-progress');
+                this.els.jogAProgressBar = root.querySelector('#dj-jog-a-progress-bar');
+                this.els.jogBProgressBar = root.querySelector('#dj-jog-b-progress-bar');
                 this.els.fxLow = root.querySelector('#dj-fx-low');
                 this.els.fxTk = root.querySelector('#dj-fx-tk');
                 this.els.queueA = root.querySelector('#dj-a-queue');
@@ -11738,6 +11847,38 @@ function stopAllAndShowStart() {
                 };
                 attachJogSeek('a', this.els.jogA);
                 attachJogSeek('b', this.els.jogB);
+
+                const attachJogRingPolarSeek = (deckKey, jogEl) => {
+                    if (!jogEl) return;
+                    const svg = deckKey === 'b' ? this.els.jogBProgressSvg : this.els.jogAProgressSvg;
+                    if (!svg) return;
+                    const hit = svg.querySelector('.dj-jog-progress-hit');
+                    if (!hit) return;
+                    const mediaForDeck = () => (deckKey === 'b' ? audioElB : audioEl);
+                    hit.addEventListener('pointerdown', (ev) => {
+                        const media = mediaForDeck();
+                        if (!media || !media.src) return;
+                        let local = false;
+                        try { local = !!(state && state.deckSourceMode && state.deckSourceMode[deckKey === 'b' ? 'b' : 'a'] === 'local'); } catch (_) {}
+                        const dur = Number(media.duration);
+                        if (!local || !Number.isFinite(dur) || dur <= 0) return;
+                        try {
+                            const rect = jogEl.getBoundingClientRect();
+                            const cx = rect.left + rect.width / 2;
+                            const cy = rect.top + rect.height / 2;
+                            const dx = ev.clientX - cx;
+                            const dy = ev.clientY - cy;
+                            let a = Math.atan2(dy, dx) + Math.PI / 2;
+                            if (a < 0) a += 2 * Math.PI;
+                            const frac = a / (2 * Math.PI);
+                            media.currentTime = Math.max(0, Math.min(dur - 0.001, frac * dur));
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                        } catch (_) {}
+                    }, { signal: this.abortCtrl.signal, passive: false });
+                };
+                attachJogRingPolarSeek('a', this.els.jogA);
+                attachJogRingPolarSeek('b', this.els.jogB);
 
                 /** Keep deck audio elements playing whenever the crossfader gives them audible gain (fixes mismatches after interrupted/completed auto-fades). */
                 const ensureCrossfadeDeckPlayback = () => {
