@@ -410,6 +410,27 @@
             letter-spacing: 0.02em;
             white-space: nowrap;
         }
+        #dj-visual-root .dj-automix-nextfade-section {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        #dj-visual-root .dj-automix-nextfade-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.85);
+        }
+        #dj-visual-root .dj-automix-nextfade-readout {
+            font-weight: 600;
+            font-size: 11px;
+            color: rgba(130, 210, 255, 0.98);
+            letter-spacing: 0.02em;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
         .dj-deck-body-b {
             flex-direction: column !important;
             align-items: stretch !important;
@@ -8956,6 +8977,8 @@ function stopAllAndShowStart() {
                 this.autoMixHoldTimer = null;
                 this.autoMixSessionLimitTimerId = null;
                 this.autoMixSessionRemainingIntervalId = null;
+                this.autoMixNextFadeAt = 0;
+                this.autoMixNextFadeIntervalId = null;
                 this.masterFadeOutRafId = null;
                 this._panelPointerPos = null;
                 this.deckBVizResizeObs = null;
@@ -10859,6 +10882,13 @@ function stopAllAndShowStart() {
               <span class="dj-automix-readout" id="dj-automix-limit-readout">1h</span>
             </div>
           </div>
+          <div class="dj-automix-nextfade-section">
+            <div class="dj-automix-title">Next crossfade</div>
+            <div class="dj-automix-nextfade-row">
+              <span>Starts in</span>
+              <span class="dj-automix-nextfade-readout" id="dj-automix-next-fade" aria-live="polite"></span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -11113,6 +11143,7 @@ function stopAllAndShowStart() {
                 const autoMixLimitMinEl = root.querySelector('#dj-automix-limit-min');
                 const autoMixLimitReadout = root.querySelector('#dj-automix-limit-readout');
                 const autoMixLimitRemainingEl = root.querySelector('#dj-automix-limit-remaining');
+                const autoMixNextFadeEl = root.querySelector('#dj-automix-next-fade');
                 let suppressAutoFadeClickUntil = 0;
                 let autoFadeLongPressFired = false;
                 const AUTOFADE_MS_KEY = 'dj.autofade.duration.ms.v1';
@@ -11182,6 +11213,32 @@ function stopAllAndShowStart() {
                     const left = Math.max(0, limitMs - elapsed);
                     autoMixLimitRemainingEl.textContent = left <= 0 ? ' · 0:00 left' : ` · ${formatSessionRemainingClock(left)} left`;
                 };
+                const updateAutoMixNextFadeUi = () => {
+                    if (!autoMixNextFadeEl) return;
+                    if (!autoMixEnabled || !this.autoMixNextFadeAt) {
+                        autoMixNextFadeEl.textContent = '';
+                        return;
+                    }
+                    const left = Math.max(0, this.autoMixNextFadeAt - Date.now());
+                    autoMixNextFadeEl.textContent = formatSessionRemainingClock(left);
+                };
+                const clearAutoMixNextFadeTick = () => {
+                    if (this.autoMixNextFadeIntervalId) {
+                        try { clearInterval(this.autoMixNextFadeIntervalId); } catch (_) {}
+                        this.autoMixNextFadeIntervalId = null;
+                    }
+                };
+                const syncAutoMixNextFadeDisplay = () => {
+                    clearAutoMixNextFadeTick();
+                    if (!autoMixEnabled || !this.autoMixNextFadeAt) {
+                        if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = '';
+                        return;
+                    }
+                    updateAutoMixNextFadeUi();
+                    this.autoMixNextFadeIntervalId = setInterval(() => {
+                        try { updateAutoMixNextFadeUi(); } catch (_) {}
+                    }, 1000);
+                };
                 const clearAutoMixSessionRemainingTick = () => {
                     if (this.autoMixSessionRemainingIntervalId) {
                         try { clearInterval(this.autoMixSessionRemainingIntervalId); } catch (_) {}
@@ -11216,6 +11273,7 @@ function stopAllAndShowStart() {
                     if (autoMixLimitReadout) autoMixLimitReadout.textContent = formatLimitMinutesReadout(autoMixLimitMin);
                     if (btnAutoMix) btnAutoMix.classList.toggle('on', !!autoMixEnabled);
                     try { updateAutoMixSessionRemainingUi(); } catch (_) {}
+                    try { updateAutoMixNextFadeUi(); } catch (_) {}
                 };
                 const resetPopupPanelStyles = (panel) => {
                     if (!panel) return;
@@ -11269,6 +11327,7 @@ function stopAllAndShowStart() {
                 const openAutoMixPanel = () => {
                     if (!autoMixPanel) return;
                     syncAutoMixUi();
+                    try { syncAutoMixNextFadeDisplay(); } catch (_) {}
                     autoMixPanel.classList.add('is-open');
                     autoMixPanel.setAttribute('aria-hidden', 'false');
                     const p = this._panelPointerPos;
@@ -11423,6 +11482,11 @@ function stopAllAndShowStart() {
                             } else if (typeof playRadio === 'function') {
                                 playRadio();
                             }
+                            if (typeof uiLocked !== 'undefined' && uiLocked && typeof playRadio === 'function') {
+                                try {
+                                    if (audioEl && audioEl.paused) playRadio();
+                                } catch (_) {}
+                            }
                         } catch (_) {}
                     }
                 };
@@ -11440,7 +11504,7 @@ function stopAllAndShowStart() {
                             const cur = (typeof currentStationIndex === 'number' && Number.isFinite(currentStationIndex)) ? currentStationIndex : 0;
                             const eligible = (typeof getCycleEligibleStationIndexes === 'function') ? getCycleEligibleStationIndexes(cur) : [];
                             const idx = eligible.length ? eligible[Math.floor(Math.random() * eligible.length)] : cur;
-                            if (typeof setStation === 'function') setStation(Math.max(0, Math.min(stations.length - 1, Number(idx) || 0)));
+                            if (typeof setStation === 'function') setStation(Math.max(0, Math.min(stations.length - 1, Number(idx) || 0)), { force: true });
                             else if (typeof playRadio === 'function') playRadio();
                         }
                     } catch (_) {}
@@ -11517,6 +11581,9 @@ function stopAllAndShowStart() {
                     runMasterFadeOut(fadeDur, () => {
                         autoMixEnabled = false;
                         clearAutoMixTimer();
+                        this.autoMixNextFadeAt = 0;
+                        clearAutoMixNextFadeTick();
+                        if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = '';
                         clearAutoMixSessionLimitTimer();
                         autoMixSessionStartedAt = 0;
                         try { localStorage.setItem(AUTOMIX_ENABLED_KEY, '0'); } catch (_) {}
@@ -11531,11 +11598,18 @@ function stopAllAndShowStart() {
                 };
                 const scheduleNextAutoMix = () => {
                     clearAutoMixTimer();
-                    if (!autoMixEnabled) return;
+                    this.autoMixNextFadeAt = 0;
+                    clearAutoMixNextFadeTick();
+                    if (!autoMixEnabled) {
+                        if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = '';
+                        return;
+                    }
                     const minMs = Math.max(2, Math.min(20, Number(autoMixMinMin) || 2)) * 60 * 1000;
                     const maxMs = Math.max(minMs, Math.max(2, Math.min(20, Number(autoMixMaxMin) || 20)) * 60 * 1000);
                     const span = Math.max(0, maxMs - minMs);
                     const waitMs = minMs + (span > 0 ? Math.floor(Math.random() * (span + 1)) : 0);
+                    this.autoMixNextFadeAt = Date.now() + waitMs;
+                    syncAutoMixNextFadeDisplay();
                     this.autoMixTimerId = setTimeout(() => {
                         this.autoMixTimerId = null;
                         const xNow = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
@@ -11550,7 +11624,10 @@ function stopAllAndShowStart() {
                     ensureDeckStationPlayback(targetDeck);
                     const startVal = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                     const endVal = targetDeck === 'b' ? 1 : 0;
-                    if (Math.abs(endVal - startVal) < 0.001) return;
+                    if (Math.abs(endVal - startVal) < 0.001) {
+                        try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                        return;
+                    }
                     if (this.autoFadeRafId) {
                         try { cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
                         this.autoFadeRafId = null;
@@ -11658,6 +11735,9 @@ function stopAllAndShowStart() {
                         }
                         else {
                             clearAutoMixTimer();
+                            this.autoMixNextFadeAt = 0;
+                            clearAutoMixNextFadeTick();
+                            if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = '';
                             clearAutoMixSessionLimitTimer();
                             autoMixSessionStartedAt = 0;
                         }
@@ -12638,6 +12718,8 @@ function stopAllAndShowStart() {
                 this.masterFadeOutRafId = null;
                 try { if (this.autoMixHoldTimer) clearTimeout(this.autoMixHoldTimer); } catch (_) {}
                 this.autoMixHoldTimer = null;
+                try { if (this.autoMixNextFadeIntervalId) clearInterval(this.autoMixNextFadeIntervalId); } catch (_) {}
+                this.autoMixNextFadeIntervalId = null;
                 try {
                     window.removeEventListener('resize', this.resizeHandler);
                     window.removeEventListener('orientationchange', this.resizeHandler);
@@ -15337,8 +15419,9 @@ function stopAllAndShowStart() {
             });
         }
 
-        function setStation(index) {
-            if (uiLocked) return;
+        function setStation(index, opts) {
+            const force = opts && opts.force === true;
+            if (uiLocked && !force) return;
             if(index < 0 || index >= stations.length) return;
             // Push current station into history if switching to a different one
             if (!suppressHistoryPush && currentStationIndex !== -1 && currentStationIndex !== index) {
