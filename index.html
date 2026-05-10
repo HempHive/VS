@@ -9160,6 +9160,7 @@ function stopAllAndShowStart() {
                 this.autoFadeRafId = null;
                 this.autoFadeHoldTimer = null;
                 this.autoMixTimerId = null;
+                this.autoMixPreloadTimerId = null;
                 this.autoMixHoldTimer = null;
                 this.autoMixSessionLimitTimerId = null;
                 this.autoMixSessionRemainingIntervalId = null;
@@ -11773,6 +11774,10 @@ function stopAllAndShowStart() {
                         try { clearTimeout(this.autoMixTimerId); } catch (_) {}
                         this.autoMixTimerId = null;
                     }
+                    if (this.autoMixPreloadTimerId) {
+                        try { clearTimeout(this.autoMixPreloadTimerId); } catch (_) {}
+                        this.autoMixPreloadTimerId = null;
+                    }
                 };
                 const clearAutoMixSessionLimitTimeoutOnly = () => {
                     if (this.autoMixSessionLimitTimerId) {
@@ -11855,6 +11860,7 @@ function stopAllAndShowStart() {
                         } catch (_) {}
                     });
                 };
+                const AUTO_MIX_PRELOAD_MS = 5000;
                 const scheduleNextAutoMix = () => {
                     clearAutoMixTimer();
                     this.autoMixNextFadeAt = 0;
@@ -11867,20 +11873,31 @@ function stopAllAndShowStart() {
                     const maxMs = Math.max(minMs, Math.max(2, Math.min(20, Number(autoMixMaxMin) || 20)) * 60 * 1000);
                     const span = Math.max(0, maxMs - minMs);
                     const waitMs = minMs + (span > 0 ? Math.floor(Math.random() * (span + 1)) : 0);
+                    const xSchedule = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
+                    const targetDeck = xSchedule < 0.5 ? 'b' : 'a';
                     this.autoMixNextFadeAt = Date.now() + waitMs;
                     syncAutoMixNextFadeDisplay();
+                    const preloadDelay = Math.max(0, waitMs - AUTO_MIX_PRELOAD_MS);
+                    this.autoMixPreloadTimerId = setTimeout(() => {
+                        this.autoMixPreloadTimerId = null;
+                        if (!autoMixEnabled) return;
+                        try { retuneDeckStationForAutoMix(targetDeck); } catch (_) {}
+                    }, preloadDelay);
                     this.autoMixTimerId = setTimeout(() => {
                         this.autoMixTimerId = null;
-                        const xNow = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
-                        const targetDeck = xNow < 0.5 ? 'b' : 'a';
-                        retuneDeckStationForAutoMix(targetDeck);
-                        runAutoFade(targetDeck);
+                        if (!autoMixEnabled) return;
+                        runAutoFade(targetDeck, { stationPreloaded: true });
                         scheduleNextAutoMix();
                     }, waitMs);
                 };
-                const runAutoFade = (toDeck) => {
+                const runAutoFade = (toDeck, fadeOpts) => {
                     const targetDeck = toDeck === 'a' ? 'a' : 'b';
-                    ensureDeckStationPlayback(targetDeck);
+                    const stationPreloaded = !!(fadeOpts && fadeOpts.stationPreloaded);
+                    if (!stationPreloaded) {
+                        ensureDeckStationPlayback(targetDeck);
+                    } else {
+                        try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                    }
                     const startVal = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                     const endVal = targetDeck === 'b' ? 1 : 0;
                     if (Math.abs(endVal - startVal) < 0.001) {
@@ -12982,6 +12999,8 @@ function stopAllAndShowStart() {
                 this.autoFadeHoldTimer = null;
                 try { if (this.autoMixTimerId) clearTimeout(this.autoMixTimerId); } catch (_) {}
                 this.autoMixTimerId = null;
+                try { if (this.autoMixPreloadTimerId) clearTimeout(this.autoMixPreloadTimerId); } catch (_) {}
+                this.autoMixPreloadTimerId = null;
                 try { if (this.autoMixSessionLimitTimerId) clearTimeout(this.autoMixSessionLimitTimerId); } catch (_) {}
                 this.autoMixSessionLimitTimerId = null;
                 try { if (this.masterFadeOutRafId) cancelAnimationFrame(this.masterFadeOutRafId); } catch (_) {}
