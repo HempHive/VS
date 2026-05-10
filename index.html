@@ -512,6 +512,18 @@
             min-height: 0;
             flex: 1 1 auto;
         }
+        .dj-deck-b-stage.dj-deck-b-media-mode .dj-deck-b-controls {
+            display: none;
+        }
+        .dj-deck-b-stage.dj-deck-b-media-mode .dj-deck-b-viz-layer {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            pointer-events: auto;
+            min-height: 0;
+            flex: 1 1 auto;
+        }
         .dj-deck-b-text-stage {
             position: absolute;
             inset: 0;
@@ -546,7 +558,8 @@
             will-change: transform, opacity, text-shadow;
             white-space: pre;
         }
-        .dj-deck-b-queue-panel {
+        .dj-deck-b-queue-panel,
+        .dj-deck-b-media-panel {
             flex: 1;
             min-height: 0;
             max-height: 100%;
@@ -568,27 +581,32 @@
             position: relative;
             z-index: 1;
         }
-        .dj-deck-b-queue-panel::-webkit-scrollbar {
+        .dj-deck-b-queue-panel::-webkit-scrollbar,
+        .dj-deck-b-media-panel::-webkit-scrollbar {
             width: 12px;
             -webkit-appearance: none;
             appearance: none;
         }
-        .dj-deck-b-queue-panel::-webkit-scrollbar-track {
+        .dj-deck-b-queue-panel::-webkit-scrollbar-track,
+        .dj-deck-b-media-panel::-webkit-scrollbar-track {
             background: linear-gradient(180deg, #0d0d12 0%, #15151c 100%);
             border-radius: 7px;
             border: 1px solid rgba(255, 255, 255, 0.06);
             margin: 4px 2px 4px 0;
         }
-        .dj-deck-b-queue-panel::-webkit-scrollbar-thumb {
+        .dj-deck-b-queue-panel::-webkit-scrollbar-thumb,
+        .dj-deck-b-media-panel::-webkit-scrollbar-thumb {
             background: linear-gradient(180deg, #5c5c6e 0%, #383844 100%);
             border-radius: 7px;
             border: 2px solid rgba(0, 0, 0, 0.45);
             min-height: 48px;
         }
-        .dj-deck-b-queue-panel::-webkit-scrollbar-thumb:hover {
+        .dj-deck-b-queue-panel::-webkit-scrollbar-thumb:hover,
+        .dj-deck-b-media-panel::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(180deg, #717184 0%, #4a4a58 100%);
         }
-        .dj-deck-b-queue-panel::-webkit-scrollbar-corner {
+        .dj-deck-b-queue-panel::-webkit-scrollbar-corner,
+        .dj-deck-b-media-panel::-webkit-scrollbar-corner {
             background: transparent;
         }
         .dj-deck-b-queue-panel .dj-queue-header {
@@ -776,37 +794,37 @@
             line-height: 1.35;
             color: rgba(255, 255, 255, 0.45);
         }
-        .dj-deck-b-queue-panel .dj-station-cycle {
+        .dj-deck-b-media-panel .dj-station-cycle {
             border: 1px solid rgba(255, 255, 255, 0.14);
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.03);
             padding: 8px;
         }
-        .dj-deck-b-queue-panel .dj-queue-tools {
+        .dj-deck-b-media-panel .dj-queue-tools {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
             align-items: start;
         }
         @media (max-width: 720px) {
-            .dj-deck-b-queue-panel .dj-queue-tools {
+            .dj-deck-b-media-panel .dj-queue-tools {
                 grid-template-columns: 1fr;
             }
         }
-        .dj-deck-b-queue-panel .dj-station-cycle-head {
+        .dj-deck-b-media-panel .dj-station-cycle-head {
             font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 0.4px;
             color: rgba(255, 255, 255, 0.7);
             margin: 0 0 6px 0;
         }
-        .dj-deck-b-queue-panel .dj-station-cycle-list {
+        .dj-deck-b-media-panel .dj-station-cycle-list {
             overflow: visible;
             display: grid;
             gap: 4px;
             flex-shrink: 0;
         }
-        .dj-deck-b-queue-panel .dj-station-cycle-item {
+        .dj-deck-b-media-panel .dj-station-cycle-item {
             display: flex;
             align-items: center;
             gap: 7px;
@@ -815,14 +833,14 @@
             color: #fff;
             user-select: none;
         }
-        .dj-deck-b-queue-panel .dj-station-cycle-item input[type="checkbox"] {
+        .dj-deck-b-media-panel .dj-station-cycle-item input[type="checkbox"] {
             accent-color: #D4AF37;
         }
-        .dj-deck-b-queue-panel .dj-station-cycle-empty {
+        .dj-deck-b-media-panel .dj-station-cycle-empty {
             font-size: 11px;
             color: rgba(255, 255, 255, 0.55);
         }
-        .dj-deck-b-queue-panel .dj-url-drop {
+        .dj-deck-b-media-panel .dj-url-drop {
             border: 1px solid rgba(255, 255, 255, 0.14);
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.03);
@@ -831,7 +849,7 @@
             flex-direction: column;
             gap: 6px;
         }
-        .dj-deck-b-queue-panel .dj-url-input {
+        .dj-deck-b-media-panel .dj-url-input {
             width: 100%;
             box-sizing: border-box;
             border-radius: 6px;
@@ -841,14 +859,14 @@
             padding: 6px 8px;
             font-size: 11px;
         }
-        .dj-deck-b-queue-panel .dj-url-input::placeholder { color: rgba(255, 255, 255, 0.45); }
-        .dj-deck-b-queue-panel .dj-url-entry-row {
+        .dj-deck-b-media-panel .dj-url-input::placeholder { color: rgba(255, 255, 255, 0.45); }
+        .dj-deck-b-media-panel .dj-url-entry-row {
             display: grid;
             grid-template-columns: 1fr auto;
             gap: 6px;
             align-items: center;
         }
-        .dj-deck-b-queue-panel .dj-url-btn {
+        .dj-deck-b-media-panel .dj-url-btn {
             padding: 5px 8px;
             font-size: 10px;
             border-radius: 6px;
@@ -858,8 +876,8 @@
             cursor: pointer;
             line-height: 1.1;
         }
-        .dj-deck-b-queue-panel .dj-url-btn:hover { filter: brightness(1.1); }
-        .dj-deck-b-queue-panel .dj-url-list {
+        .dj-deck-b-media-panel .dj-url-btn:hover { filter: brightness(1.1); }
+        .dj-deck-b-media-panel .dj-url-list {
             list-style: none;
             margin: 0;
             padding: 0;
@@ -869,7 +887,7 @@
             overflow: visible;
             flex-shrink: 0;
         }
-        .dj-deck-b-queue-panel .dj-url-item {
+        .dj-deck-b-media-panel .dj-url-item {
             display: flex;
             align-items: center;
             gap: 6px;
@@ -877,7 +895,7 @@
             border-radius: 6px;
             background: rgba(255, 255, 255, 0.06);
         }
-        .dj-deck-b-queue-panel .dj-url-name {
+        .dj-deck-b-media-panel .dj-url-name {
             font-size: 11px;
             flex: 1;
             min-width: 0;
@@ -886,12 +904,12 @@
             text-overflow: ellipsis;
             word-break: break-word;
         }
-        .dj-deck-b-queue-panel .dj-url-item-actions {
+        .dj-deck-b-media-panel .dj-url-item-actions {
             display: inline-flex;
             gap: 4px;
             flex-shrink: 0;
         }
-        .dj-deck-b-queue-panel .dj-url-item .dj-url-btn {
+        .dj-deck-b-media-panel .dj-url-item .dj-url-btn {
             padding: 1px 4px;
             font-size: 9px;
             border-radius: 4px;
@@ -899,7 +917,7 @@
             line-height: 1;
             width: auto;
         }
-        .dj-deck-b-queue-panel .dj-media-queue.dj-video-queue {
+        .dj-deck-b-media-panel .dj-media-queue.dj-video-queue {
             position: relative;
             border: 1px solid rgba(255, 255, 255, 0.14);
             border-radius: 8px;
@@ -909,11 +927,11 @@
             flex-direction: column;
             gap: 6px;
         }
-        .dj-deck-b-queue-panel .dj-video-tools-block {
+        .dj-deck-b-media-panel .dj-video-tools-block {
             position: relative;
             width: 100%;
         }
-        .dj-deck-b-queue-panel .dj-radio-popout {
+        .dj-deck-b-media-panel .dj-radio-popout {
             display: none;
             position: absolute;
             left: 0;
@@ -926,17 +944,17 @@
             background: rgba(14, 14, 22, 0.98);
             box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
         }
-        .dj-deck-b-queue-panel .dj-radio-popout.is-open {
+        .dj-deck-b-media-panel .dj-radio-popout.is-open {
             display: block;
         }
-        .dj-deck-b-queue-panel .dj-radio-popout-head {
+        .dj-deck-b-media-panel .dj-radio-popout-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 8px;
             margin-bottom: 8px;
         }
-        .dj-deck-b-queue-panel .dj-radio-popout-close {
+        .dj-deck-b-media-panel .dj-radio-popout-close {
             flex-shrink: 0;
             padding: 2px 8px;
             font-size: 14px;
@@ -947,32 +965,32 @@
             color: rgba(255, 255, 255, 0.75);
             cursor: pointer;
         }
-        .dj-deck-b-queue-panel .dj-radio-popout-close:hover {
+        .dj-deck-b-media-panel .dj-radio-popout-close:hover {
             background: rgba(255, 80, 80, 0.25);
             color: #fff;
         }
-        .dj-deck-b-queue-panel .dj-b-video-radio {
+        .dj-deck-b-media-panel .dj-b-video-radio {
             border-color: rgba(212, 175, 55, 0.55) !important;
             color: #f5e6b8 !important;
             background: rgba(212, 175, 55, 0.1) !important;
         }
-        .dj-deck-b-queue-panel .dj-media-head {
+        .dj-deck-b-media-panel .dj-media-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 6px;
         }
-        .dj-deck-b-queue-panel .dj-media-head-actions {
+        .dj-deck-b-media-panel .dj-media-head-actions {
             display: inline-flex;
             gap: 4px;
         }
-        .dj-deck-b-queue-panel .dj-media-head-actions .dj-url-btn {
+        .dj-deck-b-media-panel .dj-media-head-actions .dj-url-btn {
             padding: 1px 5px;
             font-size: 9px;
             border-radius: 4px;
             line-height: 1;
         }
-        .dj-deck-b-queue-panel .dj-url-btn.on {
+        .dj-deck-b-media-panel .dj-url-btn.on {
             border-color: #D4AF37 !important;
             box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.45);
             color: #f5e6b8;
@@ -985,7 +1003,7 @@
             border: 2px solid #39FF14;
             box-shadow: 0 0 6px rgba(57, 255, 20, 0.55), 0 0 0 1px rgba(57, 255, 20, 0.35);
         }
-        .dj-deck-b-queue-panel .dj-media-list {
+        .dj-deck-b-media-panel .dj-media-list {
             list-style: none;
             margin: 0;
             padding: 0;
@@ -995,7 +1013,8 @@
             overflow: visible;
             flex-shrink: 0;
         }
-        #dj-visual-root.dj-mode-portrait .dj-deck-b-queue-panel {
+        #dj-visual-root.dj-mode-portrait .dj-deck-b-queue-panel,
+        #dj-visual-root.dj-mode-portrait .dj-deck-b-media-panel {
             padding-bottom: calc(10px + var(--ui-bottom-hud-clearance) + clamp(20px, 4vh, 40px));
         }
         .dj-deck-b-viz-mount {
@@ -1090,7 +1109,7 @@
             line-height: 1;
         }
         #dj-visual-root .dj-video-btn:hover { filter: brightness(1.1); }
-        .dj-deck-b-queue-panel .dj-media-deck-b-tools {
+        .dj-deck-b-media-panel .dj-media-deck-b-tools {
             display: flex;
             flex-wrap: nowrap;
             gap: 4px;
@@ -1101,13 +1120,13 @@
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
-        #dj-visual-root .dj-deck-b-queue-panel .dj-media-deck-b-tools .dj-video-btn {
+        #dj-visual-root .dj-deck-b-media-panel .dj-media-deck-b-tools .dj-video-btn {
             padding: 4px 7px;
             font-size: 10px;
             border-radius: 6px;
             flex: 0 0 auto;
         }
-        #dj-visual-root .dj-deck-b-queue-panel .dj-media-deck-b-tools .dj-video-loader-input {
+        #dj-visual-root .dj-deck-b-media-panel .dj-media-deck-b-tools .dj-video-loader-input {
             flex: 1 1 0;
             min-width: 48px;
             width: 0;
@@ -1226,17 +1245,17 @@
          * Also center the crossfader strip + body as one block (body had flex:1, which pinned the fader
          * to the top). Skip when Deck B stage is in visual / queue / text mode — those need a full-height column.
          */
-        #dj-visual-root.dj-mode-landscape .dj-deck-b:not(:has(.dj-deck-b-stage:is(.dj-deck-b-visual-mode, .dj-deck-b-queue-mode, .dj-deck-b-text-mode))) {
+        #dj-visual-root.dj-mode-landscape .dj-deck-b:not(:has(.dj-deck-b-stage:is(.dj-deck-b-visual-mode, .dj-deck-b-queue-mode, .dj-deck-b-media-mode, .dj-deck-b-text-mode))) {
             justify-content: center;
         }
-        #dj-visual-root.dj-mode-landscape .dj-deck-b:not(:has(.dj-deck-b-stage:is(.dj-deck-b-visual-mode, .dj-deck-b-queue-mode, .dj-deck-b-text-mode))) > .dj-deck-body {
+        #dj-visual-root.dj-mode-landscape .dj-deck-b:not(:has(.dj-deck-b-stage:is(.dj-deck-b-visual-mode, .dj-deck-b-queue-mode, .dj-deck-b-media-mode, .dj-deck-b-text-mode))) > .dj-deck-body {
             flex: 0 1 auto;
         }
-        #dj-visual-root.dj-mode-landscape .dj-deck-b-stage:not(.dj-deck-b-visual-mode):not(.dj-deck-b-queue-mode):not(.dj-deck-b-text-mode) {
+        #dj-visual-root.dj-mode-landscape .dj-deck-b-stage:not(.dj-deck-b-visual-mode):not(.dj-deck-b-queue-mode):not(.dj-deck-b-media-mode):not(.dj-deck-b-text-mode) {
             justify-content: center;
             flex: 0 1 auto;
         }
-        #dj-visual-root.dj-mode-landscape .dj-deck-b-stage:not(.dj-deck-b-visual-mode):not(.dj-deck-b-queue-mode):not(.dj-deck-b-text-mode) .dj-deck-b-controls {
+        #dj-visual-root.dj-mode-landscape .dj-deck-b-stage:not(.dj-deck-b-visual-mode):not(.dj-deck-b-queue-mode):not(.dj-deck-b-media-mode):not(.dj-deck-b-text-mode) .dj-deck-b-controls {
             flex: 0 1 auto;
         }
         #dj-visual-root .dj-deck-mosaic > .dj-beatmap-strip {
@@ -1660,7 +1679,7 @@
             opacity: 0.85;
             text-transform: uppercase;
         }
-        .dj-deck-b-queue-panel .dj-url-item.is-looping-current {
+        .dj-deck-b-media-panel .dj-url-item.is-looping-current {
             outline: 1px solid rgba(212, 175, 55, 0.75);
             background: rgba(212, 175, 55, 0.12);
             border-radius: 6px;
@@ -7020,6 +7039,7 @@ function randomGlowColor() {
                         const t = e.target;
                         if (t && t.closest && t.closest('.dj-jog-wrap')) return;
                         if (t && t.closest && t.closest('.dj-deck-b-queue-panel')) return;
+                        if (t && t.closest && t.closest('.dj-deck-b-media-panel')) return;
                     } catch (_) {}
                     const guardUntil = (typeof window !== 'undefined' && window.__panelGuardUntilMs) ? window.__panelGuardUntilMs : 0;
                     const now = Date.now();
@@ -9290,6 +9310,7 @@ function stopAllAndShowStart() {
                 this.deckBVizResizeObs = null;
                 this.deckVolResizeObs = null;
                 this.deckBQueueVisible = false;
+                this.deckBMediaPanelVisible = false;
                 this.beatMapSlots = null;
                 this.headClockTimerId = null;
             }
@@ -9592,6 +9613,49 @@ function stopAllAndShowStart() {
                 } catch (_) {}
             }
 
+            hideDeckBMediaView() {
+                try {
+                    this.deckBMediaPanelVisible = false;
+                    const stage = this.root && this.root.querySelector('.dj-deck-b-stage');
+                    if (stage) stage.classList.remove('dj-deck-b-media-mode');
+                    const panel = this.root && this.root.querySelector('#dj-deck-b-media-panel');
+                    if (panel) panel.classList.add('display-none');
+                } catch (_) {}
+                try {
+                    this.syncDeckBVisualButtons();
+                    this.syncFxLightsFromState();
+                } catch (_) {}
+            }
+
+            showDeckBMediaView() {
+                if (!this.root) return;
+                try { this.tearDownDeckBViz({ skipMediaStrip: true }); } catch (_) {}
+                this.deckBMediaPanelVisible = true;
+                try {
+                    const stage = this.root.querySelector('.dj-deck-b-stage');
+                    const layer = this.root.querySelector('#dj-deck-b-viz-layer');
+                    const panel = this.root.querySelector('#dj-deck-b-media-panel');
+                    const mount = this.root.querySelector('#dj-deck-b-viz-mount');
+                    const ph = this.root.querySelector('#dj-deck-b-viz-placeholder');
+                    if (stage) {
+                        stage.classList.remove('dj-deck-b-queue-mode');
+                        stage.classList.add('dj-deck-b-media-mode');
+                    }
+                    if (layer) layer.setAttribute('aria-hidden', 'false');
+                    if (mount) mount.innerHTML = '';
+                    if (ph) ph.classList.add('display-none');
+                    if (panel) panel.classList.remove('display-none');
+                    this.refreshQueueUi();
+                    this.syncDeckBVisualButtons();
+                    this.syncFxLightsFromState();
+                } catch (_) {}
+            }
+
+            toggleDeckBMediaPanel() {
+                if (this.deckBMediaPanelVisible) this.hideDeckBMediaView();
+                else this.showDeckBMediaView();
+            }
+
             showDeckBQueueView() {
                 if (!this.root) return;
                 try { this.tearDownDeckBViz({ skipQueueStrip: true }); } catch (_) {}
@@ -9815,6 +9879,17 @@ function stopAllAndShowStart() {
                     }
                 } catch (_) {}
                 try {
+                    if (!opts || !opts.skipMediaStrip) {
+                        try {
+                            this.deckBMediaPanelVisible = false;
+                            const stageM = this.root && this.root.querySelector('.dj-deck-b-stage');
+                            if (stageM) stageM.classList.remove('dj-deck-b-media-mode');
+                            const panelM = this.root && this.root.querySelector('#dj-deck-b-media-panel');
+                            if (panelM) panelM.classList.add('display-none');
+                        } catch (_) {}
+                    }
+                } catch (_) {}
+                try {
                     if (this.deckBVizPmAnimId) cancelAnimationFrame(this.deckBVizPmAnimId);
                 } catch (_) {}
                 this.deckBVizPmAnimId = null;
@@ -9873,7 +9948,7 @@ function stopAllAndShowStart() {
                     const barsA = this.root && this.root.querySelector('#dj-vis-bars');
                     const pmA = this.root && this.root.querySelector('#dj-vis-pm2');
                     const blankA = this.root && this.root.querySelector('#dj-vis-blank');
-                    if (this.deckBQueueVisible) {
+                    if (this.deckBQueueVisible || this.deckBMediaPanelVisible) {
                         if (bars) bars.classList.remove('on');
                         if (pm) pm.classList.remove('on');
                         if (blank) blank.classList.remove('on');
@@ -10025,11 +10100,13 @@ function stopAllAndShowStart() {
                     const btnNext = mkBtn('Next', 'Next known video source');
                     const btnStop = mkBtn('Stop', 'Stop playback; disable loop/shuffle; clear video until you press Play or Load');
                     const btnFullscreen = mkBtn('Fullscreen', 'Fullscreen video (Esc to exit)');
+                    const btnMediaQueue = mkBtn('Media Queue', 'Radio station cycle list and video queue (Deck B)');
                     ctrls.appendChild(btnRestart);
                     ctrls.appendChild(btnPlay);
                     ctrls.appendChild(btnNext);
                     ctrls.appendChild(btnStop);
                     ctrls.appendChild(btnFullscreen);
+                    ctrls.appendChild(btnMediaQueue);
                     shell.appendChild(vid);
                     mount.appendChild(shell);
                     this.deckBVideoEl = vid;
@@ -10125,6 +10202,11 @@ function stopAllAndShowStart() {
                                 try { req.call(shell); } catch (_) {}
                             }
                         }
+                    });
+                    btnMediaQueue.addEventListener('click', () => {
+                        try { this.toggleDeckBMediaPanel(); } catch (_) {}
+                        try { this.syncFxLightsFromState(); } catch (_) {}
+                        try { resetIdleTimer(); } catch (_) {}
                     });
                     try {
                         vid.title = 'Double-click video for fullscreen · Esc to exit';
@@ -10653,6 +10735,7 @@ function stopAllAndShowStart() {
                         return;
                     }
                     if (this.deckBQueueVisible) this.hideDeckBQueueView();
+                    if (this.deckBMediaPanelVisible) this.hideDeckBMediaView();
                     this.startDeckBKaraokeEmbed('https://www.karaokenerds.com/');
                     this.syncDeckBVisualButtons();
                     this.updateStationTitles();
@@ -10673,6 +10756,7 @@ function stopAllAndShowStart() {
                         return;
                     }
                     if (this.deckBQueueVisible) this.hideDeckBQueueView();
+                    if (this.deckBMediaPanelVisible) this.hideDeckBMediaView();
                     this.startDeckBEmbed('https://www.kbop.us/', 'kbop', { iframeTitle: 'K-BOP', backLabel: 'K-BOP' });
                     this.syncDeckBVisualButtons();
                     this.updateStationTitles();
@@ -11054,7 +11138,7 @@ function stopAllAndShowStart() {
                     if (this.els.fxTrebleA) this.els.fxTrebleA.classList.toggle('on', mixOpenUi);
                     if (this.els.fxTrebleB) this.els.fxTrebleB.classList.toggle('on', mixOpenUi);
                     if (this.els.fxDistortA) this.els.fxDistortA.classList.toggle('on', stationOpenUi);
-                    if (this.els.fxDistortB) this.els.fxDistortB.classList.toggle('on', stationOpenUi);
+                    if (this.els.fxDistortB) this.els.fxDistortB.classList.toggle('on', !!this.deckBMediaPanelVisible);
                     if (this.root && typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(this.root);
                 } catch (_) {}
             }
@@ -11368,7 +11452,7 @@ function stopAllAndShowStart() {
 
                 <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="Toggle avatar / WebM overlay">Avatar</button>
                 <button type="button" class="btn dj-fx" id="dj-b-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
-                <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Open or close station list (top menu)">Stations</button>
+                <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Show or hide station cycle list and video queue (Deck B)">Stations</button>
 
                 <button type="button" class="btn dj-fx" id="dj-b-fx-treble" title="Open or close Mix Settings (bottom panel)">Mixer</button>
                 <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Toggle Deck B video player">Video</button>
@@ -11417,6 +11501,8 @@ function stopAllAndShowStart() {
                 <ul id="dj-queue-list-b" class="dj-queue-list"></ul>
               </div>
             </div>
+          </div>
+          <div id="dj-deck-b-media-panel" class="dj-deck-b-media-panel display-none" aria-label="Station cycle and video queue">
             <div class="dj-queue-tools">
               <div class="dj-station-cycle" aria-label="Station cycle filter">
                 <div class="dj-station-cycle-head">Radio station cycle list</div>
@@ -12350,6 +12436,11 @@ function stopAllAndShowStart() {
                             this.updateStationTitles();
                             return;
                         }
+                        if (this.deckBMediaPanelVisible) {
+                            this.hideDeckBMediaView();
+                            this.updateStationTitles();
+                            return;
+                        }
                         this.tearDownDeckBViz();
                         this.syncDeckBVisualButtons();
                         this.updateStationTitles();
@@ -12428,6 +12519,13 @@ function stopAllAndShowStart() {
                     try {
                         if (typeof uiLocked !== 'undefined' && uiLocked) return;
                         if (typeof toggleTopMenuPanel === 'function') toggleTopMenuPanel();
+                        this.syncFxLightsFromState();
+                    } catch (_) {}
+                };
+                const djToggleDeckBMediaUi = () => {
+                    try {
+                        if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                        this.toggleDeckBMediaPanel();
                         this.syncFxLightsFromState();
                     } catch (_) {}
                 };
@@ -12722,7 +12820,7 @@ function stopAllAndShowStart() {
                 if (this.els.fxTrebleA) this.els.fxTrebleA.addEventListener('click', djToggleMixerUi, sig);
                 if (this.els.fxTrebleB) this.els.fxTrebleB.addEventListener('click', djToggleMixerUi, sig);
                 if (this.els.fxDistortA) this.els.fxDistortA.addEventListener('click', djToggleStationUi, sig);
-                if (this.els.fxDistortB) this.els.fxDistortB.addEventListener('click', djToggleStationUi, sig);
+                if (this.els.fxDistortB) this.els.fxDistortB.addEventListener('click', djToggleDeckBMediaUi, sig);
 
                 const TK_HOLD_MS = 450;
                 const TK_F_MIN = 200;
@@ -13095,6 +13193,7 @@ function stopAllAndShowStart() {
                             }
                         } catch (_) {}
                         if (this.deckBQueueVisible) this.hideDeckBQueueView();
+                        if (this.deckBMediaPanelVisible) this.hideDeckBMediaView();
                         // Toggle off if this visual is already active
                         if (this.deckBVizMode === mode) {
                             this.tearDownDeckBViz();
@@ -15127,7 +15226,8 @@ function stopAllAndShowStart() {
                      state.activeVisualizer.deckBVizMode === 'video' ||
                      state.activeVisualizer.deckBVizMode === 'karaoke' ||
                      state.activeVisualizer.deckBVizMode === 'kbop' ||
-                     state.activeVisualizer.deckBQueueVisible)
+                     state.activeVisualizer.deckBQueueVisible ||
+                     state.activeVisualizer.deckBMediaPanelVisible)
                 );
                 const deckBTextActive = (() => {
                     try {
@@ -15137,7 +15237,7 @@ function stopAllAndShowStart() {
                     } catch (_) { return false; }
                 })();
                 const showReturn = onDj && (deckBVisualActive || deckBTextActive);
-                // In DJ mode: show 🎧 when a Deck B view is active (visual layer / queue / TEXT-IN) as a quick "return to controls".
+                // In DJ mode: show 🎧 when a Deck B view is active (visual layer / queue / media panel / TEXT-IN) as a quick "return to controls".
                 btn.classList.toggle('display-none', onDj && !showReturn);
                 btn.title = showReturn ? 'Return Deck B controls' : 'Open DJ Decks visual';
             } catch (_) {}
@@ -15205,7 +15305,8 @@ function stopAllAndShowStart() {
                          state.activeVisualizer.deckBVizMode === 'video' ||
                          state.activeVisualizer.deckBVizMode === 'karaoke' ||
                          state.activeVisualizer.deckBVizMode === 'kbop' ||
-                         state.activeVisualizer.deckBQueueVisible)
+                         state.activeVisualizer.deckBQueueVisible ||
+                         state.activeVisualizer.deckBMediaPanelVisible)
                     );
                     const deckBTextActive = (() => {
                         try {
@@ -15231,6 +15332,7 @@ function stopAllAndShowStart() {
                     }
                     if (deckBVisualActive) {
                         try { if (state.activeVisualizer.deckBQueueVisible && typeof state.activeVisualizer.hideDeckBQueueView === 'function') state.activeVisualizer.hideDeckBQueueView(); } catch (_) {}
+                        try { if (state.activeVisualizer.deckBMediaPanelVisible && typeof state.activeVisualizer.hideDeckBMediaView === 'function') state.activeVisualizer.hideDeckBMediaView(); } catch (_) {}
                         if (typeof state.activeVisualizer.tearDownDeckBViz === 'function') {
                             state.activeVisualizer.tearDownDeckBViz();
                         }
