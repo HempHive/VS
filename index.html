@@ -2891,6 +2891,124 @@
     opacity: 0; display:flex; flex-direction:column;
 }
 #mix-panel.open { transform: translateY(0); opacity: 1; }
+        /* Keyboard shortcuts sheet (HUD ⌨️ button) */
+        #keyboard-shortcuts-panel {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            width: 100%; max-height: min(58vh, 520px);
+            z-index: 125;
+            background: rgba(8, 8, 12, 0.94);
+            border-top: 1px solid rgba(255,255,255,0.22);
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 -12px 36px rgba(0,0,0,0.55);
+            backdrop-filter: blur(10px);
+            transform: translateY(100%);
+            transition: transform 0.35s ease, opacity 0.35s ease;
+            opacity: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #keyboard-shortcuts-panel.open {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        #keyboard-shortcuts-panel h3 {
+            margin: 0;
+            padding: 12px 14px;
+            font-weight: 500;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        #keyboard-shortcuts-body {
+            padding: 12px 14px 16px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .kbd-board-wrap {
+            font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        }
+        .kbd-board-title {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+        }
+        .kbd-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+        }
+        .kbd-key {
+            min-width: 30px;
+            padding: 7px 6px 5px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+            color: #888;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.1;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.35);
+        }
+        .kbd-key.kbd-lit {
+            border-color: rgba(57, 255, 20, 0.65);
+            background: rgba(57, 255, 20, 0.1);
+            color: #e8ffe8;
+        }
+        .kbd-key.kbd-wide { min-width: 120px; flex: 1; max-width: 200px; }
+        .kbd-key.kbd-arrow { min-width: 36px; font-size: 15px; }
+        .kbd-key.kbd-esc-lead { margin-right: 10px; }
+        .kbd-hint {
+            display: block;
+            font-size: 8px;
+            font-weight: 400;
+            color: #9abd9a;
+            margin-top: 3px;
+            line-height: 1.15;
+            max-width: 72px;
+            word-break: break-word;
+        }
+        .kbd-key:not(.kbd-lit) .kbd-hint { color: #555; }
+        .kbd-shortcut-groups {
+            display: grid;
+            gap: 12px;
+            font-size: 12px;
+            color: #ccc;
+        }
+        .kbd-group h4 {
+            margin: 0 0 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: #9aa;
+        }
+        .kbd-group ul {
+            margin: 0;
+            padding-left: 18px;
+            line-height: 1.55;
+        }
+        .kbd-note {
+            font-size: 11px;
+            color: #777;
+            line-height: 1.45;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
         #mix-panel h3 {
             margin: 0; padding: 12px 14px; font-weight: 500; font-size: 14px;
             border-bottom: 1px solid rgba(255,255,255,0.12);
@@ -3625,6 +3743,7 @@
     }
     #textin-panel, 
     #bottom-avatar-panel,
+    #keyboard-shortcuts-panel,
     #top-menu-panel,
     #webm-settings-panel,
     #settings-panel { 
@@ -3643,6 +3762,9 @@
     /* Mix panel needs to be scrollable and taller */
     #mix-panel {
         height: 65vh !important;
+    }
+    #keyboard-shortcuts-panel {
+        max-height: min(72vh, 560px) !important;
     }
 
     /* Stack EQ knobs vertically for space */
@@ -3734,7 +3856,7 @@
             <!-- SKIP PRESET BUTTON (Only for ProjectM) -->
             <button class="icon-btn interactive display-none" id="btn-skip-preset" title="Next Visual Preset">⏭</button>
             <!-- WEBM TOGGLE -->
-            <button class="icon-btn interactive" id="btn-webm" title="Toggle WebM Overlay">🎛️</button>
+            <button class="icon-btn interactive" id="btn-webm" title="Keyboard shortcuts" aria-label="Keyboard shortcuts">⌨️</button>
             <button class="icon-btn interactive" id="btn-options" title="Options">🪭</button>
 
             <!-- TITLE INFO -->
@@ -4142,6 +4264,88 @@
             </div>
         </div>
     </div>
+
+    <div id="keyboard-shortcuts-panel" class="display-none" aria-label="Keyboard shortcuts reference">
+        <h3>
+            <span>Keyboard shortcuts</span>
+            <button type="button" class="icon-btn interactive" id="btn-keyboard-shortcuts-close" title="Close" aria-label="Close">✕</button>
+        </h3>
+        <div id="keyboard-shortcuts-body">
+            <div class="kbd-board-wrap">
+                <div class="kbd-board-title">Quick map</div>
+                <div class="kbd-row">
+                    <div class="kbd-key kbd-lit kbd-esc-lead"><span class="kbd-cap">Esc</span><span class="kbd-hint">Close panels · then start</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">Q</span><span class="kbd-hint">Avatar speed −</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">W</span><span class="kbd-hint">Toggle avatar overlay</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">E</span><span class="kbd-hint">Avatar speed +</span></div>
+                    <div class="kbd-key"><span class="kbd-cap">R</span><span class="kbd-hint">—</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">T</span><span class="kbd-hint">Text-In panel</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">Y</span><span class="kbd-hint">Text-In Auto</span></div>
+                    <div class="kbd-key"><span class="kbd-cap">U</span><span class="kbd-hint">—</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">I</span><span class="kbd-hint">Send rising text</span></div>
+                    <div class="kbd-key"><span class="kbd-cap">O</span><span class="kbd-hint">—</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">P</span><span class="kbd-hint">Avatar settings</span></div>
+                </div>
+                <div class="kbd-row">
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">A</span><span class="kbd-hint">Prev clip</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">S</span><span class="kbd-hint">Reset layout</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">D</span><span class="kbd-hint">Next clip</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">F</span><span class="kbd-hint">Fullscreen</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">G</span><span class="kbd-hint">Options</span></div>
+                    <div class="kbd-key"><span class="kbd-cap">H</span><span class="kbd-hint">—</span></div>
+                    <div class="kbd-key"><span class="kbd-cap">J</span><span class="kbd-hint">—</span></div>
+                    <div class="kbd-key"><span class="kbd-cap">K</span><span class="kbd-hint">—</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">L</span><span class="kbd-hint">Lock UI</span></div>
+                </div>
+                <div class="kbd-row">
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">Z</span><span class="kbd-hint">Opacity −</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">X</span><span class="kbd-hint">Opacity +</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">C</span><span class="kbd-hint">Next preset</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">V</span><span class="kbd-hint">Random station</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">B</span><span class="kbd-hint">Prev station</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">N</span><span class="kbd-hint">Top menu</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">M</span><span class="kbd-hint">Mixer</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">,</span><span class="kbd-hint">Prev visual</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">.</span><span class="kbd-hint">Next visual</span></div>
+                </div>
+                <div class="kbd-row">
+                    <div class="kbd-key kbd-lit kbd-wide"><span class="kbd-cap">Space</span><span class="kbd-hint">Play / pause Deck A</span></div>
+                    <div class="kbd-key kbd-lit kbd-arrow"><span class="kbd-cap">←</span><span class="kbd-hint">Move avatar</span></div>
+                    <div class="kbd-key kbd-lit kbd-arrow"><span class="kbd-cap">→</span><span class="kbd-hint">Move avatar</span></div>
+                    <div class="kbd-key kbd-lit kbd-arrow"><span class="kbd-cap">↑</span><span class="kbd-hint">Move avatar</span></div>
+                    <div class="kbd-key kbd-lit kbd-arrow"><span class="kbd-cap">↓</span><span class="kbd-hint">Move avatar</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">−</span><span class="kbd-hint">Smaller</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">=</span><span class="kbd-hint">Bigger</span></div>
+                </div>
+            </div>
+            <div class="kbd-shortcut-groups">
+                <div class="kbd-group">
+                    <h4>Panels &amp; navigation</h4>
+                    <ul>
+                        <li><strong>T</strong> — Text-In · <strong>Y</strong> — Text-In Auto · <strong>I</strong> — send message once</li>
+                        <li><strong>N</strong> — Top menu (radio) · <strong>P</strong> — Avatar / WebM settings · <strong>M</strong> — Mixer · <strong>G</strong> — Options diamond</li>
+                        <li><strong>Esc</strong> — closes panels in order; if none open, returns to start screen</li>
+                    </ul>
+                </div>
+                <div class="kbd-group">
+                    <h4>Radio &amp; visuals</h4>
+                    <ul>
+                        <li><strong>V</strong> — random station · <strong>B</strong> — previous station · <strong>Space</strong> — play/pause Deck A</li>
+                        <li><strong>C</strong> — next visual preset (when supported) · <strong>,</strong> / <strong>.</strong> — previous / next visual mode</li>
+                    </ul>
+                </div>
+                <div class="kbd-group">
+                    <h4>Avatar (WebM) overlay</h4>
+                    <ul>
+                        <li><strong>W</strong> — show/hide overlay · <strong>S</strong> — reset layout · <strong>A</strong> / <strong>D</strong> — previous / next clip</li>
+                        <li><strong>Q</strong> / <strong>E</strong> — playback speed · <strong>Z</strong> / <strong>X</strong> — opacity · <strong>−</strong> / <strong>=</strong> — scale</li>
+                        <li><strong>Arrow keys</strong> — move position</li>
+                    </ul>
+                </div>
+            </div>
+            <p class="kbd-note">Shortcuts are ignored while typing in fields, or when <strong>Lock UI</strong> is on (except <strong>L</strong> toggles lock). Open Text-In anytime from the center <strong>Options (🪭)</strong> triangle.</p>
+        </div>
+    </div>
     
     <!-- WebM Overlay + Nav -->
     <div id="webm-overlay" class="display-none">
@@ -4358,6 +4562,7 @@ const QUALITY = {
                 try { if (typeof isTopMenuOpen === 'function' && isTopMenuOpen()) closeTopMenuPanel(); } catch(_) {}
                 try { hideWebmSettingsPanel(); } catch(_) {}
                 try { closeBottomMenuPanel(); } catch(_) {}
+                try { closeKeyboardShortcutsPanel(); } catch (_) {}
                 try {
                     if (settingsPanel && !settingsPanel.classList.contains('display-none')) {
                         settingsPanel.classList.add('display-none');
@@ -4388,6 +4593,33 @@ const QUALITY = {
         const midiCancel = document.getElementById('btn-midi-cancel');
         const mixPanel = document.getElementById('mix-panel');
         const mixClose = document.getElementById('btn-mix-close');
+        const keyboardShortcutsPanel = document.getElementById('keyboard-shortcuts-panel');
+        const btnKeyboardShortcutsClose = document.getElementById('btn-keyboard-shortcuts-close');
+        function isKeyboardShortcutsPanelOpen() {
+            return !!(keyboardShortcutsPanel && !keyboardShortcutsPanel.classList.contains('display-none') && keyboardShortcutsPanel.classList.contains('open'));
+        }
+        function openKeyboardShortcutsPanel() {
+            if (!keyboardShortcutsPanel || uiLocked) return;
+            keyboardShortcutsPanel.classList.remove('display-none');
+            requestAnimationFrame(() => { keyboardShortcutsPanel.classList.add('open'); });
+        }
+        function closeKeyboardShortcutsPanel() {
+            if (!keyboardShortcutsPanel) return;
+            keyboardShortcutsPanel.classList.remove('open');
+            setTimeout(() => { keyboardShortcutsPanel.classList.add('display-none'); }, 350);
+        }
+        function toggleKeyboardShortcutsPanel() {
+            if (isKeyboardShortcutsPanelOpen()) closeKeyboardShortcutsPanel();
+            else openKeyboardShortcutsPanel();
+        }
+        if (btnKeyboardShortcutsClose) {
+            btnKeyboardShortcutsClose.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeKeyboardShortcutsPanel();
+                try { resetIdleTimer(); } catch (_) {}
+            });
+        }
         const fxLow = document.getElementById('fx-lowpass');
         const fxHigh = document.getElementById('fx-highpass');
         const fxBass = document.getElementById('fx-bass');
@@ -6008,6 +6240,7 @@ function randomGlowColor() {
                         const avatarOpen = (typeof isBottomMenuOpen === 'function') && isBottomMenuOpen(); // Now the side panel
                         // Check if Mix Panel is open (manually since it doesn't have an isXOpen helper)
                         const mixOpen = mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open');
+                        const kbdSheetOpen = (typeof isKeyboardShortcutsPanelOpen === 'function') && isKeyboardShortcutsPanelOpen();
 
                         // PRIORITY: Close any open panel before opening a new one (top menu → Text-In → Avatar)
                         if (topOpen) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
@@ -6019,6 +6252,7 @@ function randomGlowColor() {
                         const vertFromDj = pDownTarget && typeof pDownTarget.closest === 'function' && pDownTarget.closest('#dj-visual-root');
 
                         if (dy > 0) { // SWIPE DOWN
+                            if (kbdSheetOpen) { try { closeKeyboardShortcutsPanel(); } catch (_) {} return; }
                             // If Mix Panel is open at the bottom, swipe down should close it
                             if (mixOpen) { toggleMixPanel(); return; }
                             // Do not open Top Menu from vertical drags that started on DJ deck (e.g. TK filter pad)
@@ -6026,6 +6260,7 @@ function randomGlowColor() {
                             if (typeof openTopMenuPanel === 'function') openTopMenuPanel();
                         } else { // SWIPE UP
                             // Open Mix Settings (instead of Avatar/WebM)
+                            if (kbdSheetOpen) { try { closeKeyboardShortcutsPanel(); } catch (_) {} return; }
                             if (!mixOpen && !vertFromDj) toggleMixPanel();
                         }
                         return;
@@ -6047,6 +6282,7 @@ function randomGlowColor() {
                         const avatarOpenH = (typeof isBottomMenuOpen === 'function') && isBottomMenuOpen();
 
                         if (topOpenH) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
+                        if ((typeof isKeyboardShortcutsPanelOpen === 'function') && isKeyboardShortcutsPanelOpen()) { try { closeKeyboardShortcutsPanel(); } catch (_) {} return; }
                         if (textInOpenH) { if (typeof hideTextInPanel === 'function') hideTextInPanel(); return; }
                         if (avatarOpenH) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
 
@@ -6099,6 +6335,7 @@ function randomGlowColor() {
                         const avatarOpenW = (typeof isBottomMenuOpen === 'function') && isBottomMenuOpen();
 
                         if (topOpenW) { if (typeof closeTopMenuPanel === 'function') closeTopMenuPanel(); return; }
+                        if ((typeof isKeyboardShortcutsPanelOpen === 'function') && isKeyboardShortcutsPanelOpen()) { try { closeKeyboardShortcutsPanel(); } catch (_) {} return; }
                         if (textInOpenW) { if (typeof hideTextInPanel === 'function') hideTextInPanel(); return; }
                         if (avatarOpenW) { if (typeof closeBottomMenuPanel === 'function') closeBottomMenuPanel(); return; }
 
@@ -6151,6 +6388,7 @@ function randomGlowColor() {
                     
                     // Check if Mix Panel is open (manual check)
                     const mixOpen = mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open');
+                    const kbdShortcutsOpen = (typeof isKeyboardShortcutsPanelOpen === 'function') && isKeyboardShortcutsPanelOpen();
                     const sideOpen = typeof isBottomMenuOpen === 'function' && isBottomMenuOpen();
                     const topOpenWh = typeof isTopMenuOpen === 'function' && isTopMenuOpen();
                     const tipWh = document.getElementById('textin-panel');
@@ -6159,6 +6397,7 @@ function randomGlowColor() {
                     if (dy < 0) {
                         // SCROLL UP: Open Top Menu (or close others)
                         try {
+                            if (kbdShortcutsOpen) { closeKeyboardShortcutsPanel(); return; }
                             if (mixOpen) { toggleMixPanel(); return; }
                             if (textInOpenWh) { if (typeof hideTextInPanel === 'function') hideTextInPanel(); return; }
                             if (sideOpen) { closeBottomMenuPanel(); return; }
@@ -6167,6 +6406,7 @@ function randomGlowColor() {
                     } else if (dy > 0) {
                         // SCROLL DOWN: Open Mix Settings at Bottom (or close others)
                         try {
+                            if (kbdShortcutsOpen) { closeKeyboardShortcutsPanel(); return; }
                             if (topOpenWh) { closeTopMenuPanel(); return; }
                             if (textInOpenWh) { if (typeof hideTextInPanel === 'function') hideTextInPanel(); return; }
                             if (sideOpen) { closeBottomMenuPanel(); return; }
@@ -13659,13 +13899,13 @@ function stopAllAndShowStart() {
                 resetIdleTimer();
             });
         }
-        // Repurpose: WebM button opens Text-In panel instead of toggling WebM overlay
+        // HUD ⌨️ opens keyboard shortcuts reference sheet
         if (webmBtn) {
-            webmBtn.title = "Open Text-In Panel";
+            webmBtn.title = "Keyboard shortcuts";
             webmBtn.addEventListener('click', (e) => { 
                 e.preventDefault(); 
                 e.stopPropagation(); 
-                try { toggleTextInPanel(); } catch(_) {}
+                try { toggleKeyboardShortcutsPanel(); } catch(_) {}
                 resetIdleTimer(); 
             });
         }
@@ -14149,7 +14389,7 @@ function stopAllAndShowStart() {
 			try {
 				const horizIntent = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? Math.abs(e.deltaX) : (e.shiftKey ? Math.abs(e.deltaY) : 0));
 				if (horizIntent > 5) {
-					const inUi = !!(e.target && (e.target.closest('#top-menu-content') || e.target.closest('#settings-panel') || e.target.closest('#webm-settings-panel') || e.target.closest('#bottom-avatar-content') || e.target.closest('#dj-visual-root')));
+					const inUi = !!(e.target && (e.target.closest('#top-menu-content') || e.target.closest('#settings-panel') || e.target.closest('#webm-settings-panel') || e.target.closest('#bottom-avatar-content') || e.target.closest('#keyboard-shortcuts-panel') || e.target.closest('#dj-visual-root')));
 					if (!inUi) {
 						// One step per gesture: lock during momentum and unlock after wheel quiets down
 						if (!window.__wheelNavLocked) {
@@ -15048,6 +15288,11 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                     // Mix panel
                     if (mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open')) {
                         toggleMixPanel();
+                        closed = true;
+                    }
+                    // Keyboard shortcuts sheet
+                    if (!closed && keyboardShortcutsPanel && !keyboardShortcutsPanel.classList.contains('display-none') && keyboardShortcutsPanel.classList.contains('open')) {
+                        closeKeyboardShortcutsPanel();
                         closed = true;
                     }
                     // Text-In panel
