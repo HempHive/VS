@@ -556,6 +556,7 @@
             font-size: 12px;
             overflow: auto;
             gap: 10px;
+            overscroll-behavior: contain;
         }
         .dj-deck-b-queue-panel .dj-queue-header {
             font-weight: 700;
@@ -624,6 +625,7 @@
             gap: 4px;
             max-height: min(36vh, 280px);
             overflow: auto;
+            overscroll-behavior: contain;
         }
         .dj-deck-b-queue-panel li.dj-queue-item {
             display: flex;
@@ -737,6 +739,7 @@
         .dj-deck-b-queue-panel .dj-station-cycle-list {
             max-height: min(26vh, 180px);
             overflow: auto;
+            overscroll-behavior: contain;
             display: grid;
             gap: 4px;
         }
@@ -802,6 +805,7 @@
             gap: 4px;
             max-height: min(24vh, 170px);
             overflow: auto;
+            overscroll-behavior: contain;
         }
         .dj-deck-b-queue-panel .dj-url-item {
             display: flex;
@@ -928,6 +932,7 @@
             gap: 4px;
             max-height: min(26vh, 190px);
             overflow: auto;
+            overscroll-behavior: contain;
         }
         #dj-visual-root.dj-mode-portrait .dj-deck-b-queue-panel {
             padding-bottom: calc(10px + var(--ui-bottom-hud-clearance) + clamp(20px, 4vh, 40px));
@@ -6919,6 +6924,7 @@ function randomGlowColor() {
                     try {
                         const t = e.target;
                         if (t && t.closest && t.closest('.dj-jog-wrap')) return;
+                        if (t && t.closest && t.closest('.dj-deck-b-queue-panel')) return;
                     } catch (_) {}
                     const guardUntil = (typeof window !== 'undefined' && window.__panelGuardUntilMs) ? window.__panelGuardUntilMs : 0;
                     const now = Date.now();
@@ -12488,22 +12494,8 @@ function stopAllAndShowStart() {
                     }, sig);
                     const stationCycleListEl = root.querySelector('#dj-station-cycle-list');
                     if (stationCycleListEl) stationCycleListEl.addEventListener('wheel', (ev) => {
-                        try {
-                            ev.preventDefault();
-                            ev.stopPropagation();
-                        } catch (_) {}
-                        try {
-                            if (typeof uiLocked !== 'undefined' && uiLocked) return;
-                            const dy = Number(ev.deltaY) || 0;
-                            if (dy < 0) {
-                                if (typeof openTopMenuPanel === 'function') openTopMenuPanel();
-                            } else if (dy > 0) {
-                                const mixOpen = mixPanel && !mixPanel.classList.contains('display-none') && mixPanel.classList.contains('open');
-                                if (!mixOpen && typeof toggleMixPanel === 'function') toggleMixPanel();
-                            }
-                            if (typeof resetIdleTimer === 'function') resetIdleTimer();
-                        } catch (_) {}
-                    }, { passive: false, signal: this.abortCtrl.signal });
+                        try { ev.stopPropagation(); } catch (_) {}
+                    }, { passive: true, signal: this.abortCtrl.signal });
                 } catch (_) {}
 
                 if (this.els.fxHighA) this.els.fxHighA.addEventListener('click', djToggleAvatar, sig);
