@@ -4292,9 +4292,9 @@
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">D</span><span class="kbd-hint">Next clip</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">F</span><span class="kbd-hint">Fullscreen</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">G</span><span class="kbd-hint">Options</span></div>
-                    <div class="kbd-key"><span class="kbd-cap">H</span><span class="kbd-hint">—</span></div>
-                    <div class="kbd-key"><span class="kbd-cap">J</span><span class="kbd-hint">—</span></div>
-                    <div class="kbd-key"><span class="kbd-cap">K</span><span class="kbd-hint">—</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">H</span><span class="kbd-hint">Deck B QUEUE</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">J</span><span class="kbd-hint">Deck B VIDEO</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">K</span><span class="kbd-hint">Deck B KARAOKE</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">L</span><span class="kbd-hint">Lock UI</span></div>
                 </div>
                 <div class="kbd-row">
@@ -4340,6 +4340,12 @@
                         <li><strong>W</strong> — show/hide overlay · <strong>S</strong> — reset layout · <strong>A</strong> / <strong>D</strong> — previous / next clip</li>
                         <li><strong>Q</strong> / <strong>E</strong> — playback speed · <strong>Z</strong> / <strong>X</strong> — opacity · <strong>−</strong> / <strong>=</strong> — scale</li>
                         <li><strong>Arrow keys</strong> — move position</li>
+                    </ul>
+                </div>
+                <div class="kbd-group">
+                    <h4>DJ Deck B</h4>
+                    <ul>
+                        <li><strong>H</strong> — QUEUE · <strong>J</strong> — VIDEO · <strong>K</strong> — KARAOKE (same as buttons on Deck B)</li>
                     </ul>
                 </div>
             </div>
@@ -5894,6 +5900,7 @@ function randomGlowColor() {
 				'V Random Station  •  B Previous Station  •  N Top Menu  •  L Lock',
 				'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
                 'P Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
+				'H QUEUE  •  J VIDEO  •  K KARAOKE (Deck B)',
 				'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Play/Pause  •  Esc Back'
 			].join('\n');
 			let phase = 'visible';
@@ -7141,6 +7148,7 @@ function randomGlowColor() {
 					'V Random Station  •  B Previous Station  •  N Top Menu  •  L Lock',
 					'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
 					'P Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
+					'H QUEUE  •  J VIDEO  •  K KARAOKE (Deck B)',
 					'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Play/Pause  •  Esc Back'
 				].join('\n');
 			if (statusEl) {
@@ -7191,6 +7199,7 @@ function randomGlowColor() {
 				'V Random Station  •  B Previous Station  •  N Top Menu  •  L Lock',
 				'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
 				'P Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
+				'H QUEUE  •  J VIDEO  •  K KARAOKE (Deck B)',
 				'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Play/Pause  •  Esc Back'
 			].join('\n');
 				if (s && s.innerText && s.innerText.trim().length > 0) {
@@ -15355,6 +15364,24 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 window.__panelGuardUntilMs = 0; // FIX: Reset guard timer for instant open
                 try { toggleMixPanel(); } catch(_) {}
+            } else if (e.key === 'h' || e.key === 'H') {
+                e.preventDefault();
+                try {
+                    const q = document.getElementById('dj-b-queue');
+                    if (q) q.click();
+                } catch (_) {}
+            } else if (e.key === 'j' || e.key === 'J') {
+                e.preventDefault();
+                try {
+                    const v = document.getElementById('dj-b-fx-low');
+                    if (v) v.click();
+                } catch (_) {}
+            } else if (e.key === 'k' || e.key === 'K') {
+                e.preventDefault();
+                try {
+                    const k = document.getElementById('dj-b-sfx-w1');
+                    if (k) k.click();
+                } catch (_) {}
             } else if (e.key === 'g' || e.key === 'G') {
                 // Toggle Options panel (repurposed)
                 e.preventDefault();
