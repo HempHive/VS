@@ -1254,13 +1254,13 @@
             width: calc(67.5px * var(--dj-control-scale) * var(--dj-knob-scale));
             height: calc(67.5px * var(--dj-control-scale) * var(--dj-knob-scale));
         }
-        /* TK / Loop / Arp: darker chassis + calmer pointer vs EQ knobs */
+        /* TK / Loop / Arp (Deck A) + Deck B mirror FX (Reverb / Flanger / No vocal): darker chassis */
         #dj-visual-root #dj-knob-a-tk,
         #dj-visual-root #dj-knob-a-loop,
         #dj-visual-root #dj-knob-a-arp,
-        #dj-visual-root #dj-knob-b-tk,
-        #dj-visual-root #dj-knob-b-loop,
-        #dj-visual-root #dj-knob-b-arp {
+        #dj-visual-root #dj-knob-b-reverb,
+        #dj-visual-root #dj-knob-b-flanger,
+        #dj-visual-root #dj-knob-b-novocal {
             background: radial-gradient(110% 110% at 50% 16%, #282828 0%, #060606 92%);
             border: 1px solid rgba(255, 255, 255, 0.28);
             box-shadow:
@@ -1270,18 +1270,18 @@
         #dj-visual-root #dj-knob-a-tk .knob-indicator,
         #dj-visual-root #dj-knob-a-loop .knob-indicator,
         #dj-visual-root #dj-knob-a-arp .knob-indicator,
-        #dj-visual-root #dj-knob-b-tk .knob-indicator,
-        #dj-visual-root #dj-knob-b-loop .knob-indicator,
-        #dj-visual-root #dj-knob-b-arp .knob-indicator {
+        #dj-visual-root #dj-knob-b-reverb .knob-indicator,
+        #dj-visual-root #dj-knob-b-flanger .knob-indicator,
+        #dj-visual-root #dj-knob-b-novocal .knob-indicator {
             box-shadow: 0 0 6px var(--knob-color, #fff);
             filter: brightness(1.22) saturate(1.2);
         }
         #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-a-tk) .eq-label,
         #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-a-loop) .eq-label,
         #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-a-arp) .eq-label,
-        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-tk) .eq-label,
-        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-loop) .eq-label,
-        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-arp) .eq-label {
+        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-reverb) .eq-label,
+        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-flanger) .eq-label,
+        #dj-visual-root .dj-beatmap-fx-knobs .eq-col:has(#dj-knob-b-novocal) .eq-label {
             color: rgba(255, 255, 255, 0.4);
         }
         #dj-visual-root .dj-beatmap-fx-knobs .eq-label {
@@ -7049,7 +7049,7 @@ function randomGlowColor() {
                     state.fx.loopMusical.delay.connect(state.fx.loopMusical.feedback);
                     state.fx.loopMusical.feedback.connect(state.fx.loopMusical.delay);
                 } catch (_) {}
-                state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false };
+                state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false, reverbPct: 50, flangerPct: 50, noVocalPct: 100 };
                 const curveLen = 44100; const curve = new Float32Array(curveLen); const amount = 120;
                 for (let i=0;i<curveLen;i++){ const x = i/curveLen*2-1; curve[i] = ((3+amount)*x*20*Math.PI/180)/(Math.PI+amount*Math.abs(x)); }
                 state.fx.distort.node.curve = curve; state.fx.distort.node.oversample = '4x';
@@ -7133,6 +7133,16 @@ function randomGlowColor() {
             }
             if(state.audioCtx.state === 'suspended') state.audioCtx.resume();
         }
+        function applyDeckBNoVocalPeakingGains() {
+            if (!state.fx || !state.fx.noVocal) return;
+            const pct = (state.djBeatFx && typeof state.djBeatFx.noVocalPct === 'number') ? state.djBeatFx.noVocalPct : 100;
+            const m = Math.max(0.15, Math.min(1.15, pct / 100));
+            try {
+                state.fx.noVocal.f1.gain.value = -14 * m;
+                state.fx.noVocal.f2.gain.value = -17 * m;
+                state.fx.noVocal.f3.gain.value = -12 * m;
+            } catch (_) {}
+        }
         function rebuildEffectsChain() {
             if (!state.audioCtx) return;
             // Disconnect everything from mixInput forward
@@ -7193,11 +7203,14 @@ function randomGlowColor() {
                 state.fx.noVocal.f1.connect(state.fx.noVocal.f2);
                 state.fx.noVocal.f2.connect(state.fx.noVocal.f3);
                 last = state.fx.noVocal.f3;
+                try { applyDeckBNoVocalPeakingGains(); } catch (_) {}
             }
             if (state.fx.flanger && state.fx.flanger.on) {
                 try { last.disconnect(); } catch (_) {}
-                state.fx.flanger.feedbackGain.gain.value = 0.42;
-                state.fx.flanger.lfoDepth.gain.value = 0.005;
+                const fp = (state.djBeatFx && typeof state.djBeatFx.flangerPct === 'number') ? state.djBeatFx.flangerPct : 50;
+                const ft = Math.max(0, Math.min(1, fp / 100));
+                state.fx.flanger.feedbackGain.gain.value = 0.15 + 0.54 * ft;
+                state.fx.flanger.lfoDepth.gain.value = 0.001 + 0.008 * ft;
                 try { state.fx.flanger.delay.disconnect(); } catch (_) {}
                 try { state.fx.flanger.feedbackGain.disconnect(); } catch (_) {}
                 last.connect(state.fx.flanger.delay);
@@ -7210,8 +7223,10 @@ function randomGlowColor() {
             }
             if (state.fx.reverb && state.fx.reverb.on) {
                 try { last.disconnect(); } catch (_) {}
-                state.fx.reverb.dryGain.gain.value = 0.78;
-                state.fx.reverb.wetGain.gain.value = 0.38;
+                const rp = (state.djBeatFx && typeof state.djBeatFx.reverbPct === 'number') ? state.djBeatFx.reverbPct : 50;
+                const rt = Math.max(0, Math.min(1, rp / 100));
+                state.fx.reverb.dryGain.gain.value = 1 - 0.44 * rt;
+                state.fx.reverb.wetGain.gain.value = 0.76 * rt;
                 try { state.fx.reverb.dryGain.disconnect(); } catch (_) {}
                 try { state.fx.reverb.wetGain.disconnect(); } catch (_) {}
                 try { state.fx.reverb.convolver.disconnect(); } catch (_) {}
@@ -7299,6 +7314,9 @@ function randomGlowColor() {
                 const tkOn = !!(state.fx.tk && state.fx.tk.on);
                 const loopOn = !!(state.fx.loopMusical && state.fx.loopMusical.on);
                 const arpOn = !!(state.fx.arp && state.fx.arp.on);
+                const revOn = !!(state.fx.reverb && state.fx.reverb.on);
+                const flOn = !!(state.fx.flanger && state.fx.flanger.on);
+                const nvOn = !!(state.fx.noVocal && state.fx.noVocal.on);
                 ['a', 'b'].forEach((d) => {
                     const tk = root.querySelector('#dj-knob-' + d + '-tk');
                     const loop = root.querySelector('#dj-knob-' + d + '-loop');
@@ -7307,6 +7325,12 @@ function randomGlowColor() {
                     if (loop) loop.classList.toggle('dj-beatfx-on', loopOn);
                     if (arp) arp.classList.toggle('dj-beatfx-on', arpOn);
                 });
+                const kbRev = root.querySelector('#dj-knob-b-reverb');
+                const kbFl = root.querySelector('#dj-knob-b-flanger');
+                const kbNv = root.querySelector('#dj-knob-b-novocal');
+                if (kbRev) kbRev.classList.toggle('dj-beatfx-on', revOn);
+                if (kbFl) kbFl.classList.toggle('dj-beatfx-on', flOn);
+                if (kbNv) kbNv.classList.toggle('dj-beatfx-on', nvOn);
             } catch (_) {}
         }
 
@@ -7375,11 +7399,43 @@ function randomGlowColor() {
             syncDjBeatFxKnobActiveDom();
         }
 
-        function bindDjBeatFxKnobPair(root, suffix, min, max, key, applyFn, resetVal, loopIntegerUi, toggleKind) {
-            const elA = root.querySelector('#dj-knob-a-' + suffix);
-            const elB = root.querySelector('#dj-knob-b-' + suffix);
-            if (!elA || !elB) return;
-            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false };
+        function toggleDeckBMixerFxFromKnob(kind) {
+            try { initAudio(); } catch (_) {}
+            const keyMap = { reverb: 'reverb', flanger: 'flanger', noVocal: 'noVocal' };
+            const fxKey = keyMap[kind];
+            if (!fxKey || !state.fx || !state.fx[fxKey]) return;
+            state.fx[fxKey].on = !state.fx[fxKey].on;
+            rebuildEffectsChain();
+            try {
+                const btnId = fxKey === 'noVocal' ? 'fx-novocal' : ('fx-' + fxKey);
+                const btn = document.getElementById(btnId);
+                if (btn) btn.classList.toggle('on', state.fx[fxKey].on);
+            } catch (_) {}
+            syncDjBeatFxKnobActiveDom();
+        }
+
+        function applyDjBeatFxDeckBReverbPct(val) {
+            if (!state.djBeatFx) return;
+            state.djBeatFx.reverbPct = Math.round(Math.max(0, Math.min(100, val)));
+            rebuildEffectsChain();
+        }
+        function applyDjBeatFxDeckBFlangerPct(val) {
+            if (!state.djBeatFx) return;
+            state.djBeatFx.flangerPct = Math.round(Math.max(0, Math.min(100, val)));
+            rebuildEffectsChain();
+        }
+        function applyDjBeatFxDeckBNoVocalPct(val) {
+            if (!state.djBeatFx) return;
+            state.djBeatFx.noVocalPct = Math.round(Math.max(0, Math.min(100, val)));
+            if (state.fx && state.fx.noVocal && state.fx.noVocal.on) {
+                try { applyDeckBNoVocalPeakingGains(); } catch (_) {}
+            }
+        }
+
+        function bindDeckBMixerFxKnob(root, suffix, min, max, key, applyFn, resetVal, loopIntegerUi, toggleKind) {
+            const el = root.querySelector('#dj-knob-b-' + suffix);
+            if (!el) return;
+            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false, reverbPct: 50, flangerPct: 50, noVocalPct: 100 };
             const TH = 6;
             let downY = 0;
             let startValAtDown = 0;
@@ -7387,15 +7443,98 @@ function randomGlowColor() {
 
             const updateVisuals = (val) => {
                 state.djBeatFx[key] = val;
-                setKnobUi(elA, min, max, val);
-                setKnobUi(elB, min, max, val);
+                setKnobUi(el, min, max, val);
                 if (loopIntegerUi) {
                     const t = String(Math.round(val));
                     try {
-                        const va = elA.querySelector('.knob-value');
-                        const vb = elB.querySelector('.knob-value');
-                        if (va) va.textContent = t;
-                        if (vb) vb.textContent = t;
+                        const vv = el.querySelector('.knob-value');
+                        if (vv) vv.textContent = t;
+                    } catch (_) {}
+                }
+            };
+
+            updateVisuals(typeof state.djBeatFx[key] === 'number' ? state.djBeatFx[key] : resetVal);
+
+            const clientYOf = (e) => {
+                if (e.clientY != null) return e.clientY;
+                if (e.touches && e.touches[0]) return e.touches[0].clientY;
+                if (e.changedTouches && e.changedTouches[0]) return e.changedTouches[0].clientY;
+                return 0;
+            };
+
+            const onMove = (e) => {
+                const y = clientYOf(e);
+                maxAbsDy = Math.max(maxAbsDy, Math.abs(y - downY));
+                if (maxAbsDy <= TH) return;
+                const dy = downY - y;
+                const range = max - min;
+                const delta = (dy / 200) * range;
+                let newVal = Math.max(min, Math.min(max, startValAtDown + delta));
+                updateVisuals(newVal);
+                applyFn(newVal);
+            };
+
+            const onUp = () => {
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('touchmove', onMove);
+                window.removeEventListener('mouseup', onUp);
+                window.removeEventListener('touchend', onUp);
+                window.removeEventListener('touchcancel', onUp);
+                if (maxAbsDy <= TH && toggleKind) {
+                    if (toggleKind === 'reverb') toggleDeckBMixerFxFromKnob('reverb');
+                    else if (toggleKind === 'flanger') toggleDeckBMixerFxFromKnob('flanger');
+                    else if (toggleKind === 'noVocal') toggleDeckBMixerFxFromKnob('noVocal');
+                }
+                maxAbsDy = 0;
+            };
+
+            const onDown = (e) => {
+                e.preventDefault();
+                downY = clientYOf(e);
+                startValAtDown = state.djBeatFx[key];
+                maxAbsDy = 0;
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('touchmove', onMove, { passive: false });
+                window.addEventListener('mouseup', onUp);
+                window.addEventListener('touchend', onUp);
+                window.addEventListener('touchcancel', onUp);
+            };
+
+            el.addEventListener('mousedown', onDown);
+            el.addEventListener('touchstart', onDown, { passive: false });
+            el.addEventListener('dblclick', (e) => {
+                try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+                updateVisuals(resetVal);
+                applyFn(resetVal);
+                syncDjBeatFxKnobActiveDom(root);
+            });
+        }
+
+        function bindDjBeatFxKnobPair(root, suffix, min, max, key, applyFn, resetVal, loopIntegerUi, toggleKind) {
+            const elA = root.querySelector('#dj-knob-a-' + suffix);
+            const elB = root.querySelector('#dj-knob-b-' + suffix);
+            if (!elA && !elB) return;
+            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false, reverbPct: 50, flangerPct: 50, noVocalPct: 100 };
+            const TH = 6;
+            let downY = 0;
+            let startValAtDown = 0;
+            let maxAbsDy = 0;
+
+            const updateVisuals = (val) => {
+                state.djBeatFx[key] = val;
+                if (elA) setKnobUi(elA, min, max, val);
+                if (elB) setKnobUi(elB, min, max, val);
+                if (loopIntegerUi) {
+                    const t = String(Math.round(val));
+                    try {
+                        if (elA) {
+                            const va = elA.querySelector('.knob-value');
+                            if (va) va.textContent = t;
+                        }
+                        if (elB) {
+                            const vb = elB.querySelector('.knob-value');
+                            if (vb) vb.textContent = t;
+                        }
                     } catch (_) {}
                 }
             };
@@ -7457,21 +7596,28 @@ function randomGlowColor() {
                     syncDjBeatFxKnobActiveDom(root);
                 });
             };
-            bindEl(elA);
-            bindEl(elB);
+            if (elA) bindEl(elA);
+            if (elB) bindEl(elB);
         }
 
         function wireDjBeatFxKnobs(root) {
             try { initAudio(); } catch (_) {}
-            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false };
+            if (!state.djBeatFx) state.djBeatFx = { tkHz: 1200, loopBars: 0, arpHz: 4, loopArm: false, reverbPct: 50, flangerPct: 50, noVocalPct: 100 };
             if (typeof state.djBeatFx.loopArm !== 'boolean') state.djBeatFx.loopArm = false;
+            if (typeof state.djBeatFx.reverbPct !== 'number') state.djBeatFx.reverbPct = 50;
+            if (typeof state.djBeatFx.flangerPct !== 'number') state.djBeatFx.flangerPct = 50;
+            if (typeof state.djBeatFx.noVocalPct !== 'number') state.djBeatFx.noVocalPct = 100;
             bindDjBeatFxKnobPair(root, 'tk', 200, 8000, 'tkHz', applyDjBeatFxTk, 1200, false, 'tk');
             bindDjBeatFxKnobPair(root, 'loop', 0, 8, 'loopBars', applyDjBeatFxLoop, 0, true, 'loop');
             bindDjBeatFxKnobPair(root, 'arp', 0, 16, 'arpHz', applyDjBeatFxArp, 4, false, 'arp');
+            bindDeckBMixerFxKnob(root, 'reverb', 0, 100, 'reverbPct', applyDjBeatFxDeckBReverbPct, 50, true, 'reverb');
+            bindDeckBMixerFxKnob(root, 'flanger', 0, 100, 'flangerPct', applyDjBeatFxDeckBFlangerPct, 50, true, 'flanger');
+            bindDeckBMixerFxKnob(root, 'novocal', 0, 100, 'noVocalPct', applyDjBeatFxDeckBNoVocalPct, 100, true, 'noVocal');
             try {
                 applyDjBeatFxTk(state.djBeatFx.tkHz);
                 applyDjBeatFxLoop(state.djBeatFx.loopBars);
                 applyDjBeatFxArp(state.djBeatFx.arpHz);
+                rebuildEffectsChain();
                 syncDjBeatFxKnobActiveDom(root);
             } catch (_) {}
         }
@@ -10631,9 +10777,9 @@ function stopAllAndShowStart() {
               <div class="dj-beatmap-strip" aria-label="Deck B beat map">
                 <div class="dj-beatmap-main">
                   <div class="dj-beatmap-fx-knobs" aria-label="Deck B beat FX">
-                    <div class="eq-col eq-strip" aria-label="TK filter frequency"><div class="knob-wrap" id="dj-knob-b-tk" style="--knob-color:#b8980c"><div class="knob-indicator"></div><div class="knob-value">1200</div></div><div class="eq-label">TK</div></div>
-                    <div class="eq-col eq-strip" aria-label="Musical loop bars"><div class="knob-wrap" id="dj-knob-b-loop" style="--knob-color:#2a8fa0"><div class="knob-indicator"></div><div class="knob-value">0</div></div><div class="eq-label">Loop</div></div>
-                    <div class="eq-col eq-strip" aria-label="Arpeggiator rate"><div class="knob-wrap" id="dj-knob-b-arp" style="--knob-color:#8647a8"><div class="knob-indicator"></div><div class="knob-value">4</div></div><div class="eq-label">Arp</div></div>
+                    <div class="eq-col eq-strip" aria-label="Reverb wet mix"><div class="knob-wrap" id="dj-knob-b-reverb" style="--knob-color:#ff4040"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">REVERB</div></div>
+                    <div class="eq-col eq-strip" aria-label="Flanger depth"><div class="knob-wrap" id="dj-knob-b-flanger" style="--knob-color:#f0f8ff"><div class="knob-indicator"></div><div class="knob-value">50</div></div><div class="eq-label">FLANGER</div></div>
+                    <div class="eq-col eq-strip" aria-label="No vocal reduction strength"><div class="knob-wrap" id="dj-knob-b-novocal" style="--knob-color:#bada55"><div class="knob-indicator"></div><div class="knob-value">100</div></div><div class="eq-label">NO VOCAL</div></div>
                   </div>
                   <div class="dj-beatmap-pads">
                     <div class="dj-beatmap-col" aria-label="Deck B CHR–HARP">
@@ -14814,9 +14960,7 @@ function stopAllAndShowStart() {
             state.fx[key].on = !state.fx[key].on;
             if (btn) btn.classList.toggle('on', state.fx[key].on);
             rebuildEffectsChain();
-            if (key === 'tk') {
-                try { if (typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(); } catch (_) {}
-            }
+            try { if (typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(); } catch (_) {}
         }
         if (fxLow) fxLow.addEventListener('click', () => toggleFx('low', fxLow));
         if (fxHigh) fxHigh.addEventListener('click', () => toggleFx('high', fxHigh));
