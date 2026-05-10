@@ -277,7 +277,8 @@
             max-width: min(92vw, 560px);
             height: 14px;
         }
-        #dj-visual-root .dj-autofade-btn {
+        #dj-visual-root .dj-autofade-btn,
+        #mix-panel .dj-autofade-btn {
             flex-shrink: 0;
             padding: 6px 10px;
             border: 1px solid rgba(212, 175, 55, 0.45);
@@ -290,15 +291,18 @@
             cursor: pointer;
             line-height: 1.1;
         }
-        #dj-visual-root .dj-autofade-btn:hover {
+        #dj-visual-root .dj-autofade-btn:hover,
+        #mix-panel .dj-autofade-btn:hover {
             filter: brightness(1.08);
         }
-        #dj-visual-root .dj-autofade-btn.on {
+        #dj-visual-root .dj-autofade-btn.on,
+        #mix-panel .dj-autofade-btn.on {
             box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.55), 0 0 14px rgba(212, 175, 55, 0.22);
             background: rgba(212, 175, 55, 0.2);
             color: #fff4ca;
         }
-        #dj-visual-root .dj-automix-btn {
+        #dj-visual-root .dj-automix-btn,
+        #mix-panel .dj-automix-btn {
             flex-shrink: 0;
             padding: 6px 10px;
             border: 1px solid rgba(130, 200, 255, 0.45);
@@ -311,13 +315,22 @@
             cursor: pointer;
             line-height: 1.1;
         }
-        #dj-visual-root .dj-automix-btn:hover {
+        #dj-visual-root .dj-automix-btn:hover,
+        #mix-panel .dj-automix-btn:hover {
             filter: brightness(1.08);
         }
-        #dj-visual-root .dj-automix-btn.on {
+        #dj-visual-root .dj-automix-btn.on,
+        #mix-panel .dj-automix-btn.on {
             box-shadow: 0 0 0 1px rgba(130, 200, 255, 0.55), 0 0 14px rgba(130, 200, 255, 0.22);
             background: rgba(130, 200, 255, 0.2);
             color: #f2f9ff;
+        }
+        #mix-panel .mix-auto-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
+            align-items: stretch;
         }
         #dj-visual-root .dj-autofade-wrap,
         #dj-visual-root .dj-automix-wrap {
@@ -4494,9 +4507,13 @@
     </div>
     <div id="mix-panel" class="display-none" aria-label="Mix Settings">
         <h3 style="display:flex; align-items:center; gap:12px; padding: 12px 14px;">
-            <div style="flex:1; display:flex; align-items:center; gap:8px;">
+            <div class="mix-auto-actions">
+                <button type="button" class="dj-autofade-btn" id="mix-autofade" title="Auto-fade to the opposite deck (long-press for duration). Mirrors DJ Deck Auto-Fade.">Auto-Fade</button>
+                <button type="button" class="dj-automix-btn" id="mix-automix" title="Toggle auto-mix (long-press for settings). Mirrors DJ Deck Auto-Mix.">Auto-Mix</button>
+            </div>
+            <div style="flex:1; display:flex; align-items:center; gap:8px; min-width:0;">
                 <span style="font-size:12px; color:#FF0B55; font-weight:bold">A</span>
-                <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%; cursor:pointer;">
+                <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%; cursor:pointer; min-width:0;" title="Drag: crossfade. Right-click hold: temporary cut to the opposite deck; release returns here." aria-label="Crossfade from A to B">
                 <span style="font-size:12px; color:#5800FF; font-weight:bold">B</span>
             </div>
             <span id="midi-status" style="font-size:10px; color:#889; white-space:nowrap; flex-shrink:0; max-width:140px; overflow:hidden; text-overflow:ellipsis; cursor:pointer;" title="Bluetooth/USB MIDI (Web MIDI API). Default: CC54=crossfader; Ch.1 CC7=Gain A; Ch.2 CC7=Gain B; Note 36/37=Play A/B. Custom: localStorage key omniMidiMap (JSON). Click to enable MIDI or reopen this prompt (same as OMNI “M” on the start screen).">MIDI · …</span>
@@ -10856,7 +10873,7 @@ function stopAllAndShowStart() {
       </div>
       <span class="dj-fader-label-a">A</span>
       <div class="dj-crossfader-mount">
-        <input type="range" id="dj-crossfader" min="0" max="1" step="0.01" value="0" aria-label="Crossfade from A to B" />
+        <input type="range" id="dj-crossfader" min="0" max="1" step="0.01" value="0" aria-label="Crossfade from A to B" title="Drag: crossfade. Right-click hold: temporary cut to the opposite deck; release returns here." />
       </div>
       <span class="dj-fader-label-b">B</span>
       <div class="dj-automix-wrap">
@@ -11453,6 +11470,53 @@ function stopAllAndShowStart() {
                         if (gb > thresh && audioElB && audioElB.src && audioElB.paused) audioElB.play().catch(() => {});
                     } catch (_) {}
                 };
+
+                /** Right-click hold: instant cut to full opposite deck; on release the fader snaps back. */
+                let cutFadeHoldActive = false;
+                let cutFadeHoldRestore = 0;
+                let cutFadeHoldPointerId = null;
+                const wireCutFadeHoldOnDjCross = () => {
+                    if (!djCross) return;
+                    const restoreCutFadeHold = () => {
+                        if (!cutFadeHoldActive) return;
+                        cutFadeHoldActive = false;
+                        cutFadeHoldPointerId = null;
+                        try {
+                            if (typeof applyCrossfade === 'function') applyCrossfade(cutFadeHoldRestore);
+                        } catch (_) {}
+                        try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                    };
+                    const onCutFadePointerDown = (ev) => {
+                        if (ev.button !== 2) return;
+                        try { ev.preventDefault(); } catch (_) {}
+                        cutFadeHoldRestore = Math.max(0, Math.min(1, Number(djCross.value) || 0));
+                        const cutTo = cutFadeHoldRestore < 0.5 ? 1 : 0;
+                        cutFadeHoldActive = true;
+                        cutFadeHoldPointerId = ev.pointerId;
+                        try {
+                            if (typeof applyCrossfade === 'function') applyCrossfade(cutTo);
+                        } catch (_) {}
+                        try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                        try { djCross.setPointerCapture(ev.pointerId); } catch (_) {}
+                    };
+                    const onCutFadePointerEnd = (ev) => {
+                        if (!cutFadeHoldActive || ev.pointerId !== cutFadeHoldPointerId) return;
+                        try { djCross.releasePointerCapture(ev.pointerId); } catch (_) {}
+                        restoreCutFadeHold();
+                    };
+                    djCross.addEventListener('pointerdown', onCutFadePointerDown, sig);
+                    djCross.addEventListener('pointerup', onCutFadePointerEnd, sig);
+                    djCross.addEventListener('pointercancel', onCutFadePointerEnd, sig);
+                    djCross.addEventListener('lostpointercapture', (ev) => {
+                        if (!cutFadeHoldActive || ev.pointerId !== cutFadeHoldPointerId) return;
+                        restoreCutFadeHold();
+                    }, sig);
+                    djCross.addEventListener('contextmenu', (e) => {
+                        try { e.preventDefault(); } catch (_) {}
+                    }, sig);
+                };
+                wireCutFadeHoldOnDjCross();
+
                 const ensureDeckStationPlayback = (deckKey) => {
                     if (deckKey === 'b') {
                         try { state.deckSourceMode.b = 'radio'; } catch (_) {}
@@ -12690,6 +12754,10 @@ function stopAllAndShowStart() {
 
                 try {
                     window.__refreshDjQueueUi = () => { try { this.refreshQueueUi(); } catch (_) {} };
+                } catch (_) {}
+
+                try {
+                    if (typeof wireMixPanelAutoButtonsToDjDeck === 'function') wireMixPanelAutoButtonsToDjDeck();
                 } catch (_) {}
 
                 this.animateFrame();
@@ -14971,6 +15039,120 @@ function stopAllAndShowStart() {
             mixCross.addEventListener('input', () => applyCrossfade(mixCross.value));
             try { applyCrossfade(mixCross.value); } catch(_) {}
         }
+
+        function resumeDecksForCrossfadeLevels() {
+            try {
+                const djX = document.getElementById('dj-crossfader');
+                const xv = Math.max(0, Math.min(1, Number((djX && djX.value) || (mixCross && mixCross.value) || 0)));
+                const ga = 1 - xv;
+                const gb = xv;
+                const thresh = 0.03;
+                if (ga > thresh && typeof audioEl !== 'undefined' && audioEl && audioEl.src && audioEl.paused) audioEl.play().catch(() => {});
+                if (gb > thresh && typeof audioElB !== 'undefined' && audioElB && audioElB.src && audioElB.paused) audioElB.play().catch(() => {});
+            } catch (_) {}
+        }
+        function wireMixCrossCutFadeHold() {
+            if (!mixCross || mixCross.dataset.cutFadeHold === '1') return;
+            mixCross.dataset.cutFadeHold = '1';
+            let cutFadeHoldActive = false;
+            let cutFadeHoldRestore = 0;
+            let cutFadeHoldPointerId = null;
+            const restoreCutFadeHold = () => {
+                if (!cutFadeHoldActive) return;
+                cutFadeHoldActive = false;
+                cutFadeHoldPointerId = null;
+                try { applyCrossfade(cutFadeHoldRestore); } catch (_) {}
+                try { resumeDecksForCrossfadeLevels(); } catch (_) {}
+            };
+            const onCutFadePointerDown = (ev) => {
+                if (ev.button !== 2) return;
+                try { ev.preventDefault(); } catch (_) {}
+                cutFadeHoldRestore = Math.max(0, Math.min(1, Number(mixCross.value) || 0));
+                const cutTo = cutFadeHoldRestore < 0.5 ? 1 : 0;
+                cutFadeHoldActive = true;
+                cutFadeHoldPointerId = ev.pointerId;
+                try { applyCrossfade(cutTo); } catch (_) {}
+                try { resumeDecksForCrossfadeLevels(); } catch (_) {}
+                try { mixCross.setPointerCapture(ev.pointerId); } catch (_) {}
+            };
+            const onCutFadePointerEnd = (ev) => {
+                if (!cutFadeHoldActive || ev.pointerId !== cutFadeHoldPointerId) return;
+                try { mixCross.releasePointerCapture(ev.pointerId); } catch (_) {}
+                restoreCutFadeHold();
+            };
+            mixCross.addEventListener('pointerdown', onCutFadePointerDown);
+            mixCross.addEventListener('pointerup', onCutFadePointerEnd);
+            mixCross.addEventListener('pointercancel', onCutFadePointerEnd);
+            mixCross.addEventListener('lostpointercapture', (ev) => {
+                if (!cutFadeHoldActive || ev.pointerId !== cutFadeHoldPointerId) return;
+                restoreCutFadeHold();
+            });
+            mixCross.addEventListener('contextmenu', (e) => {
+                try { e.preventDefault(); } catch (_) {}
+            });
+        }
+        wireMixCrossCutFadeHold();
+
+        function wireMixPanelAutoButtonsToDjDeck() {
+            const pairs = [
+                ['mix-autofade', 'dj-autofade'],
+                ['mix-automix', 'dj-automix']
+            ];
+            pairs.forEach(([mixId, djId]) => {
+                const m = document.getElementById(mixId);
+                const d = document.getElementById(djId);
+                if (!m || !d || m.dataset.djMirror === '1') return;
+                m.dataset.djMirror = '1';
+                const syncClass = () => {
+                    queueMicrotask(() => {
+                        try { m.classList.toggle('on', d.classList.contains('on')); } catch (_) {}
+                    });
+                };
+                ['pointerdown', 'pointerup', 'pointercancel', 'pointerleave'].forEach((t) => {
+                    m.addEventListener(t, (ev) => {
+                        try {
+                            d.dispatchEvent(new PointerEvent(t, {
+                                bubbles: true,
+                                cancelable: true,
+                                composed: true,
+                                view: window,
+                                detail: ev.detail,
+                                pointerId: ev.pointerId,
+                                pointerType: ev.pointerType,
+                                isPrimary: ev.isPrimary,
+                                clientX: ev.clientX,
+                                clientY: ev.clientY,
+                                screenX: ev.screenX,
+                                screenY: ev.screenY,
+                                button: ev.button,
+                                buttons: ev.buttons,
+                                altKey: ev.altKey,
+                                ctrlKey: ev.ctrlKey,
+                                metaKey: ev.metaKey,
+                                shiftKey: ev.shiftKey,
+                                pressure: ev.pressure,
+                                tangentialPressure: ev.tangentialPressure,
+                                tiltX: ev.tiltX,
+                                tiltY: ev.tiltY,
+                                twist: ev.twist,
+                                width: ev.width,
+                                height: ev.height
+                            }));
+                        } catch (_) {}
+                        try { ev.preventDefault(); } catch (_) {}
+                        try { ev.stopPropagation(); } catch (_) {}
+                        syncClass();
+                    });
+                });
+                m.addEventListener('click', (ev) => {
+                    try { ev.preventDefault(); } catch (_) {}
+                    try { ev.stopPropagation(); } catch (_) {}
+                    try { d.click(); } catch (_) {}
+                    syncClass();
+                });
+            });
+        }
+        wireMixPanelAutoButtonsToDjDeck();
 
         // --- Web MIDI (USB + Bluetooth class-compliant devices via OS driver) ---
         const MIDI_MAP_DEFAULT = Object.freeze({
