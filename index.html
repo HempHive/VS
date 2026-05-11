@@ -194,6 +194,24 @@
         }
         .dj-head-station-name--a { color: #9803FC; }
         .dj-head-station-name--b { color: #FF0B55; }
+        .dj-station-load-spinner {
+            flex-shrink: 0;
+            width: 13px;
+            height: 13px;
+            border: 2px solid rgba(152, 3, 252, 0.28);
+            border-top-color: #bf62ff;
+            border-radius: 50%;
+            box-sizing: border-box;
+            animation: dj-station-load-spin 0.7s linear infinite;
+            vertical-align: middle;
+        }
+        .dj-station-load-spinner--b {
+            border-color: rgba(255, 11, 85, 0.28);
+            border-top-color: #ff6ba8;
+        }
+        @keyframes dj-station-load-spin {
+            to { transform: rotate(360deg); }
+        }
         .dj-head-station-name.dj-head-station--local {
             text-transform: none;
             letter-spacing: 0.04em;
@@ -8610,6 +8628,19 @@ function randomGlowColor() {
                     audioElRadioAAlt.load();
                 }
             } catch (_) {}
+            try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
+        }
+
+        /** Deck A/B header: show indeterminate ring while stream connects or crossfade-buffering */
+        function setDjDeckRadioLoadingSpinner(deck, on) {
+            const id = deck === 'b' ? 'dj-station-b-load-spinner' : 'dj-station-a-load-spinner';
+            try {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.classList.toggle('display-none', !on);
+                el.setAttribute('aria-busy', on ? 'true' : 'false');
+                el.setAttribute('aria-hidden', on ? 'false' : 'true');
+            } catch (_) {}
         }
 
         function isDeckARadioOutputFromAlt() {
@@ -8743,6 +8774,7 @@ function randomGlowColor() {
             } else {
                 statusEl.innerText = 'Buffering next station…';
             }
+            try { setDjDeckRadioLoadingSpinner('a', true); } catch (_) {}
             try { stopNowPlayingPoll(); } catch (_) {}
 
             (function updateInitialStationTitle() {
@@ -8763,10 +8795,12 @@ function randomGlowColor() {
                 radioRetryAttempts = 0;
                 try { restartNowPlayingPoll(url); } catch (_) {}
                 try { statusEl.innerText = ''; } catch (_) {}
+                try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
             };
 
             const onPlayFail = (e) => {
                 console.error('Stream playback failed:', e);
+                try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
                 radioRetryAttempts = (radioRetryAttempts || 0) + 1;
                 if (radioRetryAttempts <= MAX_RADIO_RETRIES && stations.length > 0) {
                     statusEl.innerText = 'Stream failed. Trying another station...';
@@ -8822,10 +8856,16 @@ function randomGlowColor() {
                 try {
                     await waitForRadioStreamAudible(prepEl, { signal, timeoutMs: 14000 });
                 } catch (err) {
-                    if (signal.aborted || (err && err.name === 'AbortError')) return;
+                    if (signal.aborted || (err && err.name === 'AbortError')) {
+                        try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
+                        return;
+                    }
                     console.warn('Radio pre-buffer wait failed, switching immediately:', err);
                 }
-                if (signal.aborted) return;
+                if (signal.aborted) {
+                    try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
+                    return;
+                }
                 try { await state.audioCtx.resume(); } catch (_) {}
                 const t = state.audioCtx.currentTime;
                 try {
@@ -8839,7 +8879,10 @@ function randomGlowColor() {
                     try { liveGain.gain.value = 0; prepGain.gain.value = 1; } catch (_) {}
                 }
                 setTimeout(() => {
-                    if (signal.aborted) return;
+                    if (signal.aborted) {
+                        try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
+                        return;
+                    }
                     try { liveEl.pause(); } catch (_) {}
                     try { liveEl.removeAttribute('src'); liveEl.load(); } catch (_) {}
                     try { connectDeckMediaToEq('a'); } catch (_) {}
@@ -11411,6 +11454,12 @@ function stopAllAndShowStart() {
                         }
                     }
 
+                    if (titleAUseLocal) {
+                        try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
+                    }
+                    if (titleBUseLocal) {
+                        try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
+                    }
                     if (this.els.titleA) {
                         if (titleAUseLocal) {
                             this.els.titleA.classList.add('dj-head-station--local');
@@ -11551,14 +11600,16 @@ function stopAllAndShowStart() {
 <div class="dj-layout">
   <div class="dj-deck-head-row" aria-label="Deck stations and video">
     <div class="dj-head-line dj-head-line--primary">
-      <span class="dj-head-cluster dj-head-cluster--a">
+        <span class="dj-head-cluster dj-head-cluster--a">
         <span class="dj-deck-badge dj-deck-badge--head">DECK A</span>
         <span class="dj-head-station-name dj-head-station-name--a" id="dj-station-a-title">—</span>
+        <span class="dj-station-load-spinner display-none" id="dj-station-a-load-spinner" role="status" aria-live="polite" aria-label="Station buffering"></span>
       </span>
       <span class="dj-head-datetime" id="dj-head-datetime"></span>
       <span class="dj-head-cluster dj-head-cluster--b">
         <span class="dj-deck-badge dj-deck-badge--b dj-deck-badge--head display-none" id="dj-head-deck-b-badge">DECK B</span>
         <span class="dj-head-station-name dj-head-station-name--b dj-station-title--b display-none" id="dj-station-b-title">—</span>
+        <span class="dj-station-load-spinner dj-station-load-spinner--b display-none" id="dj-station-b-load-spinner" role="status" aria-live="polite" aria-label="Deck B station buffering"></span>
         <span class="dj-head-video-inline display-none" id="dj-head-video-inline">
           <span class="dj-head-video-badge">VIDEO</span>
           <span class="dj-head-video-title" id="dj-head-video-title">—</span>
@@ -16333,6 +16384,7 @@ function stopAllAndShowStart() {
 
             const sel = stations[idx];
             if (!sel || !sel.url) return;
+            try { setDjDeckRadioLoadingSpinner('b', true); } catch (_) {}
 
             const media = audioElB; 
             try { media.pause(); } catch(e) {}
@@ -16348,15 +16400,18 @@ function stopAllAndShowStart() {
             }
 
             media.play().then(() => {
+                try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
                 updateMixBStatus();
             }).catch((e) => {
                 console.warn("Stream B Playback Error:", e);
+                try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
                 updateMixBStatus();
             });
         }
         function stopRadioB() {
             try { state.deckSourceMode.b = 'radio'; } catch (_) {}
             try { state.deckLocalDisplayName.b = ''; } catch (_) {}
+            try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
             // Stop the persistent DOM element
             if (audioElB) {
                 try { audioElB.pause(); } catch(_) {}
