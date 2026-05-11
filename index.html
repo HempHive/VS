@@ -5843,7 +5843,7 @@ const QUALITY = {
         let webmList = [];
         let webmIndex = 0;
         let webmOn = false;
-        /** When true, WebM overlay is laid out fixed to the center of DJ Deck B (see applyWebmSettings). */
+        /** When true, WebM overlay is laid out fixed to the center of the Deck B column (see applyWebmSettings), including the crossfader strip so the anchor matches the visible purple deck. */
         let webmAnchorDeckB = false;
         let webmDeckBLayoutBound = false;
         let webmDeckBResizeObserver = null;
@@ -18228,9 +18228,9 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         function applyWebmSettings() {
             try {
                 if (webmOn && webmAnchorDeckB) {
-                    const stage = document.querySelector('#dj-visual-root .dj-deck-b-stage');
-                    const rect = stage ? stage.getBoundingClientRect() : null;
-                    if (stage && rect && rect.width >= 8 && rect.height >= 8) {
+                    const deckCol = document.querySelector('#dj-visual-root .dj-deck-b');
+                    const rect = deckCol ? deckCol.getBoundingClientRect() : null;
+                    if (deckCol && rect && rect.width >= 8 && rect.height >= 8) {
                         bindWebmDeckBLayoutWatchers();
                         const cx = rect.left + rect.width * 0.5;
                         const cy = rect.top + rect.height * 0.5;
