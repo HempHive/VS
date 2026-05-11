@@ -615,25 +615,33 @@
             font-size: 11px;
             color: #bf62ff;
             text-transform: uppercase;
+            flex-shrink: 0;
         }
         .dj-deck-b-queue-panel .dj-queue-columns {
             display: grid;
             grid-template-columns: 1fr 1fr;
+            grid-template-rows: minmax(0, 1fr);
             gap: 12px;
-            align-items: start;
+            align-items: stretch;
+            flex: 1 1 auto;
+            min-height: 0;
         }
         @media (max-width: 520px) {
-            .dj-deck-b-queue-panel .dj-queue-columns { grid-template-columns: 1fr; }
+            .dj-deck-b-queue-panel .dj-queue-columns {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+            }
         }
         .dj-deck-b-queue-panel .dj-queue-col {
             border: 1px solid rgba(152, 3, 252, 0.35);
             border-radius: 10px;
             padding: 8px;
             background: rgba(0, 0, 0, 0.35);
-            min-height: 120px;
+            min-height: 0;
             display: flex;
             flex-direction: column;
             gap: 8px;
+            overflow: hidden;
         }
         .dj-deck-b-queue-panel .dj-queue-col-title {
             font-weight: 700;
@@ -670,12 +678,37 @@
         .dj-deck-b-queue-panel ul.dj-queue-list {
             list-style: none;
             margin: 0;
-            padding: 0;
+            padding: 0 4px 0 0;
             display: flex;
             flex-direction: column;
             gap: 4px;
-            overflow: visible;
-            flex-shrink: 0;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
+            scrollbar-width: thin;
+            scrollbar-color: #3d3d48 #0c0c10;
+        }
+        .dj-deck-b-queue-panel ul.dj-queue-list::-webkit-scrollbar {
+            width: 10px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .dj-deck-b-queue-panel ul.dj-queue-list::-webkit-scrollbar-track {
+            background: #0a0a0f;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.5);
+        }
+        .dj-deck-b-queue-panel ul.dj-queue-list::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #3a3a46 0%, #242428 100%);
+            border-radius: 6px;
+            border: 2px solid #0a0a0f;
+            min-height: 32px;
+        }
+        .dj-deck-b-queue-panel ul.dj-queue-list::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #4a4a56 0%, #303036 100%);
         }
         .dj-deck-b-queue-panel li.dj-queue-item {
             display: flex;
@@ -802,6 +835,28 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
+        }
+        .dj-deck-b-media-panel .dj-station-cycle-radio-anchor {
+            position: relative;
+            width: 100%;
+            margin-bottom: 6px;
+        }
+        .dj-deck-b-media-panel .dj-station-cycle-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .dj-deck-b-media-panel .dj-station-cycle-top .dj-station-cycle-head {
+            margin: 0;
+            flex: 1;
+            min-width: 0;
+        }
+        .dj-deck-b-media-panel .dj-station-cycle-top .dj-video-btn.dj-b-video-radio {
+            flex-shrink: 0;
+            padding: 4px 10px;
+            font-size: 10px;
         }
         .dj-deck-b-media-panel .dj-queue-tools {
             display: grid;
@@ -972,7 +1027,6 @@
             gap: 6px;
         }
         .dj-deck-b-media-panel .dj-video-tools-block {
-            position: relative;
             width: 100%;
         }
         .dj-deck-b-media-panel .dj-radio-popout {
@@ -11583,7 +11637,22 @@ function stopAllAndShowStart() {
           <div id="dj-deck-b-media-panel" class="dj-deck-b-media-panel display-none" aria-label="Station cycle and video queue">
             <div class="dj-queue-tools">
               <div class="dj-station-cycle" aria-label="Station cycle filter">
-                <div class="dj-station-cycle-head">Radio station cycle list</div>
+                <div class="dj-station-cycle-radio-anchor">
+                  <div class="dj-station-cycle-top">
+                    <div class="dj-station-cycle-head">Radio station cycle list</div>
+                    <button type="button" class="dj-video-btn dj-b-video-radio" id="dj-b-video-radio" title="Add a radio stream URL to the Station cycle list">Radio</button>
+                  </div>
+                  <div id="dj-radio-url-popout" class="dj-radio-popout" aria-hidden="true" role="dialog" aria-label="Radio station URL">
+                    <div class="dj-radio-popout-head">
+                      <span class="dj-station-cycle-head" style="margin:0;">Radio station URL</span>
+                      <button type="button" class="dj-radio-popout-close" id="dj-radio-url-close" aria-label="Close">×</button>
+                    </div>
+                    <div class="dj-url-entry-row">
+                      <input id="dj-radio-url-input" class="dj-url-input" type="text" placeholder="Paste Icecast / stream URL" autocomplete="off" />
+                      <button type="button" class="dj-url-btn" id="dj-radio-url-add">Add station</button>
+                    </div>
+                  </div>
+                </div>
                 <div id="dj-station-cycle-list" class="dj-station-cycle-list"></div>
               </div>
               <div class="dj-media-queue dj-video-queue" aria-label="Video queue">
@@ -11601,19 +11670,8 @@ function stopAllAndShowStart() {
                     <button type="button" class="dj-video-btn" id="dj-b-video-folder" title="Add all videos from a folder to the queue">Folder</button>
                     <input id="dj-b-video-input" class="dj-video-loader-input" type="text" placeholder="Paste video URL" autocomplete="off" />
                     <button type="button" class="dj-video-btn" id="dj-b-video-load" title="Load URL/local into Deck B video player">Load</button>
-                    <button type="button" class="dj-video-btn dj-b-video-radio" id="dj-b-video-radio" title="Add a radio stream URL to the Station cycle list">Radio</button>
                     <button type="button" class="dj-video-btn" id="dj-b-video-q-a" title="Load into Deck A queue">A</button>
                     <button type="button" class="dj-video-btn" id="dj-b-video-q-b" title="Load into Deck B queue">B</button>
-                  </div>
-                  <div id="dj-radio-url-popout" class="dj-radio-popout" aria-hidden="true" role="dialog" aria-label="Radio station URL">
-                    <div class="dj-radio-popout-head">
-                      <span class="dj-station-cycle-head" style="margin:0;">Radio station URL</span>
-                      <button type="button" class="dj-radio-popout-close" id="dj-radio-url-close" aria-label="Close">×</button>
-                    </div>
-                    <div class="dj-url-entry-row">
-                      <input id="dj-radio-url-input" class="dj-url-input" type="text" placeholder="Paste Icecast / stream URL" autocomplete="off" />
-                      <button type="button" class="dj-url-btn" id="dj-radio-url-add">Add station</button>
-                    </div>
                   </div>
                 </div>
                 <ul id="dj-media-queue-list" class="dj-media-list"></ul>
