@@ -7762,6 +7762,17 @@ function randomGlowColor() {
             }
         }
 
+        /** Butterchurn taps `state.analyserNode`; `rebuildEffectsChain` calls analyser.disconnect() and drops that tap. */
+        function reconnectDjDecksDeckBProjectMIfActive() {
+            try {
+                const av = state && state.activeVisualizer;
+                if (!av || av.name !== 'DJ Decks' || av.deckBVizMode !== 'projectm') return;
+                const viz = av.deckBVizPmVisualizer;
+                if (!viz || typeof viz.connectAudio !== 'function' || !state.analyserNode) return;
+                viz.connectAudio(state.analyserNode);
+            } catch (_) {}
+        }
+
         function rebuildEffectsChain() {
             if (!state.audioCtx) return;
             // Disconnect everything from mixInput forward
@@ -7900,6 +7911,7 @@ function randomGlowColor() {
                     state.activeVisualizer.visualizer.connectAudio(state.analyserNode);
                 }
             } catch(_) {}
+            try { reconnectDjDecksDeckBProjectMIfActive(); } catch (_) {}
         }
 
         function syncDjMusicalLoopDelayTime() {
