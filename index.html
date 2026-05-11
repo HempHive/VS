@@ -9685,6 +9685,8 @@ function stopAllAndShowStart() {
                 this.deckVolResizeObs = null;
                 this.deckBQueueVisible = false;
                 this.deckBMediaPanelVisible = false;
+                /** After Deck A "Audio Bars" moves Deck B from ProjectM → in-panel bars, next Deck A "Audio Bars" loads main Audio Bars. */
+                this._deckAAudioBarsMainOnNextClick = false;
                 this.beatMapSlots = null;
                 this.headClockTimerId = null;
             }
@@ -10233,6 +10235,7 @@ function stopAllAndShowStart() {
             }
 
             tearDownDeckBViz(opts) {
+                this._deckAAudioBarsMainOnNextClick = false;
                 try {
                     if (this._deckBVideoUiAbortCtrl) {
                         this._deckBVideoUiAbortCtrl.abort();
@@ -13582,12 +13585,27 @@ function stopAllAndShowStart() {
                             (name === 'ProjectM v2' ? 'projectm' :
                             (name === 'Blank' ? 'blank' : null))
                         );
+                        if (name === 'Audio Bars' && this.deckBVizMode === 'projectm') {
+                            this.startDeckBAudioBars();
+                            this._deckAAudioBarsMainOnNextClick = true;
+                            this.syncDeckBVisualButtons();
+                            try { this.updateStationTitles(); } catch (_) {}
+                            return;
+                        }
                         if (deckBModeFromDeckAName && this.deckBVizMode === deckBModeFromDeckAName) {
+                            if (name === 'Audio Bars' && this._deckAAudioBarsMainOnNextClick) {
+                                this.tearDownDeckBViz();
+                                this.syncDeckBVisualButtons();
+                                try { this.updateStationTitles(); } catch (_) {}
+                                switchVisualByName(name);
+                                return;
+                            }
                             this.tearDownDeckBViz();
                             this.syncDeckBVisualButtons();
                             this.updateStationTitles();
                             return;
                         }
+                        this._deckAAudioBarsMainOnNextClick = false;
                         switchVisualByName(name);
                     }, sig);
                 };
