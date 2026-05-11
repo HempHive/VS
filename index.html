@@ -399,6 +399,7 @@
             border-color: rgba(130, 200, 255, 0.4);
         }
         #dj-visual-root .dj-automix-panel { min-width: 208px; }
+        #dj-visual-root .dj-autofade-panel { min-width: 228px; }
         #dj-visual-root .dj-autofade-panel.is-open,
         #dj-visual-root .dj-automix-panel.is-open {
             display: block;
@@ -422,6 +423,31 @@
         #dj-visual-root .dj-automix-row input[type="range"] {
             width: 100%;
             min-width: 118px;
+        }
+        #dj-visual-root .dj-autofade-station-block {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        #dj-visual-root .dj-autofade-station-title {
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #aaa;
+            margin-bottom: 6px;
+        }
+        #dj-visual-root .dj-autofade-station-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #ddd;
+            margin-bottom: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        #dj-visual-root .dj-autofade-station-check input {
+            cursor: pointer;
         }
         #dj-visual-root .dj-autofade-readout,
         #dj-visual-root .dj-automix-readout {
@@ -5149,6 +5175,39 @@ const QUALITY = {
         const audioElB = document.getElementById('radio-element-b');
         /** Abort in-flight Deck A radio crossfade when switching stations again quickly */
         let radioAHandoffAbortCtrl = null;
+        const RADIO_STATION_XFADE_KEY = 'dj.radio.stationCrossfade.v1';
+        let radioStationCrossfadeEnabled = false;
+        let radioStationCrossfadeSec = 0;
+        (function loadRadioStationCrossfadeFromStorage() {
+            try {
+                const raw = localStorage.getItem(RADIO_STATION_XFADE_KEY);
+                if (!raw) return;
+                const o = JSON.parse(raw);
+                if (!o || typeof o !== 'object') return;
+                if (typeof o.enabled === 'boolean') radioStationCrossfadeEnabled = o.enabled;
+                const s = Number(o.sec);
+                if (Number.isFinite(s) && s >= 0 && s <= 15) radioStationCrossfadeSec = s;
+            } catch (_) {}
+        })();
+        function saveRadioStationCrossfadeToStorage() {
+            try {
+                localStorage.setItem(
+                    RADIO_STATION_XFADE_KEY,
+                    JSON.stringify({
+                        enabled: !!radioStationCrossfadeEnabled,
+                        sec: Math.max(0, Math.min(15, Number(radioStationCrossfadeSec) || 0))
+                    })
+                );
+            } catch (_) {}
+        }
+        /** Deck A gapless station handoff uses ~60 ms; optional longer crossfade when enabled in Auto-Fade panel. */
+        function getDeckARadioCrossfadeRampSec() {
+            const gaplessMicro = 0.06;
+            if (!radioStationCrossfadeEnabled) return gaplessMicro;
+            const s = Number(radioStationCrossfadeSec) || 0;
+            if (s <= 0) return gaplessMicro;
+            return Math.min(15, Math.max(0.05, s));
+        }
         const stationBanner = document.getElementById('station-banner');
         const stationBannerNameEl = document.getElementById('station-banner-name');
         const stationBannerMetaWrap = document.getElementById('station-banner-meta-wrap');
@@ -8904,13 +8963,17 @@ function randomGlowColor() {
                 }
                 try { await state.audioCtx.resume(); } catch (_) {}
                 const t = state.audioCtx.currentTime;
+                const rampSec = (typeof getDeckARadioCrossfadeRampSec === 'function')
+                    ? getDeckARadioCrossfadeRampSec()
+                    : 0.06;
+                const handoffCleanupMs = Math.ceil(Math.max(rampSec, 0.06) * 1000) + 100;
                 try {
                     liveGain.gain.cancelScheduledValues(t);
                     prepGain.gain.cancelScheduledValues(t);
                     liveGain.gain.setValueAtTime(Math.max(0, Math.min(1, liveGain.gain.value)), t);
                     prepGain.gain.setValueAtTime(0, t);
-                    liveGain.gain.linearRampToValueAtTime(0, t + 0.06);
-                    prepGain.gain.linearRampToValueAtTime(1, t + 0.06);
+                    liveGain.gain.linearRampToValueAtTime(0, t + rampSec);
+                    prepGain.gain.linearRampToValueAtTime(1, t + rampSec);
                 } catch (_) {
                     try { liveGain.gain.value = 0; prepGain.gain.value = 1; } catch (_) {}
                 }
@@ -8923,7 +8986,7 @@ function randomGlowColor() {
                     try { liveEl.removeAttribute('src'); liveEl.load(); } catch (_) {}
                     try { connectDeckMediaToEq('a'); } catch (_) {}
                     afterConnect();
-                }, 90);
+                }, handoffCleanupMs);
             }).catch(onPlayFail);
         }
 
@@ -11780,6 +11843,17 @@ function stopAllAndShowStart() {
             <input type="range" id="dj-autofade-duration" min="2" max="10" step="1" value="5" aria-label="Auto-fade duration seconds">
             <span class="dj-autofade-readout" id="dj-autofade-readout">5s</span>
           </div>
+          <div class="dj-autofade-station-block">
+            <div class="dj-autofade-station-title">Radio station change</div>
+            <label class="dj-autofade-station-check">
+              <input type="checkbox" id="dj-radio-station-xfade-en" />
+              <span>Fade between stations (Deck A)</span>
+            </label>
+            <div class="dj-autofade-row">
+              <input type="range" id="dj-radio-station-xfade-sec" min="0" max="15" step="0.5" value="0" aria-label="Station crossfade duration seconds" disabled>
+              <span class="dj-autofade-readout" id="dj-radio-station-xfade-readout">0s</span>
+            </div>
+          </div>
         </div>
       </div>
       <span class="dj-fader-label-a">A</span>
@@ -12079,6 +12153,9 @@ function stopAllAndShowStart() {
                 const autoFadePanel = root.querySelector('#dj-autofade-panel');
                 const autoFadeDuration = root.querySelector('#dj-autofade-duration');
                 const autoFadeReadout = root.querySelector('#dj-autofade-readout');
+                const radioStationXfadeEn = root.querySelector('#dj-radio-station-xfade-en');
+                const radioStationXfadeSec = root.querySelector('#dj-radio-station-xfade-sec');
+                const radioStationXfadeReadout = root.querySelector('#dj-radio-station-xfade-readout');
                 const btnAutoMix = root.querySelector('#dj-automix');
                 const autoMixWrap = root.querySelector('.dj-automix-wrap');
                 const autoMixPanel = root.querySelector('#dj-automix-panel');
@@ -12131,6 +12208,20 @@ function stopAllAndShowStart() {
                     const sec = Math.max(2, Math.min(10, Math.round((Number(autoFadeDurationMs) || 5000) / 1000)));
                     if (autoFadeDuration) autoFadeDuration.value = String(sec);
                     if (autoFadeReadout) autoFadeReadout.textContent = `${sec}s`;
+                };
+                const syncRadioStationCrossfadeUi = () => {
+                    if (radioStationXfadeEn) radioStationXfadeEn.checked = !!radioStationCrossfadeEnabled;
+                    const sec = Math.max(0, Math.min(15, Number(radioStationCrossfadeSec) || 0));
+                    if (radioStationXfadeSec) {
+                        radioStationXfadeSec.disabled = !radioStationCrossfadeEnabled;
+                        radioStationXfadeSec.value = String(sec);
+                    }
+                    if (radioStationXfadeReadout) {
+                        const label = Number.isInteger(sec) || Math.abs(sec - Math.round(sec)) < 1e-6
+                            ? `${Math.round(sec)}`
+                            : String(sec);
+                        radioStationXfadeReadout.textContent = `${label}s`;
+                    }
                 };
                 const formatLimitMinutesReadout = (m) => {
                     const n = Math.max(5, Math.min(300, Math.round(Number(m) || 60)));
@@ -12266,6 +12357,7 @@ function stopAllAndShowStart() {
                 const openAutoFadePanel = () => {
                     if (!autoFadePanel) return;
                     syncAutoFadeDurationUi();
+                    try { syncRadioStationCrossfadeUi(); } catch (_) {}
                     autoFadePanel.classList.add('is-open');
                     autoFadePanel.setAttribute('aria-hidden', 'false');
                     const p = this._panelPointerPos;
@@ -12281,6 +12373,7 @@ function stopAllAndShowStart() {
                     positionPopupPanelAtPointer(autoMixPanel, p && p.x, p && p.y);
                 };
                 syncAutoFadeDurationUi();
+                try { syncRadioStationCrossfadeUi(); } catch (_) {}
                 syncAutoMixUi();
 
                 const mirrorPairs = [
@@ -12737,6 +12830,29 @@ function stopAllAndShowStart() {
                     }, sig);
                     autoFadeDuration.addEventListener('change', () => {
                         try { localStorage.setItem(AUTOFADE_MS_KEY, String(Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 5000)))); } catch (_) {}
+                    }, sig);
+                }
+                if (radioStationXfadeEn) {
+                    radioStationXfadeEn.addEventListener('change', () => {
+                        radioStationCrossfadeEnabled = !!radioStationXfadeEn.checked;
+                        try { syncRadioStationCrossfadeUi(); } catch (_) {}
+                        try { saveRadioStationCrossfadeToStorage(); } catch (_) {}
+                    }, sig);
+                }
+                if (radioStationXfadeSec) {
+                    radioStationXfadeSec.addEventListener('input', () => {
+                        const sec = Math.max(0, Math.min(15, Number(radioStationXfadeSec.value) || 0));
+                        radioStationCrossfadeSec = sec;
+                        if (radioStationXfadeReadout) {
+                            const label = Number.isInteger(sec) || Math.abs(sec - Math.round(sec)) < 1e-6
+                                ? `${Math.round(sec)}`
+                                : String(sec);
+                            radioStationXfadeReadout.textContent = `${label}s`;
+                        }
+                    }, sig);
+                    radioStationXfadeSec.addEventListener('change', () => {
+                        radioStationCrossfadeSec = Math.max(0, Math.min(15, Number(radioStationXfadeSec.value) || 0));
+                        try { saveRadioStationCrossfadeToStorage(); } catch (_) {}
                     }, sig);
                 }
                 if (btnAutoMix) {
