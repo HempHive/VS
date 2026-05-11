@@ -4132,7 +4132,7 @@
             pointer-events: none;
         }
         #webm-overlay video {
-            width: 50vw; height: auto; display: block;
+            width: 100vw; height: auto; display: block;
             pointer-events: none;
             border: none;
             border-radius: 0;
@@ -4600,7 +4600,7 @@
 		<div id="bottom-avatar-content">
 			<div class="row">
 				<label for="avatar-inp-scale" style="min-width:120px; font-size:12px; color:#ccc">Size (vw)</label>
-				<input id="avatar-inp-scale" type="range" min="10" max="200" step="1" value="50">
+				<input id="avatar-inp-scale" type="range" min="10" max="200" step="1" value="100">
 			</div>
 			<div class="row">
 				<label for="avatar-inp-x" style="min-width:120px; font-size:12px; color:#ccc">X (vw)</label>
@@ -5071,7 +5071,7 @@
         <div id="webm-settings-content">
             <div class="settings-row">
                 <label for="inp-webm-scale">Size (vw)</label>
-                <input id="inp-webm-scale" type="range" min="10" max="200" step="1" value="50">
+                <input id="inp-webm-scale" type="range" min="10" max="200" step="1" value="100">
             </div>
             <div class="settings-row">
                 <label for="inp-webm-x">X (vw)</label>
@@ -5918,7 +5918,7 @@ const QUALITY = {
             return enabled;
         }
         const webmSettings = {
-            scaleVw: 50,
+            scaleVw: 100,
             posXvw: 50,
             posYvh: 50,
             rotationDeg: 0,
@@ -6941,7 +6941,7 @@ function randomGlowColor() {
                 const aOpacity = document.getElementById('avatar-inp-opacity');
                 const aDup = document.getElementById('avatar-inp-dup');
                 const updateFromAvatarInputs = () => {
-                    webmSettings.scaleVw = Number(aScale?.value) || 50;
+                    webmSettings.scaleVw = Number(aScale?.value) || 100;
                     webmSettings.posXvw = Number(aX?.value) || 50;
                     webmSettings.posYvh = Number(aY?.value) || 50;
                     webmSettings.rotationDeg = Number(aRot?.value) || 0;
@@ -6976,14 +6976,14 @@ function randomGlowColor() {
                 const btnReset = document.getElementById('avatar-btn-reset');
                 if (btnReset) btnReset.addEventListener('click', (e)=>{ 
                     e.preventDefault(); e.stopPropagation();
-                    webmSettings.scaleVw = 50;
+                    webmSettings.scaleVw = 100;
                     webmSettings.posXvw = 50;
                     webmSettings.posYvh = 50;
                     webmSettings.rotationDeg = 0;
                     webmSettings.playbackRate = 1.0;
                     webmSettings.opacity = 0.82;
                     webmSettings.duplicates = 0;
-                    if (aScale) aScale.value = '50';
+                    if (aScale) aScale.value = '100';
                     if (aX) aX.value = '50';
                     if (aY) aY.value = '50';
                     if (aRot) aRot.value = '0';
@@ -8610,10 +8610,11 @@ function randomGlowColor() {
         function playDeckATrackFromQueue() {
             initAudio();
             try { stopNowPlayingPoll(); } catch (_) {}
-            resetRadioADualStreamHandoff();
-            revokeBlobSrc(audioEl);
             const q = deckFileQueues.a;
             if (!q.length) {
+                abortRadioAHandoff();
+                resetRadioADualStreamHandoff();
+                revokeBlobSrc(audioEl);
                 state.deckSourceMode.a = 'radio';
                 try { state.deckLocalDisplayName.a = ''; } catch (_) {}
                 try {
@@ -8624,27 +8625,105 @@ function randomGlowColor() {
                 try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
                 return;
             }
-            const item = q.shift();
+
+            const item = q[0];
+            const audibleEl = getDeckAMediaForPlaybackState();
+            const wasLocal = state.deckSourceMode.a === 'local';
+            const audibleSrc = audibleEl ? sanitizeUrlForAudio(String(audibleEl.currentSrc || audibleEl.src || '')) : '';
+            const nextClean = item.url ? sanitizeUrlForAudio(String(item.url)) : '';
+            const audiblePlaying = !!(audibleEl && audibleSrc && !audibleEl.paused && !audibleEl.ended);
+            const warmLocal = !!(
+                wasLocal &&
+                !item.isVideo &&
+                state.gainRadioPrimaryPath &&
+                state.gainRadioSecondaryPath &&
+                audioElRadioAAlt &&
+                audiblePlaying &&
+                nextClean &&
+                audibleSrc &&
+                nextClean !== audibleSrc
+            );
+
+            const runColdDeckALocal = (trackItem) => {
+                abortRadioAHandoff();
+                resetRadioADualStreamHandoff();
+                revokeBlobSrc(audioEl);
+                state.deckSourceMode.a = 'local';
+                try { state.deckLocalDisplayName.a = trackItem.name ? String(trackItem.name) : ''; } catch (_) {}
+                try { audioEl.crossOrigin = 'anonymous'; } catch (_) {}
+                audioEl.src = trackItem.url;
+                if (trackItem.isVideo) registerDeckVideoFeed('a', trackItem.url, trackItem.name, true);
+                audioEl.play().then(() => {
+                    connectDeckMediaToEq('a');
+                    try {
+                        if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
+                            state.activeVisualizer.visualizer.connectAudio(state.analyserNode);
+                        }
+                    } catch (e) { /* ignore */ }
+                    if (!state.isPlaying) startGame();
+                    try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+                }).catch((e) => {
+                    console.warn('Deck A local playback failed:', e);
+                    state.deckSourceMode.a = 'radio';
+                    try { state.deckLocalDisplayName.a = ''; } catch (_) {}
+                    try { playRadio(); } catch (_) {}
+                    try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+                });
+            };
+
+            if (!warmLocal) {
+                q.shift();
+                runColdDeckALocal(item);
+                try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+                return;
+            }
+
+            ensureRadioAAltWired();
+            if (!state.radioAltAMediaWired || !state.radioElementSourceAAlt) {
+                q.shift();
+                runColdDeckALocal(item);
+                try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+                return;
+            }
+
+            q.shift();
+            abortRadioAHandoff();
             state.deckSourceMode.a = 'local';
             try { state.deckLocalDisplayName.a = item.name ? String(item.name) : ''; } catch (_) {}
-            try { audioEl.crossOrigin = 'anonymous'; } catch (_) {}
-            audioEl.src = item.url;
-            if (item.isVideo) registerDeckVideoFeed('a', item.url, item.name, true);
-            audioEl.play().then(() => {
-                connectDeckMediaToEq('a');
+            try { showStationBanner(item.name || 'Local track'); } catch (_) {}
+
+            radioAHandoffAbortCtrl = new AbortController();
+            const signal = radioAHandoffAbortCtrl.signal;
+
+            const outputFromSecondary = isDeckARadioOutputFromAlt();
+            const liveEl = outputFromSecondary ? audioElRadioAAlt : audioEl;
+            const prepEl = outputFromSecondary ? audioEl : audioElRadioAAlt;
+            const liveGain = outputFromSecondary ? state.gainRadioSecondaryPath : state.gainRadioPrimaryPath;
+            const prepGain = outputFromSecondary ? state.gainRadioPrimaryPath : state.gainRadioSecondaryPath;
+
+            const afterLocalHandoff = () => {
                 try {
                     if (state.activeVisualizer && state.activeVisualizer.visualizer && typeof state.activeVisualizer.visualizer.connectAudio === 'function') {
                         state.activeVisualizer.visualizer.connectAudio(state.analyserNode);
                     }
                 } catch (e) { /* ignore */ }
                 if (!state.isPlaying) startGame();
+                try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
                 try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
-            }).catch((e) => {
-                console.warn('Deck A local playback failed:', e);
-                state.deckSourceMode.a = 'radio';
-                try { state.deckLocalDisplayName.a = ''; } catch (_) {}
-                try { playRadio(); } catch (_) {}
-            });
+            };
+
+            const onLocalPrepFail = (e) => {
+                console.warn('Deck A local gapless handoff failed:', e);
+                try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
+                try { deckFileQueues.a.unshift(item); } catch (_) {}
+                runColdDeckALocal(item);
+            };
+
+            try { setDjDeckRadioLoadingSpinner('a', true); } catch (_) {}
+            beginDeckAPingPongMediaHandoff(
+                prepEl, liveEl, liveGain, prepGain,
+                item.url, signal, 30000, afterLocalHandoff, onLocalPrepFail
+            );
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
 
@@ -8762,6 +8841,9 @@ function randomGlowColor() {
         function getDeckAMediaForPlaybackState() {
             try {
                 if (state && state.deckSourceMode && state.deckSourceMode.a === 'radio') return getDeckARadioAudibleEl();
+                if (state && state.deckSourceMode && state.deckSourceMode.a === 'local' && audioElRadioAAlt && isDeckARadioOutputFromAlt()) {
+                    return audioElRadioAAlt;
+                }
             } catch (_) {}
             return audioEl;
         }
@@ -8824,6 +8906,65 @@ function randomGlowColor() {
                 mediaEl.addEventListener('timeupdate', onTick);
                 const iv = setInterval(check, 100);
                 check();
+            });
+        }
+
+        /**
+         * Deck A: load newUrl on prepEl (gain 0), wait for buffer, ramp liveGain down / prepGain up, then tear down live element.
+         * Used for gapless radio station changes and gapless local queue advances (same dual <audio> + gain paths).
+         */
+        function beginDeckAPingPongMediaHandoff(prepEl, liveEl, liveGain, prepGain, newUrl, signal, bufferTimeoutMs, onComplete, onPrepPlayFail) {
+            try {
+                revokeBlobSrc(prepEl);
+                prepEl.crossOrigin = 'anonymous';
+                prepEl.src = newUrl;
+                prepGain.gain.value = 0;
+            } catch (e) {
+                if (typeof onPrepPlayFail === 'function') onPrepPlayFail(e);
+                return;
+            }
+            prepEl.play().then(async () => {
+                try {
+                    await waitForRadioStreamAudible(prepEl, { signal, timeoutMs: bufferTimeoutMs || 14000 });
+                } catch (err) {
+                    if (signal && (signal.aborted || (err && err.name === 'AbortError'))) {
+                        try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
+                        return;
+                    }
+                    console.warn('Deck A handoff buffer wait failed, switching immediately:', err);
+                }
+                if (signal && signal.aborted) {
+                    try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
+                    return;
+                }
+                try { await state.audioCtx.resume(); } catch (_) {}
+                const t = state.audioCtx.currentTime;
+                const rampSec = (typeof getDeckARadioCrossfadeRampSec === 'function')
+                    ? getDeckARadioCrossfadeRampSec()
+                    : 0.06;
+                const handoffCleanupMs = Math.ceil(Math.max(rampSec, 0.06) * 1000) + 100;
+                try {
+                    liveGain.gain.cancelScheduledValues(t);
+                    prepGain.gain.cancelScheduledValues(t);
+                    liveGain.gain.setValueAtTime(Math.max(0, Math.min(1, liveGain.gain.value)), t);
+                    prepGain.gain.setValueAtTime(0, t);
+                    liveGain.gain.linearRampToValueAtTime(0, t + rampSec);
+                    prepGain.gain.linearRampToValueAtTime(1, t + rampSec);
+                } catch (_) {
+                    try { liveGain.gain.value = 0; prepGain.gain.value = 1; } catch (_) {}
+                }
+                setTimeout(() => {
+                    if (signal && signal.aborted) {
+                        try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
+                        return;
+                    }
+                    try { liveEl.pause(); } catch (_) {}
+                    try { liveEl.removeAttribute('src'); liveEl.load(); } catch (_) {}
+                    try { connectDeckMediaToEq('a'); } catch (_) {}
+                    if (typeof onComplete === 'function') onComplete();
+                }, handoffCleanupMs);
+            }).catch((e) => {
+                if (typeof onPrepPlayFail === 'function') onPrepPlayFail(e);
             });
         }
 
@@ -8942,52 +9083,10 @@ function randomGlowColor() {
             radioAHandoffAbortCtrl = new AbortController();
             const signal = radioAHandoffAbortCtrl.signal;
 
-            revokeBlobSrc(prepEl);
-            prepEl.crossOrigin = 'anonymous';
-            prepEl.src = url;
-            prepGain.gain.value = 0;
-
-            prepEl.play().then(async () => {
-                try {
-                    await waitForRadioStreamAudible(prepEl, { signal, timeoutMs: 14000 });
-                } catch (err) {
-                    if (signal.aborted || (err && err.name === 'AbortError')) {
-                        try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
-                        return;
-                    }
-                    console.warn('Radio pre-buffer wait failed, switching immediately:', err);
-                }
-                if (signal.aborted) {
-                    try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
-                    return;
-                }
-                try { await state.audioCtx.resume(); } catch (_) {}
-                const t = state.audioCtx.currentTime;
-                const rampSec = (typeof getDeckARadioCrossfadeRampSec === 'function')
-                    ? getDeckARadioCrossfadeRampSec()
-                    : 0.06;
-                const handoffCleanupMs = Math.ceil(Math.max(rampSec, 0.06) * 1000) + 100;
-                try {
-                    liveGain.gain.cancelScheduledValues(t);
-                    prepGain.gain.cancelScheduledValues(t);
-                    liveGain.gain.setValueAtTime(Math.max(0, Math.min(1, liveGain.gain.value)), t);
-                    prepGain.gain.setValueAtTime(0, t);
-                    liveGain.gain.linearRampToValueAtTime(0, t + rampSec);
-                    prepGain.gain.linearRampToValueAtTime(1, t + rampSec);
-                } catch (_) {
-                    try { liveGain.gain.value = 0; prepGain.gain.value = 1; } catch (_) {}
-                }
-                setTimeout(() => {
-                    if (signal.aborted) {
-                        try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
-                        return;
-                    }
-                    try { liveEl.pause(); } catch (_) {}
-                    try { liveEl.removeAttribute('src'); liveEl.load(); } catch (_) {}
-                    try { connectDeckMediaToEq('a'); } catch (_) {}
-                    afterConnect();
-                }, handoffCleanupMs);
-            }).catch(onPlayFail);
+            beginDeckAPingPongMediaHandoff(
+                prepEl, liveEl, liveGain, prepGain,
+                url, signal, 14000, afterConnect, onPlayFail
+            );
         }
 
         async function useMic() {
@@ -11975,7 +12074,7 @@ function stopAllAndShowStart() {
                 <button type="button" class="btn dj-fx" id="dj-b-vis-blank" title="Return to deck controls">NO VISUAL</button>
                 <button type="button" class="btn dj-fx" id="dj-b-vis-pm2" title="Show ProjectM driven by Deck A (replaces controls)">ProjectM</button>
 
-                <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="Avatar WebM centered in Deck B (press again to hide)">Avatar</button>
+                <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="Show or re-centre Avatar in Deck B (arrow keys still nudge position)">Avatar</button>
                 <button type="button" class="btn dj-fx" id="dj-b-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
                 <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Show or hide station cycle list and video queue (Deck B)">Stations</button>
 
@@ -13094,10 +13193,14 @@ function stopAllAndShowStart() {
                                 return;
                             }
                             showWebm({ deckBCenter: true });
-                        } else if (webmAnchorDeckB) {
-                            hideWebm();
                         } else {
                             webmAnchorDeckB = true;
+                            webmSettings.posXvw = 50;
+                            webmSettings.posYvh = 50;
+                            try {
+                                if (typeof inpWebmX !== 'undefined' && inpWebmX) inpWebmX.value = '50';
+                                if (typeof inpWebmY !== 'undefined' && inpWebmY) inpWebmY.value = '50';
+                            } catch (_) {}
                             applyWebmSettings();
                         }
                         this.syncFxLightsFromState();
@@ -17773,8 +17876,17 @@ tiGlowColorRandBtn.addEventListener('click', () => {
 
         function showWebm(opts) {
             if(webmList.length === 0) return;
-            if (opts && opts.deckBCenter) webmAnchorDeckB = true;
-            else webmAnchorDeckB = false;
+            if (opts && opts.deckBCenter) {
+                webmAnchorDeckB = true;
+                webmSettings.posXvw = 50;
+                webmSettings.posYvh = 50;
+                try {
+                    if (typeof inpWebmX !== 'undefined' && inpWebmX) inpWebmX.value = '50';
+                    if (typeof inpWebmY !== 'undefined' && inpWebmY) inpWebmY.value = '50';
+                } catch (_) {}
+            } else {
+                webmAnchorDeckB = false;
+            }
             webmOn = true;
             setWebm(webmIndex);
             webmOverlayEl.classList.remove('display-none');
@@ -18073,14 +18185,14 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             hideWebmSettingsPanel();
         }, true);
         document.getElementById('btn-webm-reset').addEventListener('click', () => {
-            webmSettings.scaleVw = 50;
+            webmSettings.scaleVw = 100;
             webmSettings.posXvw = 50;
             webmSettings.posYvh = 50;
             webmSettings.rotationDeg = 0;
             webmSettings.playbackRate = 1.0;
             webmSettings.opacity = 0.82;
             webmSettings.duplicates = 0;
-            inpWebmScale.value = '50';
+            inpWebmScale.value = '100';
             inpWebmX.value = '50';
             inpWebmY.value = '50';
             inpWebmRot.value = '0';
@@ -18091,7 +18203,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         });
         // Live-change on input
         function updateWebmSettingsFromInputs() {
-            webmSettings.scaleVw = Number(inpWebmScale.value) || 50;
+            webmSettings.scaleVw = Number(inpWebmScale.value) || 100;
             webmSettings.posXvw = Number(inpWebmX.value) || 50;
             webmSettings.posYvh = Number(inpWebmY.value) || 50;
             webmSettings.rotationDeg = Number(inpWebmRot.value) || 0;
@@ -18122,11 +18234,15 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                         bindWebmDeckBLayoutWatchers();
                         const cx = rect.left + rect.width * 0.5;
                         const cy = rect.top + rect.height * 0.5;
-                        const sw = Number(webmSettings.scaleVw) || 50;
+                        const pxOff = ((Number(webmSettings.posXvw) || 50) - 50) / 100 * rect.width;
+                        const pyOff = ((Number(webmSettings.posYvh) || 50) - 50) / 100 * rect.height;
+                        const fixLeft = cx + pxOff;
+                        const fixTop = cy + pyOff;
+                        const sw = Number(webmSettings.scaleVw) || 100;
                         const wPx = Math.min(rect.width * 0.94, Math.max(72, rect.width * 0.34 * (sw / 50)));
                         webmOverlayEl.style.position = 'fixed';
-                        webmOverlayEl.style.left = `${cx}px`;
-                        webmOverlayEl.style.top = `${cy}px`;
+                        webmOverlayEl.style.left = `${fixLeft}px`;
+                        webmOverlayEl.style.top = `${fixTop}px`;
                         webmOverlayEl.style.transform = 'translate(-50%, -50%)';
                         webmVideoEl.style.width = `${wPx}px`;
                         webmVideoEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
