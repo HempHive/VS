@@ -6671,6 +6671,52 @@ function randomGlowColor() {
             return false;
         }
 
+        /** Deck B viz mount uses `pointer-events: none` so ProjectM / AUDIO:BAR often miss DOM hit-testing; use mode + coordinates. */
+        function isDeckBVizBarsOrProjectMActive() {
+            try {
+                const av = state && state.activeVisualizer;
+                if (!av || av.name !== 'DJ Decks') return false;
+                const m = av.deckBVizMode;
+                if (m !== 'bars' && m !== 'projectm') return false;
+                const stage = document.querySelector('#dj-visual-root .dj-deck-b-stage');
+                return !!(stage && stage.classList.contains('dj-deck-b-visual-mode'));
+            } catch (_) {}
+            return false;
+        }
+
+        function isPointerInDeckBVizMountRect(clientX, clientY) {
+            try {
+                const mount = document.getElementById('dj-deck-b-viz-mount');
+                if (!mount) return false;
+                const r = mount.getBoundingClientRect();
+                if (r.width < 4 || r.height < 4) return false;
+                const x = Number(clientX);
+                const y = Number(clientY);
+                if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+                return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+            } catch (_) {}
+            return false;
+        }
+
+        function shouldToggleDeckBVizMountFullscreenFromPointer(e) {
+            try {
+                if (isEventOnDeckBVizMount(e)) return true;
+            } catch (_) {}
+            if (!isDeckBVizBarsOrProjectMActive()) return false;
+            try {
+                const x = e.clientX != null ? e.clientX : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : NaN);
+                const y = e.clientY != null ? e.clientY : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : NaN);
+                if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+                const topEl = document.elementFromPoint(x, y);
+                if (topEl && typeof topEl.closest === 'function') {
+                    if (topEl.closest('.knob-wrap') || topEl.closest('#dj-deck-splitter')) return false;
+                    if (topEl.closest('#dj-deck-b-viz-mount')) return true;
+                }
+                return isPointerInDeckBVizMountRect(x, y);
+            } catch (_) {}
+            return false;
+        }
+
         function forceResize() {
             if(state.activeVisualizer && state.activeVisualizer.onResize) {
                 state.activeVisualizer.onResize();
@@ -7180,7 +7226,7 @@ function randomGlowColor() {
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
                         try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch(_) {}
                         try {
-                            if (isEventOnDeckBVizMount(e)) {
+                            if (shouldToggleDeckBVizMountFullscreenFromPointer(e)) {
                                 toggleDeckBVizMountFullscreen();
                             } else {
                                 toggleFullscreen();
@@ -7236,7 +7282,7 @@ function randomGlowColor() {
                 // Double click: Deck B viz mount → fullscreen mount only; elsewhere → fullscreen DJ canvas
                 canvasEl.addEventListener('dblclick', (e) => {
                     if (!state || !state.isPlaying) return;
-                    if (isEventOnDeckBVizMount(e)) {
+                    if (shouldToggleDeckBVizMountFullscreenFromPointer(e)) {
                         try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
                         try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch (_) {}
                         try { toggleDeckBVizMountFullscreen(); } catch (_) {}
