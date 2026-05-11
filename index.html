@@ -5784,6 +5784,42 @@ const QUALITY = {
         let webmList = [];
         let webmIndex = 0;
         let webmOn = false;
+        /** When true, WebM overlay is laid out fixed to the center of DJ Deck B (see applyWebmSettings). */
+        let webmAnchorDeckB = false;
+        let webmDeckBLayoutBound = false;
+        let webmDeckBResizeObserver = null;
+        function __webmDeckBOnLayout() {
+            try {
+                if (webmOn && webmAnchorDeckB) applyWebmSettings();
+            } catch (_) {}
+        }
+        function bindWebmDeckBLayoutWatchers() {
+            if (webmDeckBLayoutBound) return;
+            try {
+                window.addEventListener('resize', __webmDeckBOnLayout, { passive: true });
+            } catch (_) {
+                try { window.addEventListener('resize', __webmDeckBOnLayout); } catch (_) {}
+            }
+            try {
+                const dj = document.getElementById('dj-visual-root');
+                if (dj && typeof ResizeObserver !== 'undefined') {
+                    webmDeckBResizeObserver = new ResizeObserver(() => __webmDeckBOnLayout());
+                    webmDeckBResizeObserver.observe(dj);
+                }
+            } catch (_) {}
+            webmDeckBLayoutBound = true;
+        }
+        function unbindWebmDeckBLayoutWatchers() {
+            if (!webmDeckBLayoutBound) return;
+            try { window.removeEventListener('resize', __webmDeckBOnLayout); } catch (_) {}
+            try {
+                if (webmDeckBResizeObserver) {
+                    webmDeckBResizeObserver.disconnect();
+                    webmDeckBResizeObserver = null;
+                }
+            } catch (_) {}
+            webmDeckBLayoutBound = false;
+        }
         let radioPanelTimer = null;
         let settingsPanelTimer = null;
         let webmSettingsTimer = null;
@@ -9687,6 +9723,8 @@ function stopAllAndShowStart() {
                 this.deckBMediaPanelVisible = false;
                 /** After Deck A "Audio Bars" moves Deck B from ProjectM → in-panel bars, next Deck A "Audio Bars" loads main Audio Bars. */
                 this._deckAAudioBarsMainOnNextClick = false;
+                /** After Deck A "Stations" moves Deck B from file QUEUE → station cycle + video queue, next Deck A "Stations" toggles the top Radio Stations menu. */
+                this._deckAStationsTopMenuOnNextClick = false;
                 this.beatMapSlots = null;
                 this.headClockTimerId = null;
             }
@@ -9990,6 +10028,7 @@ function stopAllAndShowStart() {
             }
 
             hideDeckBMediaView() {
+                this._deckAStationsTopMenuOnNextClick = false;
                 try {
                     this.deckBMediaPanelVisible = false;
                     const stage = this.root && this.root.querySelector('.dj-deck-b-stage');
@@ -10236,6 +10275,7 @@ function stopAllAndShowStart() {
 
             tearDownDeckBViz(opts) {
                 this._deckAAudioBarsMainOnNextClick = false;
+                this._deckAStationsTopMenuOnNextClick = false;
                 try {
                     if (this._deckBVideoUiAbortCtrl) {
                         this._deckBVideoUiAbortCtrl.abort();
@@ -11861,7 +11901,7 @@ function stopAllAndShowStart() {
                 <button type="button" class="btn dj-fx" id="dj-b-vis-blank" title="Return to deck controls">NO VISUAL</button>
                 <button type="button" class="btn dj-fx" id="dj-b-vis-pm2" title="Show ProjectM driven by Deck A (replaces controls)">ProjectM</button>
 
-                <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="Toggle avatar / WebM overlay">Avatar</button>
+                <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="Avatar WebM centered in Deck B (press again to hide)">Avatar</button>
                 <button type="button" class="btn dj-fx" id="dj-b-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
                 <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Show or hide station cycle list and video queue (Deck B)">Stations</button>
 
@@ -12904,7 +12944,7 @@ function stopAllAndShowStart() {
                         if (typeof syncDjTextInDeckLights === 'function') syncDjTextInDeckLights();
                     } catch (_) {}
                 };
-                const djToggleAvatar = () => {
+                const djToggleAvatarDeckA = () => {
                     try {
                         if (typeof uiLocked !== 'undefined' && uiLocked) return;
                         if (!webmOn) {
@@ -12924,6 +12964,29 @@ function stopAllAndShowStart() {
                         this.syncFxLightsFromState();
                     } catch (_) {}
                 };
+                const djToggleAvatarDeckB = () => {
+                    try {
+                        if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                        if (!webmOn) {
+                            if (!webmList.length) {
+                                loadWebmList().finally(() => {
+                                    try {
+                                        if (webmList.length > 0) showWebm({ deckBCenter: true });
+                                        this.syncFxLightsFromState();
+                                    } catch (_) {}
+                                });
+                                return;
+                            }
+                            showWebm({ deckBCenter: true });
+                        } else if (webmAnchorDeckB) {
+                            hideWebm();
+                        } else {
+                            webmAnchorDeckB = true;
+                            applyWebmSettings();
+                        }
+                        this.syncFxLightsFromState();
+                    } catch (_) {}
+                };
                 const djToggleMixerUi = () => {
                     try {
                         if (typeof uiLocked !== 'undefined' && uiLocked) return;
@@ -12934,6 +12997,15 @@ function stopAllAndShowStart() {
                 const djToggleStationUi = () => {
                     try {
                         if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                        if (this.deckBQueueVisible) {
+                            this.showDeckBMediaView();
+                            this._deckAStationsTopMenuOnNextClick = true;
+                            this.syncFxLightsFromState();
+                            return;
+                        }
+                        if (this._deckAStationsTopMenuOnNextClick) {
+                            this._deckAStationsTopMenuOnNextClick = false;
+                        }
                         if (typeof toggleTopMenuPanel === 'function') toggleTopMenuPanel();
                         this.syncFxLightsFromState();
                     } catch (_) {}
@@ -13233,8 +13305,8 @@ function stopAllAndShowStart() {
                     }, { passive: true, signal: this.abortCtrl.signal });
                 } catch (_) {}
 
-                if (this.els.fxHighA) this.els.fxHighA.addEventListener('click', djToggleAvatar, sig);
-                if (this.els.fxHighB) this.els.fxHighB.addEventListener('click', djToggleAvatar, sig);
+                if (this.els.fxHighA) this.els.fxHighA.addEventListener('click', djToggleAvatarDeckA, sig);
+                if (this.els.fxHighB) this.els.fxHighB.addEventListener('click', djToggleAvatarDeckB, sig);
                 if (this.els.fxTrebleA) this.els.fxTrebleA.addEventListener('click', djToggleMixerUi, sig);
                 if (this.els.fxTrebleB) this.els.fxTrebleB.addEventListener('click', djToggleMixerUi, sig);
                 if (this.els.fxDistortA) this.els.fxDistortA.addEventListener('click', djToggleStationUi, sig);
@@ -17583,8 +17655,10 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             webmIndex = 0;
         }
 
-        function showWebm() {
+        function showWebm(opts) {
             if(webmList.length === 0) return;
+            if (opts && opts.deckBCenter) webmAnchorDeckB = true;
+            else webmAnchorDeckB = false;
             webmOn = true;
             setWebm(webmIndex);
             webmOverlayEl.classList.remove('display-none');
@@ -17600,6 +17674,14 @@ tiGlowColorRandBtn.addEventListener('click', () => {
 
         function hideWebm() {
             webmOn = false;
+            webmAnchorDeckB = false;
+            try { unbindWebmDeckBLayoutWatchers(); } catch (_) {}
+            try {
+                webmOverlayEl.style.position = '';
+                webmOverlayEl.style.left = '';
+                webmOverlayEl.style.top = '';
+                webmOverlayEl.style.transform = '';
+            } catch (_) {}
             webmOverlayEl.classList.add('display-none');
             // Disable overlay interaction when hidden
             try { webmOverlayEl.style.pointerEvents = 'none'; } catch(_) {}
@@ -17916,52 +17998,110 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             });
         }
         function applyWebmSettings() {
-            // central
-            webmVideoEl.style.width = `${webmSettings.scaleVw}vw`;
-            webmOverlayEl.style.left = `${webmSettings.posXvw}vw`;
-            webmOverlayEl.style.top = `${webmSettings.posYvh}vh`;
-            webmOverlayEl.style.transform = `translate(-50%, -50%)`;
-            webmVideoEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
-            webmVideoEl.style.opacity = String(webmSettings.opacity);
-            try { webmVideoEl.playbackRate = webmSettings.playbackRate; } catch {}
-            // duplicates
-            const dup = webmSettings.duplicates;
-            const offsetVw = webmSettings.scaleVw * 0.6;
-            if(dup >= 1) {
-                webmVideoLeftEl.classList.remove('display-none');
-                webmVideoLeftEl.style.width = `${webmSettings.scaleVw}vw`;
-                webmVideoLeftEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
-                webmVideoLeftEl.style.opacity = String(webmSettings.opacity);
-                try { webmVideoLeftEl.playbackRate = webmSettings.playbackRate; } catch {}
-            } else {
-                webmVideoLeftEl.classList.add('display-none');
-            }
-            if(dup >= 2) {
-                webmVideoRightEl.classList.remove('display-none');
-                webmVideoRightEl.style.width = `${webmSettings.scaleVw}vw`;
-                webmVideoRightEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
-                webmVideoRightEl.style.opacity = String(webmSettings.opacity);
-                try { webmVideoRightEl.playbackRate = webmSettings.playbackRate; } catch {}
-            } else {
-                webmVideoRightEl.classList.add('display-none');
-            }
-            // Position duplicates relative to overlay center using absolute positioning containers
-            // We'll position by setting margins on the left/right elements
-            webmVideoEl.style.display = 'block';
-            webmVideoLeftEl.style.display = dup >= 1 ? 'block' : 'none';
-            webmVideoRightEl.style.display = dup >= 2 ? 'block' : 'none';
-            // Reset any existing margins
-            webmVideoEl.style.margin = '0';
-            webmVideoLeftEl.style.margin = '0';
-            webmVideoRightEl.style.margin = '0';
-            // Arrange: left video shifted left by offset, right shifted right by offset, overlapping allowed
-            webmVideoLeftEl.style.position = 'absolute';
-            webmVideoRightEl.style.position = 'absolute';
-            webmVideoEl.style.position = 'relative';
-            webmVideoLeftEl.style.left = `-${offsetVw}vw`;
-            webmVideoLeftEl.style.top = `0`;
-            webmVideoRightEl.style.left = `${offsetVw}vw`;
-            webmVideoRightEl.style.top = `0`;
+            try {
+                if (webmOn && webmAnchorDeckB) {
+                    const stage = document.querySelector('#dj-visual-root .dj-deck-b-stage');
+                    const rect = stage ? stage.getBoundingClientRect() : null;
+                    if (stage && rect && rect.width >= 8 && rect.height >= 8) {
+                        bindWebmDeckBLayoutWatchers();
+                        const cx = rect.left + rect.width * 0.5;
+                        const cy = rect.top + rect.height * 0.5;
+                        const sw = Number(webmSettings.scaleVw) || 50;
+                        const wPx = Math.min(rect.width * 0.94, Math.max(72, rect.width * 0.34 * (sw / 50)));
+                        webmOverlayEl.style.position = 'fixed';
+                        webmOverlayEl.style.left = `${cx}px`;
+                        webmOverlayEl.style.top = `${cy}px`;
+                        webmOverlayEl.style.transform = 'translate(-50%, -50%)';
+                        webmVideoEl.style.width = `${wPx}px`;
+                        webmVideoEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
+                        webmVideoEl.style.opacity = String(webmSettings.opacity);
+                        try { webmVideoEl.playbackRate = webmSettings.playbackRate; } catch {}
+                        const dup = webmSettings.duplicates;
+                        const offsetPx = wPx * 0.62;
+                        if (dup >= 1) {
+                            webmVideoLeftEl.classList.remove('display-none');
+                            webmVideoLeftEl.style.width = `${wPx}px`;
+                            webmVideoLeftEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
+                            webmVideoLeftEl.style.opacity = String(webmSettings.opacity);
+                            try { webmVideoLeftEl.playbackRate = webmSettings.playbackRate; } catch {}
+                        } else {
+                            webmVideoLeftEl.classList.add('display-none');
+                        }
+                        if (dup >= 2) {
+                            webmVideoRightEl.classList.remove('display-none');
+                            webmVideoRightEl.style.width = `${wPx}px`;
+                            webmVideoRightEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
+                            webmVideoRightEl.style.opacity = String(webmSettings.opacity);
+                            try { webmVideoRightEl.playbackRate = webmSettings.playbackRate; } catch {}
+                        } else {
+                            webmVideoRightEl.classList.add('display-none');
+                        }
+                        webmVideoEl.style.display = 'block';
+                        webmVideoLeftEl.style.display = dup >= 1 ? 'block' : 'none';
+                        webmVideoRightEl.style.display = dup >= 2 ? 'block' : 'none';
+                        webmVideoEl.style.margin = '0';
+                        webmVideoLeftEl.style.margin = '0';
+                        webmVideoRightEl.style.margin = '0';
+                        webmVideoLeftEl.style.position = 'absolute';
+                        webmVideoRightEl.style.position = 'absolute';
+                        webmVideoEl.style.position = 'relative';
+                        webmVideoLeftEl.style.left = `-${offsetPx}px`;
+                        webmVideoLeftEl.style.top = '0';
+                        webmVideoRightEl.style.left = `${offsetPx}px`;
+                        webmVideoRightEl.style.top = '0';
+                        return;
+                    }
+                    webmAnchorDeckB = false;
+                }
+                unbindWebmDeckBLayoutWatchers();
+                try {
+                    webmOverlayEl.style.position = '';
+                    webmOverlayEl.style.left = '';
+                    webmOverlayEl.style.top = '';
+                    webmOverlayEl.style.transform = '';
+                } catch (_) {}
+                // central (viewport vw/vh layout)
+                webmVideoEl.style.width = `${webmSettings.scaleVw}vw`;
+                webmOverlayEl.style.left = `${webmSettings.posXvw}vw`;
+                webmOverlayEl.style.top = `${webmSettings.posYvh}vh`;
+                webmOverlayEl.style.transform = `translate(-50%, -50%)`;
+                webmVideoEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
+                webmVideoEl.style.opacity = String(webmSettings.opacity);
+                try { webmVideoEl.playbackRate = webmSettings.playbackRate; } catch {}
+                const dup = webmSettings.duplicates;
+                const offsetVw = webmSettings.scaleVw * 0.6;
+                if (dup >= 1) {
+                    webmVideoLeftEl.classList.remove('display-none');
+                    webmVideoLeftEl.style.width = `${webmSettings.scaleVw}vw`;
+                    webmVideoLeftEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
+                    webmVideoLeftEl.style.opacity = String(webmSettings.opacity);
+                    try { webmVideoLeftEl.playbackRate = webmSettings.playbackRate; } catch {}
+                } else {
+                    webmVideoLeftEl.classList.add('display-none');
+                }
+                if (dup >= 2) {
+                    webmVideoRightEl.classList.remove('display-none');
+                    webmVideoRightEl.style.width = `${webmSettings.scaleVw}vw`;
+                    webmVideoRightEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
+                    webmVideoRightEl.style.opacity = String(webmSettings.opacity);
+                    try { webmVideoRightEl.playbackRate = webmSettings.playbackRate; } catch {}
+                } else {
+                    webmVideoRightEl.classList.add('display-none');
+                }
+                webmVideoEl.style.display = 'block';
+                webmVideoLeftEl.style.display = dup >= 1 ? 'block' : 'none';
+                webmVideoRightEl.style.display = dup >= 2 ? 'block' : 'none';
+                webmVideoEl.style.margin = '0';
+                webmVideoLeftEl.style.margin = '0';
+                webmVideoRightEl.style.margin = '0';
+                webmVideoLeftEl.style.position = 'absolute';
+                webmVideoRightEl.style.position = 'absolute';
+                webmVideoEl.style.position = 'relative';
+                webmVideoLeftEl.style.left = `-${offsetVw}vw`;
+                webmVideoLeftEl.style.top = `0`;
+                webmVideoRightEl.style.left = `${offsetVw}vw`;
+                webmVideoRightEl.style.top = `0`;
+            } catch (_) {}
         }
         // --- MODE SHUFFLE ---
         function setModeShuffle(on) {
