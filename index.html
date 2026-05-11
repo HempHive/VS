@@ -13929,6 +13929,13 @@ function stopAllAndShowStart() {
                             try { this.updateStationTitles(); } catch (_) {}
                             return;
                         }
+                        if (name === 'ProjectM v2' && this.deckBVizMode === 'bars') {
+                            this._deckAAudioBarsMainOnNextClick = false;
+                            this.startDeckBProjectM();
+                            this.syncDeckBVisualButtons();
+                            try { this.updateStationTitles(); } catch (_) {}
+                            return;
+                        }
                         if (deckBModeFromDeckAName && this.deckBVizMode === deckBModeFromDeckAName) {
                             if (name === 'Audio Bars' && this._deckAAudioBarsMainOnNextClick) {
                                 this.tearDownDeckBViz();
