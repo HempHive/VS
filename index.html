@@ -359,6 +359,18 @@
             background: rgba(212, 175, 55, 0.2);
             color: #fff4ca;
         }
+        /* Brief pulsing state shown while the Change-Station preload waits for the
+           incoming deck's stream to buffer before starting the actual crossfade. */
+        #dj-visual-root .dj-autofade-btn.is-preloading,
+        #mix-panel .dj-autofade-btn.is-preloading {
+            color: #fff4ca;
+            animation: dj-autofade-preload-pulse 0.9s ease-in-out infinite;
+        }
+        @keyframes dj-autofade-preload-pulse {
+            0%   { box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.35), 0 0 8px  rgba(212, 175, 55, 0.18); background: rgba(212, 175, 55, 0.12); }
+            50%  { box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.85), 0 0 18px rgba(212, 175, 55, 0.38); background: rgba(212, 175, 55, 0.24); }
+            100% { box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.35), 0 0 8px  rgba(212, 175, 55, 0.18); background: rgba(212, 175, 55, 0.12); }
+        }
         #dj-visual-root .dj-automix-btn,
         #mix-panel .dj-automix-btn {
             flex-shrink: 0;
@@ -1728,10 +1740,15 @@
             min-height: calc(28px * var(--dj-control-scale) * var(--dj-btn-height-mult));
             box-sizing: border-box;
             touch-action: manipulation;
-            white-space: normal;
-            word-break: break-word;
-            overflow-wrap: anywhere;
-            font-size: clamp(7px, calc(11px * var(--dj-control-scale)), 13px);
+            /* Labels stay on a single line and shrink to fit. The JS fitDeckButtonText()
+             * pass on DjDecksEngine further reduces font-size when scrollWidth exceeds
+             * clientWidth after a resize / splitter drag; CSS overflow:hidden +
+             * text-overflow:ellipsis is the visual backstop when even the 4px floor
+             * cannot fit a freakishly long label. */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: clamp(5px, calc(11px * var(--dj-control-scale)), 13px);
             font-weight: 700;
             letter-spacing: 0;
             padding: calc(6px * var(--dj-control-scale)) calc(3px * var(--dj-control-scale));
@@ -2689,24 +2706,26 @@
             min-height: calc(28px * var(--dj-control-scale) * var(--dj-btn-height-mult));
             padding: calc(8px * var(--dj-control-scale)) calc(6px * var(--dj-control-scale));
             /*
-             * Right-grid + sample-pad labels must wrap to fit the rescaled buttons. Without
-             * this, a long label like "AUDIO:BAR" or "ProjectM" overflows when the column
-             * shrinks (landscape: cols 4-6 are 12% each of a deck that itself may be only
-             * half the viewport). overflow-wrap:anywhere lets us break long tokens too.
+             * Labels must REMAIN on a single line and shrink to fit. CSS clamp() gives a
+             * base scale and overflow:hidden + text-overflow:ellipsis is the visual
+             * backstop; the JS fitDeckButtonText() pass on DjDecksEngine then reduces
+             * font-size dynamically whenever scrollWidth > clientWidth (post resize /
+             * splitter drag / orientation change) so labels like "AUDIO:BAR" stay
+             * legible without wrapping into the next row.
              */
-            white-space: normal;
-            overflow-wrap: anywhere;
-            word-break: break-word;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             text-align: center;
         }
         /* Deck A/B right grid: slightly larger labels (AUDIO:BAR … Prev); keep IDEAS sample slot at default size.
-         * clamp() guarantees a readable floor (7px) and a sensible cap so labels still scale down on a
-         * squeezed deck after the splitter is dragged. */
+         * clamp() floor is 5px so very narrow decks (post-splitter) can still squeeze a
+         * single-line label; the JS auto-fit pass nudges it the rest of the way. */
         #dj-visual-root .dj-controls-grid > .btn.dj-fx,
         #dj-visual-root .dj-controls-grid > .btn.dj-sfx:not(#dj-a-sfx-wav):not(#dj-b-sfx-wav),
         #dj-visual-root .dj-controls-grid > .dj-play,
         #dj-visual-root .dj-controls-grid > .dj-tbtn {
-            font-size: clamp(7px, calc(12px * var(--dj-control-scale)), 14px);
+            font-size: clamp(5px, calc(12px * var(--dj-control-scale)), 14px);
             padding: calc(6px * var(--dj-control-scale)) calc(4px * var(--dj-control-scale));
             letter-spacing: 0;
         }
@@ -3666,6 +3685,18 @@
         .kbd-key.kbd-lit-hot .kbd-hint {
             color: #ffb0c4;
         }
+        /* Sample pad keys (1..0) — neon blue, unified across both decks so the row
+           reads as one logical block ("samples") regardless of which deck each .wav
+           triggers. */
+        .kbd-key.kbd-lit-sample {
+            border-color: rgba(80, 180, 255, 0.92);
+            background: rgba(80, 180, 255, 0.13);
+            color: #e6f4ff;
+            box-shadow: 0 0 14px rgba(80, 180, 255, 0.45), 0 2px 0 rgba(0, 0, 0, 0.35);
+        }
+        .kbd-key.kbd-lit-sample .kbd-hint {
+            color: #b3dcff;
+        }
         .kbd-key.kbd-wide { min-width: 120px; flex: 1; max-width: 200px; }
         .kbd-key.kbd-arrow { min-width: 36px; font-size: 15px; }
         .kbd-key.kbd-esc-lead { margin-right: 10px; }
@@ -3679,10 +3710,10 @@
             max-width: 72px;
             word-break: break-word;
         }
-        .kbd-key:not(.kbd-lit):not(.kbd-lit-avatar):not(.kbd-lit-deckb):not(.kbd-lit-hot) .kbd-hint { color: #555; }
+        .kbd-key:not(.kbd-lit):not(.kbd-lit-avatar):not(.kbd-lit-deckb):not(.kbd-lit-hot):not(.kbd-lit-sample) .kbd-hint { color: #555; }
         /* Sample-pad icon shown above the cap on the 1..0 row so each key visually
            advertises the .wav it triggers (e.g. "FX3" for FX3.wav). Styled like a
-           mini sample pad so it reads as an icon rather than label text. */
+           mini sample pad in neon blue so it reads as an icon rather than label text. */
         .kbd-sample-icon {
             display: block;
             font-size: 9px;
@@ -3691,24 +3722,16 @@
             padding: 3px 4px;
             margin: 0 auto 4px;
             border-radius: 5px;
-            background: linear-gradient(180deg, rgba(255, 175, 60, 0.28), rgba(220, 120, 30, 0.18));
-            color: #ffe2b8;
-            border: 1px solid rgba(255, 165, 60, 0.6);
-            box-shadow: 0 0 8px rgba(255, 140, 40, 0.25), inset 0 1px 0 rgba(255, 220, 160, 0.18);
+            background: linear-gradient(180deg, rgba(80, 180, 255, 0.32), rgba(40, 130, 220, 0.18));
+            color: #e0eeff;
+            border: 1px solid rgba(80, 180, 255, 0.65);
+            box-shadow: 0 0 8px rgba(80, 180, 255, 0.32), inset 0 1px 0 rgba(190, 220, 255, 0.18);
             letter-spacing: 0.3px;
             max-width: 64px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             text-shadow: 0 1px 1px rgba(0, 0, 0, 0.55);
-        }
-        /* Deck B variants borrow the existing kbd-lit-deckb neon-purple palette so the
-           icon matches the key tint at a glance. */
-        .kbd-key.kbd-lit-deckb .kbd-sample-icon {
-            background: linear-gradient(180deg, rgba(186, 85, 255, 0.30), rgba(140, 70, 255, 0.18));
-            color: #f1dcff;
-            border-color: rgba(186, 85, 255, 0.62);
-            box-shadow: 0 0 8px rgba(170, 90, 255, 0.32), inset 0 1px 0 rgba(220, 190, 255, 0.18);
         }
         .kbd-shortcut-groups {
             display: grid;
@@ -5028,16 +5051,16 @@
             <div class="kbd-board-wrap">
                 <div class="kbd-board-title">Quick map</div>
                 <div class="kbd-row">
-                    <div class="kbd-key kbd-lit" title="Plays WAA.wav on Deck A"><span class="kbd-sample-icon" aria-label="WAA.wav">WAA</span><span class="kbd-cap">1</span><span class="kbd-hint">Deck A</span></div>
-                    <div class="kbd-key kbd-lit" title="Plays WAAA.wav on Deck A"><span class="kbd-sample-icon" aria-label="WAAA.wav">WAAA</span><span class="kbd-cap">2</span><span class="kbd-hint">Deck A</span></div>
-                    <div class="kbd-key kbd-lit" title="Plays AIR.wav on Deck A"><span class="kbd-sample-icon" aria-label="AIR.wav">AIR📢</span><span class="kbd-cap">3</span><span class="kbd-hint">Deck A</span></div>
-                    <div class="kbd-key kbd-lit" title="Plays FX1.wav on Deck A"><span class="kbd-sample-icon" aria-label="FX1.wav">FX1</span><span class="kbd-cap">4</span><span class="kbd-hint">Deck A</span></div>
-                    <div class="kbd-key kbd-lit" title="Plays FX2.wav on Deck A"><span class="kbd-sample-icon" aria-label="FX2.wav">FX2</span><span class="kbd-cap">5</span><span class="kbd-hint">Deck A</span></div>
-                    <div class="kbd-key kbd-lit-deckb" title="Plays FX3.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX3.wav">FX3</span><span class="kbd-cap">6</span><span class="kbd-hint">Deck B</span></div>
-                    <div class="kbd-key kbd-lit-deckb" title="Plays FX4.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX4.wav">FX4</span><span class="kbd-cap">7</span><span class="kbd-hint">Deck B</span></div>
-                    <div class="kbd-key kbd-lit-deckb" title="Plays FX5.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX5.wav">FX5</span><span class="kbd-cap">8</span><span class="kbd-hint">Deck B</span></div>
-                    <div class="kbd-key kbd-lit-deckb" title="Plays FX6.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX6.wav">FX6</span><span class="kbd-cap">9</span><span class="kbd-hint">Deck B</span></div>
-                    <div class="kbd-key kbd-lit-deckb" title="Plays FX7.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX7.wav">FX7</span><span class="kbd-cap">0</span><span class="kbd-hint">Deck B</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays WAA.wav on Deck A"><span class="kbd-sample-icon" aria-label="WAA.wav">WAA</span><span class="kbd-cap">1</span><span class="kbd-hint">Deck A</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays WAAA.wav on Deck A"><span class="kbd-sample-icon" aria-label="WAAA.wav">WAAA</span><span class="kbd-cap">2</span><span class="kbd-hint">Deck A</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays AIR.wav on Deck A"><span class="kbd-sample-icon" aria-label="AIR.wav">AIR📢</span><span class="kbd-cap">3</span><span class="kbd-hint">Deck A</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX1.wav on Deck A"><span class="kbd-sample-icon" aria-label="FX1.wav">FX1</span><span class="kbd-cap">4</span><span class="kbd-hint">Deck A</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX2.wav on Deck A"><span class="kbd-sample-icon" aria-label="FX2.wav">FX2</span><span class="kbd-cap">5</span><span class="kbd-hint">Deck A</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX3.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX3.wav">FX3</span><span class="kbd-cap">6</span><span class="kbd-hint">Deck B</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX4.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX4.wav">FX4</span><span class="kbd-cap">7</span><span class="kbd-hint">Deck B</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX5.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX5.wav">FX5</span><span class="kbd-cap">8</span><span class="kbd-hint">Deck B</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX6.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX6.wav">FX6</span><span class="kbd-cap">9</span><span class="kbd-hint">Deck B</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX7.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX7.wav">FX7</span><span class="kbd-cap">0</span><span class="kbd-hint">Deck B</span></div>
                 </div>
                 <div class="kbd-row">
                     <div class="kbd-key kbd-lit kbd-esc-lead"><span class="kbd-cap">Esc</span><span class="kbd-hint">Close panels · then start</span></div>
@@ -5067,9 +5090,9 @@
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">Z</span><span class="kbd-hint">Opacity −</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">X</span><span class="kbd-hint">Opacity +</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">C</span><span class="kbd-hint">Next preset</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">V</span><span class="kbd-hint">Random station</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">B</span><span class="kbd-hint">Prev station</span></div>
-                    <div class="kbd-key kbd-lit-hot"><span class="kbd-cap">N</span><span class="kbd-hint">Top menu</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">V</span><span class="kbd-hint">Random station (A)</span></div>
+                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">B</span><span class="kbd-hint">Play / pause Deck B</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">N</span><span class="kbd-hint">Random · active deck</span></div>
                     <div class="kbd-key kbd-lit-hot"><span class="kbd-cap">M</span><span class="kbd-hint">Mixer</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">,</span><span class="kbd-hint">Prev visual</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">.</span><span class="kbd-hint">Next visual</span></div>
@@ -5089,14 +5112,15 @@
                     <h4>Panels &amp; navigation</h4>
                     <ul>
                         <li><strong>T</strong> — Text-In · <strong>Y</strong> — Text-In Auto · <strong>I</strong> — send message once</li>
-                        <li><strong>N</strong> — Top menu (radio) · <strong>P</strong> — Avatar / WebM settings · <strong>M</strong> — Mixer · <strong>G</strong> — Options diamond</li>
+                        <li><strong>P</strong> — Avatar / WebM settings · <strong>M</strong> — Mixer · <strong>G</strong> — Options diamond</li>
                         <li><strong>Esc</strong> — closes panels in order; if none open, returns to start screen</li>
                     </ul>
                 </div>
                 <div class="kbd-group">
                     <h4>Radio &amp; visuals</h4>
                     <ul>
-                        <li><strong>V</strong> — random station · <strong>B</strong> — previous station · <strong>Space</strong> — play/pause Deck A</li>
+                        <li><strong>V</strong> — random station on Deck A · <strong>N</strong> — random station on the deck currently winning the crossfader</li>
+                        <li><strong>Space</strong> — play / pause Deck A · <strong>B</strong> — play / pause Deck B</li>
                         <li><strong>C</strong> — next visual preset (when supported) · <strong>,</strong> / <strong>.</strong> — previous / next visual mode</li>
                     </ul>
                 </div>
@@ -11751,6 +11775,64 @@ function stopAllAndShowStart() {
                         mosaic.style.setProperty('--dj-control-scale', scale.toFixed(3));
                     });
                 } catch (_) {}
+                /* After --dj-control-scale settles, fit each button's text to its own box
+                 * on the next frame (layout must commit before we can measure scrollWidth
+                 * vs clientWidth). rAF-coalesced so back-to-back scale changes only run
+                 * one auto-fit pass. */
+                try {
+                    if (this._fitBtnRaf) cancelAnimationFrame(this._fitBtnRaf);
+                    this._fitBtnRaf = requestAnimationFrame(() => {
+                        this._fitBtnRaf = null;
+                        try { this.fitDeckButtonText(); } catch (_) {}
+                    });
+                } catch (_) {}
+            }
+
+            /**
+             * Per-button text auto-fit: starts from the CSS-driven font-size and
+             * shrinks in 0.5px steps until the label fits on a single line (or hits
+             * the 4px floor, after which letter-spacing is nudged negative as a last
+             * resort). Runs after every syncDeckMosaicScale() so the deck panel stays
+             * legible when the splitter is dragged or the viewport is resized.
+             */
+            fitDeckButtonText() {
+                if (!this.root) return;
+                const selectors = [
+                    '.dj-beatmap-pads .btn.dj-fx.dj-beat-pad',
+                    '.dj-controls-grid > .btn.dj-fx',
+                    '.dj-controls-grid > .btn.dj-sfx',
+                    '.dj-controls-grid > .dj-play',
+                    '.dj-controls-grid > .dj-tbtn'
+                ];
+                let nodes;
+                try { nodes = this.root.querySelectorAll(selectors.join(', ')); }
+                catch (_) { return; }
+                nodes.forEach((btn) => {
+                    try {
+                        // Reset any prior overrides so the CSS clamp baseline is honored on
+                        // each pass (otherwise a one-time shrink would compound on resize).
+                        btn.style.fontSize = '';
+                        btn.style.letterSpacing = '';
+                        const cw = btn.clientWidth | 0;
+                        if (!cw) return;
+                        const fits = () => btn.scrollWidth <= cw + 1;
+                        if (fits()) return;
+                        const cs = window.getComputedStyle(btn);
+                        let fs = parseFloat(cs.fontSize) || 12;
+                        const minFs = 4;
+                        let safety = 40;
+                        while (!fits() && fs > minFs && safety-- > 0) {
+                            fs -= 0.5;
+                            btn.style.fontSize = `${fs}px`;
+                        }
+                        if (!fits()) {
+                            // CSS already adds overflow:hidden + text-overflow:ellipsis as
+                            // the visual backstop; tighten letter-spacing first to claw
+                            // back a couple of pixels before falling back to ellipsis.
+                            btn.style.letterSpacing = '-0.04em';
+                        }
+                    } catch (_) {}
+                });
             }
 
             onResize() {
@@ -13028,6 +13110,57 @@ function stopAllAndShowStart() {
                         return false;
                     }
                 };
+                /**
+                 * Resolves once the given deck's media element is actually producing audio
+                 * (or has buffered enough to start without an audible gap). Used to gate the
+                 * AUTO-FADE crossfade so the "Change station before fading" path doesn't fade
+                 * INTO silence while the stream is still negotiating.
+                 *
+                 * Resolution conditions:
+                 *  - `playing` event fires (strongest signal — audio is flowing), OR
+                 *  - `canplay` / `loadeddata` event fires AND readyState >= HAVE_FUTURE_DATA, OR
+                 *  - already-ready check passes synchronously (just retuned to a primed deck), OR
+                 *  - `timeoutMs` elapses (safety cap so a dead/slow stream cannot block the UI).
+                 *
+                 * The Promise always resolves (boolean indicates whether readiness was confirmed
+                 * vs the timeout fallback) so callers can `.then(...)` without try/catch.
+                 */
+                const awaitDeckRadioReady = (deckKey, timeoutMs) => {
+                    return new Promise((resolve) => {
+                        let el = null;
+                        try { el = deckKey === 'b' ? audioElB : audioEl; } catch (_) {}
+                        if (!el) { resolve(false); return; }
+                        const isReady = () => {
+                            try {
+                                if ((el.readyState | 0) >= 3) return true; // HAVE_FUTURE_DATA
+                                if (!el.paused && (Number(el.currentTime) || 0) > 0) return true;
+                            } catch (_) {}
+                            return false;
+                        };
+                        if (isReady()) { resolve(true); return; }
+                        const cap = Math.max(500, Math.min(8000, Number(timeoutMs) || 5000));
+                        let done = false;
+                        let timer = null;
+                        const cleanup = () => {
+                            try { el.removeEventListener('playing', onPlaying); } catch (_) {}
+                            try { el.removeEventListener('canplay', onMaybe); } catch (_) {}
+                            try { el.removeEventListener('loadeddata', onMaybe); } catch (_) {}
+                            if (timer) { try { clearTimeout(timer); } catch (_) {} timer = null; }
+                        };
+                        const finish = (ok) => {
+                            if (done) return;
+                            done = true;
+                            cleanup();
+                            resolve(!!ok);
+                        };
+                        const onPlaying = () => finish(true);
+                        const onMaybe = () => { if (isReady()) finish(true); };
+                        try { el.addEventListener('playing', onPlaying); } catch (_) {}
+                        try { el.addEventListener('canplay', onMaybe); } catch (_) {}
+                        try { el.addEventListener('loadeddata', onMaybe); } catch (_) {}
+                        timer = setTimeout(() => finish(false), cap);
+                    });
+                };
                 const retuneDeckStationForAutoMix = (deckKey) => {
                     try {
                         if (!Array.isArray(stations) || stations.length === 0) return;
@@ -13174,19 +13307,27 @@ function stopAllAndShowStart() {
                     this.autoMixTimerId = setTimeout(() => {
                         this.autoMixTimerId = null;
                         if (!autoMixEnabled) return;
+                        const fireFade = () => {
+                            if (!autoMixEnabled) return;
+                            if (sig && sig.signal && sig.signal.aborted) return;
+                            // stationPreloaded skips the redundant playRadioB()/setStation() reload
+                            // inside runAutoFade. True when we just retuned (deck has a fresh src
+                            // mid-load) OR when the deck was already cued in radio mode.
+                            const stationPreloaded = preloadCompleted || isDeckRadioReady(targetDeck);
+                            runAutoFade(targetDeck, { stationPreloaded });
+                            scheduleNextAutoMix();
+                        };
                         // If the user enabled "Change station before fading" after the preload
-                        // window passed, do the retune now so the fade still lands on a fresh
-                        // station (per the user's contract: "each time AUTO-FADE is used …").
+                        // window passed, do the retune now AND wait for the stream to actually
+                        // start before fading (mirrors the manual click path so AUTO-MIX never
+                        // fades into a silent deck mid-load).
                         if (autoFadeChangeStationEnabled && !preloadCompleted) {
                             try { retuneDeckStationForAutoMix(targetDeck); } catch (_) {}
                             preloadCompleted = true;
+                            awaitDeckRadioReady(targetDeck, AUTO_MIX_PRELOAD_MS).finally(fireFade);
+                        } else {
+                            fireFade();
                         }
-                        // stationPreloaded skips the redundant playRadioB()/setStation() reload
-                        // inside runAutoFade. True when we just retuned (deck has a fresh src
-                        // mid-load) OR when the deck was already cued in radio mode.
-                        const stationPreloaded = preloadCompleted || isDeckRadioReady(targetDeck);
-                        runAutoFade(targetDeck, { stationPreloaded });
-                        scheduleNextAutoMix();
                     }, waitMs);
                 };
                 const runAutoFade = (toDeck, fadeOpts) => {
@@ -13254,16 +13395,46 @@ function stopAllAndShowStart() {
                     btnAutoFade.addEventListener('pointerleave', clearAutoFadeHold, sig);
                     btnAutoFade.addEventListener('click', () => {
                         if (autoFadeLongPressFired || Date.now() < suppressAutoFadeClickUntil) return;
+                        // Ignore double-clicks while a previous Change-Station preload is still
+                        // waiting for the incoming deck's stream to be ready — otherwise we'd
+                        // stack retunes / fades on top of each other.
+                        if (this.autoFadePreloadPending) return;
                         closeAutoFadePanel();
                         closeAutoMixPanel();
                         const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                         const target = x < 0.5 ? 'b' : 'a';
                         if (autoFadeChangeStationEnabled) {
-                            // "Change station before fading" is on: retune the incoming deck to a
-                            // fresh random eligible station now, then mark the fade as preloaded so
-                            // runAutoFade does not try to reload the source on top of our retune.
+                            // "Change station before fading" is on. Order of operations:
+                            //   1. retune the incoming deck to a fresh random eligible station,
+                            //   2. WAIT for the stream to actually start (or buffer enough) so the
+                            //      crossfade doesn't slide into silence,
+                            //   3. then run the fade with stationPreloaded:true so runAutoFade
+                            //      doesn't try to reload the source on top of our retune.
+                            // Cancel any AUTO-MIX preload/fire timer that might have been
+                            // about to expire on the same deck — otherwise it could re-retune
+                            // mid-preload (interrupting our stream load) or run a second fade
+                            // on top of ours. scheduleNextAutoMix() runs again after the manual
+                            // fade completes, so the AUTO-MIX cycle simply restarts from then.
+                            if (autoMixEnabled) { try { clearAutoMixTimer(); } catch (_) {} }
                             try { retuneDeckStationForAutoMix(target); } catch (_) {}
-                            runAutoFade(target, { stationPreloaded: true });
+                            const myGen = (this.autoFadePreloadGen = (this.autoFadePreloadGen || 0) + 1);
+                            this.autoFadePreloadPending = true;
+                            if (btnAutoFade) btnAutoFade.classList.add('is-preloading');
+                            // While waiting we keep mid-stream playback flowing so the outgoing
+                            // deck doesn't pause / glitch.
+                            try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                            awaitDeckRadioReady(target, AUTO_MIX_PRELOAD_MS).finally(() => {
+                                // Bail out if another click superseded this preload, or if the
+                                // engine was torn down (signal aborted) — runAutoFade no-ops safely
+                                // either way, but skipping avoids touching the UI from a stale path.
+                                if (myGen !== this.autoFadePreloadGen) return;
+                                this.autoFadePreloadPending = false;
+                                if (btnAutoFade) btnAutoFade.classList.remove('is-preloading');
+                                if (sig && sig.signal && sig.signal.aborted) return;
+                                runAutoFade(target, { stationPreloaded: true });
+                                try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                                if (autoMixEnabled) scheduleNextAutoMix();
+                            });
                         } else {
                             // "Change station before fading" is off: keep whatever station the user
                             // already cued on the target deck. If the deck is already in radio mode
@@ -13272,9 +13443,9 @@ function stopAllAndShowStart() {
                             // the in-flight load with "play() request was interrupted by a new load
                             // request" and could also re-randomize the station the user just picked.
                             runAutoFade(target, { stationPreloaded: isDeckRadioReady(target) });
+                            try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                            if (autoMixEnabled) scheduleNextAutoMix();
                         }
-                        try { ensureCrossfadeDeckPlayback(); } catch (_) {}
-                        if (autoMixEnabled) scheduleNextAutoMix();
                     }, sig);
                 }
                 if (autoFadeDuration) {
@@ -17285,6 +17456,40 @@ function stopAllAndShowStart() {
             const idx = eligible[Math.floor(Math.random() * eligible.length)];
             setStation(idx);
         }
+        /**
+         * Tunes Deck B to a fresh random "eligible" station (one that's distinct from
+         * its current pick, mirroring the rules pickRandomStation() uses for Deck A).
+         * Used by the global N shortcut and any other "Rand →" trigger on Deck B.
+         */
+        function pickRandomStationB() {
+            if (!Array.isArray(stations) || stations.length === 0) return;
+            const cur = (typeof currentStationBIndex === 'number' && Number.isFinite(currentStationBIndex)) ? currentStationBIndex : 0;
+            const eligible = (typeof getCycleEligibleStationIndexes === 'function') ? getCycleEligibleStationIndexes(cur) : [];
+            if (!eligible.length) return;
+            const idx = eligible[Math.floor(Math.random() * eligible.length)];
+            currentStationBIndex = Math.max(0, Math.min(stations.length - 1, Number(idx) || 0));
+            try { if (typeof refreshMixStationB === 'function') refreshMixStationB(); } catch (_) {}
+            try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
+        }
+        /**
+         * Reads the crossfader (DJ Decks panel first, then the Mixer panel fallback)
+         * and tunes whichever deck is currently winning the mix to a new random
+         * station. Used by the global N shortcut so "next station" always lands on
+         * the audible deck.
+         */
+        function pickRandomStationForCrossfadedDeck() {
+            try {
+                const dc = document.getElementById('dj-crossfader');
+                const mc = document.getElementById('mix-crossfader');
+                const raw = (dc && dc.value) || (mc && mc.value) || 0;
+                const x = Math.max(0, Math.min(1, Number(raw) || 0));
+                // x < 0.5 = Deck A is louder (or fully on the A side), >= 0.5 = Deck B.
+                if (x < 0.5) pickRandomStation();
+                else pickRandomStationB();
+            } catch (_) {
+                try { pickRandomStation(); } catch (__) {}
+            }
+        }
 
         function showRadioPanel() { 
             if (uiLocked) return;
@@ -18141,19 +18346,23 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 if (stations && stations.length > 0) pickRandomStation();
 			} else if (e.key === 'b' || e.key === 'B') {
-				// Previous station (true history up to 5, then random)
+				// Play / pause Deck B (mirrors Space for Deck A)
 				e.preventDefault();
-                goPreviousStation();
+				try {
+				    if (audioElB) {
+				        if (audioElB.paused) audioElB.play().catch(()=>{});
+				        else audioElB.pause();
+				    }
+				} catch(_) {}
             } else if (e.key === 't' || e.key === 'T') {
                 // Toggle Text-In panel
                 e.preventDefault();
                 window.__panelGuardUntilMs = 0; // FIX: Reset guard timer for instant open
                 try { toggleTextInPanel(); } catch(_) {}
             } else if (e.key === 'n' || e.key === 'N') {
-                // Toggle Top Menu panel (Radio Settings)
+                // Next random station on the deck that's currently winning the crossfader
                 e.preventDefault();
-                window.__panelGuardUntilMs = 0; // FIX: Reset guard timer for instant open
-                try { toggleTopMenuPanel(); } catch(_) {}
+                try { pickRandomStationForCrossfadedDeck(); } catch(_) {}
             } else if (e.key === 'p' || e.key === 'P') {
                 // Toggle Avatar Settings (Right Slide Panel)
                 e.preventDefault();
