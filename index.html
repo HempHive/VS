@@ -5098,7 +5098,7 @@
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">.</span><span class="kbd-hint">Next visual</span></div>
                 </div>
                 <div class="kbd-row">
-                    <div class="kbd-key kbd-lit kbd-wide" title="Tap: Auto-Fade (tap again mid-fade to reverse direction). Hold: pause both decks, or start the deck on the crossfader side if nothing is playing."><span class="kbd-cap">Space</span><span class="kbd-hint">Auto-Fade · hold: pause / start</span></div>
+                    <div class="kbd-key kbd-lit kbd-wide" title="Tap (silent): start the deck on the crossfader side. Tap (playing): Auto-Fade — tap again mid-fade to reverse direction. Hold: pause both decks, or start the deck on the crossfader side if nothing is playing."><span class="kbd-cap">Space</span><span class="kbd-hint">Start / Auto-Fade · hold: pause / start</span></div>
                     <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">←</span><span class="kbd-hint">Move avatar</span></div>
                     <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">→</span><span class="kbd-hint">Move avatar</span></div>
                     <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">↑</span><span class="kbd-hint">Move avatar</span></div>
@@ -5121,7 +5121,7 @@
                     <ul>
                         <li><strong>V</strong> / <strong>B</strong> — play / pause Deck A / Deck B (boots the current station for that deck if nothing is loaded yet). Holding the key just resolves to one toggle.</li>
                         <li><strong>N</strong> — next random station on the deck currently winning the crossfader</li>
-                        <li><strong>Space</strong> — Auto-Fade between decks; tap again mid-fade to reverse direction. <em>Hold Space</em> to pause both decks, or — when both are silent — start the deck on whichever side the crossfader is resting.</li>
+                        <li><strong>Space</strong> — if both decks are silent, the first tap starts the deck on whichever side the crossfader is resting; once audio is flowing, taps trigger an Auto-Fade between decks (tap again mid-fade to reverse direction). <em>Hold Space</em> to pause both decks, or — when both are silent — start the deck on the crossfader side.</li>
                         <li><strong>C</strong> — next visual preset (when supported) · <strong>,</strong> / <strong>.</strong> — previous / next visual mode</li>
                     </ul>
                 </div>
@@ -13471,8 +13471,62 @@ function stopAllAndShowStart() {
                  *    Change-Station / preload-wait / Auto-Mix-reschedule pipeline runs
                  *    exactly the same way as a button click.
                  */
+                /**
+                 * Shared helper: are both decks currently silent?
+                 *
+                 * "Silent" here means the underlying <audio> element is paused (or
+                 * not even instantiated). A deck that is loaded but paused still
+                 * counts as silent — what matters for the Space shortcut is whether
+                 * the user is hearing anything right now.
+                 */
+                const bothDecksSilent = () => {
+                    const aPlaying = !!(audioEl && !audioEl.paused);
+                    const bPlaying = !!(audioElB && !audioElB.paused);
+                    return !aPlaying && !bPlaying;
+                };
+
+                /**
+                 * Shared helper: start whichever deck the crossfader is currently
+                 * favouring. Used by both the Space short-tap "no music yet" case
+                 * and the Space long-hold "pause everything OR start the active
+                 * deck" case so the two behaviours stay in lockstep.
+                 *
+                 *   crossfader < 0.5  → Deck A wins   → start Deck A
+                 *   crossfader ≥ 0.5  → Deck B wins   → start Deck B
+                 *
+                 * Falls back to playRadio() / playRadioB() when the chosen deck
+                 * has no media source loaded yet (cold boot from start screen).
+                 */
+                const startActiveDeckByCrossfader = () => {
+                    try {
+                        const raw = (djCross && djCross.value) || (mixCross && mixCross.value) || 0;
+                        const x = Math.max(0, Math.min(1, Number(raw) || 0));
+                        if (x < 0.5) {
+                            const src = audioEl ? String(audioEl.currentSrc || audioEl.src || '') : '';
+                            const hasSource = !!(src && src !== 'about:blank');
+                            if (hasSource && audioEl) audioEl.play().catch(() => {});
+                            else if (typeof playRadio === 'function') playRadio();
+                        } else {
+                            const src = audioElB ? String(audioElB.currentSrc || audioElB.src || '') : '';
+                            const hasSource = !!(src && src !== 'about:blank');
+                            if (hasSource && audioElB) audioElB.play().catch(() => {});
+                            else if (typeof playRadioB === 'function') playRadioB();
+                        }
+                    } catch (_) {}
+                };
+
                 this.triggerAutoFadeFromShortcut = () => {
                     try {
+                        // First Space tap when nothing is playing: boot the deck
+                        // the crossfader is favouring instead of triggering an
+                        // AUTO-FADE. The user explicitly asked for this so that
+                        // Space can be a one-key "start the show" hotkey, and any
+                        // *subsequent* tap (once audio is flowing) still kicks
+                        // the AUTO-FADE off the way it always did.
+                        if (bothDecksSilent()) {
+                            startActiveDeckByCrossfader();
+                            return;
+                        }
                         if (this.autoFadeRafId && this.autoFadeTargetDeck) {
                             const opposite = this.autoFadeTargetDeck === 'a' ? 'b' : 'a';
                             runAutoFade(opposite, { stationPreloaded: true });
@@ -13497,9 +13551,7 @@ function stopAllAndShowStart() {
                  */
                 this.pauseBothDecksOrStartActive = () => {
                     try {
-                        const aPlaying = !!(audioEl && !audioEl.paused);
-                        const bPlaying = !!(audioElB && !audioElB.paused);
-                        if (aPlaying || bPlaying) {
+                        if (!bothDecksSilent()) {
                             if (this.autoFadeRafId) {
                                 try { cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
                                 this.autoFadeRafId = null;
@@ -13510,25 +13562,7 @@ function stopAllAndShowStart() {
                             try { if (audioElB) audioElB.pause(); } catch (_) {}
                             return;
                         }
-                        const raw = (djCross && djCross.value) || (mixCross && mixCross.value) || 0;
-                        const x = Math.max(0, Math.min(1, Number(raw) || 0));
-                        const startDeckA = () => {
-                            try {
-                                const src = audioEl ? String(audioEl.currentSrc || audioEl.src || '') : '';
-                                const hasSource = !!(src && src !== 'about:blank');
-                                if (hasSource && audioEl) audioEl.play().catch(() => {});
-                                else if (typeof playRadio === 'function') playRadio();
-                            } catch (_) {}
-                        };
-                        const startDeckB = () => {
-                            try {
-                                const src = audioElB ? String(audioElB.currentSrc || audioElB.src || '') : '';
-                                const hasSource = !!(src && src !== 'about:blank');
-                                if (hasSource && audioElB) audioElB.play().catch(() => {});
-                                else if (typeof playRadioB === 'function') playRadioB();
-                            } catch (_) {}
-                        };
-                        if (x < 0.5) startDeckA(); else startDeckB();
+                        startActiveDeckByCrossfader();
                     } catch (_) {}
                 };
                 if (autoFadeDuration) {
