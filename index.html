@@ -92,6 +92,28 @@
             flex: var(--dj-landscape-split-b, 1) 1 0%;
             min-width: 0;
         }
+        /*
+         * Splitter-collapsed Deck B: when the user drags the splitter into the last 10% of
+         * the available screen width, Deck B snaps to zero width and is hidden, leaving the
+         * splitter handle pinned to the right edge. The splitter stays interactive so a
+         * leftward drag (or double-click → 50/50) restores Deck B instantly.
+         */
+        #dj-visual-root.dj-mode-landscape.dj-deck-b-collapsed .dj-deck-b {
+            flex: 0 0 0;
+            width: 0;
+            min-width: 0;
+            max-width: 0;
+            overflow: hidden;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        #dj-visual-root.dj-mode-landscape.dj-deck-b-collapsed .dj-deck-splitter {
+            margin-left: auto;
+        }
+        #dj-visual-root.dj-mode-landscape.dj-deck-b-collapsed .dj-deck-splitter-grip {
+            background: rgba(212, 175, 55, 0.55);
+            border-color: rgba(212, 175, 55, 0.85);
+        }
         #dj-visual-root.dj-mode-portrait .dj-deck-a,
         #dj-visual-root.dj-mode-portrait .dj-deck-b {
             flex: 1 1 0%;
@@ -1379,19 +1401,36 @@
             align-items: stretch;
         }
         /*
-         * Landscape: each deck is ~half the viewport wide. Beat-map col used min(26vw,…) vs *viewport* — ~52% of a half-width deck,
-         * starving the AUDIO:BAR…PREV grid. Cap beat-map as a % of *this* deck and trim jog max so the right grid keeps usable width.
+         * Landscape: enforce a strict 30 / 30 / 40 split inside each deck mosaic so the right
+         * button grid and the sample-pad column scale together when the deck is widened or
+         * squeezed by the splitter (instead of the right grid getting starved while the
+         * sample column hoarded a fixed pixel width).
+         *   col 1 (30%) — .dj-beatmap-strip: sample pads + tempo slider
+         *   col 2 (30%) — .dj-jog-wrap     : jog wheel
+         *   col 3 ( 4%) — .dj-deck-vol-col : vertical volume slider
+         *   col 4-6 (12% each, 36% total) — .dj-btn-block: knob row + transport buttons
+         *  → cols 3-6 combine to 40%, matching the requested "volume + grid buttons = 40%".
+         * fr units share remaining space proportionally even when columns hit their pixel
+         * min (the volume column has a small min so the thumb image always renders cleanly).
          */
         #dj-visual-root.dj-mode-landscape .dj-deck-mosaic {
             grid-template-columns:
-                minmax(calc(148px * var(--dj-control-scale)), min(31%, calc(216px * var(--dj-control-scale))))
-                auto
-                minmax(calc(28px * var(--dj-control-scale)), calc(42px * var(--dj-control-scale)))
-                repeat(3, minmax(0, 1fr));
+                minmax(0, 30fr)
+                minmax(0, 30fr)
+                minmax(calc(26px * var(--dj-control-scale)), 4fr)
+                minmax(0, 12fr)
+                minmax(0, 12fr)
+                minmax(0, 12fr);
         }
+        /*
+         * Jog wheel: clamp so it never busts out of its 30% column on narrow viewports / when
+         * Deck B is squeezed by the splitter. max-width/height: 100% keeps it inside the cell.
+         */
         #dj-visual-root.dj-mode-landscape .dj-deck-mosaic .dj-jog {
-            width: clamp(calc(68px * var(--dj-control-scale)), calc(17vmin * var(--dj-control-scale)), calc(132px * var(--dj-control-scale)));
-            height: clamp(calc(68px * var(--dj-control-scale)), calc(17vmin * var(--dj-control-scale)), calc(132px * var(--dj-control-scale)));
+            width: clamp(calc(56px * var(--dj-control-scale)), calc(17vmin * var(--dj-control-scale)), calc(132px * var(--dj-control-scale)));
+            height: clamp(calc(56px * var(--dj-control-scale)), calc(17vmin * var(--dj-control-scale)), calc(132px * var(--dj-control-scale)));
+            max-width: 100%;
+            max-height: 100%;
         }
         /*
          * Landscape: Deck A’s body centers its mosaic (content-sized .dj-stack). Deck B wraps controls in
@@ -1681,7 +1720,9 @@
             justify-items: stretch;
             align-content: start;
         }
-        /* Sample pads (left-side beat-map grid): bnt.png frame over wly.gif. Black fallback if the gif is missing. */
+        /* Sample pads (left-side beat-map grid): bnt.png frame over wly.gif. Black fallback if the gif is missing.
+         * clamp() font-size + tight horizontal padding lets the label scale down to fit when the deck
+         * mosaic (and therefore the 30% sample column / 3 sub-cols) is narrowed by the splitter. */
         #dj-visual-root .dj-beatmap-pads .btn.dj-fx.dj-beat-pad {
             width: 100%;
             min-height: calc(28px * var(--dj-control-scale) * var(--dj-btn-height-mult));
@@ -1689,11 +1730,12 @@
             touch-action: manipulation;
             white-space: normal;
             word-break: break-word;
-            font-size: calc(11px * var(--dj-control-scale));
+            overflow-wrap: anywhere;
+            font-size: clamp(7px, calc(11px * var(--dj-control-scale)), 13px);
             font-weight: 700;
-            letter-spacing: 0.5px;
-            padding: calc(8px * var(--dj-control-scale)) calc(6px * var(--dj-control-scale));
-            line-height: 1.15;
+            letter-spacing: 0;
+            padding: calc(6px * var(--dj-control-scale)) calc(3px * var(--dj-control-scale));
+            line-height: 1.1;
             background-color: #000;
             background-image: url('bnt.png'), url('wly.gif');
             background-position: center, center;
@@ -2646,13 +2688,27 @@
             line-height: 1.1;
             min-height: calc(28px * var(--dj-control-scale) * var(--dj-btn-height-mult));
             padding: calc(8px * var(--dj-control-scale)) calc(6px * var(--dj-control-scale));
+            /*
+             * Right-grid + sample-pad labels must wrap to fit the rescaled buttons. Without
+             * this, a long label like "AUDIO:BAR" or "ProjectM" overflows when the column
+             * shrinks (landscape: cols 4-6 are 12% each of a deck that itself may be only
+             * half the viewport). overflow-wrap:anywhere lets us break long tokens too.
+             */
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            text-align: center;
         }
-        /* Deck A/B right grid: slightly larger labels (AUDIO:BAR … Prev); keep IDEAS sample slot at default size */
+        /* Deck A/B right grid: slightly larger labels (AUDIO:BAR … Prev); keep IDEAS sample slot at default size.
+         * clamp() guarantees a readable floor (7px) and a sensible cap so labels still scale down on a
+         * squeezed deck after the splitter is dragged. */
         #dj-visual-root .dj-controls-grid > .btn.dj-fx,
         #dj-visual-root .dj-controls-grid > .btn.dj-sfx:not(#dj-a-sfx-wav):not(#dj-b-sfx-wav),
         #dj-visual-root .dj-controls-grid > .dj-play,
         #dj-visual-root .dj-controls-grid > .dj-tbtn {
-            font-size: calc(12px * var(--dj-control-scale));
+            font-size: clamp(7px, calc(12px * var(--dj-control-scale)), 14px);
+            padding: calc(6px * var(--dj-control-scale)) calc(4px * var(--dj-control-scale));
+            letter-spacing: 0;
         }
         #dj-visual-root .dj-controls-grid .dj-play,
         #dj-visual-root .dj-controls-grid .dj-tbtn,
@@ -3624,6 +3680,36 @@
             word-break: break-word;
         }
         .kbd-key:not(.kbd-lit):not(.kbd-lit-avatar):not(.kbd-lit-deckb):not(.kbd-lit-hot) .kbd-hint { color: #555; }
+        /* Sample-pad icon shown above the cap on the 1..0 row so each key visually
+           advertises the .wav it triggers (e.g. "FX3" for FX3.wav). Styled like a
+           mini sample pad so it reads as an icon rather than label text. */
+        .kbd-sample-icon {
+            display: block;
+            font-size: 9px;
+            font-weight: 700;
+            line-height: 1;
+            padding: 3px 4px;
+            margin: 0 auto 4px;
+            border-radius: 5px;
+            background: linear-gradient(180deg, rgba(255, 175, 60, 0.28), rgba(220, 120, 30, 0.18));
+            color: #ffe2b8;
+            border: 1px solid rgba(255, 165, 60, 0.6);
+            box-shadow: 0 0 8px rgba(255, 140, 40, 0.25), inset 0 1px 0 rgba(255, 220, 160, 0.18);
+            letter-spacing: 0.3px;
+            max-width: 64px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.55);
+        }
+        /* Deck B variants borrow the existing kbd-lit-deckb neon-purple palette so the
+           icon matches the key tint at a glance. */
+        .kbd-key.kbd-lit-deckb .kbd-sample-icon {
+            background: linear-gradient(180deg, rgba(186, 85, 255, 0.30), rgba(140, 70, 255, 0.18));
+            color: #f1dcff;
+            border-color: rgba(186, 85, 255, 0.62);
+            box-shadow: 0 0 8px rgba(170, 90, 255, 0.32), inset 0 1px 0 rgba(220, 190, 255, 0.18);
+        }
         .kbd-shortcut-groups {
             display: grid;
             gap: 12px;
@@ -4942,16 +5028,16 @@
             <div class="kbd-board-wrap">
                 <div class="kbd-board-title">Quick map</div>
                 <div class="kbd-row">
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">1</span><span class="kbd-hint">WAA (A)</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">2</span><span class="kbd-hint">WAAA (A)</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">3</span><span class="kbd-hint">AIR📢 (A)</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">4</span><span class="kbd-hint">FX1 (A)</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">5</span><span class="kbd-hint">FX2 (A)</span></div>
-                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">6</span><span class="kbd-hint">FX3 (B)</span></div>
-                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">7</span><span class="kbd-hint">FX4 (B)</span></div>
-                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">8</span><span class="kbd-hint">FX5 (B)</span></div>
-                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">9</span><span class="kbd-hint">FX6 (B)</span></div>
-                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">0</span><span class="kbd-hint">FX7 (B)</span></div>
+                    <div class="kbd-key kbd-lit" title="Plays WAA.wav on Deck A"><span class="kbd-sample-icon" aria-label="WAA.wav">WAA</span><span class="kbd-cap">1</span><span class="kbd-hint">Deck A</span></div>
+                    <div class="kbd-key kbd-lit" title="Plays WAAA.wav on Deck A"><span class="kbd-sample-icon" aria-label="WAAA.wav">WAAA</span><span class="kbd-cap">2</span><span class="kbd-hint">Deck A</span></div>
+                    <div class="kbd-key kbd-lit" title="Plays AIR.wav on Deck A"><span class="kbd-sample-icon" aria-label="AIR.wav">AIR📢</span><span class="kbd-cap">3</span><span class="kbd-hint">Deck A</span></div>
+                    <div class="kbd-key kbd-lit" title="Plays FX1.wav on Deck A"><span class="kbd-sample-icon" aria-label="FX1.wav">FX1</span><span class="kbd-cap">4</span><span class="kbd-hint">Deck A</span></div>
+                    <div class="kbd-key kbd-lit" title="Plays FX2.wav on Deck A"><span class="kbd-sample-icon" aria-label="FX2.wav">FX2</span><span class="kbd-cap">5</span><span class="kbd-hint">Deck A</span></div>
+                    <div class="kbd-key kbd-lit-deckb" title="Plays FX3.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX3.wav">FX3</span><span class="kbd-cap">6</span><span class="kbd-hint">Deck B</span></div>
+                    <div class="kbd-key kbd-lit-deckb" title="Plays FX4.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX4.wav">FX4</span><span class="kbd-cap">7</span><span class="kbd-hint">Deck B</span></div>
+                    <div class="kbd-key kbd-lit-deckb" title="Plays FX5.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX5.wav">FX5</span><span class="kbd-cap">8</span><span class="kbd-hint">Deck B</span></div>
+                    <div class="kbd-key kbd-lit-deckb" title="Plays FX6.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX6.wav">FX6</span><span class="kbd-cap">9</span><span class="kbd-hint">Deck B</span></div>
+                    <div class="kbd-key kbd-lit-deckb" title="Plays FX7.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX7.wav">FX7</span><span class="kbd-cap">0</span><span class="kbd-hint">Deck B</span></div>
                 </div>
                 <div class="kbd-row">
                     <div class="kbd-key kbd-lit kbd-esc-lead"><span class="kbd-cap">Esc</span><span class="kbd-hint">Close panels · then start</span></div>
@@ -11541,15 +11627,38 @@ function stopAllAndShowStart() {
             }
 
             applyLandscapeDeckSplit(ratio) {
-                const r = Math.max(0.15, Math.min(0.85, ratio));
+                /*
+                 * If the splitter is dragged into the last 10% of the available screen width,
+                 * snap Deck B to a collapsed state (zero width, hidden) while leaving the
+                 * splitter handle in place so a leftward drag — or a double-click → 50/50 —
+                 * restores Deck B instantly. Below 0.15 we clamp normally so Deck A keeps a
+                 * usable minimum width.
+                 */
+                const COLLAPSE_THRESHOLD = 0.90;
+                const collapseB = Number.isFinite(ratio) && ratio >= COLLAPSE_THRESHOLD;
+                const r = collapseB
+                    ? COLLAPSE_THRESHOLD
+                    : Math.max(0.15, Math.min(COLLAPSE_THRESHOLD, Number(ratio) || 0.5));
                 this.landscapeDeckSplit = r;
+                this.deckBCollapsed = collapseB;
                 if (!this.root) return;
-                this.root.style.setProperty('--dj-landscape-split-a', String(r));
-                this.root.style.setProperty('--dj-landscape-split-b', String(1 - r));
+                this.root.classList.toggle('dj-deck-b-collapsed', collapseB);
+                this.root.style.setProperty('--dj-landscape-split-a', String(collapseB ? 1 : r));
+                this.root.style.setProperty('--dj-landscape-split-b', String(collapseB ? 0 : 1 - r));
                 const spl = this.root.querySelector('#dj-deck-splitter');
-                if (spl) spl.setAttribute('aria-valuenow', String(Math.round(r * 100)));
+                if (spl) {
+                    spl.setAttribute('aria-valuenow', String(Math.round((collapseB ? 1 : r) * 100)));
+                    if (collapseB) {
+                        spl.setAttribute('data-deck-b-collapsed', '1');
+                        spl.title = 'Deck B is collapsed — drag left or double-click to restore Deck B';
+                    } else {
+                        spl.removeAttribute('data-deck-b-collapsed');
+                        spl.title = 'Drag sideways to give Deck A more or less room vs Deck B and the fader. Double-click for equal columns.';
+                    }
+                }
                 try {
                     localStorage.setItem('dj.landscapeDeckSplit.v1', String(r));
+                    localStorage.setItem('dj.deckBCollapsed.v1', collapseB ? '1' : '0');
                 } catch (_) {}
                 requestAnimationFrame(() => {
                     try {
@@ -11573,7 +11682,12 @@ function stopAllAndShowStart() {
                             e.stopPropagation();
                         } catch (_) {}
                         const dragStartX = e.clientX;
-                        const dragStartRatio = this.landscapeDeckSplit;
+                        // When Deck B is currently collapsed, treat the drag as starting *at* the
+                        // collapse threshold (0.90) rather than wherever this.landscapeDeckSplit
+                        // happens to be. That way any leftward movement immediately drops below
+                        // 0.90 and restores Deck B — without it the user would have to drag past
+                        // the (invisible) stored ratio before Deck B reappeared.
+                        const dragStartRatio = this.deckBCollapsed ? 0.90 : this.landscapeDeckSplit;
                         const trackW = columns.getBoundingClientRect().width || 1;
                         splitter.classList.add('is-dragging');
                         try {
@@ -11618,7 +11732,11 @@ function stopAllAndShowStart() {
                     const landscape = this.root.classList.contains('dj-mode-landscape');
                     /* Portrait: one deck spans ~full width → baseline 860. Landscape: two decks side‑by‑side → each mosaic is ~half as wide; use ~half baseline so fitW is not crushed (fixes tiny right button grid). */
                     const baselineW = landscape ? 440 : 860;
-                    const scaleMin = landscape ? 0.82 : 0.72;
+                    /* Lower landscape floor so font-size/padding (driven by --dj-control-scale) keep
+                     * shrinking when the splitter squeezes a deck — without this the 30/30/40 column
+                     * layout would stay rigid and the right-grid button text would clip. The CSS
+                     * font clamp() backstops the visual lower bound. */
+                    const scaleMin = landscape ? 0.6 : 0.72;
                     const mosaics = Array.from(this.root.querySelectorAll('.dj-deck-mosaic'));
                     if (!mosaics.length) return;
                     mosaics.forEach((mosaic) => {
@@ -12097,6 +12215,13 @@ function stopAllAndShowStart() {
             <span class="dj-autofade-readout" id="dj-autofade-readout">5s</span>
           </div>
           <div class="dj-autofade-station-block">
+            <div class="dj-autofade-station-title">On Auto-Fade</div>
+            <label class="dj-autofade-station-check" title="When on, every Auto-Fade (manual or scheduled by Auto-Mix) switches the incoming deck to a fresh random station just before the fade. Toggling resets the Auto-Mix next-crossfade timer.">
+              <input type="checkbox" id="dj-autofade-change-station" />
+              <span>Change station before fading</span>
+            </label>
+          </div>
+          <div class="dj-autofade-station-block">
             <div class="dj-autofade-station-title">Radio station change</div>
             <label class="dj-autofade-station-check">
               <input type="checkbox" id="dj-radio-station-xfade-en" />
@@ -12334,14 +12459,24 @@ function stopAllAndShowStart() {
                 container.appendChild(root);
                 this.root = root;
                 this.landscapeDeckSplit = 0.5;
+                this.deckBCollapsed = false;
                 try {
                     const raw = localStorage.getItem('dj.landscapeDeckSplit.v1');
                     if (raw != null) {
                         const x = parseFloat(raw);
-                        if (!Number.isNaN(x)) this.landscapeDeckSplit = Math.max(0.15, Math.min(0.85, x));
+                        // Clamp matches the COLLAPSE_THRESHOLD inside applyLandscapeDeckSplit: a
+                        // stored 0.90 represents "Deck B collapsed", and the explicit collapsed
+                        // flag below decides whether to enter that state on load.
+                        if (!Number.isNaN(x)) this.landscapeDeckSplit = Math.max(0.15, Math.min(0.90, x));
                     }
                 } catch (_) {}
-                this.applyLandscapeDeckSplit(this.landscapeDeckSplit);
+                try {
+                    this.deckBCollapsed = localStorage.getItem('dj.deckBCollapsed.v1') === '1';
+                } catch (_) {}
+                // If the user had Deck B collapsed when they last left, re-enter that state by
+                // passing a value at the threshold so applyLandscapeDeckSplit re-derives the
+                // collapsed flag and class.
+                this.applyLandscapeDeckSplit(this.deckBCollapsed ? 0.90 : this.landscapeDeckSplit);
                 this.bindLandscapeDeckSplitter();
                 this.onResize();
                 window.addEventListener('resize', this.resizeHandler);
@@ -12409,6 +12544,7 @@ function stopAllAndShowStart() {
                 const radioStationXfadeEn = root.querySelector('#dj-radio-station-xfade-en');
                 const radioStationXfadeSec = root.querySelector('#dj-radio-station-xfade-sec');
                 const radioStationXfadeReadout = root.querySelector('#dj-radio-station-xfade-readout');
+                const autoFadeChangeStationEn = root.querySelector('#dj-autofade-change-station');
                 const btnAutoMix = root.querySelector('#dj-automix');
                 const autoMixWrap = root.querySelector('.dj-automix-wrap');
                 const autoMixPanel = root.querySelector('#dj-automix-panel');
@@ -12424,7 +12560,11 @@ function stopAllAndShowStart() {
                 let suppressAutoFadeClickUntil = 0;
                 let autoFadeLongPressFired = false;
                 const AUTOFADE_MS_KEY = 'dj.autofade.duration.ms.v1';
+                const AUTOFADE_CHANGE_STATION_KEY = 'dj.autofade.changeStation.enabled.v1';
                 let autoFadeDurationMs = 5000;
+                // Default ON so Auto-Mix keeps doing what it used to (preload + retune before
+                // each scheduled fade). Users can untick it to fade between the same stations.
+                let autoFadeChangeStationEnabled = true;
                 let autoMixEnabled = false;
                 let suppressAutoMixClickUntil = 0;
                 let autoMixLongPressFired = false;
@@ -12441,6 +12581,10 @@ function stopAllAndShowStart() {
                 try {
                     const stored = Number(localStorage.getItem(AUTOFADE_MS_KEY));
                     if (Number.isFinite(stored) && stored >= 2000 && stored <= 10000) autoFadeDurationMs = stored;
+                } catch (_) {}
+                try {
+                    const raw = localStorage.getItem(AUTOFADE_CHANGE_STATION_KEY);
+                    if (raw === '1' || raw === '0') autoFadeChangeStationEnabled = (raw === '1');
                 } catch (_) {}
                 try {
                     const minStored = Number(localStorage.getItem(AUTOMIX_MIN_KEY));
@@ -12461,6 +12605,9 @@ function stopAllAndShowStart() {
                     const sec = Math.max(2, Math.min(10, Math.round((Number(autoFadeDurationMs) || 5000) / 1000)));
                     if (autoFadeDuration) autoFadeDuration.value = String(sec);
                     if (autoFadeReadout) autoFadeReadout.textContent = `${sec}s`;
+                };
+                const syncAutoFadeChangeStationUi = () => {
+                    if (autoFadeChangeStationEn) autoFadeChangeStationEn.checked = !!autoFadeChangeStationEnabled;
                 };
                 const syncRadioStationCrossfadeUi = () => {
                     if (radioStationXfadeEn) radioStationXfadeEn.checked = !!radioStationCrossfadeEnabled;
@@ -12610,6 +12757,7 @@ function stopAllAndShowStart() {
                 const openAutoFadePanel = () => {
                     if (!autoFadePanel) return;
                     syncAutoFadeDurationUi();
+                    syncAutoFadeChangeStationUi();
                     try { syncRadioStationCrossfadeUi(); } catch (_) {}
                     autoFadePanel.classList.add('is-open');
                     autoFadePanel.setAttribute('aria-hidden', 'false');
@@ -12626,6 +12774,7 @@ function stopAllAndShowStart() {
                     positionPopupPanelAtPointer(autoMixPanel, p && p.x, p && p.y);
                 };
                 syncAutoFadeDurationUi();
+                syncAutoFadeChangeStationUi();
                 try { syncRadioStationCrossfadeUi(); } catch (_) {}
                 syncAutoMixUi();
 
@@ -12862,6 +13011,23 @@ function stopAllAndShowStart() {
                         } catch (_) {}
                     }
                 };
+                /**
+                 * True when `deckKey` is already cued in radio mode with a non-empty media
+                 * source. Used by AUTO-FADE / AUTO-MIX to decide whether runAutoFade can skip
+                 * the redundant playRadioB()/setStation() reload that would otherwise
+                 * interrupt an in-flight stream load.
+                 */
+                const isDeckRadioReady = (deckKey) => {
+                    try {
+                        const mode = state && state.deckSourceMode && state.deckSourceMode[deckKey];
+                        if (mode !== 'radio') return false;
+                        const el = deckKey === 'b' ? audioElB : audioEl;
+                        const src = el && (el.currentSrc || el.src || '');
+                        return !!(src && src !== 'about:blank');
+                    } catch (_) {
+                        return false;
+                    }
+                };
                 const retuneDeckStationForAutoMix = (deckKey) => {
                     try {
                         if (!Array.isArray(stations) || stations.length === 0) return;
@@ -12989,16 +13155,37 @@ function stopAllAndShowStart() {
                     const targetDeck = xSchedule < 0.5 ? 'b' : 'a';
                     this.autoMixNextFadeAt = Date.now() + waitMs;
                     syncAutoMixNextFadeDisplay();
+                    // Tracks whether this cycle's preload-retune actually ran. The "Change
+                    // station before fading" checkbox can flip between schedule time and fire
+                    // time; this flag lets the fire callback decide whether the incoming deck
+                    // still needs a station change.
+                    let preloadCompleted = false;
                     const preloadDelay = Math.max(0, waitMs - AUTO_MIX_PRELOAD_MS);
                     this.autoMixPreloadTimerId = setTimeout(() => {
                         this.autoMixPreloadTimerId = null;
                         if (!autoMixEnabled) return;
+                        // Honor the AUTO-FADE "Change station before fading" toggle: when off,
+                        // AUTO-MIX must NOT retune the incoming deck — it should just fade to
+                        // whatever station that deck already holds.
+                        if (!autoFadeChangeStationEnabled) return;
                         try { retuneDeckStationForAutoMix(targetDeck); } catch (_) {}
+                        preloadCompleted = true;
                     }, preloadDelay);
                     this.autoMixTimerId = setTimeout(() => {
                         this.autoMixTimerId = null;
                         if (!autoMixEnabled) return;
-                        runAutoFade(targetDeck, { stationPreloaded: true });
+                        // If the user enabled "Change station before fading" after the preload
+                        // window passed, do the retune now so the fade still lands on a fresh
+                        // station (per the user's contract: "each time AUTO-FADE is used …").
+                        if (autoFadeChangeStationEnabled && !preloadCompleted) {
+                            try { retuneDeckStationForAutoMix(targetDeck); } catch (_) {}
+                            preloadCompleted = true;
+                        }
+                        // stationPreloaded skips the redundant playRadioB()/setStation() reload
+                        // inside runAutoFade. True when we just retuned (deck has a fresh src
+                        // mid-load) OR when the deck was already cued in radio mode.
+                        const stationPreloaded = preloadCompleted || isDeckRadioReady(targetDeck);
+                        runAutoFade(targetDeck, { stationPreloaded });
                         scheduleNextAutoMix();
                     }, waitMs);
                 };
@@ -13071,23 +13258,21 @@ function stopAllAndShowStart() {
                         closeAutoMixPanel();
                         const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                         const target = x < 0.5 ? 'b' : 'a';
-                        // If the user has already cued the target deck in radio mode (e.g. via Rand/Prev/Next),
-                        // skip the redundant playRadioB()/setStation() reload. Calling it again would interrupt
-                        // the in-flight load with "play() request was interrupted by a new load request" and could
-                        // also re-randomize the station the user just picked (race with ensureDeckStationPlayback).
-                        // We only let runAutoFade kick off playback when the target deck has no station ready.
-                        const isTargetStationReady = (() => {
-                            try {
-                                const mode = state && state.deckSourceMode && state.deckSourceMode[target];
-                                if (mode !== 'radio') return false;
-                                const el = target === 'b' ? audioElB : audioEl;
-                                const src = el && (el.currentSrc || el.src || '');
-                                return !!(src && src !== 'about:blank');
-                            } catch (_) {
-                                return false;
-                            }
-                        })();
-                        runAutoFade(target, { stationPreloaded: isTargetStationReady });
+                        if (autoFadeChangeStationEnabled) {
+                            // "Change station before fading" is on: retune the incoming deck to a
+                            // fresh random eligible station now, then mark the fade as preloaded so
+                            // runAutoFade does not try to reload the source on top of our retune.
+                            try { retuneDeckStationForAutoMix(target); } catch (_) {}
+                            runAutoFade(target, { stationPreloaded: true });
+                        } else {
+                            // "Change station before fading" is off: keep whatever station the user
+                            // already cued on the target deck. If the deck is already in radio mode
+                            // with a valid src (e.g. via Rand/Prev/Next), skip the redundant
+                            // playRadioB()/setStation() reload — calling it again would interrupt
+                            // the in-flight load with "play() request was interrupted by a new load
+                            // request" and could also re-randomize the station the user just picked.
+                            runAutoFade(target, { stationPreloaded: isDeckRadioReady(target) });
+                        }
                         try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                         if (autoMixEnabled) scheduleNextAutoMix();
                     }, sig);
@@ -13100,6 +13285,18 @@ function stopAllAndShowStart() {
                     }, sig);
                     autoFadeDuration.addEventListener('change', () => {
                         try { localStorage.setItem(AUTOFADE_MS_KEY, String(Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 5000)))); } catch (_) {}
+                    }, sig);
+                }
+                if (autoFadeChangeStationEn) {
+                    autoFadeChangeStationEn.addEventListener('change', () => {
+                        autoFadeChangeStationEnabled = !!autoFadeChangeStationEn.checked;
+                        try { localStorage.setItem(AUTOFADE_CHANGE_STATION_KEY, autoFadeChangeStationEnabled ? '1' : '0'); } catch (_) {}
+                        // The user asked for AUTO-MIX to be "aware of this change" — toggling the
+                        // checkbox resets AUTO-MIX's next-crossfade timer so the upcoming scheduled
+                        // fade is recomputed from now with the new station-change preference.
+                        if (autoMixEnabled) {
+                            try { scheduleNextAutoMix(); } catch (_) {}
+                        }
                     }, sig);
                 }
                 if (radioStationXfadeEn) {
