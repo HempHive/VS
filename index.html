@@ -13113,6 +13113,43 @@ function stopAllAndShowStart() {
                     }
                 };
                 /**
+                 * Picks the <audio> element whose readiness *actually* reflects whether the
+                 * newly-cued station is playable.
+                 *
+                 * Deck B is straightforward — there's only one element (`audioElB`).
+                 *
+                 * Deck A is tricky: `playRadio()` does a "warm crossfade" handoff when the
+                 * deck is already playing. The new URL is loaded into the OFF / prep element
+                 * (the one that's *not* currently audible), not into `audioEl`. If we awaited
+                 * on `audioEl` in that case it would already report ready (still streaming the
+                 * old station) and resolve synchronously — the AUTO-FADE would then crossfade
+                 * INTO the old station instead of the new one we just retuned. That's exactly
+                 * the bug the user reported: Deck B preloads correctly, Deck A does not.
+                 *
+                 * `radioAHandoffAbortCtrl` is non-null exactly during an active warm-crossfade
+                 * handoff, so we use that as our "is a handoff in flight?" signal and pick the
+                 * prep element using the same rule `playRadio()` uses internally.
+                 */
+                const getRadioReadinessTargetEl = (deckKey) => {
+                    if (deckKey === 'b') return audioElB;
+                    try {
+                        if (
+                            typeof radioAHandoffAbortCtrl !== 'undefined' && radioAHandoffAbortCtrl &&
+                            audioElRadioAAlt &&
+                            state && state.deckSourceMode && state.deckSourceMode.a === 'radio'
+                        ) {
+                            const outputFromSecondary = (typeof isDeckARadioOutputFromAlt === 'function')
+                                ? isDeckARadioOutputFromAlt()
+                                : false;
+                            const prepEl = outputFromSecondary ? audioEl : audioElRadioAAlt;
+                            const prepSrc = prepEl ? String(prepEl.currentSrc || prepEl.src || '') : '';
+                            if (prepEl && prepSrc && prepSrc !== 'about:blank') return prepEl;
+                        }
+                    } catch (_) {}
+                    return audioEl;
+                };
+
+                /**
                  * Resolves once the given deck's media element is actually producing audio
                  * (or has buffered enough to start without an audible gap). Used to gate the
                  * AUTO-FADE crossfade so the "Change station before fading" path doesn't fade
@@ -13130,7 +13167,7 @@ function stopAllAndShowStart() {
                 const awaitDeckRadioReady = (deckKey, timeoutMs) => {
                     return new Promise((resolve) => {
                         let el = null;
-                        try { el = deckKey === 'b' ? audioElB : audioEl; } catch (_) {}
+                        try { el = getRadioReadinessTargetEl(deckKey); } catch (_) {}
                         if (!el) { resolve(false); return; }
                         const isReady = () => {
                             try {
