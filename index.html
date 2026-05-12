@@ -5090,8 +5090,8 @@
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">Z</span><span class="kbd-hint">Opacity −</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">X</span><span class="kbd-hint">Opacity +</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">C</span><span class="kbd-hint">Next preset</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">V</span><span class="kbd-hint">Play / pause Deck A</span></div>
-                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">B</span><span class="kbd-hint">Play / pause Deck B</span></div>
+                    <div class="kbd-key kbd-lit" title="Tap: next random Deck A station (or start Deck A if silent). Hold: play / pause Deck A."><span class="kbd-cap">V</span><span class="kbd-hint">A: next · hold: play/pause</span></div>
+                    <div class="kbd-key kbd-lit-deckb" title="Tap: next random Deck B station (or start Deck B if silent). Hold: play / pause Deck B."><span class="kbd-cap">B</span><span class="kbd-hint">B: next · hold: play/pause</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">N</span><span class="kbd-hint">Random · active deck</span></div>
                     <div class="kbd-key kbd-lit-hot"><span class="kbd-cap">M</span><span class="kbd-hint">Mixer</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">,</span><span class="kbd-hint">Prev visual</span></div>
@@ -5119,7 +5119,7 @@
                 <div class="kbd-group">
                     <h4>Radio &amp; visuals</h4>
                     <ul>
-                        <li><strong>V</strong> — play / pause Deck A · <strong>B</strong> — play / pause Deck B</li>
+                        <li><strong>V</strong> / <strong>B</strong> — tap for next random station on Deck A / Deck B; hold for play / pause on the same deck. If the deck is silent, a tap simply starts it.</li>
                         <li><strong>N</strong> — random station on the deck currently winning the crossfader</li>
                         <li><strong>Space</strong> — Auto-Fade between decks; tap again mid-fade to reverse direction. <em>Hold Space</em> to pause both decks, or — when both are silent — start the deck on whichever side the crossfader is resting.</li>
                         <li><strong>C</strong> — next visual preset (when supported) · <strong>,</strong> / <strong>.</strong> — previous / next visual mode</li>
@@ -18332,6 +18332,99 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             }
         }
 
+        /**
+         * V / B keys share the same long-press pattern:
+         *   short tap → next random station on the corresponding deck (or just START
+         *               that deck if it currently has nothing playing — there's
+         *               nothing meaningful to "skip from" when silent).
+         *   long hold → toggle play / pause on the corresponding deck (and boot the
+         *               radio from the current index if no source is loaded yet).
+         *
+         * Each key gets its own timer + fired-flag so the user can hold V and B
+         * independently (or one after the other) without their states colliding.
+         */
+        const DECK_KEY_LONG_HOLD_MS = 500;
+        let vLongPressTimer = null;
+        let vLongPressFired = false;
+        let bLongPressTimer = null;
+        let bLongPressFired = false;
+        function clearVLongPress() {
+            if (vLongPressTimer) {
+                try { clearTimeout(vLongPressTimer); } catch (_) {}
+                vLongPressTimer = null;
+            }
+        }
+        function clearBLongPress() {
+            if (bLongPressTimer) {
+                try { clearTimeout(bLongPressTimer); } catch (_) {}
+                bLongPressTimer = null;
+            }
+        }
+        function deckHasSource(el) {
+            try {
+                const src = el ? String(el.currentSrc || el.src || '') : '';
+                return !!(src && src !== 'about:blank');
+            } catch (_) { return false; }
+        }
+        // Short-tap helpers: jump to a new random station while the deck is playing;
+        // when the deck is silent (no source or paused) treat the tap as a "start the
+        // deck" command instead, since there's nothing to skip away from.
+        function deckAShortAction() {
+            try {
+                if (!audioEl) return;
+                if (!deckHasSource(audioEl)) {
+                    if (typeof playRadio === 'function') playRadio();
+                    return;
+                }
+                if (audioEl.paused) {
+                    audioEl.play().catch(() => {});
+                    return;
+                }
+                if (typeof pickRandomStation === 'function') pickRandomStation();
+            } catch (_) {}
+        }
+        function deckBShortAction() {
+            try {
+                if (!audioElB) return;
+                if (!deckHasSource(audioElB)) {
+                    if (typeof playRadioB === 'function') playRadioB();
+                    return;
+                }
+                if (audioElB.paused) {
+                    audioElB.play().catch(() => {});
+                    return;
+                }
+                if (typeof pickRandomStationB === 'function') pickRandomStationB();
+            } catch (_) {}
+        }
+        // Long-hold helpers: hard play/pause toggle. Boots the radio from the current
+        // station index when no source is loaded yet so the very first long-press is
+        // never a silent no-op.
+        function deckALongAction() {
+            try {
+                if (!audioEl) return;
+                if (!deckHasSource(audioEl)) {
+                    if (typeof playRadio === 'function') playRadio();
+                } else if (audioEl.paused) {
+                    audioEl.play().catch(() => {});
+                } else {
+                    audioEl.pause();
+                }
+            } catch (_) {}
+        }
+        function deckBLongAction() {
+            try {
+                if (!audioElB) return;
+                if (!deckHasSource(audioElB)) {
+                    if (typeof playRadioB === 'function') playRadioB();
+                } else if (audioElB.paused) {
+                    audioElB.play().catch(() => {});
+                } else {
+                    audioElB.pause();
+                }
+            } catch (_) {}
+        }
+
         function handleGlobalKeydown(e) {
             // Allow Lock toggle (L) to work even when locked or focused in inputs
             if (e && (e.key === 'l' || e.key === 'L')) {
@@ -18448,44 +18541,33 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 adjustWebmPosition(2, 0);
             } else if (e.key === 'v' || e.key === 'V') {
-                // Play / pause Deck A (mirrors B for Deck B). If Deck A has no media
-                // source yet (cold start, no station tuned), fall back to playRadio()
-                // which loads the current Deck A station and starts playback exactly
-                // like pressing the deck's own Play button.
+                // V key: short tap → next random Deck A station (or start Deck A if
+                // it's currently silent); long hold → play / pause Deck A. The short
+                // action only fires on keyup when the long-hold timer hasn't expired,
+                // so a deliberate hold never doubles as a tap.
                 e.preventDefault();
-                try {
-                    if (audioEl) {
-                        const src = String(audioEl.currentSrc || audioEl.src || '');
-                        const hasSource = !!(src && src !== 'about:blank');
-                        if (!hasSource) {
-                            if (typeof playRadio === 'function') playRadio();
-                        } else if (audioEl.paused) {
-                            audioEl.play().catch(() => {});
-                        } else {
-                            audioEl.pause();
-                        }
-                    }
-                } catch(_) {}
+                if (e.repeat) return; // Key auto-repeat must not re-arm the timer
+                clearVLongPress();
+                vLongPressFired = false;
+                vLongPressTimer = setTimeout(() => {
+                    vLongPressTimer = null;
+                    vLongPressFired = true;
+                    deckALongAction();
+                }, DECK_KEY_LONG_HOLD_MS);
 			} else if (e.key === 'b' || e.key === 'B') {
-				// Play / pause Deck B (mirrors V for Deck A). If Deck B has no media
-				// source yet (the user hasn't tuned a station or started a track), the
-				// raw .play() call would be a silent no-op while Deck A is playing — so
-				// fall back to playRadioB(), which loads the current Deck B station and
-				// kicks off playback exactly like pressing the deck's own Play button.
+				// B key: short tap → next random Deck B station (or start Deck B if
+				// it's currently silent); long hold → play / pause Deck B. Same
+				// keyup-gated short-action pattern as V so a long hold isn't also
+				// taken as a tap.
 				e.preventDefault();
-				try {
-				    if (audioElB) {
-				        const src = String(audioElB.currentSrc || audioElB.src || '');
-				        const hasSource = !!(src && src !== 'about:blank');
-				        if (!hasSource) {
-				            if (typeof playRadioB === 'function') playRadioB();
-				        } else if (audioElB.paused) {
-				            audioElB.play().catch(() => {});
-				        } else {
-				            audioElB.pause();
-				        }
-				    }
-				} catch(_) {}
+				if (e.repeat) return;
+				clearBLongPress();
+				bLongPressFired = false;
+				bLongPressTimer = setTimeout(() => {
+				    bLongPressTimer = null;
+				    bLongPressFired = true;
+				    deckBLongAction();
+				}, DECK_KEY_LONG_HOLD_MS);
             } else if (e.key === 't' || e.key === 'T') {
                 // Toggle Text-In panel
                 e.preventDefault();
@@ -18640,6 +18722,23 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                         }
                     }
                     spaceLongPressFired = false;
+                }
+                // V key release: if the long-hold timer is still pending the user
+                // released early → short tap (next station / start deck). If the
+                // timer already fired the long action, do nothing.
+                if (e && (e.key === 'v' || e.key === 'V')) {
+                    if (vLongPressTimer) {
+                        clearVLongPress();
+                        if (!vLongPressFired) deckAShortAction();
+                    }
+                    vLongPressFired = false;
+                }
+                if (e && (e.key === 'b' || e.key === 'B')) {
+                    if (bLongPressTimer) {
+                        clearBLongPress();
+                        if (!bLongPressFired) deckBShortAction();
+                    }
+                    bLongPressFired = false;
                 }
             }, false);
         } catch(e) {}
