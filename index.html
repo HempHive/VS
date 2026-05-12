@@ -12834,12 +12834,27 @@ function stopAllAndShowStart() {
                     autoFadePanel.classList.remove('is-open');
                     autoFadePanel.setAttribute('aria-hidden', 'true');
                     resetPopupPanelStyles(autoFadePanel);
+                    // Clear the long-press latch on every close path. Previously the
+                    // flag was only reset on the next pointerdown on the AUTO-FADE
+                    // button itself, so closing the panel via outside-click or Esc
+                    // left `autoFadeLongPressFired === true` — a subsequent
+                    // programmatic click (e.g. Space → triggerAutoFadeFromShortcut
+                    // → btnAutoFade.click()) would then short-circuit at the click
+                    // guard and silently do nothing. By the time we're closing, the
+                    // long-press is by definition over, so clearing here is safe.
+                    autoFadeLongPressFired = false;
+                    suppressAutoFadeClickUntil = 0;
                 };
                 const closeAutoMixPanel = () => {
                     if (!autoMixPanel) return;
                     autoMixPanel.classList.remove('is-open');
                     autoMixPanel.setAttribute('aria-hidden', 'true');
                     resetPopupPanelStyles(autoMixPanel);
+                    // Same latch-clear as closeAutoFadePanel — symmetric fix so a
+                    // long-pressed AUTO-MIX panel closed via outside-click or Esc
+                    // never leaves the click guard stuck on.
+                    autoMixLongPressFired = false;
+                    suppressAutoMixClickUntil = 0;
                 };
                 const openAutoFadePanel = () => {
                     if (!autoFadePanel) return;
