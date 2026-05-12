@@ -5067,13 +5067,13 @@
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">Q</span><span class="kbd-hint">Avatar speed −</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">W</span><span class="kbd-hint">Toggle avatar overlay</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">E</span><span class="kbd-hint">Avatar speed +</span></div>
-                    <div class="kbd-key"><span class="kbd-cap">R</span><span class="kbd-hint">—</span></div>
+                    <div class="kbd-key kbd-lit-avatar" title="Toggle Avatar / WebM settings panel"><span class="kbd-cap">R</span><span class="kbd-hint">Avatar settings</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">T</span><span class="kbd-hint">Text-In panel</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">Y</span><span class="kbd-hint">Text-In Auto</span></div>
                     <div class="kbd-key"><span class="kbd-cap">U</span><span class="kbd-hint">—</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">I</span><span class="kbd-hint">Send rising text</span></div>
                     <div class="kbd-key"><span class="kbd-cap">O</span><span class="kbd-hint">—</span></div>
-                    <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">P</span><span class="kbd-hint">Avatar settings</span></div>
+                    <div class="kbd-key kbd-lit" title="Toggle the top-menu Radio Stations list"><span class="kbd-cap">P</span><span class="kbd-hint">Radio Stations</span></div>
                 </div>
                 <div class="kbd-row">
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">A</span><span class="kbd-hint">Prev clip</span></div>
@@ -5090,9 +5090,9 @@
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">Z</span><span class="kbd-hint">Opacity −</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">X</span><span class="kbd-hint">Opacity +</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">C</span><span class="kbd-hint">Next preset</span></div>
-                    <div class="kbd-key kbd-lit" title="Tap: next random Deck A station (or start Deck A if silent). Hold: play / pause Deck A."><span class="kbd-cap">V</span><span class="kbd-hint">A: next · hold: play/pause</span></div>
-                    <div class="kbd-key kbd-lit-deckb" title="Tap: next random Deck B station (or start Deck B if silent). Hold: play / pause Deck B."><span class="kbd-cap">B</span><span class="kbd-hint">B: next · hold: play/pause</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">N</span><span class="kbd-hint">Random · active deck</span></div>
+                    <div class="kbd-key kbd-lit" title="Play / pause Deck A (boots the current Deck A station if nothing is loaded yet)."><span class="kbd-cap">V</span><span class="kbd-hint">Play / pause Deck A</span></div>
+                    <div class="kbd-key kbd-lit-deckb" title="Play / pause Deck B (boots the current Deck B station if nothing is loaded yet)."><span class="kbd-cap">B</span><span class="kbd-hint">Play / pause Deck B</span></div>
+                    <div class="kbd-key kbd-lit" title="Next random station on the deck currently winning the crossfader."><span class="kbd-cap">N</span><span class="kbd-hint">Next station · active deck</span></div>
                     <div class="kbd-key kbd-lit-hot"><span class="kbd-cap">M</span><span class="kbd-hint">Mixer</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">,</span><span class="kbd-hint">Prev visual</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">.</span><span class="kbd-hint">Next visual</span></div>
@@ -5112,15 +5112,15 @@
                     <h4>Panels &amp; navigation</h4>
                     <ul>
                         <li><strong>T</strong> — Text-In · <strong>Y</strong> — Text-In Auto · <strong>I</strong> — send message once</li>
-                        <li><strong>P</strong> — Avatar / WebM settings · <strong>M</strong> — Mixer · <strong>G</strong> — Options diamond</li>
+                        <li><strong>P</strong> — Radio Stations (top menu) · <strong>R</strong> — Avatar / WebM settings · <strong>M</strong> — Mixer · <strong>G</strong> — Options diamond</li>
                         <li><strong>Esc</strong> — closes panels in order; if none open, returns to start screen</li>
                     </ul>
                 </div>
                 <div class="kbd-group">
                     <h4>Radio &amp; visuals</h4>
                     <ul>
-                        <li><strong>V</strong> / <strong>B</strong> — tap for next random station on Deck A / Deck B; hold for play / pause on the same deck. If the deck is silent, a tap simply starts it.</li>
-                        <li><strong>N</strong> — random station on the deck currently winning the crossfader</li>
+                        <li><strong>V</strong> / <strong>B</strong> — play / pause Deck A / Deck B (boots the current station for that deck if nothing is loaded yet). Holding the key just resolves to one toggle.</li>
+                        <li><strong>N</strong> — next random station on the deck currently winning the crossfader</li>
                         <li><strong>Space</strong> — Auto-Fade between decks; tap again mid-fade to reverse direction. <em>Hold Space</em> to pause both decks, or — when both are silent — start the deck on whichever side the crossfader is resting.</li>
                         <li><strong>C</strong> — next visual preset (when supported) · <strong>,</strong> / <strong>.</strong> — previous / next visual mode</li>
                     </ul>
@@ -6869,11 +6869,11 @@ function randomGlowColor() {
 			const defaultLine = 'Select a source to begin';
 			const shortcuts = [
 				'F Fullscreen  •  C Next Visual  •  ,/. Visual',
-				'V Random Station  •  B Previous Station  •  N Top Menu  •  L Lock',
+				'V Play/Pause A  •  B Play/Pause B  •  N Next Station  •  L Lock',
 				'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
-                'P Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
+                'P Radio Stations  •  R Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
 				'H QUEUE  •  J VIDEO  •  K KARAOKE (Deck B)',
-				'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Play/Pause  •  Esc Back'
+				'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Auto-Fade  •  Esc Back'
 			].join('\n');
 			let phase = 'visible';
 			const loop = () => {
@@ -8497,11 +8497,11 @@ function randomGlowColor() {
 			// Type the current status line on start screen, then shortcuts
 			const shortcuts = [
 					'F Fullscreen  •  C Next Visual  •  ,/. Visual',
-					'V Random Station  •  B Previous Station  •  N Top Menu  •  L Lock',
+					'V Play/Pause A  •  B Play/Pause B  •  N Next Station  •  L Lock',
 					'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
-					'P Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
+					'P Radio Stations  •  R Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
 					'H QUEUE  •  J VIDEO  •  K KARAOKE (Deck B)',
-					'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Play/Pause  •  Esc Back'
+					'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Auto-Fade  •  Esc Back'
 				].join('\n');
 			if (statusEl) {
 				typeStatus(statusEl.innerText || 'Select a source to begin', () => {
@@ -8548,11 +8548,11 @@ function randomGlowColor() {
 				const s = document.getElementById('loading-status');
 			const shortcuts = [
 				'F Fullscreen  •  C Next Visual  •  ,/. Visual',
-				'V Random Station  •  B Previous Station  •  N Top Menu  •  L Lock',
+				'V Play/Pause A  •  B Play/Pause B  •  N Next Station  •  L Lock',
 				'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
-				'P Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
+				'P Radio Stations  •  R Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
 				'H QUEUE  •  J VIDEO  •  K KARAOKE (Deck B)',
-				'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Play/Pause  •  Esc Back'
+				'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Auto-Fade  •  Esc Back'
 			].join('\n');
 				if (s && s.innerText && s.innerText.trim().length > 0) {
 					typeStatus(s.innerText.trim(), () => { typeStatusTo('shortcuts-status', shortcuts, 30); try { layoutOverlayElements(); } catch(e) {} try { scheduleStartTextLoop(); } catch(e) {} });
@@ -18333,74 +18333,23 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         }
 
         /**
-         * V / B keys share the same long-press pattern:
-         *   short tap → next random station on the corresponding deck (or just START
-         *               that deck if it currently has nothing playing — there's
-         *               nothing meaningful to "skip from" when silent).
-         *   long hold → toggle play / pause on the corresponding deck (and boot the
-         *               radio from the current index if no source is loaded yet).
+         * V and B are simple play/pause toggles for Deck A and Deck B respectively.
+         * Holding the key (key-repeat after the OS threshold) is suppressed by the
+         * `e.repeat` guard in the keydown branch so a deliberate hold never stutters
+         * play/pause back and forth — it just resolves to one toggle. Next-station is
+         * the job of the N shortcut (`pickRandomStationForCrossfadedDeck`), not V/B.
          *
-         * Each key gets its own timer + fired-flag so the user can hold V and B
-         * independently (or one after the other) without their states colliding.
+         * Each helper also handles the cold-start case: if the deck's media element
+         * has no source yet, we call playRadio() / playRadioB() so the very first
+         * press actually boots the deck rather than being a silent no-op.
          */
-        const DECK_KEY_LONG_HOLD_MS = 500;
-        let vLongPressTimer = null;
-        let vLongPressFired = false;
-        let bLongPressTimer = null;
-        let bLongPressFired = false;
-        function clearVLongPress() {
-            if (vLongPressTimer) {
-                try { clearTimeout(vLongPressTimer); } catch (_) {}
-                vLongPressTimer = null;
-            }
-        }
-        function clearBLongPress() {
-            if (bLongPressTimer) {
-                try { clearTimeout(bLongPressTimer); } catch (_) {}
-                bLongPressTimer = null;
-            }
-        }
         function deckHasSource(el) {
             try {
                 const src = el ? String(el.currentSrc || el.src || '') : '';
                 return !!(src && src !== 'about:blank');
             } catch (_) { return false; }
         }
-        // Short-tap helpers: jump to a new random station while the deck is playing;
-        // when the deck is silent (no source or paused) treat the tap as a "start the
-        // deck" command instead, since there's nothing to skip away from.
-        function deckAShortAction() {
-            try {
-                if (!audioEl) return;
-                if (!deckHasSource(audioEl)) {
-                    if (typeof playRadio === 'function') playRadio();
-                    return;
-                }
-                if (audioEl.paused) {
-                    audioEl.play().catch(() => {});
-                    return;
-                }
-                if (typeof pickRandomStation === 'function') pickRandomStation();
-            } catch (_) {}
-        }
-        function deckBShortAction() {
-            try {
-                if (!audioElB) return;
-                if (!deckHasSource(audioElB)) {
-                    if (typeof playRadioB === 'function') playRadioB();
-                    return;
-                }
-                if (audioElB.paused) {
-                    audioElB.play().catch(() => {});
-                    return;
-                }
-                if (typeof pickRandomStationB === 'function') pickRandomStationB();
-            } catch (_) {}
-        }
-        // Long-hold helpers: hard play/pause toggle. Boots the radio from the current
-        // station index when no source is loaded yet so the very first long-press is
-        // never a silent no-op.
-        function deckALongAction() {
+        function deckAPlayPause() {
             try {
                 if (!audioEl) return;
                 if (!deckHasSource(audioEl)) {
@@ -18412,7 +18361,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 }
             } catch (_) {}
         }
-        function deckBLongAction() {
+        function deckBPlayPause() {
             try {
                 if (!audioElB) return;
                 if (!deckHasSource(audioElB)) {
@@ -18541,33 +18490,19 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 adjustWebmPosition(2, 0);
             } else if (e.key === 'v' || e.key === 'V') {
-                // V key: short tap → next random Deck A station (or start Deck A if
-                // it's currently silent); long hold → play / pause Deck A. The short
-                // action only fires on keyup when the long-hold timer hasn't expired,
-                // so a deliberate hold never doubles as a tap.
+                // V → toggle play / pause on Deck A (or boot it via playRadio() if
+                // no source is loaded yet). e.repeat is suppressed so a held key
+                // resolves to a single toggle rather than flapping back and forth
+                // at the OS auto-repeat rate.
                 e.preventDefault();
-                if (e.repeat) return; // Key auto-repeat must not re-arm the timer
-                clearVLongPress();
-                vLongPressFired = false;
-                vLongPressTimer = setTimeout(() => {
-                    vLongPressTimer = null;
-                    vLongPressFired = true;
-                    deckALongAction();
-                }, DECK_KEY_LONG_HOLD_MS);
-			} else if (e.key === 'b' || e.key === 'B') {
-				// B key: short tap → next random Deck B station (or start Deck B if
-				// it's currently silent); long hold → play / pause Deck B. Same
-				// keyup-gated short-action pattern as V so a long hold isn't also
-				// taken as a tap.
-				e.preventDefault();
-				if (e.repeat) return;
-				clearBLongPress();
-				bLongPressFired = false;
-				bLongPressTimer = setTimeout(() => {
-				    bLongPressTimer = null;
-				    bLongPressFired = true;
-				    deckBLongAction();
-				}, DECK_KEY_LONG_HOLD_MS);
+                if (e.repeat) return;
+                deckAPlayPause();
+            } else if (e.key === 'b' || e.key === 'B') {
+                // B → toggle play / pause on Deck B (or boot it via playRadioB()
+                // if nothing is loaded). Same e.repeat guard as V.
+                e.preventDefault();
+                if (e.repeat) return;
+                deckBPlayPause();
             } else if (e.key === 't' || e.key === 'T') {
                 // Toggle Text-In panel
                 e.preventDefault();
@@ -18578,9 +18513,18 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 try { pickRandomStationForCrossfadedDeck(); } catch(_) {}
             } else if (e.key === 'p' || e.key === 'P') {
-                // Toggle Avatar Settings (Right Slide Panel)
+                // Toggle the top-menu Radio Stations list (formerly bound to the
+                // left-click on the radio quick button only).
                 e.preventDefault();
                 window.__panelGuardUntilMs = 0; // FIX: Reset guard timer for instant open
+                try { toggleRadioPanel(); } catch(_) {}
+            } else if (e.key === 'r' || e.key === 'R') {
+                // Toggle Avatar Settings (Right Slide Panel). Previously this
+                // panel was opened by P; we swapped P → Radio Stations and gave
+                // Avatar its own dedicated key (R) so both can be reached
+                // without a detour through the top menu.
+                e.preventDefault();
+                window.__panelGuardUntilMs = 0;
                 try { toggleBottomMenuPanel(); } catch(_) {}
             } else if (e.key === 'm' || e.key === 'M') {
                 // Toggle Mix Settings panel
@@ -18722,23 +18666,6 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                         }
                     }
                     spaceLongPressFired = false;
-                }
-                // V key release: if the long-hold timer is still pending the user
-                // released early → short tap (next station / start deck). If the
-                // timer already fired the long action, do nothing.
-                if (e && (e.key === 'v' || e.key === 'V')) {
-                    if (vLongPressTimer) {
-                        clearVLongPress();
-                        if (!vLongPressFired) deckAShortAction();
-                    }
-                    vLongPressFired = false;
-                }
-                if (e && (e.key === 'b' || e.key === 'B')) {
-                    if (bLongPressTimer) {
-                        clearBLongPress();
-                        if (!bLongPressFired) deckBShortAction();
-                    }
-                    bLongPressFired = false;
                 }
             }, false);
         } catch(e) {}
