@@ -2731,16 +2731,17 @@
             text-overflow: ellipsis;
             text-align: center;
         }
-        /* Deck A/B right grid: 12px * scale ramp — a touch larger than the IDEAS
-         * sample slot's base 10px * scale (rule at line ~2071) so the longer text
-         * labels (AUDIO:BAR, NO VISUAL, TEXT-IN, Stations, KARAOKE, …) read clearly
-         * without losing the shrink-together behaviour. The clamp floor is kept at
-         * 4px to match the JS fitDeckButtonText() minimum so the auto-fit pass
-         * never has to fight a CSS floor higher than its own floor on really
-         * narrow decks; the ceiling is lifted to 14px so the wide-deck size isn't
-         * clipped now that the ramp tops out at 12px at scale 1.0. */
+        /* Deck A/B right grid: uniform 12px * scale ramp across every grid cell —
+         * FX rows, SFX rows (including the IDEAS sample slot #dj-?-sfx-wav, which
+         * previously fell back to the base 10px * scale rule at line ~2071 and so
+         * rendered smaller than its neighbours), Play, and the toggle buttons.
+         * Keeping a single rule means all right-grid labels read at the same
+         * visual weight. The clamp floor is held at 4px to match the JS
+         * fitDeckButtonText() minimum so the auto-fit pass never has to fight a
+         * CSS floor higher than its own floor on really narrow decks; the ceiling
+         * sits at 14px so the wide-deck size isn't clipped at scale 1.0. */
         #dj-visual-root .dj-controls-grid > .btn.dj-fx,
-        #dj-visual-root .dj-controls-grid > .btn.dj-sfx:not(#dj-a-sfx-wav):not(#dj-b-sfx-wav),
+        #dj-visual-root .dj-controls-grid > .btn.dj-sfx,
         #dj-visual-root .dj-controls-grid > .dj-play,
         #dj-visual-root .dj-controls-grid > .dj-tbtn {
             font-size: clamp(4px, calc(12px * var(--dj-control-scale)), 14px);
