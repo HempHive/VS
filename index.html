@@ -5090,7 +5090,7 @@
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">Z</span><span class="kbd-hint">Opacity −</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">X</span><span class="kbd-hint">Opacity +</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">C</span><span class="kbd-hint">Next preset</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">V</span><span class="kbd-hint">Random station (A)</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">V</span><span class="kbd-hint">Play / pause Deck A</span></div>
                     <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">B</span><span class="kbd-hint">Play / pause Deck B</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">N</span><span class="kbd-hint">Random · active deck</span></div>
                     <div class="kbd-key kbd-lit-hot"><span class="kbd-cap">M</span><span class="kbd-hint">Mixer</span></div>
@@ -5098,7 +5098,7 @@
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">.</span><span class="kbd-hint">Next visual</span></div>
                 </div>
                 <div class="kbd-row">
-                    <div class="kbd-key kbd-lit kbd-wide"><span class="kbd-cap">Space</span><span class="kbd-hint">Play / pause Deck A</span></div>
+                    <div class="kbd-key kbd-lit kbd-wide" title="Tap: Auto-Fade (tap again mid-fade to reverse direction). Hold: pause both decks, or start the deck on the crossfader side if nothing is playing."><span class="kbd-cap">Space</span><span class="kbd-hint">Auto-Fade · hold: pause / start</span></div>
                     <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">←</span><span class="kbd-hint">Move avatar</span></div>
                     <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">→</span><span class="kbd-hint">Move avatar</span></div>
                     <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">↑</span><span class="kbd-hint">Move avatar</span></div>
@@ -5119,8 +5119,9 @@
                 <div class="kbd-group">
                     <h4>Radio &amp; visuals</h4>
                     <ul>
-                        <li><strong>V</strong> — random station on Deck A · <strong>N</strong> — random station on the deck currently winning the crossfader</li>
-                        <li><strong>Space</strong> — play / pause Deck A · <strong>B</strong> — play / pause Deck B</li>
+                        <li><strong>V</strong> — play / pause Deck A · <strong>B</strong> — play / pause Deck B</li>
+                        <li><strong>N</strong> — random station on the deck currently winning the crossfader</li>
+                        <li><strong>Space</strong> — Auto-Fade between decks; tap again mid-fade to reverse direction. <em>Hold Space</em> to pause both decks, or — when both are silent — start the deck on whichever side the crossfader is resting.</li>
                         <li><strong>C</strong> — next visual preset (when supported) · <strong>,</strong> / <strong>.</strong> — previous / next visual mode</li>
                     </ul>
                 </div>
@@ -10057,6 +10058,7 @@ function stopAllAndShowStart() {
                 this.deckBVideoEl = null;
                 this._deckBVideoUiAbortCtrl = null;
                 this.autoFadeRafId = null;
+                this.autoFadeTargetDeck = null;
                 this.autoFadeHoldTimer = null;
                 this.autoMixTimerId = null;
                 this.autoMixPreloadTimerId = null;
@@ -13224,6 +13226,7 @@ function stopAllAndShowStart() {
                     if (this.autoFadeRafId) {
                         try { cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
                         this.autoFadeRafId = null;
+                        this.autoFadeTargetDeck = null;
                         if (btnAutoFade) btnAutoFade.classList.remove('on');
                     }
                     const d = Math.max(200, Math.min(120000, Number(durMs) || 5000));
@@ -13341,6 +13344,9 @@ function stopAllAndShowStart() {
                     const startVal = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                     const endVal = targetDeck === 'b' ? 1 : 0;
                     if (Math.abs(endVal - startVal) < 0.001) {
+                        // Already at the destination — clear any stale "in-flight" target so the
+                        // Space shortcut doesn't try to "reverse" a fade that isn't running.
+                        this.autoFadeTargetDeck = null;
                         try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                         return;
                     }
@@ -13348,6 +13354,9 @@ function stopAllAndShowStart() {
                         try { cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
                         this.autoFadeRafId = null;
                     }
+                    // Remember which deck the fade is heading to. The Space keyboard
+                    // shortcut reads this to reverse direction on a second tap.
+                    this.autoFadeTargetDeck = targetDeck;
                     if (btnAutoFade) btnAutoFade.classList.add('on');
                     const durMs = Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 5000));
                     const startTs = performance.now();
@@ -13359,6 +13368,7 @@ function stopAllAndShowStart() {
                         try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                         if (t >= 1) {
                             this.autoFadeRafId = null;
+                            this.autoFadeTargetDeck = null;
                             if (btnAutoFade) btnAutoFade.classList.remove('on');
                             // Do not call ensureDeckStationPlayback here: setStation/playRadioB reload the
                             // stream and cause a second silence gap after the fader has already arrived.
@@ -13448,6 +13458,79 @@ function stopAllAndShowStart() {
                         }
                     }, sig);
                 }
+
+                /**
+                 * Entry point for the Space keyboard shortcut (short tap).
+                 *
+                 *  - If an AUTO-FADE animation is already running, reverse direction
+                 *    immediately: both decks are streaming during the fade, so we just
+                 *    re-launch runAutoFade towards the opposite deck with
+                 *    stationPreloaded:true — no Change-Station retune (the user is
+                 *    steering, not picking a fresh station).
+                 *  - Otherwise, simulate a click on the AUTO-FADE button so the full
+                 *    Change-Station / preload-wait / Auto-Mix-reschedule pipeline runs
+                 *    exactly the same way as a button click.
+                 */
+                this.triggerAutoFadeFromShortcut = () => {
+                    try {
+                        if (this.autoFadeRafId && this.autoFadeTargetDeck) {
+                            const opposite = this.autoFadeTargetDeck === 'a' ? 'b' : 'a';
+                            runAutoFade(opposite, { stationPreloaded: true });
+                            try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                            return;
+                        }
+                        if (btnAutoFade) btnAutoFade.click();
+                    } catch (_) {}
+                };
+
+                /**
+                 * Entry point for the Space keyboard shortcut (long-hold).
+                 *
+                 *  - If anything is currently playing on Deck A or Deck B: hard-pause
+                 *    both decks (and cancel any in-flight AUTO-FADE so the crossfader
+                 *    stops moving). Mirrors the "pause everything" intent of a long
+                 *    Space press.
+                 *  - If nothing is playing on either deck: start the deck on whichever
+                 *    side of the crossfader is louder (<0.5 = Deck A, >=0.5 = Deck B).
+                 *    Uses playRadio() / playRadioB() when no media source is loaded
+                 *    so the very first long-press boots a station from scratch.
+                 */
+                this.pauseBothDecksOrStartActive = () => {
+                    try {
+                        const aPlaying = !!(audioEl && !audioEl.paused);
+                        const bPlaying = !!(audioElB && !audioElB.paused);
+                        if (aPlaying || bPlaying) {
+                            if (this.autoFadeRafId) {
+                                try { cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
+                                this.autoFadeRafId = null;
+                                this.autoFadeTargetDeck = null;
+                                if (btnAutoFade) btnAutoFade.classList.remove('on');
+                            }
+                            try { if (audioEl) audioEl.pause(); } catch (_) {}
+                            try { if (audioElB) audioElB.pause(); } catch (_) {}
+                            return;
+                        }
+                        const raw = (djCross && djCross.value) || (mixCross && mixCross.value) || 0;
+                        const x = Math.max(0, Math.min(1, Number(raw) || 0));
+                        const startDeckA = () => {
+                            try {
+                                const src = audioEl ? String(audioEl.currentSrc || audioEl.src || '') : '';
+                                const hasSource = !!(src && src !== 'about:blank');
+                                if (hasSource && audioEl) audioEl.play().catch(() => {});
+                                else if (typeof playRadio === 'function') playRadio();
+                            } catch (_) {}
+                        };
+                        const startDeckB = () => {
+                            try {
+                                const src = audioElB ? String(audioElB.currentSrc || audioElB.src || '') : '';
+                                const hasSource = !!(src && src !== 'about:blank');
+                                if (hasSource && audioElB) audioElB.play().catch(() => {});
+                                else if (typeof playRadioB === 'function') playRadioB();
+                            } catch (_) {}
+                        };
+                        if (x < 0.5) startDeckA(); else startDeckB();
+                    } catch (_) {}
+                };
                 if (autoFadeDuration) {
                     autoFadeDuration.addEventListener('input', () => {
                         const sec = Math.max(2, Math.min(10, Number(autoFadeDuration.value) || 2));
@@ -14583,6 +14666,7 @@ function stopAllAndShowStart() {
                 this.animId = null;
                 try { if (this.autoFadeRafId) cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
                 this.autoFadeRafId = null;
+                this.autoFadeTargetDeck = null;
                 try { if (this.autoFadeHoldTimer) clearTimeout(this.autoFadeHoldTimer); } catch (_) {}
                 this.autoFadeHoldTimer = null;
                 try { if (this.autoMixTimerId) clearTimeout(this.autoMixTimerId); } catch (_) {}
@@ -18226,6 +18310,28 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             return (av && av.name === 'DJ Decks') ? av : null;
         }
 
+        /**
+         * Space-bar long-press support.
+         *
+         *  - Short tap  → engine.triggerAutoFadeFromShortcut() (start fade, or reverse
+         *                  direction if a fade is already in flight).
+         *  - Long hold  → engine.pauseBothDecksOrStartActive() (pauses both decks if
+         *                  anything is playing; otherwise starts the deck currently
+         *                  winning the crossfader).
+         *
+         * spaceLongPressTimer / spaceLongPressFired track the state between keydown
+         * and keyup so the short action only runs when the hold threshold wasn't met.
+         */
+        const SPACE_LONG_HOLD_MS = 500;
+        let spaceLongPressTimer = null;
+        let spaceLongPressFired = false;
+        function clearSpaceLongPress() {
+            if (spaceLongPressTimer) {
+                try { clearTimeout(spaceLongPressTimer); } catch (_) {}
+                spaceLongPressTimer = null;
+            }
+        }
+
         function handleGlobalKeydown(e) {
             // Allow Lock toggle (L) to work even when locked or focused in inputs
             if (e && (e.key === 'l' || e.key === 'L')) {
@@ -18342,11 +18448,26 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 adjustWebmPosition(2, 0);
             } else if (e.key === 'v' || e.key === 'V') {
-                // Next random station
+                // Play / pause Deck A (mirrors B for Deck B). If Deck A has no media
+                // source yet (cold start, no station tuned), fall back to playRadio()
+                // which loads the current Deck A station and starts playback exactly
+                // like pressing the deck's own Play button.
                 e.preventDefault();
-                if (stations && stations.length > 0) pickRandomStation();
+                try {
+                    if (audioEl) {
+                        const src = String(audioEl.currentSrc || audioEl.src || '');
+                        const hasSource = !!(src && src !== 'about:blank');
+                        if (!hasSource) {
+                            if (typeof playRadio === 'function') playRadio();
+                        } else if (audioEl.paused) {
+                            audioEl.play().catch(() => {});
+                        } else {
+                            audioEl.pause();
+                        }
+                    }
+                } catch(_) {}
 			} else if (e.key === 'b' || e.key === 'B') {
-				// Play / pause Deck B (mirrors Space for Deck A). If Deck B has no media
+				// Play / pause Deck B (mirrors V for Deck A). If Deck B has no media
 				// source yet (the user hasn't tuned a station or started a track), the
 				// raw .play() call would be a silent no-op while Deck A is playing — so
 				// fall back to playRadioB(), which loads the current Deck B station and
@@ -18415,14 +18536,33 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                     spawnRisingText(cfg);
                 } catch(_) {}
             } else if (e.code === 'Space' || e.key === ' ') {
-                // Play/pause current radio (A)
+                // Space:
+                //   short tap → trigger AUTO-FADE (or reverse it mid-flight)
+                //   long hold → pause both decks (or start the active-deck side if both silent)
+                // When DJ Decks isn't the active visualizer we fall back to the legacy
+                // play/pause-Deck-A behavior so Space still does something useful.
                 e.preventDefault();
-                try {
-                    if (audioEl) {
-                        if (audioEl.paused) audioEl.play().catch(()=>{});
-                        else audioEl.pause();
+                if (e.repeat) return; // Key auto-repeat must not re-arm the timer
+                const engine = getDjDecksEngineIfActive();
+                if (!engine) {
+                    try {
+                        if (audioEl) {
+                            if (audioEl.paused) audioEl.play().catch(() => {});
+                            else audioEl.pause();
+                        }
+                    } catch(_) {}
+                    return;
+                }
+                clearSpaceLongPress();
+                spaceLongPressFired = false;
+                spaceLongPressTimer = setTimeout(() => {
+                    spaceLongPressTimer = null;
+                    spaceLongPressFired = true;
+                    const eng = getDjDecksEngineIfActive();
+                    if (eng && typeof eng.pauseBothDecksOrStartActive === 'function') {
+                        eng.pauseBothDecksOrStartActive();
                     }
-                } catch(_) {}
+                }, SPACE_LONG_HOLD_MS);
             } else if (e.key === 'w' || e.key === 'W') {
                 e.preventDefault();
                 if(!webmOn) {
@@ -18483,8 +18623,24 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             // Quick tap: cancel the long-hold "stop" timer so the sample plays through (or until
             // its natural end / a subsequent press retriggers it). Long-hold: timer already fired
             // and stopped the sample, so this is a no-op.
+            //
+            // Space-key handling is symmetric: if the long-hold timer hasn't fired yet, releasing
+            // the key counts as a short tap and triggers AUTO-FADE (start or reverse). If the
+            // timer already fired the long-hold action, the keyup is a no-op.
             document.addEventListener('keyup', (e) => {
                 if (e && e.code && sampleKeyHoldTimers.has(e.code)) clearSampleKeyHold(e.code);
+                if (e && (e.code === 'Space' || e.key === ' ')) {
+                    if (spaceLongPressTimer) {
+                        clearSpaceLongPress();
+                        if (!spaceLongPressFired) {
+                            const eng = getDjDecksEngineIfActive();
+                            if (eng && typeof eng.triggerAutoFadeFromShortcut === 'function') {
+                                eng.triggerAutoFadeFromShortcut();
+                            }
+                        }
+                    }
+                    spaceLongPressFired = false;
+                }
             }, false);
         } catch(e) {}
 
