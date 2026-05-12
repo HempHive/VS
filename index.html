@@ -3725,6 +3725,45 @@
         .kbd-key.kbd-lit-sample .kbd-hint {
             color: #b3dcff;
         }
+        /* Standalone neon-colour variants used to spotlight specific keys outside
+           the semantic groups above (e.g. Space, B, N, L). Glow values mirror the
+           14px halo + 2px ground-shadow pattern shared by every lit variant. */
+        .kbd-key.kbd-lit-yellow {
+            border-color: rgba(255, 230, 60, 0.92);
+            background: rgba(255, 230, 60, 0.13);
+            color: #fffbe0;
+            box-shadow: 0 0 14px rgba(255, 230, 60, 0.45), 0 2px 0 rgba(0, 0, 0, 0.35);
+        }
+        .kbd-key.kbd-lit-yellow .kbd-hint {
+            color: #ffec9a;
+        }
+        .kbd-key.kbd-lit-pink {
+            border-color: rgba(255, 60, 180, 0.92);
+            background: rgba(255, 60, 180, 0.14);
+            color: #ffe8f4;
+            box-shadow: 0 0 14px rgba(255, 60, 180, 0.45), 0 2px 0 rgba(0, 0, 0, 0.35);
+        }
+        .kbd-key.kbd-lit-pink .kbd-hint {
+            color: #ffb8e4;
+        }
+        .kbd-key.kbd-lit-purple {
+            border-color: rgba(186, 85, 255, 0.92);
+            background: rgba(140, 70, 255, 0.16);
+            color: #f4e8ff;
+            box-shadow: 0 0 14px rgba(170, 90, 255, 0.45), 0 2px 0 rgba(0, 0, 0, 0.35);
+        }
+        .kbd-key.kbd-lit-purple .kbd-hint {
+            color: #d4b8ff;
+        }
+        .kbd-key.kbd-lit-orange {
+            border-color: rgba(255, 140, 30, 0.92);
+            background: rgba(255, 140, 30, 0.13);
+            color: #fff1e0;
+            box-shadow: 0 0 14px rgba(255, 140, 30, 0.45), 0 2px 0 rgba(0, 0, 0, 0.35);
+        }
+        .kbd-key.kbd-lit-orange .kbd-hint {
+            color: #ffc99b;
+        }
         .kbd-key.kbd-wide { min-width: 120px; flex: 1; max-width: 200px; }
         .kbd-key.kbd-arrow { min-width: 36px; font-size: 15px; }
         .kbd-key.kbd-esc-lead { margin-right: 10px; }
@@ -3738,7 +3777,7 @@
             max-width: 72px;
             word-break: break-word;
         }
-        .kbd-key:not(.kbd-lit):not(.kbd-lit-avatar):not(.kbd-lit-deckb):not(.kbd-lit-hot):not(.kbd-lit-sample) .kbd-hint { color: #555; }
+        .kbd-key:not(.kbd-lit):not(.kbd-lit-avatar):not(.kbd-lit-deckb):not(.kbd-lit-hot):not(.kbd-lit-sample):not(.kbd-lit-yellow):not(.kbd-lit-pink):not(.kbd-lit-purple):not(.kbd-lit-orange) .kbd-hint { color: #555; }
         /* Sample-pad icon shown above the cap on the 1..0 row so each key visually
            advertises the .wav it triggers (e.g. "FX3" for FX3.wav). Styled like a
            mini sample pad in neon blue so it reads as an icon rather than label text. */
@@ -5112,21 +5151,21 @@
                     <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">H</span><span class="kbd-hint">Deck B QUEUE</span></div>
                     <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">J</span><span class="kbd-hint">Deck B VIDEO</span></div>
                     <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">K</span><span class="kbd-hint">Deck B KARAOKE</span></div>
-                    <div class="kbd-key kbd-lit"><span class="kbd-cap">L</span><span class="kbd-hint">Lock UI</span></div>
+                    <div class="kbd-key kbd-lit-orange"><span class="kbd-cap">L</span><span class="kbd-hint">Lock UI</span></div>
                 </div>
                 <div class="kbd-row">
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">Z</span><span class="kbd-hint">Opacity −</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">X</span><span class="kbd-hint">Opacity +</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">C</span><span class="kbd-hint">Next preset</span></div>
                     <div class="kbd-key kbd-lit" title="Play / pause Deck A (boots the current Deck A station if nothing is loaded yet)."><span class="kbd-cap">V</span><span class="kbd-hint">Play / pause Deck A</span></div>
-                    <div class="kbd-key kbd-lit-deckb" title="Play / pause Deck B (boots the current Deck B station if nothing is loaded yet)."><span class="kbd-cap">B</span><span class="kbd-hint">Play / pause Deck B</span></div>
-                    <div class="kbd-key kbd-lit" title="Next random station on the deck currently winning the crossfader."><span class="kbd-cap">N</span><span class="kbd-hint">Next station · active deck</span></div>
+                    <div class="kbd-key kbd-lit-pink" title="Play / pause Deck B (boots the current Deck B station if nothing is loaded yet)."><span class="kbd-cap">B</span><span class="kbd-hint">Play / pause Deck B</span></div>
+                    <div class="kbd-key kbd-lit-purple" title="Next random station on the deck currently winning the crossfader."><span class="kbd-cap">N</span><span class="kbd-hint">Next station · active deck</span></div>
                     <div class="kbd-key kbd-lit-hot"><span class="kbd-cap">M</span><span class="kbd-hint">Mixer</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">,</span><span class="kbd-hint">Prev visual</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">.</span><span class="kbd-hint">Next visual</span></div>
                 </div>
                 <div class="kbd-row">
-                    <div class="kbd-key kbd-lit kbd-wide" title="Tap (silent): start the deck on the crossfader side. Tap (playing): Auto-Fade — tap again mid-fade to reverse direction. Hold: pause both decks, or start the deck on the crossfader side if nothing is playing."><span class="kbd-cap">Space</span><span class="kbd-hint">Start / Auto-Fade · hold: pause / start</span></div>
+                    <div class="kbd-key kbd-lit-yellow kbd-wide" title="Tap (silent): start the deck on the crossfader side. Tap (playing): Auto-Fade — tap again mid-fade to reverse direction. Hold: pause both decks, or start the deck on the crossfader side if nothing is playing."><span class="kbd-cap">Space</span><span class="kbd-hint">Start / Auto-Fade · hold: pause / start</span></div>
                     <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">←</span><span class="kbd-hint">Move avatar</span></div>
                     <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">→</span><span class="kbd-hint">Move avatar</span></div>
                     <div class="kbd-key kbd-lit-avatar kbd-arrow"><span class="kbd-cap">↑</span><span class="kbd-hint">Move avatar</span></div>
