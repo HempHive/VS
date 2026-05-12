@@ -13594,6 +13594,21 @@ function stopAllAndShowStart() {
                         // waiting for the incoming deck's stream to be ready — otherwise we'd
                         // stack retunes / fades on top of each other.
                         if (this.autoFadePreloadPending) return;
+                        // Release keyboard focus from this button (and any mirror button such as
+                        // #mix-autofade that just forwarded a click here) so the browser's native
+                        // button-activation behaviour can't convert a subsequent Space / Enter
+                        // press into another click on this button. Without this, Space "sometimes"
+                        // re-triggers AUTO-FADE instead of running the proper Space shortcut
+                        // (engine.triggerAutoFadeFromShortcut) because the focused-button click
+                        // races the global keydown handler.
+                        try { btnAutoFade.blur(); } catch (_) {}
+                        try {
+                            const ae = document.activeElement;
+                            if (ae && ae !== document.body && typeof ae.blur === 'function' &&
+                                (ae.classList.contains('dj-autofade-btn') || ae.classList.contains('dj-automix-btn'))) {
+                                ae.blur();
+                            }
+                        } catch (_) {}
                         closeAutoFadePanel();
                         closeAutoMixPanel();
                         const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
@@ -13780,6 +13795,28 @@ function stopAllAndShowStart() {
                         startActiveDeckByCrossfader();
                     } catch (_) {}
                 };
+
+                /**
+                 * Stop any in-flight AUTO-FADE animation and clear its bookkeeping.
+                 * Called from the V / B keyboard shortcuts so a manual play/pause
+                 * actually sticks — without this, `runAutoFade`'s per-frame
+                 * `ensureCrossfadeDeckPlayback()` re-plays whichever deck the user
+                 * just paused as long as that deck has audible crossfader gain,
+                 * making V / B feel inert for the entire fade duration.
+                 *
+                 * The crossfader is intentionally left at its current value so the
+                 * user keeps the mix balance they had when they took over; only
+                 * the animation timer and "in-flight target" state are reset.
+                 * Safe to call when no fade is active (it's a no-op).
+                 */
+                this.cancelAutoFade = () => {
+                    if (this.autoFadeRafId) {
+                        try { cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
+                        this.autoFadeRafId = null;
+                    }
+                    this.autoFadeTargetDeck = null;
+                    if (btnAutoFade) btnAutoFade.classList.remove('on');
+                };
                 if (autoFadeDuration) {
                     autoFadeDuration.addEventListener('input', () => {
                         const sec = Math.max(2, Math.min(10, Number(autoFadeDuration.value) || 2));
@@ -13851,6 +13888,17 @@ function stopAllAndShowStart() {
                     btnAutoMix.addEventListener('pointerleave', clearAutoMixHold, sig);
                     btnAutoMix.addEventListener('click', () => {
                         if (autoMixLongPressFired || Date.now() < suppressAutoMixClickUntil) return;
+                        // Same focus-release as the AUTO-FADE click handler — Space / Enter
+                        // shouldn't be able to re-toggle AUTO-MIX just because this button
+                        // happens to be the most-recently-focused element after a tap.
+                        try { btnAutoMix.blur(); } catch (_) {}
+                        try {
+                            const ae = document.activeElement;
+                            if (ae && ae !== document.body && typeof ae.blur === 'function' &&
+                                (ae.classList.contains('dj-autofade-btn') || ae.classList.contains('dj-automix-btn'))) {
+                                ae.blur();
+                            }
+                        } catch (_) {}
                         closeAutoFadePanel();
                         autoMixEnabled = !autoMixEnabled;
                         syncAutoMixUi();
@@ -18600,6 +18648,15 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         }
         function deckAPlayPause() {
             try {
+                // Take manual control: if an AUTO-FADE animation is mid-flight,
+                // its per-frame ticker will keep re-playing whatever deck has
+                // crossfader gain — so V appears to do nothing for the full
+                // fade. Cancelling the fade first makes the play/pause stick.
+                // No-op when no fade is running.
+                try {
+                    const eng = getDjDecksEngineIfActive();
+                    if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
+                } catch (_) {}
                 if (!audioEl) return;
                 if (!deckHasSource(audioEl)) {
                     if (typeof playRadio === 'function') playRadio();
@@ -18612,6 +18669,13 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         }
         function deckBPlayPause() {
             try {
+                // Same rationale as deckAPlayPause: cancel any in-flight
+                // AUTO-FADE so the user's explicit pause/play on Deck B isn't
+                // overridden by the next animation tick.
+                try {
+                    const eng = getDjDecksEngineIfActive();
+                    if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
+                } catch (_) {}
                 if (!audioElB) return;
                 if (!deckHasSource(audioElB)) {
                     if (typeof playRadioB === 'function') playRadioB();
