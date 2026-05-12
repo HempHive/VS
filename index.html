@@ -18346,12 +18346,23 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 if (stations && stations.length > 0) pickRandomStation();
 			} else if (e.key === 'b' || e.key === 'B') {
-				// Play / pause Deck B (mirrors Space for Deck A)
+				// Play / pause Deck B (mirrors Space for Deck A). If Deck B has no media
+				// source yet (the user hasn't tuned a station or started a track), the
+				// raw .play() call would be a silent no-op while Deck A is playing — so
+				// fall back to playRadioB(), which loads the current Deck B station and
+				// kicks off playback exactly like pressing the deck's own Play button.
 				e.preventDefault();
 				try {
 				    if (audioElB) {
-				        if (audioElB.paused) audioElB.play().catch(()=>{});
-				        else audioElB.pause();
+				        const src = String(audioElB.currentSrc || audioElB.src || '');
+				        const hasSource = !!(src && src !== 'about:blank');
+				        if (!hasSource) {
+				            if (typeof playRadioB === 'function') playRadioB();
+				        } else if (audioElB.paused) {
+				            audioElB.play().catch(() => {});
+				        } else {
+				            audioElB.pause();
+				        }
 				    }
 				} catch(_) {}
             } else if (e.key === 't' || e.key === 'T') {
