@@ -3764,6 +3764,17 @@
         .kbd-key.kbd-lit-orange .kbd-hint {
             color: #ffc99b;
         }
+        /* Dark neon blue — deeper / more saturated than the light .kbd-lit-sample
+           pad blue so the two read as distinct families (samples vs. spotlight). */
+        .kbd-key.kbd-lit-darkblue {
+            border-color: rgba(60, 90, 255, 0.92);
+            background: rgba(50, 70, 230, 0.18);
+            color: #e0e6ff;
+            box-shadow: 0 0 14px rgba(60, 90, 255, 0.5), 0 2px 0 rgba(0, 0, 0, 0.35);
+        }
+        .kbd-key.kbd-lit-darkblue .kbd-hint {
+            color: #a8b8ff;
+        }
         .kbd-key.kbd-wide { min-width: 120px; flex: 1; max-width: 200px; }
         .kbd-key.kbd-arrow { min-width: 36px; font-size: 15px; }
         .kbd-key.kbd-esc-lead { margin-right: 10px; }
@@ -3777,7 +3788,7 @@
             max-width: 72px;
             word-break: break-word;
         }
-        .kbd-key:not(.kbd-lit):not(.kbd-lit-avatar):not(.kbd-lit-deckb):not(.kbd-lit-hot):not(.kbd-lit-sample):not(.kbd-lit-yellow):not(.kbd-lit-pink):not(.kbd-lit-purple):not(.kbd-lit-orange) .kbd-hint { color: #555; }
+        .kbd-key:not(.kbd-lit):not(.kbd-lit-avatar):not(.kbd-lit-deckb):not(.kbd-lit-hot):not(.kbd-lit-sample):not(.kbd-lit-yellow):not(.kbd-lit-pink):not(.kbd-lit-purple):not(.kbd-lit-orange):not(.kbd-lit-darkblue) .kbd-hint { color: #555; }
         /* Sample-pad icon shown above the cap on the 1..0 row so each key visually
            advertises the .wav it triggers (e.g. "FX3" for FX3.wav). Styled like a
            mini sample pad in neon blue so it reads as an icon rather than label text. */
@@ -5118,16 +5129,16 @@
             <div class="kbd-board-wrap">
                 <div class="kbd-board-title">Quick map</div>
                 <div class="kbd-row">
-                    <div class="kbd-key kbd-lit-sample" title="Plays WAA.wav on Deck A"><span class="kbd-sample-icon" aria-label="WAA.wav">WAA</span><span class="kbd-cap">1</span><span class="kbd-hint">Deck A</span></div>
-                    <div class="kbd-key kbd-lit-sample" title="Plays WAAA.wav on Deck A"><span class="kbd-sample-icon" aria-label="WAAA.wav">WAAA</span><span class="kbd-cap">2</span><span class="kbd-hint">Deck A</span></div>
-                    <div class="kbd-key kbd-lit-sample" title="Plays AIR.wav on Deck A"><span class="kbd-sample-icon" aria-label="AIR.wav">AIR📢</span><span class="kbd-cap">3</span><span class="kbd-hint">Deck A</span></div>
-                    <div class="kbd-key kbd-lit-sample" title="Plays FX1.wav on Deck A"><span class="kbd-sample-icon" aria-label="FX1.wav">FX1</span><span class="kbd-cap">4</span><span class="kbd-hint">Deck A</span></div>
-                    <div class="kbd-key kbd-lit-sample" title="Plays FX2.wav on Deck A"><span class="kbd-sample-icon" aria-label="FX2.wav">FX2</span><span class="kbd-cap">5</span><span class="kbd-hint">Deck A</span></div>
-                    <div class="kbd-key kbd-lit-sample" title="Plays FX3.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX3.wav">FX3</span><span class="kbd-cap">6</span><span class="kbd-hint">Deck B</span></div>
-                    <div class="kbd-key kbd-lit-sample" title="Plays FX4.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX4.wav">FX4</span><span class="kbd-cap">7</span><span class="kbd-hint">Deck B</span></div>
-                    <div class="kbd-key kbd-lit-sample" title="Plays FX5.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX5.wav">FX5</span><span class="kbd-cap">8</span><span class="kbd-hint">Deck B</span></div>
-                    <div class="kbd-key kbd-lit-sample" title="Plays FX6.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX6.wav">FX6</span><span class="kbd-cap">9</span><span class="kbd-hint">Deck B</span></div>
-                    <div class="kbd-key kbd-lit-sample" title="Plays FX7.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX7.wav">FX7</span><span class="kbd-cap">0</span><span class="kbd-hint">Deck B</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays WAA.wav on Deck A"><span class="kbd-sample-icon" aria-label="WAA.wav">WAA</span><span class="kbd-cap">1</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays WAAA.wav on Deck A"><span class="kbd-sample-icon" aria-label="WAAA.wav">WAAA</span><span class="kbd-cap">2</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays AIR.wav on Deck A"><span class="kbd-sample-icon" aria-label="AIR.wav">AIR📢</span><span class="kbd-cap">3</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX1.wav on Deck A"><span class="kbd-sample-icon" aria-label="FX1.wav">FX1</span><span class="kbd-cap">4</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX2.wav on Deck A"><span class="kbd-sample-icon" aria-label="FX2.wav">FX2</span><span class="kbd-cap">5</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX3.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX3.wav">FX3</span><span class="kbd-cap">6</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX4.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX4.wav">FX4</span><span class="kbd-cap">7</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX5.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX5.wav">FX5</span><span class="kbd-cap">8</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX6.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX6.wav">FX6</span><span class="kbd-cap">9</span></div>
+                    <div class="kbd-key kbd-lit-sample" title="Plays FX7.wav on Deck B"><span class="kbd-sample-icon" aria-label="FX7.wav">FX7</span><span class="kbd-cap">0</span></div>
                 </div>
                 <div class="kbd-row">
                     <div class="kbd-key kbd-lit kbd-esc-lead"><span class="kbd-cap">Esc</span><span class="kbd-hint">Close panels · then start</span></div>
@@ -5140,7 +5151,7 @@
                     <div class="kbd-key"><span class="kbd-cap">U</span><span class="kbd-hint">—</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">I</span><span class="kbd-hint">Send rising text</span></div>
                     <div class="kbd-key"><span class="kbd-cap">O</span><span class="kbd-hint">—</span></div>
-                    <div class="kbd-key kbd-lit" title="Toggle the top-menu Radio Stations list"><span class="kbd-cap">P</span><span class="kbd-hint">Radio Stations</span></div>
+                    <div class="kbd-key kbd-lit-darkblue" title="Toggle the top-menu Radio Stations list"><span class="kbd-cap">P</span><span class="kbd-hint">Radio Stations</span></div>
                 </div>
                 <div class="kbd-row">
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">A</span><span class="kbd-hint">Prev clip</span></div>
@@ -5157,9 +5168,9 @@
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">Z</span><span class="kbd-hint">Opacity −</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">X</span><span class="kbd-hint">Opacity +</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">C</span><span class="kbd-hint">Next preset</span></div>
-                    <div class="kbd-key kbd-lit" title="Play / pause Deck A (boots the current Deck A station if nothing is loaded yet)."><span class="kbd-cap">V</span><span class="kbd-hint">Play / pause Deck A</span></div>
-                    <div class="kbd-key kbd-lit-pink" title="Play / pause Deck B (boots the current Deck B station if nothing is loaded yet)."><span class="kbd-cap">B</span><span class="kbd-hint">Play / pause Deck B</span></div>
-                    <div class="kbd-key kbd-lit-purple" title="Next random station on the deck currently winning the crossfader."><span class="kbd-cap">N</span><span class="kbd-hint">Next station · active deck</span></div>
+                    <div class="kbd-key kbd-lit-pink" title="Play / pause Deck A (boots the current Deck A station if nothing is loaded yet)."><span class="kbd-cap">V</span><span class="kbd-hint">Play / pause Deck A</span></div>
+                    <div class="kbd-key kbd-lit-purple" title="Play / pause Deck B (boots the current Deck B station if nothing is loaded yet)."><span class="kbd-cap">B</span><span class="kbd-hint">Play / pause Deck B</span></div>
+                    <div class="kbd-key kbd-lit-yellow" title="Next random station on the deck currently winning the crossfader."><span class="kbd-cap">N</span><span class="kbd-hint">Next station · active deck</span></div>
                     <div class="kbd-key kbd-lit-hot"><span class="kbd-cap">M</span><span class="kbd-hint">Mixer</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">,</span><span class="kbd-hint">Prev visual</span></div>
                     <div class="kbd-key kbd-lit"><span class="kbd-cap">.</span><span class="kbd-hint">Next visual</span></div>
