@@ -12328,11 +12328,11 @@ function stopAllAndShowStart() {
         <div class="dj-automix-panel" id="dj-automix-panel" aria-hidden="true">
           <div class="dj-automix-title">Auto-mix interval</div>
           <div class="dj-automix-row">
-            <input type="range" id="dj-automix-min" min="2" max="20" step="1" value="2" aria-label="Auto-mix minimum minutes">
+            <input type="range" id="dj-automix-min" min="1" max="20" step="1" value="2" aria-label="Auto-mix minimum minutes">
             <span class="dj-automix-readout" id="dj-automix-min-readout">2m</span>
           </div>
           <div class="dj-automix-row">
-            <input type="range" id="dj-automix-max" min="2" max="20" step="1" value="20" aria-label="Auto-mix maximum minutes">
+            <input type="range" id="dj-automix-max" min="1" max="20" step="1" value="20" aria-label="Auto-mix maximum minutes">
             <span class="dj-automix-readout" id="dj-automix-max-readout">20m</span>
           </div>
           <div class="dj-automix-limit-section">
@@ -12673,8 +12673,8 @@ function stopAllAndShowStart() {
                 try {
                     const minStored = Number(localStorage.getItem(AUTOMIX_MIN_KEY));
                     const maxStored = Number(localStorage.getItem(AUTOMIX_MAX_KEY));
-                    if (Number.isFinite(minStored) && minStored >= 2 && minStored <= 20) autoMixMinMin = Math.round(minStored);
-                    if (Number.isFinite(maxStored) && maxStored >= 2 && maxStored <= 20) autoMixMaxMin = Math.round(maxStored);
+                    if (Number.isFinite(minStored) && minStored >= 1 && minStored <= 20) autoMixMinMin = Math.round(minStored);
+                    if (Number.isFinite(maxStored) && maxStored >= 1 && maxStored <= 20) autoMixMaxMin = Math.round(maxStored);
                     if (autoMixMinMin > autoMixMaxMin) autoMixMaxMin = autoMixMinMin;
                 } catch (_) {}
                 try {
@@ -12783,7 +12783,7 @@ function stopAllAndShowStart() {
                     }, 1000);
                 };
                 const syncAutoMixUi = () => {
-                    autoMixMinMin = Math.max(2, Math.min(20, Math.round(Number(autoMixMinMin) || 2)));
+                    autoMixMinMin = Math.max(1, Math.min(20, Math.round(Number(autoMixMinMin) || 2)));
                     autoMixMaxMin = Math.max(autoMixMinMin, Math.min(20, Math.round(Number(autoMixMaxMin) || 20)));
                     autoMixLimitMin = Math.max(5, Math.min(300, Math.round(Number(autoMixLimitMin) || 60)));
                     if (autoMixMin) autoMixMin.value = String(autoMixMinMin);
@@ -13283,8 +13283,8 @@ function stopAllAndShowStart() {
                         if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = '';
                         return;
                     }
-                    const minMs = Math.max(2, Math.min(20, Number(autoMixMinMin) || 2)) * 60 * 1000;
-                    const maxMs = Math.max(minMs, Math.max(2, Math.min(20, Number(autoMixMaxMin) || 20)) * 60 * 1000);
+                    const minMs = Math.max(1, Math.min(20, Number(autoMixMinMin) || 2)) * 60 * 1000;
+                    const maxMs = Math.max(minMs, Math.max(1, Math.min(20, Number(autoMixMaxMin) || 20)) * 60 * 1000);
                     const span = Math.max(0, maxMs - minMs);
                     const waitMs = minMs + (span > 0 ? Math.floor(Math.random() * (span + 1)) : 0);
                     const xSchedule = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
@@ -13413,25 +13413,51 @@ function stopAllAndShowStart() {
                         closeAutoMixPanel();
                         const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                         const target = x < 0.5 ? 'b' : 'a';
-                        if (autoFadeChangeStationEnabled) {
-                            // "Change station before fading" is on. Order of operations:
-                            //   1. retune the incoming deck to a fresh random eligible station,
-                            //   2. WAIT for the stream to actually start (or buffer enough) so the
-                            //      crossfade doesn't slide into silence,
-                            //   3. then run the fade with stationPreloaded:true so runAutoFade
-                            //      doesn't try to reload the source on top of our retune.
+                        // Two independent toggles, decoupled so AUTO-MIX gives us a smooth
+                        // transition even when the user wants to keep their currently cued
+                        // station on the incoming deck:
+                        //
+                        //   doRetune       = "Change station before fading" is ON
+                        //                    → swap the incoming deck to a fresh random station.
+                        //   doPreloadWait  = retune is happening, OR AUTO-MIX is enabled
+                        //                    → wait for the incoming deck's stream to be
+                        //                      audibly ready before kicking off the crossfade,
+                        //                      so we never fade INTO silence / a buffering gap.
+                        //
+                        // When AUTO-MIX is on the user has explicitly opted into "automated
+                        // mixing" — so even a manual press should benefit from the same
+                        // preload-wait guarantee that AUTO-MIX's scheduled fires already use.
+                        const doRetune = autoFadeChangeStationEnabled;
+                        const doPreloadWait = autoFadeChangeStationEnabled || autoMixEnabled;
+                        if (doPreloadWait) {
                             // Cancel any AUTO-MIX preload/fire timer that might have been
                             // about to expire on the same deck — otherwise it could re-retune
                             // mid-preload (interrupting our stream load) or run a second fade
                             // on top of ours. scheduleNextAutoMix() runs again after the manual
                             // fade completes, so the AUTO-MIX cycle simply restarts from then.
                             if (autoMixEnabled) { try { clearAutoMixTimer(); } catch (_) {} }
-                            try { retuneDeckStationForAutoMix(target); } catch (_) {}
+                            if (doRetune) {
+                                // retuneDeckStationForAutoMix() also kicks playback via
+                                // playRadioB() / setStation(), so we don't need a separate
+                                // primer call below.
+                                try { retuneDeckStationForAutoMix(target); } catch (_) {}
+                            } else {
+                                // Prime the incoming deck so awaitDeckRadioReady has something
+                                // to wait on. ensureCrossfadeDeckPlayback() only plays decks
+                                // whose crossfader gain is > 0.03; the target is by definition
+                                // on the far/muted side, so it would stay paused and the await
+                                // would sit there until the timeout fired. play() on the cued
+                                // src is enough — runAutoFade will handle the rest.
+                                try {
+                                    const el = target === 'b' ? audioElB : audioEl;
+                                    if (el && el.src && el.paused) el.play().catch(() => {});
+                                } catch (_) {}
+                            }
                             const myGen = (this.autoFadePreloadGen = (this.autoFadePreloadGen || 0) + 1);
                             this.autoFadePreloadPending = true;
                             if (btnAutoFade) btnAutoFade.classList.add('is-preloading');
-                            // While waiting we keep mid-stream playback flowing so the outgoing
-                            // deck doesn't pause / glitch.
+                            // Keep mid-stream playback flowing on the outgoing deck so it
+                            // doesn't pause / glitch while we wait for the incoming one.
                             try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                             awaitDeckRadioReady(target, AUTO_MIX_PRELOAD_MS).finally(() => {
                                 // Bail out if another click superseded this preload, or if the
@@ -13441,17 +13467,21 @@ function stopAllAndShowStart() {
                                 this.autoFadePreloadPending = false;
                                 if (btnAutoFade) btnAutoFade.classList.remove('is-preloading');
                                 if (sig && sig.signal && sig.signal.aborted) return;
+                                // stationPreloaded skips the redundant playRadioB()/setStation()
+                                // reload inside runAutoFade. True after our retune (deck just got
+                                // a fresh src that we already awaited) AND when AUTO-MIX is on
+                                // but the user kept their cued station (deck was already ready or
+                                // we just booted it via ensureCrossfadeDeckPlayback).
                                 runAutoFade(target, { stationPreloaded: true });
                                 try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                                 if (autoMixEnabled) scheduleNextAutoMix();
                             });
                         } else {
-                            // "Change station before fading" is off: keep whatever station the user
-                            // already cued on the target deck. If the deck is already in radio mode
-                            // with a valid src (e.g. via Rand/Prev/Next), skip the redundant
-                            // playRadioB()/setStation() reload — calling it again would interrupt
-                            // the in-flight load with "play() request was interrupted by a new load
-                            // request" and could also re-randomize the station the user just picked.
+                            // Neither preload trigger is active — fade immediately. If the deck
+                            // is already in radio mode with a valid src (e.g. via Rand/Prev/Next),
+                            // skip the redundant playRadioB()/setStation() reload so we don't
+                            // interrupt an in-flight load with "play() request was interrupted by
+                            // a new load request" or re-randomize the station the user just picked.
                             runAutoFade(target, { stationPreloaded: isDeckRadioReady(target) });
                             try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                             if (autoMixEnabled) scheduleNextAutoMix();
@@ -13659,7 +13689,7 @@ function stopAllAndShowStart() {
                 }
                 if (autoMixMin) {
                     autoMixMin.addEventListener('input', () => {
-                        autoMixMinMin = Math.max(2, Math.min(20, Number(autoMixMin.value) || 2));
+                        autoMixMinMin = Math.max(1, Math.min(20, Number(autoMixMin.value) || 2));
                         if (autoMixMaxMin < autoMixMinMin) autoMixMaxMin = autoMixMinMin;
                         syncAutoMixUi();
                     }, sig);
@@ -13671,7 +13701,7 @@ function stopAllAndShowStart() {
                 }
                 if (autoMixMax) {
                     autoMixMax.addEventListener('input', () => {
-                        autoMixMaxMin = Math.max(2, Math.min(20, Number(autoMixMax.value) || 20));
+                        autoMixMaxMin = Math.max(1, Math.min(20, Number(autoMixMax.value) || 20));
                         if (autoMixMaxMin < autoMixMinMin) autoMixMinMin = autoMixMaxMin;
                         syncAutoMixUi();
                     }, sig);
