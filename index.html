@@ -12974,7 +12974,24 @@ function stopAllAndShowStart() {
                         closeAutoFadePanel();
                         closeAutoMixPanel();
                         const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
-                        runAutoFade(x < 0.5 ? 'b' : 'a');
+                        const target = x < 0.5 ? 'b' : 'a';
+                        // If the user has already cued the target deck in radio mode (e.g. via Rand/Prev/Next),
+                        // skip the redundant playRadioB()/setStation() reload. Calling it again would interrupt
+                        // the in-flight load with "play() request was interrupted by a new load request" and could
+                        // also re-randomize the station the user just picked (race with ensureDeckStationPlayback).
+                        // We only let runAutoFade kick off playback when the target deck has no station ready.
+                        const isTargetStationReady = (() => {
+                            try {
+                                const mode = state && state.deckSourceMode && state.deckSourceMode[target];
+                                if (mode !== 'radio') return false;
+                                const el = target === 'b' ? audioElB : audioEl;
+                                const src = el && (el.currentSrc || el.src || '');
+                                return !!(src && src !== 'about:blank');
+                            } catch (_) {
+                                return false;
+                            }
+                        })();
+                        runAutoFade(target, { stationPreloaded: isTargetStationReady });
                         try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                         if (autoMixEnabled) scheduleNextAutoMix();
                     }, sig);
