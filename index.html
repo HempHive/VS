@@ -4942,6 +4942,18 @@
             <div class="kbd-board-wrap">
                 <div class="kbd-board-title">Quick map</div>
                 <div class="kbd-row">
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">1</span><span class="kbd-hint">WAA (A)</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">2</span><span class="kbd-hint">WAAA (A)</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">3</span><span class="kbd-hint">AIR📢 (A)</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">4</span><span class="kbd-hint">FX1 (A)</span></div>
+                    <div class="kbd-key kbd-lit"><span class="kbd-cap">5</span><span class="kbd-hint">FX2 (A)</span></div>
+                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">6</span><span class="kbd-hint">FX3 (B)</span></div>
+                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">7</span><span class="kbd-hint">FX4 (B)</span></div>
+                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">8</span><span class="kbd-hint">FX5 (B)</span></div>
+                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">9</span><span class="kbd-hint">FX6 (B)</span></div>
+                    <div class="kbd-key kbd-lit-deckb"><span class="kbd-cap">0</span><span class="kbd-hint">FX7 (B)</span></div>
+                </div>
+                <div class="kbd-row">
                     <div class="kbd-key kbd-lit kbd-esc-lead"><span class="kbd-cap">Esc</span><span class="kbd-hint">Close panels · then start</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">Q</span><span class="kbd-hint">Avatar speed −</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">W</span><span class="kbd-hint">Toggle avatar overlay</span></div>
@@ -5014,6 +5026,14 @@
                     <h4>DJ Deck B</h4>
                     <ul>
                         <li><strong>H</strong> — QUEUE · <strong>J</strong> — VIDEO · <strong>K</strong> — KARAOKE (same as buttons on Deck B)</li>
+                    </ul>
+                </div>
+                <div class="kbd-group">
+                    <h4>Sample pads (DJ Decks)</h4>
+                    <ul>
+                        <li><strong>1</strong> WAA · <strong>2</strong> WAAA · <strong>3</strong> AIR📢 · <strong>4</strong> FX1 · <strong>5</strong> FX2 (Deck A)</li>
+                        <li><strong>6</strong> FX3 · <strong>7</strong> FX4 · <strong>8</strong> FX5 · <strong>9</strong> FX6 · <strong>0</strong> FX7 (Deck B)</li>
+                        <li>Tap to play; press again to restart. Hold the key to cut the sample and turn it off.</li>
                     </ul>
                 </div>
             </div>
@@ -10231,6 +10251,82 @@ function stopAllAndShowStart() {
                     });
                     this.beatMapSlots = null;
                 } catch (_) {}
+            }
+
+            /**
+             * Programmatic trigger for a beat-map sample slot. Mirrors the same audio graph
+             * setup, BPM-derived playback rate, loop handling, and pad "on" class behavior used
+             * by the on-screen pads, so keyboard shortcuts feel identical to clicks.
+             *
+             * @param {('a'|'b')} deckKey
+             * @param {number} slotIdx
+             * @param {('start'|'stop')} action  'start' (also used for "restart") plays the slot
+             *                                   from time 0; 'stop' cuts the audio and clears UI.
+             * @returns {boolean} true if the slot exists and the action was applied.
+             */
+            triggerBeatPadKey(deckKey, slotIdx, action) {
+                try {
+                    if (!this.beatMapSlots) return false;
+                    const arr = this.beatMapSlots[deckKey];
+                    if (!arr) return false;
+                    const slot = arr[slotIdx];
+                    if (!slot || !slot.audio) return false;
+                    const root = this.root || document;
+                    const btn = root.querySelector(`button[data-beat-deck="${deckKey}"][data-beat-slot="${slotIdx}"]`);
+
+                    const clearEnded = () => {
+                        try {
+                            if (slot._beatEnded) {
+                                slot.audio.removeEventListener('ended', slot._beatEnded);
+                                slot._beatEnded = null;
+                            }
+                        } catch (_) {}
+                    };
+
+                    if (action === 'stop') {
+                        try { slot.audio.pause(); } catch (_) {}
+                        try { slot.audio.currentTime = 0; } catch (_) {}
+                        clearEnded();
+                        try { if (btn) btn.classList.remove('on'); } catch (_) {}
+                        return true;
+                    }
+
+                    // 'start' / 'restart': always (re)play from the beginning so repeated key
+                    // presses retrigger the sample instead of toggling pause.
+                    try { initAudio(); } catch (_) {}
+                    if (state && state.audioCtx && !slot.sourceNode) {
+                        try {
+                            slot.sourceNode = state.audioCtx.createMediaElementSource(slot.audio);
+                            slot.sourceNode.connect(state.mixInput);
+                        } catch (_) {}
+                    }
+
+                    const REF_BPM = 120;
+                    const slider = root.querySelector('#' + (deckKey === 'a' ? 'dj-a' : 'dj-b') + '-beat-bpm');
+                    const v = slider ? parseFloat(slider.value) : REF_BPM;
+                    const bpm = Number.isFinite(v) ? v : REF_BPM;
+                    const rate = Math.max(0.25, Math.min(4, bpm / REF_BPM));
+                    const loop = !!slot.loopMode;
+                    try { slot.audio.loop = loop; } catch (_) {}
+                    clearEnded();
+                    try { slot.audio.playbackRate = rate; } catch (_) {}
+                    try { slot.audio.pause(); } catch (_) {}
+                    try { slot.audio.currentTime = 0; } catch (_) {}
+                    if (!loop) {
+                        const onEnd = () => {
+                            try { if (btn) btn.classList.remove('on'); } catch (_) {}
+                            clearEnded();
+                        };
+                        slot._beatEnded = onEnd;
+                        try { slot.audio.addEventListener('ended', onEnd); } catch (_) {}
+                    }
+                    slot.audio.play().then(() => {
+                        try { if (btn) btn.classList.add('on'); } catch (_) {}
+                    }).catch(() => {});
+                    return true;
+                } catch (_) {
+                    return false;
+                }
             }
 
             hideDeckBQueueView() {
@@ -17696,6 +17792,38 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         });
 
         // Keyboard shortcuts
+        /**
+         * Number-row sample shortcuts. Keys 1..9, 0 map to the WAA/WAAA/AIR/FX1..FX7 sample
+         * pads (Deck A slots 5..9, then Deck B slots 5..9). Short press starts/restarts the
+         * sample (so repeated taps retrigger it); holding the key past the threshold cuts the
+         * sample and turns the pad off. Pad clicks are unaffected.
+         */
+        const SAMPLE_KEY_LONG_HOLD_MS = 550;
+        const SAMPLE_KEY_BINDINGS = {
+            Digit1: { deck: 'a', slot: 5 }, Numpad1: { deck: 'a', slot: 5 },
+            Digit2: { deck: 'a', slot: 6 }, Numpad2: { deck: 'a', slot: 6 },
+            Digit3: { deck: 'a', slot: 7 }, Numpad3: { deck: 'a', slot: 7 },
+            Digit4: { deck: 'a', slot: 8 }, Numpad4: { deck: 'a', slot: 8 },
+            Digit5: { deck: 'a', slot: 9 }, Numpad5: { deck: 'a', slot: 9 },
+            Digit6: { deck: 'b', slot: 5 }, Numpad6: { deck: 'b', slot: 5 },
+            Digit7: { deck: 'b', slot: 6 }, Numpad7: { deck: 'b', slot: 6 },
+            Digit8: { deck: 'b', slot: 7 }, Numpad8: { deck: 'b', slot: 7 },
+            Digit9: { deck: 'b', slot: 8 }, Numpad9: { deck: 'b', slot: 8 },
+            Digit0: { deck: 'b', slot: 9 }, Numpad0: { deck: 'b', slot: 9 }
+        };
+        const sampleKeyHoldTimers = new Map();
+        function clearSampleKeyHold(code) {
+            const t = sampleKeyHoldTimers.get(code);
+            if (t) {
+                try { clearTimeout(t); } catch (_) {}
+                sampleKeyHoldTimers.delete(code);
+            }
+        }
+        function getDjDecksEngineIfActive() {
+            const av = state && state.activeVisualizer;
+            return (av && av.name === 'DJ Decks') ? av : null;
+        }
+
         function handleGlobalKeydown(e) {
             // Allow Lock toggle (L) to work even when locked or focused in inputs
             if (e && (e.key === 'l' || e.key === 'L')) {
@@ -17713,6 +17841,27 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                     return;
                 }
             } catch(_) {}
+
+            // Sample pad shortcuts (1..0). Ignore modifier-combined presses so browser/OS
+            // shortcuts like Ctrl+1 (tab) are untouched.
+            const sampleBinding = (e && e.code && SAMPLE_KEY_BINDINGS[e.code]) || null;
+            if (sampleBinding && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+                const engine = getDjDecksEngineIfActive();
+                if (!engine) return; // Only meaningful while DJ Decks is the active visualizer
+                e.preventDefault();
+                if (e.repeat) return; // Key auto-repeat must not re-trigger the sample
+                engine.triggerBeatPadKey(sampleBinding.deck, sampleBinding.slot, 'start');
+                clearSampleKeyHold(e.code);
+                const code = e.code;
+                const timer = setTimeout(() => {
+                    sampleKeyHoldTimers.delete(code);
+                    const eng = getDjDecksEngineIfActive();
+                    if (eng) eng.triggerBeatPadKey(sampleBinding.deck, sampleBinding.slot, 'stop');
+                }, SAMPLE_KEY_LONG_HOLD_MS);
+                sampleKeyHoldTimers.set(code, timer);
+                return;
+            }
+
             if (e.key === 'f' || e.key === 'F') {
                 toggleFullscreen();
             } else if (e.key === 's' || e.key === 'S') {
@@ -17912,6 +18061,14 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         }
         try {
             document.addEventListener('keydown', handleGlobalKeydown, false);
+        } catch(e) {}
+        try {
+            // Quick tap: cancel the long-hold "stop" timer so the sample plays through (or until
+            // its natural end / a subsequent press retriggers it). Long-hold: timer already fired
+            // and stopped the sample, so this is a no-op.
+            document.addEventListener('keyup', (e) => {
+                if (e && e.code && sampleKeyHoldTimers.has(e.code)) clearSampleKeyHold(e.code);
+            }, false);
         } catch(e) {}
 
         // Bootstrap station list
