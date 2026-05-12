@@ -2606,12 +2606,32 @@
             color: #9ad;
             text-align: center;
         }
-        /* DJ crossfader: same vol.png thumb as Mixer / station list theme */
+        /* DJ crossfader: same vol.png thumb as Mixer / station list theme.
+         *
+         * Track is a two-tone gauge: purple grows from the left edge with the
+         * crossfader value (Deck B's share), pink grows from the right edge with
+         * (1 − value) (Deck A's share). Their seam sits exactly under the thumb,
+         * so x=0 → all pink (Deck A wins), x=1 → all purple (Deck B wins), and
+         * intermediate positions show both colours meeting at the thumb. The
+         * seam stop position is driven by `--cross-x` (a unitless 0..1 value)
+         * that applyCrossfade() updates every time the slider mutates — see
+         * the JS hook there for the single chokepoint that keeps drag, AUTO-FADE
+         * tick, cut-fade hold, MIDI and the mix-panel mirror in sync. */
         #dj-visual-root #dj-crossfader {
             -webkit-appearance: none;
             appearance: none;
             height: 14px !important;
-            background: rgba(255,255,255,0.08) !important;
+            --cross-x: 0;
+            --cross-deck-a: #ff3cb4;
+            --cross-deck-b: #ba55ff;
+            background: linear-gradient(
+                to right,
+                var(--cross-deck-b) 0%,
+                var(--cross-deck-b) calc(var(--cross-x) * 100%),
+                var(--cross-deck-a) calc(var(--cross-x) * 100%),
+                var(--cross-deck-a) 100%
+            ) !important;
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45);
             border-radius: 7px;
             border: none;
         }
@@ -2963,9 +2983,14 @@
 			0%, 100% { transform: translate(-50%, -52%) scale(1.055); }
 			50% { transform: translate(-50%, -52%) scale(1.115); }
 		}
-		/* Pulse the start-screen “>” caret (click starts radio) */
-		#logo-omni .logo-letter.logo-start {
-			animation: omniCaretPulse 1.15s ease-in-out infinite;
+		/* Pulse the start-screen “>” caret (click starts radio).
+		   The pulse is gated behind `.pat-revealed` AND deferred by the same 3s
+		   `animation-delay` as the texture-fill fade so the caret participates
+		   in the OMNI fade-in instead of slamming straight to opacity:1 from
+		   the 0% keyframe (which otherwise wins over our base .logo-letter
+		   `opacity: 0` and made `>` appear before the rest of the word). */
+		#logo-omni.pat-revealed .logo-letter.logo-start {
+			animation: omniCaretPulse 1.15s ease-in-out 3s infinite;
 		}
 		@keyframes omniCaretPulse {
 			0%, 100% {
@@ -2984,7 +3009,11 @@
 				animation: none;
 				opacity: 0.88;
 			}
-			#logo-omni .logo-letter.logo-start {
+			/* Match the pat-revealed selector specificity above so the caret
+			   pulse stays off for reduced-motion users (a plain
+			   `#logo-omni .logo-letter.logo-start` rule would have lower
+			   specificity than the gated rule and lose). */
+			#logo-omni.pat-revealed .logo-letter.logo-start {
 				animation: none;
 			}
 		}
@@ -3527,7 +3556,20 @@
     -webkit-appearance: none;
     appearance: none;
     height: 14px !important; /* Match volume track height */
-    background: rgba(255,255,255,0.08) !important;
+    /* Same two-tone Deck A pink / Deck B purple gauge as #dj-crossfader.
+     * `--cross-x` (unitless 0..1) is the seam position under the thumb; both
+     * sliders are kept in lock-step by applyCrossfade(). */
+    --cross-x: 0;
+    --cross-deck-a: #ff3cb4;
+    --cross-deck-b: #ba55ff;
+    background: linear-gradient(
+        to right,
+        var(--cross-deck-b) 0%,
+        var(--cross-deck-b) calc(var(--cross-x) * 100%),
+        var(--cross-deck-a) calc(var(--cross-x) * 100%),
+        var(--cross-deck-a) 100%
+    ) !important;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45);
     border-radius: 7px;
     border: none;
     opacity: 1;
@@ -17222,9 +17264,25 @@ function stopAllAndShowStart() {
                 state.streamBGain.gain.value = gb;
             }
             try {
-                if (mixCross) mixCross.value = String(x);
+                // Also drive the two-tone gauge fill on each slider's track. The
+                // CSS gradient on #dj-crossfader / #mix-crossfader reads
+                // `--cross-x` (unitless 0..1) as the seam position between the
+                // Deck B purple (anchored left) and Deck A pink (anchored right).
+                // Keeping this in lock-step with `.value` here is what makes the
+                // colour follow user drag, AUTO-FADE ticks, cut-fade hold, MIDI
+                // and the mix-panel mirror without each path needing its own
+                // hook — applyCrossfade is the single chokepoint they all funnel
+                // through.
+                const cx = String(x);
+                if (mixCross) {
+                    mixCross.value = cx;
+                    try { mixCross.style.setProperty('--cross-x', cx); } catch (_) {}
+                }
                 const djX = document.getElementById('dj-crossfader');
-                if (djX) djX.value = String(x);
+                if (djX) {
+                    djX.value = cx;
+                    try { djX.style.setProperty('--cross-x', cx); } catch (_) {}
+                }
             } catch(_) {}
         }
         if (mixCross) {
