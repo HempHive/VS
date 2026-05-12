@@ -2701,6 +2701,16 @@
         #dj-visual-root .dj-btn-block .btn.dj-sfx,
         #dj-visual-root .dj-beatmap-pads .btn.dj-fx {
             width: 100%;
+            /*
+             * `min-width: 0` is critical — the browser default `min-width: auto` makes
+             * a button at least as wide as its text content ("AUDIO:BAR", "NO VISUAL",
+             * etc.). When the deck mosaic is squeezed (splitter drag, narrow window),
+             * `minmax(0, 1fr)` cells would otherwise be FORCED open to fit the text,
+             * causing buttons to bleed past their cell edges and visually overlap
+             * neighbouring buttons. With min-width: 0 the button shrinks with its cell
+             * and the JS fitDeckButtonText() pass + ellipsis backstop handle the text.
+             */
+            min-width: 0;
             box-sizing: border-box;
             display: inline-flex;
             align-items: center;
@@ -2721,14 +2731,19 @@
             text-overflow: ellipsis;
             text-align: center;
         }
-        /* Deck A/B right grid: slightly larger labels (AUDIO:BAR … Prev); keep IDEAS sample slot at default size.
-         * clamp() floor is 5px so very narrow decks (post-splitter) can still squeeze a
-         * single-line label; the JS auto-fit pass nudges it the rest of the way. */
+        /* Deck A/B right grid: 12px * scale ramp — a touch larger than the IDEAS
+         * sample slot's base 10px * scale (rule at line ~2071) so the longer text
+         * labels (AUDIO:BAR, NO VISUAL, TEXT-IN, Stations, KARAOKE, …) read clearly
+         * without losing the shrink-together behaviour. The clamp floor is kept at
+         * 4px to match the JS fitDeckButtonText() minimum so the auto-fit pass
+         * never has to fight a CSS floor higher than its own floor on really
+         * narrow decks; the ceiling is lifted to 14px so the wide-deck size isn't
+         * clipped now that the ramp tops out at 12px at scale 1.0. */
         #dj-visual-root .dj-controls-grid > .btn.dj-fx,
         #dj-visual-root .dj-controls-grid > .btn.dj-sfx:not(#dj-a-sfx-wav):not(#dj-b-sfx-wav),
         #dj-visual-root .dj-controls-grid > .dj-play,
         #dj-visual-root .dj-controls-grid > .dj-tbtn {
-            font-size: clamp(5px, calc(12px * var(--dj-control-scale)), 14px);
+            font-size: clamp(4px, calc(12px * var(--dj-control-scale)), 14px);
             padding: calc(6px * var(--dj-control-scale)) calc(4px * var(--dj-control-scale));
             letter-spacing: 0;
         }
@@ -2738,6 +2753,15 @@
         #dj-visual-root .dj-btn-block .dj-tbtn {
             width: 100%;
             box-sizing: border-box;
+            /*
+             * Override the global `.dj-play` min-width: calc(70px * scale) (set on
+             * line ~2046 to keep the standalone Play button a sensible size).
+             * Inside the right grid the Play button has to share a 3-column row with
+             * Rand and Prev, so a 70px*scale floor caused it to overhang into the
+             * next cell on narrow decks. min-width: 0 lets the grid shrink it just
+             * like the other right-grid buttons.
+             */
+            min-width: 0;
         }
         #dj-visual-root .dj-fx-row {
             display: flex;
