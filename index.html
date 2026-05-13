@@ -1515,12 +1515,16 @@
             grid-row: 1 / -1;
             justify-self: center;
             align-self: center;
+            position: relative;
+            z-index: 2;
         }
         #dj-visual-root .dj-deck-mosaic > .dj-deck-vol-col {
             grid-column: 3;
             grid-row: 1 / 7;
             min-height: 0;
             align-self: stretch;
+            position: relative;
+            z-index: 1;
         }
         #dj-visual-root .dj-deck-mosaic > .dj-btn-block {
             grid-column: 4 / 7;
@@ -1528,6 +1532,8 @@
             min-width: 0;
             min-height: 0;
             align-self: stretch;
+            position: relative;
+            z-index: 3;
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             grid-template-rows: repeat(6, minmax(calc(24px * var(--dj-control-scale)), auto));
@@ -13764,10 +13770,26 @@ function stopAllAndShowStart() {
                             // both decks are already part of the current fade and the
                             // user wants to return to the original deck, not pick a new
                             // station on the opposite side.
-                            const opposite = this.autoFadeTargetDeck === 'a' ? 'b' : 'a';
-                            runAutoFade(opposite, { stationPreloaded: true });
-                            try { ensureCrossfadeDeckPlayback(); } catch (_) {}
-                            return;
+                            //
+                            // But applyCrossfade() has a 3% edge snap, so the UI/audio can
+                            // already look fully arrived while the RAF still has a few frames
+                            // left. In that snapped-at-destination case, treat the click as a
+                            // fresh AUTO-FADE request so "Change station before fading" still
+                            // retunes the deck we are heading back to (notably Deck A after a
+                            // completed-looking fade to Deck B).
+                            const currentX = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
+                            const destinationX = this.autoFadeTargetDeck === 'b' ? 1 : 0;
+                            const visuallyAtDestination = Math.abs(currentX - destinationX) <= 0.001;
+                            if (!visuallyAtDestination) {
+                                const opposite = this.autoFadeTargetDeck === 'a' ? 'b' : 'a';
+                                runAutoFade(opposite, { stationPreloaded: true });
+                                try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                                return;
+                            }
+                            try { cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
+                            this.autoFadeRafId = null;
+                            this.autoFadeTargetDeck = null;
+                            if (btnAutoFade) btnAutoFade.classList.remove('on');
                         }
                         const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                         const target = x < 0.5 ? 'b' : 'a';
@@ -13916,10 +13938,19 @@ function stopAllAndShowStart() {
                             return;
                         }
                         if (this.autoFadeRafId && this.autoFadeTargetDeck) {
-                            const opposite = this.autoFadeTargetDeck === 'a' ? 'b' : 'a';
-                            runAutoFade(opposite, { stationPreloaded: true });
-                            try { ensureCrossfadeDeckPlayback(); } catch (_) {}
-                            return;
+                            const currentX = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
+                            const destinationX = this.autoFadeTargetDeck === 'b' ? 1 : 0;
+                            const visuallyAtDestination = Math.abs(currentX - destinationX) <= 0.001;
+                            if (!visuallyAtDestination) {
+                                const opposite = this.autoFadeTargetDeck === 'a' ? 'b' : 'a';
+                                runAutoFade(opposite, { stationPreloaded: true });
+                                try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                                return;
+                            }
+                            try { cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
+                            this.autoFadeRafId = null;
+                            this.autoFadeTargetDeck = null;
+                            if (btnAutoFade) btnAutoFade.classList.remove('on');
                         }
                         if (btnAutoFade) btnAutoFade.click();
                     } catch (_) {}
