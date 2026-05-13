@@ -10330,6 +10330,11 @@ function stopAllAndShowStart() {
                 this._deckBVideoUiAbortCtrl = null;
                 this.autoFadeRafId = null;
                 this.autoFadeTargetDeck = null;
+                /** When true, `ensureCrossfadeDeckPlayback` must not restart decks (long Space hard-pause both). */
+                this.suppressEnsureCrossfadeDeckPlayback = false;
+                this.clearSuppressEnsureCrossfadeDeckPlayback = () => {
+                    this.suppressEnsureCrossfadeDeckPlayback = false;
+                };
                 this.autoFadeHoldTimer = null;
                 this.autoMixTimerId = null;
                 this.autoMixPreloadTimerId = null;
@@ -13303,6 +13308,7 @@ function stopAllAndShowStart() {
                 /** Keep deck audio elements playing whenever the crossfader gives them audible gain (fixes mismatches after interrupted/completed auto-fades). */
                 const ensureCrossfadeDeckPlayback = () => {
                     try {
+                        if (this.suppressEnsureCrossfadeDeckPlayback) return;
                         const xv = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                         const ga = 1 - xv;
                         const gb = xv;
@@ -13671,6 +13677,7 @@ function stopAllAndShowStart() {
                     }, waitMs);
                 };
                 const runAutoFade = (toDeck, fadeOpts) => {
+                    try { this.clearSuppressEnsureCrossfadeDeckPlayback(); } catch (_) {}
                     const targetDeck = toDeck === 'a' ? 'a' : 'b';
                     const stationPreloaded = !!(fadeOpts && fadeOpts.stationPreloaded);
                     if (!stationPreloaded) {
@@ -13763,6 +13770,7 @@ function stopAllAndShowStart() {
                         } catch (_) {}
                         closeAutoFadePanel();
                         closeAutoMixPanel();
+                        try { this.clearSuppressEnsureCrossfadeDeckPlayback(); } catch (_) {}
                         if (this.autoFadeRafId && this.autoFadeTargetDeck) {
                             // Mid-fade button press = reverse direction, matching the
                             // Space shortcut. This is explicit manual steering, so do
@@ -13909,6 +13917,7 @@ function stopAllAndShowStart() {
                  */
                 const startActiveDeckByCrossfader = () => {
                     try {
+                        this.clearSuppressEnsureCrossfadeDeckPlayback();
                         const raw = (djCross && djCross.value) || (mixCross && mixCross.value) || 0;
                         const x = Math.max(0, Math.min(1, Number(raw) || 0));
                         if (x < 0.5) {
@@ -13927,6 +13936,7 @@ function stopAllAndShowStart() {
 
                 this.triggerAutoFadeFromShortcut = () => {
                     try {
+                        this.clearSuppressEnsureCrossfadeDeckPlayback();
                         // First Space tap when nothing is playing: boot the deck
                         // the crossfader is favouring instead of triggering an
                         // AUTO-FADE. The user explicitly asked for this so that
@@ -13971,6 +13981,7 @@ function stopAllAndShowStart() {
                 this.pauseBothDecksOrStartActive = () => {
                     try {
                         if (!bothDecksSilent()) {
+                            this.suppressEnsureCrossfadeDeckPlayback = true;
                             if (this.autoFadeRafId) {
                                 try { cancelAnimationFrame(this.autoFadeRafId); } catch (_) {}
                                 this.autoFadeRafId = null;
@@ -17623,10 +17634,18 @@ function stopAllAndShowStart() {
             try { initAudio(); } catch (_) {}
             try {
                 if (!audioEl || !audioEl.src) {
+                    try {
+                        const eng = getDjDecksEngineIfActive();
+                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                    } catch (_) {}
                     if (typeof playRadio === 'function') playRadio();
                     return;
                 }
                 if (audioEl.paused) {
+                    try {
+                        const eng = getDjDecksEngineIfActive();
+                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                    } catch (_) {}
                     await audioEl.play().catch(() => { if (typeof playRadio === 'function') playRadio(); });
                 } else {
                     audioEl.pause();
@@ -17638,6 +17657,10 @@ function stopAllAndShowStart() {
             try { initAudio(); } catch (_) {}
             try {
                 if (!audioElB || !audioElB.src || audioElB.paused) {
+                    try {
+                        const eng = getDjDecksEngineIfActive();
+                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                    } catch (_) {}
                     if (typeof playRadioB === 'function') playRadioB();
                 } else {
                     audioElB.pause();
@@ -18857,14 +18880,20 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 // crossfader gain — so V appears to do nothing for the full
                 // fade. Cancelling the fade first makes the play/pause stick.
                 // No-op when no fade is running.
+                const eng = getDjDecksEngineIfActive();
                 try {
-                    const eng = getDjDecksEngineIfActive();
                     if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
                 } catch (_) {}
                 if (!audioEl) return;
                 if (!deckHasSource(audioEl)) {
+                    try {
+                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                    } catch (_) {}
                     if (typeof playRadio === 'function') playRadio();
                 } else if (audioEl.paused) {
+                    try {
+                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                    } catch (_) {}
                     audioEl.play().catch(() => {});
                 } else {
                     audioEl.pause();
@@ -18876,14 +18905,20 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 // Same rationale as deckAPlayPause: cancel any in-flight
                 // AUTO-FADE so the user's explicit pause/play on Deck B isn't
                 // overridden by the next animation tick.
+                const eng = getDjDecksEngineIfActive();
                 try {
-                    const eng = getDjDecksEngineIfActive();
                     if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
                 } catch (_) {}
                 if (!audioElB) return;
                 if (!deckHasSource(audioElB)) {
+                    try {
+                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                    } catch (_) {}
                     if (typeof playRadioB === 'function') playRadioB();
                 } else if (audioElB.paused) {
+                    try {
+                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                    } catch (_) {}
                     audioElB.play().catch(() => {});
                 } else {
                     audioElB.pause();
