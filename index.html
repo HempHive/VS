@@ -2921,14 +2921,18 @@
 			margin-bottom: 0px; /* minimal gap below title */
 			font-size: clamp(96px, 18vw, 280px); /* doubled size */
 			text-shadow: 0 0 20px rgba(255,255,255,0.15), 0 0 24px var(--glowColor, rgba(102,204,255,0.6)), 0 0 48px var(--glowColor, rgba(102,204,255,0.35));
+			opacity: 0;
+			transition: opacity 3s ease-in-out;
+			will-change: opacity;
 		}
-		/* Per-letter pattern fill.
-		   pat.gif is preloaded in <head>; the texture-fill is gated behind the
-		   `pat-revealed` class so it fades in over 3s once decoded (see
-		   ensurePatGifLoaded / applyOverlayGlowAndLogo) instead of snapping
-		   into the glyph area when the gif first paints. The letter opacity is
-		   what we animate — the background-image / background-clip values stay
-		   stable so the fade is a single smooth opacity ramp. */
+		#logo-omni.pat-revealed {
+			opacity: 1;
+		}
+		/* Per-letter pattern fill. pat.gif is preloaded in <head>; the parent
+		   #logo-omni stays hidden until the gif decodes, then the whole word
+		   ("OMNI>" + clipped pat.gif texture + caret) fades in together over 3s.
+		   Keeping the letters themselves at opacity:1 avoids the ">" caret pulse
+		   fighting a per-letter opacity transition. */
 		#logo-omni .logo-letter {
 			display: inline-block;
 			position: relative;
@@ -2942,17 +2946,11 @@
 			background-position: center center;
 			background-size: cover; /* fill the glyph area */
 			--omni-letter-border: rgba(255, 255, 255, 0.65);
-			opacity: 0;
-			transition: opacity 3s ease-in-out;
-			will-change: opacity;
-		}
-		#logo-omni.pat-revealed .logo-letter {
 			opacity: 1;
 		}
 		@media (prefers-reduced-motion: reduce) {
-			#logo-omni .logo-letter {
+			#logo-omni {
 				transition: none;
-				opacity: 1;
 			}
 		}
 		/*
@@ -3039,8 +3037,8 @@
 			100% { text-shadow: 0 0 16px rgba(255,255,255,0.4), 0 0 36px var(--glowColor, #66ccff), 0 0 76px var(--glowColor, #66ccff); }
 		}
 		@keyframes omniShimmer {
-			0% { opacity: 0; transform: translateY(8px) scale(0.98); color: var(--omniColor, #66ccff); text-shadow: 0 0 0 var(--omniColor, #66ccff); }
-			35% { opacity: 1; transform: translateY(0) scale(1.0); color: var(--omniColor, #66ccff); text-shadow: 0 0 16px var(--omniColor, #66ccff), 0 0 28px var(--omniColor, #66ccff); }
+			0% { transform: translateY(8px) scale(0.98); color: var(--omniColor, #66ccff); text-shadow: 0 0 0 var(--omniColor, #66ccff); }
+			35% { transform: translateY(0) scale(1.0); color: var(--omniColor, #66ccff); text-shadow: 0 0 16px var(--omniColor, #66ccff), 0 0 28px var(--omniColor, #66ccff); }
 			70% { color: #dfefff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
 			100% { color: #ffffff; text-shadow: 0 0 0 rgba(255,255,255,0); }
 		}
@@ -6665,10 +6663,10 @@ const QUALITY = {
 			return ptaGifLoadPromise;
 		}
 		let patGifLoadPromise = null;
-		/** pat.gif fills the OMNI letters via background-clip: text; the letter
-		 *  opacity is held at 0 until this promise resolves, then a CSS class
-		 *  triggers a 3s opacity transition so the texture eases in instead of
-		 *  popping. Mirrors ensureTapGifLoaded / ensurePtaGifLoaded. */
+		/** pat.gif fills the OMNI letters via background-clip: text; #logo-omni
+		 *  stays at opacity 0 until this promise resolves, then a CSS class
+		 *  triggers one 3s opacity transition for the entire "OMNI>" group.
+		 *  Mirrors ensureTapGifLoaded / ensurePtaGifLoaded. */
 		function ensurePatGifLoaded() {
 			if (patGifLoadPromise) return patGifLoadPromise;
 			patGifLoadPromise = new Promise((resolve) => {
@@ -6721,9 +6719,6 @@ const QUALITY = {
 			ensureTapGifLoaded().then(() => {
 				requestAnimationFrame(() => {
 					if (!isStartOverlayShowing()) return;
-					try {
-						applyOverlayGlowAndLogo();
-					} catch (_) {}
 					try {
 						const border = document.getElementById('border-frame');
 						if (border) border.classList.add('visible');
@@ -8646,6 +8641,11 @@ function randomGlowColor() {
 			if (logo) {
 				const omniHex = randomHexColor();
 				logo.style.setProperty('--omniColor', omniHex);
+				// Hide the entire "OMNI>" group until pat.gif has decoded. The
+				// reveal happens on the parent element so all letters, including
+				// the pulsing ">" caret and the clipped pat.gif texture, share
+				// the same 3s fade rather than each letter racing its own opacity.
+				logo.classList.remove('pat-revealed');
 				// retrigger animation
 				logo.classList.remove('logo-animate');
 				// force reflow
@@ -8654,9 +8654,8 @@ function randomGlowColor() {
 				// ensure persistent glow pulse is active
 				logo.classList.add('logo-glow');
 				// Wait for pat.gif decode before flipping the .pat-revealed class,
-				// so the 3s opacity transition on .logo-letter eases the texture
-				// in instead of snapping the gif onto the glyph fills. Idempotent
-				// re-adds keep the texture visible across glow re-rolls.
+				// so the 3s opacity transition on #logo-omni eases the whole logo
+				// in together instead of letting OMNI and ">" arrive separately.
 				try {
 					ensurePatGifLoaded().then(() => {
 						requestAnimationFrame(() => {
@@ -8670,6 +8669,11 @@ function randomGlowColor() {
 			const overlay = document.getElementById('overlay');
 			overlay.classList.remove('hidden');
 			overlay.style.display = 'flex';
+			try {
+				const logo = document.getElementById('logo-omni');
+				if (logo) logo.classList.remove('pat-revealed');
+			} catch (_) {}
+			try { applyOverlayGlowAndLogo(); } catch (_) {}
             // Restore tiled background for start screen
             try { fadeInPtaStartBg(); } catch (_) {}
 			revealStartScreenEdgeFx();
@@ -8707,6 +8711,10 @@ function randomGlowColor() {
             overlay.classList.add('hidden');
             overlay.style.display = 'none';
 			overlay.classList.remove('glow-on');
+			try {
+				const logo = document.getElementById('logo-omni');
+				if (logo) logo.classList.remove('pat-revealed');
+			} catch (_) {}
             try { cancelStartTextLoop(); } catch(e) {}
 			if (overlayGlowColorTimer) { try { clearInterval(overlayGlowColorTimer); } catch(e) {} overlayGlowColorTimer = null; }
 			// Hide full-screen border frame
@@ -8718,6 +8726,13 @@ function randomGlowColor() {
 		(() => {
 			const overlay = document.getElementById('overlay');
 			if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') {
+
+				try {
+					const logo = document.getElementById('logo-omni');
+					if (logo) logo.classList.remove('pat-revealed');
+				} catch(e) {}
+
+				try { applyOverlayGlowAndLogo(); } catch(e) {}
 
 				try { fadeInPtaStartBg(); } catch(e) {}
 
