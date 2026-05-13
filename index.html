@@ -2624,14 +2624,14 @@
             --cross-x: 0;
             /* Colours intentionally pulled from the existing deck branding so
              * the fader fill matches the rest of the UI 1:1:
-             *   --cross-deck-a → deep crimson (#C71D36), replacing the brighter
+             *   --cross-deck-a → deep magenta (#861043), replacing the brighter
              *                    Deck A pink previously used by the top
              *                    "DECK A" badge (.dj-head-cluster--a .dj-deck-badge--head)
              *                    and the "A" fader-strip label (.dj-fader-label-a)
              *   --cross-deck-b → dark indigo (#1E1A4D), replacing the brighter
              *                    violet previously used by the "B" fader-strip label
              */
-            --cross-deck-a: #C71D36;
+            --cross-deck-a: #861043;
             --cross-deck-b: #1E1A4D;
             background: linear-gradient(
                 to right,
@@ -2640,9 +2640,10 @@
                 var(--cross-deck-a) calc(var(--cross-x) * 100%),
                 var(--cross-deck-a) 100%
             ) !important;
-            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45);
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45), 0 0 10px rgba(212, 175, 55, 0.28);
+            box-sizing: border-box;
             border-radius: 7px;
-            border: none;
+            border: 1px solid rgba(212, 175, 55, 0.9);
         }
         #dj-visual-root #dj-crossfader::-webkit-slider-thumb {
             -webkit-appearance: none !important;
@@ -3569,7 +3570,7 @@
      * `--cross-x` (unitless 0..1) is the seam position under the thumb; both
      * sliders are kept in lock-step by applyCrossfade(). */
     --cross-x: 0;
-    --cross-deck-a: #C71D36;
+    --cross-deck-a: #861043;
     --cross-deck-b: #1E1A4D;
     background: linear-gradient(
         to right,
@@ -3578,9 +3579,10 @@
         var(--cross-deck-a) calc(var(--cross-x) * 100%),
         var(--cross-deck-a) 100%
     ) !important;
-    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45);
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45), 0 0 10px rgba(212, 175, 55, 0.28);
+    box-sizing: border-box;
     border-radius: 7px;
-    border: none;
+    border: 1px solid rgba(212, 175, 55, 0.9);
     opacity: 1;
 }
 
