@@ -2624,14 +2624,15 @@
             --cross-x: 0;
             /* Colours intentionally pulled from the existing deck branding so
              * the fader fill matches the rest of the UI 1:1:
-             *   --cross-deck-a → same crimson-pink (#FF0B55) used by the top
+             *   --cross-deck-a → deep crimson (#C71D36), replacing the brighter
+             *                    Deck A pink previously used by the top
              *                    "DECK A" badge (.dj-head-cluster--a .dj-deck-badge--head)
              *                    and the "A" fader-strip label (.dj-fader-label-a)
-             *   --cross-deck-b → same deep violet (#5800FF) used by the "B"
-             *                    fader-strip label (.dj-fader-label-b)
+             *   --cross-deck-b → dark indigo (#1E1A4D), replacing the brighter
+             *                    violet previously used by the "B" fader-strip label
              */
-            --cross-deck-a: #FF0B55;
-            --cross-deck-b: #5800FF;
+            --cross-deck-a: #C71D36;
+            --cross-deck-b: #1E1A4D;
             background: linear-gradient(
                 to right,
                 var(--cross-deck-b) 0%,
@@ -3564,14 +3565,12 @@
     -webkit-appearance: none;
     appearance: none;
     height: 14px !important; /* Match volume track height */
-    /* Same two-tone Deck A pink / Deck B purple gauge as #dj-crossfader.
+    /* Same two-tone Deck A crimson / Deck B dark-indigo gauge as #dj-crossfader.
      * `--cross-x` (unitless 0..1) is the seam position under the thumb; both
-     * sliders are kept in lock-step by applyCrossfade(). Hex values are
-     * pulled from the existing deck branding (.dj-fader-label-a / -b) so the
-     * fader fill matches the labels framing it. */
+     * sliders are kept in lock-step by applyCrossfade(). */
     --cross-x: 0;
-    --cross-deck-a: #FF0B55;
-    --cross-deck-b: #5800FF;
+    --cross-deck-a: #C71D36;
+    --cross-deck-b: #1E1A4D;
     background: linear-gradient(
         to right,
         var(--cross-deck-b) 0%,
