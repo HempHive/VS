@@ -13757,6 +13757,18 @@ function stopAllAndShowStart() {
                         } catch (_) {}
                         closeAutoFadePanel();
                         closeAutoMixPanel();
+                        if (this.autoFadeRafId && this.autoFadeTargetDeck) {
+                            // Mid-fade button press = reverse direction, matching the
+                            // Space shortcut. This is explicit manual steering, so do
+                            // NOT run the normal Change-Station / preload-retune path:
+                            // both decks are already part of the current fade and the
+                            // user wants to return to the original deck, not pick a new
+                            // station on the opposite side.
+                            const opposite = this.autoFadeTargetDeck === 'a' ? 'b' : 'a';
+                            runAutoFade(opposite, { stationPreloaded: true });
+                            try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                            return;
+                        }
                         const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                         const target = x < 0.5 ? 'b' : 'a';
                         // Two independent toggles, decoupled so AUTO-MIX gives us a smooth
