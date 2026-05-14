@@ -12038,6 +12038,24 @@ function stopAllAndShowStart() {
                     const volB = this.root.querySelector('#dj-deck-b-vol');
                     const bpmA = this.root.querySelector('#dj-a-beat-bpm');
                     const bpmB = this.root.querySelector('#dj-b-beat-bpm');
+                    /** Rotated range: pre-rotate `width` is the vertical span. Flex-centers the 14px-tall box in the wrap (height h);
+                     * thumb centres travel `width - thumb` along that span. Matching crossfader geometry requires
+                     * `width === h` so extremes sit at y = thumb_half and y = h - thumb_half (same as .dj-deck-vol-wrap::before). */
+                    const deckVolTrackCapPx = (volEl) => {
+                        try {
+                            const wrap = volEl && volEl.closest('.dj-deck-vol-wrap');
+                            if (!wrap) return null;
+                            const h = wrap.getBoundingClientRect().height || 0;
+                            if (h < 96) return null;
+                            return Math.max(120, Math.floor(h));
+                        } catch (_) {
+                            return null;
+                        }
+                    };
+                    const volLenPx = (volEl) => {
+                        const cap = deckVolTrackCapPx(volEl);
+                        return cap != null ? Math.min(len, cap) : len;
+                    };
                     const bpmTrackLenPx = (bpmEl) => {
                         let px = Math.max(300, target + 80);
                         try {
@@ -12049,18 +12067,26 @@ function stopAllAndShowStart() {
                                 const avail = sh - fh - 2;
                                 if (avail > 64) px = Math.max(px, avail);
                             }
+                            const wrap = bpmEl && bpmEl.closest('.dj-beatmap-tempo-slider-wrap');
+                            if (wrap) {
+                                const wh = wrap.getBoundingClientRect().height || 0;
+                                if (wh > 96) {
+                                    const cap = Math.max(120, Math.floor(wh));
+                                    px = Math.min(px, cap);
+                                }
+                            }
                         } catch (_) {}
                         return Math.round(px);
                     };
                     if (volA) {
-                        volA.style.width = `${len}px`;
+                        volA.style.width = `${Math.round(volLenPx(volA))}px`;
                         try {
                             const wrap = volA.closest('.dj-deck-vol-wrap');
                             if (wrap) wrap.style.removeProperty('height');
                         } catch (_) {}
                     }
                     if (volB) {
-                        volB.style.width = `${len}px`;
+                        volB.style.width = `${Math.round(volLenPx(volB))}px`;
                         try {
                             const wrap = volB.closest('.dj-deck-vol-wrap');
                             if (wrap) wrap.style.removeProperty('height');
