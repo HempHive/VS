@@ -1610,13 +1610,14 @@
             flex: 1 1 auto;
             min-height: 0;
             overflow: visible;
+            position: relative;
         }
         #dj-visual-root .dj-deck-vol-wrap {
-            position: relative;
             height: 100%;
             max-height: 100%;
             --deck-vol-thumb-half: calc(23px * var(--dj-control-scale));
             --deck-vol-rail: rgba(255, 255, 255, 0.08);
+            --deck-vol-pct: 1;
         }
         #dj-visual-root .dj-deck-vol-wrap::before {
             content: '';
@@ -1624,11 +1625,40 @@
             left: 50%;
             top: var(--deck-vol-thumb-half);
             bottom: var(--deck-vol-thumb-half);
-            width: 14px;
+            width: calc(14px + 6px);
+            box-sizing: border-box;
             min-height: 24px;
             transform: translateX(-50%);
             border-radius: 7px;
-            background: var(--deck-vol-rail);
+            border: 3px solid rgba(212, 175, 55, 0.45);
+            /* Bottom = min (mute), top = max; pale segment is from thumb toward max (above current level) */
+            background: linear-gradient(
+                to top,
+                var(--deck-vol-rail) 0%,
+                var(--deck-vol-rail) calc(var(--deck-vol-pct, 1) * 100%),
+                #F5EDEB calc(var(--deck-vol-pct, 1) * 100%),
+                #F5EDEB 100%
+            );
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45);
+            pointer-events: none;
+        }
+        /* Tempo BPM: gold rail inset by half thumb travel (same idea as crossfader / deck VOL) */
+        #dj-visual-root .dj-beatmap-tempo-slider-wrap {
+            --bpm-thumb-half: calc(23px * var(--dj-control-scale));
+        }
+        #dj-visual-root .dj-beatmap-tempo-slider-wrap::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: var(--bpm-thumb-half);
+            bottom: var(--bpm-thumb-half);
+            width: calc(14px + 2px);
+            box-sizing: border-box;
+            min-height: 24px;
+            transform: translateX(-50%);
+            border-radius: 7px;
+            border: 1px solid rgba(212, 175, 55, 0.45);
+            background: rgba(255, 255, 255, 0.08);
             box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45);
             pointer-events: none;
         }
@@ -1888,7 +1918,8 @@
         .dj-beat-pad-loop-menu-item--active:hover {
             background: rgba(212, 175, 55, 0.18);
         }
-        /* Deck VOL + beat-map tempo: same track, thumb, rotation (length also synced in JS to match) */
+        /* Deck VOL + beat-map tempo: same thumb, rotation; visible rail + gold frame live on
+         * the wrap::before (inset by half thumb) so the border matches thumb travel like #dj-crossfader. */
         #dj-visual-root .dj-deck-vol,
         #dj-visual-root .dj-beatmap-bpm-slider {
             -webkit-appearance: none;
@@ -1897,7 +1928,7 @@
             height: 14px;
             transform: rotate(-90deg);
             transform-origin: center center;
-            background: transparent;
+            background: transparent !important;
             border-radius: 7px;
             border: none;
             box-sizing: border-box;
@@ -1906,9 +1937,17 @@
             position: relative;
             z-index: 1;
         }
-        #dj-visual-root .dj-beatmap-bpm-slider {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid #EBE9E8;
+        #dj-visual-root .dj-deck-vol::-webkit-slider-runnable-track,
+        #dj-visual-root .dj-beatmap-bpm-slider::-webkit-slider-runnable-track {
+            background: transparent;
+        }
+        #dj-visual-root .dj-deck-vol::-moz-range-track,
+        #dj-visual-root .dj-beatmap-bpm-slider::-moz-range-track {
+            background: transparent;
+        }
+        #dj-visual-root .dj-deck-vol::-moz-range-progress,
+        #dj-visual-root .dj-beatmap-bpm-slider::-moz-range-progress {
+            background: transparent !important;
         }
         #dj-visual-root .dj-deck-vol::-webkit-slider-thumb,
         #dj-visual-root .dj-beatmap-bpm-slider::-webkit-slider-thumb {
@@ -14297,14 +14336,22 @@ function stopAllAndShowStart() {
                 }
 
                 const clampVol = (v) => Math.max(0, Math.min(1, Number(v) || 0));
+                const syncDeckVolFillCss = (inputEl, cv) => {
+                    try {
+                        const wrap = inputEl && inputEl.closest('.dj-deck-vol-wrap');
+                        if (wrap) wrap.style.setProperty('--deck-vol-pct', String(clampVol(cv)));
+                    } catch (_) {}
+                };
                 const setDeckVolA = (v) => {
                     const cv = clampVol(v);
                     try { if (audioEl) audioEl.volume = cv; } catch (_) {}
                     try { if (audioElRadioAAlt) audioElRadioAAlt.volume = cv; } catch (_) {}
+                    try { syncDeckVolFillCss(this.els.deckVolA, cv); } catch (_) {}
                 };
                 const setDeckVolB = (v) => {
                     const cv = clampVol(v);
                     try { if (audioElB) audioElB.volume = cv; } catch (_) {}
+                    try { syncDeckVolFillCss(this.els.deckVolB, cv); } catch (_) {}
                 };
                 try {
                     if (this.els.deckVolA) {
