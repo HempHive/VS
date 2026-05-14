@@ -207,14 +207,14 @@
             opacity: 0.85;
         }
         .dj-head-station-name {
-            font-size: 11px;
+            font-size: 14px;
             letter-spacing: 0.2em;
             font-weight: 700;
             opacity: 0.9;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: min(220px, 30vw);
+            max-width: min(280px, 38vw);
             line-height: 1.2;
             padding: 0;
         }
@@ -243,7 +243,7 @@
             letter-spacing: 0.04em;
         }
         .dj-head-station-name .dj-local-prefix {
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 700;
             opacity: 0.92;
             letter-spacing: 0.18em;
@@ -258,7 +258,7 @@
         }
         .dj-head-datetime {
             flex: 0 0 auto;
-            font-size: 10px;
+            font-size: 13px;
             font-weight: 700;
             letter-spacing: 0.06em;
             opacity: 1;
@@ -276,7 +276,7 @@
         }
         .dj-head-video-badge {
             flex-shrink: 0;
-            font-size: 11px;
+            font-size: 14px;
             letter-spacing: 0.2em;
             font-weight: 700;
             opacity: 1;
@@ -285,7 +285,7 @@
             white-space: nowrap;
         }
         .dj-head-video-title {
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 700;
             letter-spacing: 0.06em;
             color: rgba(255, 255, 255, 0.92);
@@ -299,6 +299,13 @@
         .dj-deck-badge--b {
             color: #9803FC;
             letter-spacing: 0.18em;
+        }
+        #dj-visual-root .dj-deck-head-row .dj-deck-badge {
+            font-size: 14px;
+        }
+        #dj-visual-root .dj-deck-head-row .dj-station-load-spinner {
+            width: 15px;
+            height: 15px;
         }
         /* Crossfader strip lives at top of Deck B only */
         #dj-visual-root .dj-fader-strip {
@@ -7080,7 +7087,7 @@ function randomGlowColor() {
                 if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
                 const topEl = document.elementFromPoint(x, y);
                 if (topEl && typeof topEl.closest === 'function') {
-                    if (topEl.closest('.knob-wrap') || topEl.closest('#dj-deck-splitter')) return false;
+                    if (topEl.closest('.knob-wrap') || topEl.closest('#dj-deck-splitter') || topEl.closest('.dj-jog-wrap')) return false;
                     if (topEl.closest('#dj-deck-b-viz-mount')) return true;
                 }
                 return isPointerInDeckBVizMountRect(x, y);
@@ -7592,6 +7599,14 @@ function randomGlowColor() {
                                 lastTapTime = now;
                                 return;
                             }
+                            if (elTap && elTap.closest && elTap.closest('.dj-jog-wrap')) {
+                                lastTapTime = 0;
+                                return;
+                            }
+                            if (pDownTarget && pDownTarget.closest && pDownTarget.closest('.dj-jog-wrap')) {
+                                lastTapTime = 0;
+                                return;
+                            }
                         } catch (_) {}
                         window.__suppressNextClick = true;
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
@@ -7653,6 +7668,9 @@ function randomGlowColor() {
                 // Double click: Deck B viz mount → fullscreen mount only; elsewhere → fullscreen DJ canvas
                 canvasEl.addEventListener('dblclick', (e) => {
                     if (!state || !state.isPlaying) return;
+                    try {
+                        if (e.target && typeof e.target.closest === 'function' && e.target.closest('.dj-jog-wrap')) return;
+                    } catch (_) {}
                     if (shouldToggleDeckBVizMountFullscreenFromPointer(e)) {
                         try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
                         try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch (_) {}
@@ -7674,6 +7692,9 @@ function randomGlowColor() {
                     webmOverlay.addEventListener('dblclick', (e) => {
                         try {
                             if (e.target && typeof e.target.closest === 'function' && e.target.closest('#dj-deck-splitter')) return;
+                        } catch (_) {}
+                        try {
+                            if (e.target && typeof e.target.closest === 'function' && e.target.closest('.dj-jog-wrap')) return;
                         } catch (_) {}
                         try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
                         try { if (window.__randomClickTimer) { clearTimeout(window.__randomClickTimer); window.__randomClickTimer = null; } } catch(_) {}
