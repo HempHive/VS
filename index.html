@@ -1627,6 +1627,11 @@
             --deck-vol-thumb-half: calc(23px * var(--dj-control-scale));
             --deck-vol-rail: rgba(255, 255, 255, 0.08);
             --deck-vol-pct: 1;
+            /* Segment above thumb: Deck A = same tint as .dj-deck-a border; Deck B overridden below */
+            --deck-vol-fill-high: rgba(255, 11, 85, 0.35);
+        }
+        #dj-visual-root .dj-deck-b .dj-deck-vol-wrap {
+            --deck-vol-fill-high: rgba(88, 0, 255, 0.35);
         }
         #dj-visual-root .dj-deck-vol-wrap::before {
             content: '';
@@ -1640,13 +1645,13 @@
             transform: translateX(-50%);
             border-radius: 7px;
             border: 3px solid rgba(212, 175, 55, 0.45);
-            /* Bottom = min (mute), top = max; pale segment is from thumb toward max (above current level) */
+            /* Bottom = min (mute), top = max; fill above thumb uses deck border hue */
             background: linear-gradient(
                 to top,
                 var(--deck-vol-rail) 0%,
                 var(--deck-vol-rail) calc(var(--deck-vol-pct, 1) * 100%),
-                #F5EDEB calc(var(--deck-vol-pct, 1) * 100%),
-                #F5EDEB 100%
+                var(--deck-vol-fill-high) calc(var(--deck-vol-pct, 1) * 100%),
+                var(--deck-vol-fill-high) 100%
             );
             box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45);
             pointer-events: none;
