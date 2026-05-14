@@ -1645,6 +1645,10 @@
         /* Tempo BPM: gold rail inset by half thumb travel (same idea as crossfader / deck VOL) */
         #dj-visual-root .dj-beatmap-tempo-slider-wrap {
             --bpm-thumb-half: calc(23px * var(--dj-control-scale));
+            /* Match .dj-deck-vol-wrap: fill the flex slot so JS width === getBoundingClientRect().height */
+            height: 100%;
+            max-height: 100%;
+            align-self: stretch;
         }
         #dj-visual-root .dj-beatmap-tempo-slider-wrap::before {
             content: '';
@@ -1779,11 +1783,11 @@
         #dj-visual-root .dj-beatmap-tempo-stack {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            align-items: stretch;
+            justify-content: flex-start;
             height: 100%;
             min-height: 0;
-            gap: 0;
+            gap: 4px;
             width: 100%;
         }
         /* Same vertical span behavior as .dj-deck-vol-stack: slider grows, one compact footer row (cf. VOL caption) */
@@ -1932,8 +1936,6 @@
             border-radius: 7px;
             border: none;
             box-sizing: border-box;
-        }
-        #dj-visual-root .dj-deck-vol {
             position: relative;
             z-index: 1;
         }
@@ -12028,12 +12030,11 @@ function stopAllAndShowStart() {
                 if (!this.root) return;
                 try {
                     const blocks = Array.from(this.root.querySelectorAll('.dj-btn-block'));
-                    if (!blocks.length) return;
-                    /* Knob row is inside .dj-btn-block — span matches full button-stack height (same as before). */
-                    const target = Math.max(...blocks.map((el) => Math.floor(el.getBoundingClientRect().height || 0)));
-                    if (!target || target <= 0) return;
-                    /* Slightly shorter than target+32 so the track isn’t quite as tall; thumb still clears track ends */
-                    const len = Math.max(200, target + 22);
+                    const target = blocks.length
+                        ? Math.max(...blocks.map((el) => Math.floor(el.getBoundingClientRect().height || 0)))
+                        : 0;
+                    /* When button blocks are not laid out yet (or hidden), keep a sane default so BPM still syncs. */
+                    const len = target > 0 ? Math.max(200, target + 22) : 200;
                     const volA = this.root.querySelector('#dj-deck-a-vol');
                     const volB = this.root.querySelector('#dj-deck-b-vol');
                     const bpmA = this.root.querySelector('#dj-a-beat-bpm');
@@ -12057,26 +12058,31 @@ function stopAllAndShowStart() {
                         return cap != null ? Math.min(len, cap) : len;
                     };
                     const bpmTrackLenPx = (bpmEl) => {
-                        let px = Math.max(300, target + 80);
+                        const fallback = target > 0 ? Math.max(300, target + 80) : 320;
                         try {
                             const stack = bpmEl && bpmEl.closest('.dj-beatmap-tempo-stack');
-                            const footer = stack && stack.querySelector('.dj-beatmap-tempo-footer');
-                            if (stack) {
-                                const sh = Math.floor(stack.getBoundingClientRect().height || 0);
-                                const fh = Math.floor((footer && footer.getBoundingClientRect().height) || 0);
-                                const avail = sh - fh - 2;
-                                if (avail > 64) px = Math.max(px, avail);
-                            }
                             const wrap = bpmEl && bpmEl.closest('.dj-beatmap-tempo-slider-wrap');
-                            if (wrap) {
-                                const wh = wrap.getBoundingClientRect().height || 0;
-                                if (wh > 96) {
-                                    const cap = Math.max(120, Math.floor(wh));
-                                    px = Math.min(px, cap);
+                            const footer = stack && stack.querySelector('.dj-beatmap-tempo-footer');
+                            if (stack && wrap) {
+                                const sh = stack.getBoundingClientRect().height || 0;
+                                if (sh >= 64) {
+                                    const fh = footer ? footer.getBoundingClientRect().height || 0 : 0;
+                                    let gapPx = 0;
+                                    try {
+                                        const gs = getComputedStyle(stack);
+                                        gapPx = parseFloat(gs.rowGap) || parseFloat(gs.columnGap) || parseFloat(gs.gap) || 0;
+                                    } catch (_) {}
+                                    if (!Number.isFinite(gapPx)) gapPx = 0;
+                                    const span = Math.floor(sh - fh - gapPx);
+                                    const wh = Math.round(wrap.getBoundingClientRect().height || 0);
+                                    /* Use the larger of flex-allocated slot (stack − footer) and the wrap box — the wrap
+                                     * used to stay content-height until it got height:100% like deck VOL. */
+                                    const use = Math.max(120, span, wh);
+                                    if (use > 96) return Math.round(use);
                                 }
                             }
                         } catch (_) {}
-                        return Math.round(px);
+                        return Math.round(fallback);
                     };
                     if (volA) {
                         volA.style.width = `${Math.round(volLenPx(volA))}px`;
@@ -12230,7 +12236,13 @@ function stopAllAndShowStart() {
                     if (this._fitBtnRaf) cancelAnimationFrame(this._fitBtnRaf);
                     this._fitBtnRaf = requestAnimationFrame(() => {
                         this._fitBtnRaf = null;
-                        try { this.fitDeckButtonText(); } catch (_) {}
+                        try {
+                            this.fitDeckButtonText();
+                        } catch (_) {}
+                        /* Beat-map row heights can shift after font auto-fit; re-measure BPM / VOL tracks on the same frame. */
+                        try {
+                            this.syncDeckVolumeSliderLengths();
+                        } catch (_) {}
                     });
                 } catch (_) {}
             }
@@ -13033,6 +13045,7 @@ function stopAllAndShowStart() {
                             } catch (_) {}
                         });
                         root.querySelectorAll('.dj-deck-mosaic').forEach((el) => this.deckVolResizeObs.observe(el));
+                        root.querySelectorAll('.dj-beatmap-tempo-stack').forEach((el) => this.deckVolResizeObs.observe(el));
                     }
                 } catch (_) {}
 
