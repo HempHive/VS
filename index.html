@@ -121,6 +121,11 @@
         #dj-visual-root.dj-mode-portrait .dj-deck-a,
         #dj-visual-root.dj-mode-portrait .dj-deck-b {
             flex: 1 1 0%;
+            /* Default .dj-deck { min-height: 0 } lets portrait column flex shrink each card past
+             * in-flow chrome (Deck A mosaic / controls, Deck B crossfader strip). Borders then look
+             * short of the visible deck. Use automatic minimum height so each card is at least as
+             * tall as its non-collapsing content. */
+            min-height: auto;
         }
         #dj-visual-root .dj-deck-splitter {
             display: none;
