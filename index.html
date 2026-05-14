@@ -1593,13 +1593,17 @@
             min-height: 0;
             gap: 4px;
         }
-        #dj-visual-root .dj-deck-vol-caption {
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 0.14em;
-            color: rgba(255, 255, 255, 0.55);
-            line-height: 1;
+        /* VOL mute: same footprint / chrome as beat-map Sync (compact footer button) */
+        #dj-visual-root .dj-beatmap-tempo-footer .btn.dj-fx.dj-beatmap-sync,
+        #dj-visual-root .dj-deck-vol-stack .btn.dj-fx.dj-deck-vol-mute {
+            width: auto;
+            min-height: 26px;
+            padding: 4px 10px;
+            font-size: 11px;
+            letter-spacing: 0.06em;
             flex-shrink: 0;
+            white-space: nowrap;
+            line-height: 1.1;
         }
         #dj-visual-root .dj-deck-vol-wrap,
         #dj-visual-root .dj-beatmap-tempo-slider-wrap {
@@ -1649,6 +1653,9 @@
             height: 100%;
             max-height: 100%;
             align-self: stretch;
+            /* Prefer absorbing free space in the tempo stack so clientHeight matches the rail slot */
+            flex: 1 1 0;
+            min-height: 0;
         }
         #dj-visual-root .dj-beatmap-tempo-slider-wrap::before {
             content: '';
@@ -1790,7 +1797,7 @@
             gap: 4px;
             width: 100%;
         }
-        /* Same vertical span behavior as .dj-deck-vol-stack: slider grows, one compact footer row (cf. VOL caption) */
+        /* Same vertical span behavior as .dj-deck-vol-stack: slider grows, one compact footer row (cf. VOL mute) */
         #dj-visual-root .dj-beatmap-tempo-footer {
             display: flex;
             flex-direction: column;
@@ -1807,16 +1814,6 @@
             color: rgba(255, 255, 255, 0.75);
             line-height: 1;
             flex-shrink: 0;
-        }
-        #dj-visual-root .dj-beatmap-tempo-footer .btn.dj-fx.dj-beatmap-sync {
-            width: auto;
-            min-height: 26px;
-            padding: 4px 10px;
-            font-size: 11px;
-            letter-spacing: 0.06em;
-            flex-shrink: 0;
-            white-space: nowrap;
-            line-height: 1.1;
         }
         /* Match .dj-btn-block: 1px gutters; row height from content (same as btn rows minmax(30px, auto)), not 1fr stretch */
         #dj-visual-root .dj-beatmap-pads {
@@ -1938,6 +1935,8 @@
             box-sizing: border-box;
             position: relative;
             z-index: 1;
+            margin: 0;
+            padding: 0;
         }
         #dj-visual-root .dj-deck-vol::-webkit-slider-runnable-track,
         #dj-visual-root .dj-beatmap-bpm-slider::-webkit-slider-runnable-track {
@@ -12063,24 +12062,24 @@ function stopAllAndShowStart() {
                             const stack = bpmEl && bpmEl.closest('.dj-beatmap-tempo-stack');
                             const wrap = bpmEl && bpmEl.closest('.dj-beatmap-tempo-slider-wrap');
                             const footer = stack && stack.querySelector('.dj-beatmap-tempo-footer');
-                            if (stack && wrap) {
-                                const sh = stack.getBoundingClientRect().height || 0;
-                                if (sh >= 64) {
-                                    const fh = footer ? footer.getBoundingClientRect().height || 0 : 0;
-                                    let gapPx = 0;
-                                    try {
-                                        const gs = getComputedStyle(stack);
-                                        gapPx = parseFloat(gs.rowGap) || parseFloat(gs.columnGap) || parseFloat(gs.gap) || 0;
-                                    } catch (_) {}
-                                    if (!Number.isFinite(gapPx)) gapPx = 0;
-                                    const span = Math.floor(sh - fh - gapPx);
-                                    const wh = Math.round(wrap.getBoundingClientRect().height || 0);
-                                    /* Use the larger of flex-allocated slot (stack − footer) and the wrap box — the wrap
-                                     * used to stay content-height until it got height:100% like deck VOL. */
-                                    const use = Math.max(120, span, wh);
-                                    if (use > 96) return Math.round(use);
-                                }
-                            }
+                            if (!stack || !wrap) return Math.round(fallback);
+                            const sh = stack.clientHeight || 0;
+                            if (sh < 64) return Math.round(fallback);
+                            const fh = footer ? footer.offsetHeight || footer.clientHeight || 0 : 0;
+                            let gapPx = 0;
+                            try {
+                                const gs = getComputedStyle(stack);
+                                gapPx = parseFloat(gs.rowGap) || parseFloat(gs.gap) || 0;
+                            } catch (_) {}
+                            if (!Number.isFinite(gapPx)) gapPx = 0;
+                            const span = Math.floor(Math.max(0, sh - fh - gapPx));
+                            const wh = Math.max(
+                                wrap.clientHeight || 0,
+                                wrap.offsetHeight || 0,
+                                Math.round(wrap.getBoundingClientRect().height || 0)
+                            );
+                            const use = Math.max(120, span, wh);
+                            if (use > 96) return Math.round(use);
                         } catch (_) {}
                         return Math.round(fallback);
                     };
@@ -12100,6 +12099,14 @@ function stopAllAndShowStart() {
                     }
                     if (bpmA) bpmA.style.width = `${bpmTrackLenPx(bpmA)}px`;
                     if (bpmB) bpmB.style.width = `${bpmTrackLenPx(bpmB)}px`;
+                    if (bpmA || bpmB) {
+                        requestAnimationFrame(() => {
+                            try {
+                                if (bpmA) bpmA.style.width = `${bpmTrackLenPx(bpmA)}px`;
+                                if (bpmB) bpmB.style.width = `${bpmTrackLenPx(bpmB)}px`;
+                            } catch (_) {}
+                        });
+                    }
                 } catch (_) {}
             }
 
@@ -12712,7 +12719,7 @@ function stopAllAndShowStart() {
               <div class="dj-deck-vol-wrap">
                 <input type="range" id="dj-deck-a-vol" class="dj-deck-vol" min="0" max="1" step="0.01" value="1" />
               </div>
-              <span class="dj-deck-vol-caption">VOL</span>
+              <button type="button" class="btn dj-fx dj-deck-vol-mute" id="dj-deck-a-vol-mute" aria-pressed="false" title="Mute Deck A (restore previous level on second press)">VOL</button>
             </div>
           </div>
           <div class="dj-controls-grid dj-btn-block" aria-label="Deck A visuals, effects, and transport">
@@ -12893,7 +12900,7 @@ function stopAllAndShowStart() {
                   <div class="dj-deck-vol-wrap">
                     <input type="range" id="dj-deck-b-vol" class="dj-deck-vol" min="0" max="1" step="0.01" value="1" />
                   </div>
-                  <span class="dj-deck-vol-caption">VOL</span>
+                  <button type="button" class="btn dj-fx dj-deck-vol-mute" id="dj-deck-b-vol-mute" aria-pressed="false" title="Mute Deck B (restore previous level on second press)">VOL</button>
                 </div>
               </div>
               <div class="dj-controls-grid dj-btn-block" aria-label="Deck B visual screen &amp; transport">
@@ -13046,6 +13053,7 @@ function stopAllAndShowStart() {
                         });
                         root.querySelectorAll('.dj-deck-mosaic').forEach((el) => this.deckVolResizeObs.observe(el));
                         root.querySelectorAll('.dj-beatmap-tempo-stack').forEach((el) => this.deckVolResizeObs.observe(el));
+                        root.querySelectorAll('.dj-beatmap-tempo-slider-wrap').forEach((el) => this.deckVolResizeObs.observe(el));
                     }
                 } catch (_) {}
 
@@ -13090,6 +13098,8 @@ function stopAllAndShowStart() {
                 this.els.fxDistortB = root.querySelector('#dj-b-fx-distort');
                 this.els.deckVolA = root.querySelector('#dj-deck-a-vol');
                 this.els.deckVolB = root.querySelector('#dj-deck-b-vol');
+                this.els.deckVolMuteA = root.querySelector('#dj-deck-a-vol-mute');
+                this.els.deckVolMuteB = root.querySelector('#dj-deck-b-vol-mute');
                 const djCross = root.querySelector('#dj-crossfader');
                 const btnAutoFade = root.querySelector('#dj-autofade');
                 const autoFadeWrap = root.querySelector('.dj-autofade-wrap');
@@ -14381,29 +14391,97 @@ function stopAllAndShowStart() {
                         if (wrap) wrap.style.setProperty('--deck-vol-pct', String(clampVol(cv)));
                     } catch (_) {}
                 };
+                let savedDeckVolA = 1;
+                let savedDeckVolB = 1;
+                const syncDeckVolMuteButtons = () => {
+                    try {
+                        if (this.els.deckVolMuteA && this.els.deckVolA) {
+                            const m = Number(this.els.deckVolA.value) < 0.001;
+                            this.els.deckVolMuteA.setAttribute('aria-pressed', m ? 'true' : 'false');
+                            this.els.deckVolMuteA.classList.toggle('on', m);
+                        }
+                        if (this.els.deckVolMuteB && this.els.deckVolB) {
+                            const m = Number(this.els.deckVolB.value) < 0.001;
+                            this.els.deckVolMuteB.setAttribute('aria-pressed', m ? 'true' : 'false');
+                            this.els.deckVolMuteB.classList.toggle('on', m);
+                        }
+                    } catch (_) {}
+                };
                 const setDeckVolA = (v) => {
                     const cv = clampVol(v);
                     try { if (audioEl) audioEl.volume = cv; } catch (_) {}
                     try { if (audioElRadioAAlt) audioElRadioAAlt.volume = cv; } catch (_) {}
                     try { syncDeckVolFillCss(this.els.deckVolA, cv); } catch (_) {}
+                    if (cv > 0.001) savedDeckVolA = cv;
+                    syncDeckVolMuteButtons();
                 };
                 const setDeckVolB = (v) => {
                     const cv = clampVol(v);
                     try { if (audioElB) audioElB.volume = cv; } catch (_) {}
                     try { syncDeckVolFillCss(this.els.deckVolB, cv); } catch (_) {}
+                    if (cv > 0.001) savedDeckVolB = cv;
+                    syncDeckVolMuteButtons();
                 };
                 try {
                     if (this.els.deckVolA) {
                         const initA = (audioEl && Number.isFinite(audioEl.volume)) ? audioEl.volume : 1;
-                        this.els.deckVolA.value = String(initA);
-                        setDeckVolA(initA);
+                        const ia = clampVol(initA);
+                        savedDeckVolA = ia > 0.001 ? ia : 1;
+                        this.els.deckVolA.value = String(ia);
+                        setDeckVolA(ia);
                         this.els.deckVolA.addEventListener('input', () => setDeckVolA(this.els.deckVolA.value), sig);
                     }
                     if (this.els.deckVolB) {
                         const initB = (audioElB && Number.isFinite(audioElB.volume)) ? audioElB.volume : 1;
-                        this.els.deckVolB.value = String(initB);
-                        setDeckVolB(initB);
+                        const ib = clampVol(initB);
+                        savedDeckVolB = ib > 0.001 ? ib : 1;
+                        this.els.deckVolB.value = String(ib);
+                        setDeckVolB(ib);
                         this.els.deckVolB.addEventListener('input', () => setDeckVolB(this.els.deckVolB.value), sig);
+                    }
+                    if (this.els.deckVolMuteA) {
+                        this.els.deckVolMuteA.addEventListener(
+                            'click',
+                            (e) => {
+                                try {
+                                    e.preventDefault();
+                                } catch (_) {}
+                                if (!this.els.deckVolA) return;
+                                const cur = Number(this.els.deckVolA.value) || 0;
+                                if (cur < 0.001) {
+                                    const r = clampVol(savedDeckVolA > 0.001 ? savedDeckVolA : 1);
+                                    this.els.deckVolA.value = String(r);
+                                    setDeckVolA(r);
+                                } else {
+                                    savedDeckVolA = cur;
+                                    this.els.deckVolA.value = '0';
+                                    setDeckVolA(0);
+                                }
+                            },
+                            sig
+                        );
+                    }
+                    if (this.els.deckVolMuteB) {
+                        this.els.deckVolMuteB.addEventListener(
+                            'click',
+                            (e) => {
+                                try {
+                                    e.preventDefault();
+                                } catch (_) {}
+                                if (!this.els.deckVolB) return;
+                                const cur = Number(this.els.deckVolB.value) || 0;
+                                if (cur < 0.001) {
+                                    const r = clampVol(savedDeckVolB > 0.001 ? savedDeckVolB : 1);
+                                    this.els.deckVolB.value = String(r);
+                                    setDeckVolB(r);
+                                } else {
+                                    savedDeckVolB = cur;
+                                    this.els.deckVolB.value = '0';
+                                    setDeckVolB(0);
+                                }
+                            },
+                            sig
+                        );
                     }
                 } catch (_) {}
 
