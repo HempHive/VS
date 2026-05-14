@@ -1451,7 +1451,7 @@
             --dj-control-scale: 1;
             --dj-btn-height-mult: 1.62;
             --dj-knob-scale: 0.6;
-            grid-template-columns: minmax(calc(220px * var(--dj-control-scale)), min(26vw, calc(300px * var(--dj-control-scale)))) auto minmax(calc(30px * var(--dj-control-scale)), calc(44px * var(--dj-control-scale))) repeat(3, minmax(0, 1fr));
+            grid-template-columns: minmax(calc(220px * var(--dj-control-scale)), min(26vw, calc(300px * var(--dj-control-scale)))) auto minmax(calc(32px * var(--dj-control-scale)), calc(52px * var(--dj-control-scale))) repeat(3, minmax(0, 1fr));
             grid-template-rows: repeat(6, minmax(calc(24px * var(--dj-control-scale)), auto));
             gap: 1px;
             width: 100%;
@@ -1736,9 +1736,9 @@
         }
         /* Tempo column: same width band as Deck VOL column */
         #dj-visual-root .dj-beatmap-tempo-col {
-            flex: 0 0 minmax(calc(30px * var(--dj-control-scale)), calc(44px * var(--dj-control-scale)));
-            min-width: calc(30px * var(--dj-control-scale));
-            max-width: calc(44px * var(--dj-control-scale));
+            flex: 0 0 minmax(calc(32px * var(--dj-control-scale)), calc(52px * var(--dj-control-scale)));
+            min-width: calc(32px * var(--dj-control-scale));
+            max-width: calc(52px * var(--dj-control-scale));
             display: flex;
             flex-direction: column;
             align-items: stretch;
@@ -1753,17 +1753,17 @@
             justify-content: center;
             height: 100%;
             min-height: 0;
-            gap: 4px;
+            gap: 0;
             width: 100%;
         }
         /* Same vertical span behavior as .dj-deck-vol-stack: slider grows, one compact footer row (cf. VOL caption) */
         #dj-visual-root .dj-beatmap-tempo-footer {
             display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
+            flex-direction: column;
+            flex-wrap: nowrap;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 4px;
             flex-shrink: 0;
             width: 100%;
         }
@@ -1900,13 +1900,15 @@
             background: transparent;
             border-radius: 7px;
             border: none;
+            box-sizing: border-box;
         }
         #dj-visual-root .dj-deck-vol {
             position: relative;
             z-index: 1;
         }
         #dj-visual-root .dj-beatmap-bpm-slider {
-            background: rgba(255,255,255,0.08);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid #EBE9E8;
         }
         #dj-visual-root .dj-deck-vol::-webkit-slider-thumb,
         #dj-visual-root .dj-beatmap-bpm-slider::-webkit-slider-thumb {
@@ -11997,6 +11999,20 @@ function stopAllAndShowStart() {
                     const volB = this.root.querySelector('#dj-deck-b-vol');
                     const bpmA = this.root.querySelector('#dj-a-beat-bpm');
                     const bpmB = this.root.querySelector('#dj-b-beat-bpm');
+                    const bpmTrackLenPx = (bpmEl) => {
+                        let px = Math.max(300, target + 80);
+                        try {
+                            const stack = bpmEl && bpmEl.closest('.dj-beatmap-tempo-stack');
+                            const footer = stack && stack.querySelector('.dj-beatmap-tempo-footer');
+                            if (stack) {
+                                const sh = Math.floor(stack.getBoundingClientRect().height || 0);
+                                const fh = Math.floor((footer && footer.getBoundingClientRect().height) || 0);
+                                const avail = sh - fh - 2;
+                                if (avail > 64) px = Math.max(px, avail);
+                            }
+                        } catch (_) {}
+                        return Math.round(px);
+                    };
                     if (volA) {
                         volA.style.width = `${len}px`;
                         try {
@@ -12011,8 +12027,8 @@ function stopAllAndShowStart() {
                             if (wrap) wrap.style.removeProperty('height');
                         } catch (_) {}
                     }
-                    if (bpmA) bpmA.style.width = `${len}px`;
-                    if (bpmB) bpmB.style.width = `${len}px`;
+                    if (bpmA) bpmA.style.width = `${bpmTrackLenPx(bpmA)}px`;
+                    if (bpmB) bpmB.style.width = `${bpmTrackLenPx(bpmB)}px`;
                 } catch (_) {}
             }
 
