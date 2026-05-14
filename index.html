@@ -8914,6 +8914,56 @@ function randomGlowColor() {
             }
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
+        /** Next Deck A/B file-picker result from jog double-click prepends and starts playback immediately. */
+        let __djLocalPickImmediateDeck = null;
+        function scheduleClearDjLocalPickImmediate(deckKey) {
+            const onFocus = () => {
+                window.removeEventListener('focus', onFocus);
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        if (__djLocalPickImmediateDeck === deckKey) __djLocalPickImmediateDeck = null;
+                    });
+                });
+            };
+            try { window.addEventListener('focus', onFocus, { capture: false, once: true }); } catch (_) {}
+        }
+        function buildDeckLocalItemsFromFiles(deckKey, files) {
+            const items = [];
+            const list = Array.isArray(files) ? files : Array.from(files || []);
+            for (let i = 0; i < list.length; i++) {
+                const file = list[i];
+                const kind = inferLocalMediaKind(file);
+                if (!file || !kind) continue;
+                const isVideo = kind === 'video';
+                let url = '';
+                try { url = URL.createObjectURL(file); } catch (_) { continue; }
+                if (!url) continue;
+                items.push({
+                    name: file.name || (isVideo ? 'Video track' : 'Audio track'),
+                    url,
+                    isVideo
+                });
+                if (isVideo) {
+                    try { registerDeckVideoFeed(deckKey, url, file.name || 'Video track', true); } catch (_) {}
+                }
+            }
+            return items;
+        }
+        function prependDeckLocalItems(deckKey, items) {
+            if (!items || !items.length) return;
+            const q = deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
+            for (let i = items.length - 1; i >= 0; i--) q.unshift(items[i]);
+            try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+        }
+        function ingestLocalFilesToDeckAndPlay(deckKey, files) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            const items = buildDeckLocalItemsFromFiles(dk, files);
+            if (!items.length) return;
+            initAudio();
+            prependDeckLocalItems(dk, items);
+            if (dk === 'b') playDeckBTrackFromQueue();
+            else playDeckATrackFromQueue();
+        }
         function enqueueDeckUrl(deckKey, url, label) {
             const clean = sanitizeUrlForAudio(url);
             if (!clean) return false;
@@ -12531,7 +12581,7 @@ function stopAllAndShowStart() {
               </div>
             </div>
           </div>
-          <div class="dj-jog-wrap">
+          <div class="dj-jog-wrap" title="Double-click or drop audio/video files to load Deck A and start playback immediately.">
             <div class="dj-jog" id="dj-jog-a" aria-hidden="true">
               <svg class="dj-jog-progress-svg dj-jog-progress-svg--a dj-jog-progress-svg--hidden" id="dj-jog-a-progress" viewBox="0 0 100 100" aria-hidden="true">
                 <g transform="translate(50 50) rotate(-90)">
@@ -12712,7 +12762,7 @@ function stopAllAndShowStart() {
                   </div>
                 </div>
               </div>
-              <div class="dj-jog-wrap">
+              <div class="dj-jog-wrap" title="Double-click or drop audio/video files to load Deck B and start playback immediately.">
                 <div class="dj-jog" id="dj-jog-b" aria-hidden="true">
                   <svg class="dj-jog-progress-svg dj-jog-progress-svg--b dj-jog-progress-svg--hidden" id="dj-jog-b-progress" viewBox="0 0 100 100" aria-hidden="true">
                     <g transform="translate(50 50) rotate(-90)">
@@ -14426,10 +14476,10 @@ function stopAllAndShowStart() {
                     const btnFolderB = root.querySelector('#dj-queue-folder-b');
                     const btnUrlDeckA = root.querySelector('#dj-queue-url-deck-a');
                     const btnUrlDeckB = root.querySelector('#dj-queue-url-deck-b');
-                    if (btnAddA) btnAddA.addEventListener('click', () => { try { fiQA.click(); } catch (_) {} }, sig);
-                    if (btnAddB) btnAddB.addEventListener('click', () => { try { fiQB.click(); } catch (_) {} }, sig);
-                    if (btnFolderA) btnFolderA.addEventListener('click', () => { try { fiQAFolder.click(); } catch (_) {} }, sig);
-                    if (btnFolderB) btnFolderB.addEventListener('click', () => { try { fiQBFolder.click(); } catch (_) {} }, sig);
+                    if (btnAddA) btnAddA.addEventListener('click', () => { try { __djLocalPickImmediateDeck = null; fiQA.click(); } catch (_) {} }, sig);
+                    if (btnAddB) btnAddB.addEventListener('click', () => { try { __djLocalPickImmediateDeck = null; fiQB.click(); } catch (_) {} }, sig);
+                    if (btnFolderA) btnFolderA.addEventListener('click', () => { try { __djLocalPickImmediateDeck = null; fiQAFolder.click(); } catch (_) {} }, sig);
+                    if (btnFolderB) btnFolderB.addEventListener('click', () => { try { __djLocalPickImmediateDeck = null; fiQBFolder.click(); } catch (_) {} }, sig);
                     if (btnUrlDeckA) btnUrlDeckA.addEventListener('click', () => { try { promptAddUrlForDeck('a'); this.refreshQueueUi(); } catch (_) {} }, sig);
                     if (btnUrlDeckB) btnUrlDeckB.addEventListener('click', () => { try { promptAddUrlForDeck('b'); this.refreshQueueUi(); } catch (_) {} }, sig);
                     fiQA.addEventListener('change', (ev) => {
@@ -14437,10 +14487,15 @@ function stopAllAndShowStart() {
                         try { ev.target.value = ''; } catch (_) {}
                         if (!files.length) return;
                         initAudio();
-                        enqueueDeckLocalFiles('a', files);
-                        const playingLocal = state.deckSourceMode.a === 'local';
-                        const mediaGoing = audioEl && audioEl.src && !audioEl.paused && !audioEl.ended;
-                        if (!playingLocal || !mediaGoing) playDeckATrackFromQueue();
+                        const forceNow = __djLocalPickImmediateDeck === 'a';
+                        __djLocalPickImmediateDeck = null;
+                        if (forceNow) ingestLocalFilesToDeckAndPlay('a', files);
+                        else {
+                            enqueueDeckLocalFiles('a', files);
+                            const playingLocal = state.deckSourceMode.a === 'local';
+                            const mediaGoing = audioEl && audioEl.src && !audioEl.paused && !audioEl.ended;
+                            if (!playingLocal || !mediaGoing) playDeckATrackFromQueue();
+                        }
                         try { this.refreshQueueUi(); } catch (_) {}
                     }, sig);
                     fiQB.addEventListener('change', (ev) => {
@@ -14448,10 +14503,15 @@ function stopAllAndShowStart() {
                         try { ev.target.value = ''; } catch (_) {}
                         if (!files.length) return;
                         initAudio();
-                        enqueueDeckLocalFiles('b', files);
-                        const playingLocal = state.deckSourceMode.b === 'local';
-                        const mediaGoing = audioElB && audioElB.src && !audioElB.paused && !audioElB.ended;
-                        if (!playingLocal || !mediaGoing) playDeckBTrackFromQueue();
+                        const forceNow = __djLocalPickImmediateDeck === 'b';
+                        __djLocalPickImmediateDeck = null;
+                        if (forceNow) ingestLocalFilesToDeckAndPlay('b', files);
+                        else {
+                            enqueueDeckLocalFiles('b', files);
+                            const playingLocal = state.deckSourceMode.b === 'local';
+                            const mediaGoing = audioElB && audioElB.src && !audioElB.paused && !audioElB.ended;
+                            if (!playingLocal || !mediaGoing) playDeckBTrackFromQueue();
+                        }
                         try { this.refreshQueueUi(); } catch (_) {}
                     }, sig);
                     fiQAFolder.addEventListener('change', (ev) => {
@@ -14476,6 +14536,35 @@ function stopAllAndShowStart() {
                         if (!playingLocal || !mediaGoing) playDeckBTrackFromQueue();
                         try { this.refreshQueueUi(); } catch (_) {}
                     }, sig);
+
+                    const jogWrapA = this.els.jogA && this.els.jogA.closest('.dj-jog-wrap');
+                    const jogWrapB = this.els.jogB && this.els.jogB.closest('.dj-jog-wrap');
+                    const wireJogWrapLocalLoad = (wrap, deckKey, fiDeck) => {
+                        if (!wrap) return;
+                        wrap.addEventListener('dblclick', (e) => {
+                            try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+                            __djLocalPickImmediateDeck = deckKey;
+                            scheduleClearDjLocalPickImmediate(deckKey);
+                            try { fiDeck.click(); } catch (_) {}
+                        }, sig);
+                        wrap.addEventListener('dragover', (e) => {
+                            try {
+                                const dt = e.dataTransfer;
+                                if (!dt || !Array.from(dt.types || []).includes('Files')) return;
+                                e.preventDefault();
+                                dt.dropEffect = 'copy';
+                            } catch (_) {}
+                        }, sig);
+                        wrap.addEventListener('drop', (e) => {
+                            try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+                            const dt = e.dataTransfer;
+                            if (!dt || !dt.files || !dt.files.length) return;
+                            ingestLocalFilesToDeckAndPlay(deckKey, dt.files);
+                            try { this.refreshQueueUi(); } catch (_) {}
+                        }, sig);
+                    };
+                    wireJogWrapLocalLoad(jogWrapA, 'a', fiQA);
+                    wireJogWrapLocalLoad(jogWrapB, 'b', fiQB);
 
                     const sharedQueueUrlInput = root.querySelector('#dj-b-video-input');
                     const btnVideoLoad = root.querySelector('#dj-b-video-load');
@@ -17649,22 +17738,30 @@ function stopAllAndShowStart() {
         async function midiToggleDeckA() {
             try { initAudio(); } catch (_) {}
             try {
-                if (!audioEl || !audioEl.src) {
+                const eng = getDjDecksEngineIfActive();
+                try {
+                    if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
+                } catch (_) {}
+                const media = (typeof getDeckAMediaForPlaybackState === 'function')
+                    ? getDeckAMediaForPlaybackState()
+                    : audioEl;
+                if (!media || !deckHasSource(media)) {
                     try {
-                        const eng = getDjDecksEngineIfActive();
                         if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
                     } catch (_) {}
                     if (typeof playRadio === 'function') playRadio();
                     return;
                 }
-                if (audioEl.paused) {
+                if (media.paused) {
                     try {
-                        const eng = getDjDecksEngineIfActive();
                         if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
                     } catch (_) {}
-                    await audioEl.play().catch(() => { if (typeof playRadio === 'function') playRadio(); });
+                    await media.play().catch(() => { if (typeof playRadio === 'function') playRadio(); });
                 } else {
-                    audioEl.pause();
+                    try {
+                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                    } catch (_) {}
+                    media.pause();
                 }
             } catch (_) {}
         }
@@ -18882,6 +18979,10 @@ tiGlowColorRandBtn.addEventListener('click', () => {
          * Each helper also handles the cold-start case: if the deck's media element
          * has no source yet, we call playRadio() / playRadioB() so the very first
          * press actually boots the deck rather than being a silent no-op.
+         *
+         * Deck A: use `getDeckAMediaForPlaybackState()` (same as the DJ Play button)
+         * so radio warm-handoff output on `audioElRadioAAlt` is toggled — not only
+         * `audioEl`, which can be the muted prep element after AUTO-FADE / retune.
          */
         function deckHasSource(el) {
             try {
@@ -18900,19 +19001,25 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 try {
                     if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
                 } catch (_) {}
-                if (!audioEl) return;
-                if (!deckHasSource(audioEl)) {
+                const media = (typeof getDeckAMediaForPlaybackState === 'function')
+                    ? getDeckAMediaForPlaybackState()
+                    : audioEl;
+                if (!media) return;
+                if (!deckHasSource(media)) {
                     try {
                         if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
                     } catch (_) {}
                     if (typeof playRadio === 'function') playRadio();
-                } else if (audioEl.paused) {
+                } else if (media.paused) {
                     try {
                         if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
                     } catch (_) {}
-                    audioEl.play().catch(() => {});
+                    media.play().catch(() => {});
                 } else {
-                    audioEl.pause();
+                    try {
+                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                    } catch (_) {}
+                    media.pause();
                 }
             } catch (_) {}
         }
