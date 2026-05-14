@@ -344,7 +344,7 @@
             display: flex;
             align-items: center;
             --cross-x: 0;
-            --cross-deck-a: rgba(230, 5, 16, 0.6);
+            --cross-deck-a: rgba(208, 18, 18, 0.6);
             --cross-deck-b: rgba(30, 26, 77, 0.6);
             --cross-thumb-half: 28px;
         }
@@ -3613,7 +3613,7 @@
     display: flex;
     align-items: center;
     --cross-x: 0;
-    --cross-deck-a: rgba(230, 5, 16, 0.6);
+    --cross-deck-a: rgba(208, 18, 18, 0.6);
     --cross-deck-b: rgba(30, 26, 77, 0.6);
     --cross-thumb-half: 28px;
 }
@@ -10355,6 +10355,11 @@ function stopAllAndShowStart() {
                 this._deckAStationsTopMenuOnNextClick = false;
                 this.beatMapSlots = null;
                 this.headClockTimerId = null;
+                /**
+                 * DJ deck columns: stacked (A top / B bottom) vs side‑by‑side. Updated in onResize().
+                 * Hysteresis keeps resize from oscillating at the breakpoint.
+                 */
+                this._djLandscapeLayout = false;
             }
 
             tickHeadDatetime() {
@@ -12127,7 +12132,18 @@ function stopAllAndShowStart() {
 
             onResize() {
                 if (!this.root) return;
-                const land = window.innerWidth > window.innerHeight;
+                const w = window.innerWidth;
+                const h = Math.max(1, window.innerHeight);
+                /* Default was w > h (any non‑square landscape). Require extra width before A/B columns go left/right, and a lower threshold when shrinking back so the layout does not thrash. */
+                const LANDSCAPE_ASPECT_ENTER = 1.24;
+                const LANDSCAPE_ASPECT_EXIT = 1.12;
+                let land = this._djLandscapeLayout;
+                if (land) {
+                    land = w > h * LANDSCAPE_ASPECT_EXIT;
+                } else {
+                    land = w > h * LANDSCAPE_ASPECT_ENTER;
+                }
+                this._djLandscapeLayout = land;
                 this.root.classList.toggle('dj-mode-landscape', land);
                 this.root.classList.toggle('dj-mode-portrait', !land);
                 try {
