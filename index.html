@@ -1607,7 +1607,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-end;
             height: 100%;
             min-height: 0;
             gap: 4px;
@@ -1656,8 +1656,10 @@
             position: relative;
         }
         #dj-visual-root .dj-deck-vol-wrap {
-            height: 100%;
-            max-height: 100%;
+            flex: 1 1 auto;
+            width: 100%;
+            min-height: 0;
+            max-height: none;
             --deck-vol-thumb-half: calc(23px * var(--dj-control-scale));
             --deck-vol-rail: rgba(255, 255, 255, 0.08);
             --deck-vol-pct: 1;
@@ -1963,7 +1965,6 @@
         #dj-visual-root .dj-beatmap-bpm-slider {
             -webkit-appearance: none;
             appearance: none;
-            width: calc(210px * var(--dj-control-scale));
             height: 14px;
             transform: rotate(-90deg);
             transform-origin: center center;
@@ -1978,6 +1979,13 @@
             /* Wrap is a narrow row flexbox; default shrink=1 squashes the long pre-rotate width so thumb travel
              * no longer matches the full-height gold ::before rail (especially noticeable on the BPM slider). */
             flex-shrink: 0;
+        }
+        /* Pre-rotate width = vertical travel; deck VOL rails are 2× tempo slider length (see syncDeckVolumeSliderLengths). */
+        #dj-visual-root .dj-deck-vol {
+            width: calc(420px * var(--dj-control-scale));
+        }
+        #dj-visual-root .dj-beatmap-bpm-slider {
+            width: calc(210px * var(--dj-control-scale));
         }
         #dj-visual-root .dj-deck-vol::-webkit-slider-runnable-track,
         #dj-visual-root .dj-beatmap-bpm-slider::-webkit-slider-runnable-track {
@@ -12369,21 +12377,31 @@ function stopAllAndShowStart() {
                     /** Rotated range: pre-rotate `width` is the vertical span. Flex-centers the 14px-tall box in the wrap (height h);
                      * thumb centres travel `width - thumb` along that span. Matching crossfader geometry requires
                      * `width === h` so extremes sit at y = thumb_half and y = h - thumb_half (same as .dj-deck-vol-wrap::before). */
+                    const DECK_VOL_SLIDER_LENGTH_MULT = 2;
                     const deckVolTrackCapPx = (volEl) => {
                         try {
-                            const wrap = volEl && volEl.closest('.dj-deck-vol-wrap');
-                            if (!wrap) return null;
-                            const h = wrap.getBoundingClientRect().height || 0;
+                            const stack = volEl && volEl.closest('.dj-deck-vol-stack');
+                            if (!stack) return null;
+                            let gapPx = 4;
+                            try {
+                                const gs = getComputedStyle(stack);
+                                gapPx = parseFloat(gs.rowGap) || parseFloat(gs.gap) || 4;
+                            } catch (_) {}
+                            if (!Number.isFinite(gapPx)) gapPx = 4;
+                            const footer = stack.querySelector('.dj-deck-vol-mute');
+                            const fh = footer ? (footer.offsetHeight || footer.clientHeight || 0) : 0;
+                            const h = stack.clientHeight || stack.getBoundingClientRect().height || 0;
                             if (h < 96) return null;
-                            return Math.max(120, Math.floor(h));
+                            return Math.max(120, Math.floor(Math.max(0, h - fh - gapPx)));
                         } catch (_) {
                             return null;
                         }
                     };
-                    const volLenPx = (volEl) => {
+                    const volBaseLenPx = (volEl) => {
                         const cap = deckVolTrackCapPx(volEl);
                         return cap != null ? Math.min(len, cap) : len;
                     };
+                    const volLenPx = (volEl) => Math.round(volBaseLenPx(volEl) * DECK_VOL_SLIDER_LENGTH_MULT);
                     const bpmTrackLenPx = (bpmEl) => {
                         const fallback = target > 0 ? Math.max(300, target + 80) : 320;
                         try {
@@ -12411,20 +12429,20 @@ function stopAllAndShowStart() {
                         } catch (_) {}
                         return Math.round(fallback);
                     };
-                    if (volA) {
-                        volA.style.width = `${Math.round(volLenPx(volA))}px`;
+                    const applyDeckVolSliderSize = (volEl) => {
+                        if (!volEl) return;
+                        const px = Math.round(volLenPx(volEl));
+                        volEl.style.width = `${px}px`;
                         try {
-                            const wrap = volA.closest('.dj-deck-vol-wrap');
-                            if (wrap) wrap.style.removeProperty('height');
+                            const wrap = volEl.closest('.dj-deck-vol-wrap');
+                            if (wrap) {
+                                wrap.style.minHeight = `${px}px`;
+                                wrap.style.height = `${px}px`;
+                            }
                         } catch (_) {}
-                    }
-                    if (volB) {
-                        volB.style.width = `${Math.round(volLenPx(volB))}px`;
-                        try {
-                            const wrap = volB.closest('.dj-deck-vol-wrap');
-                            if (wrap) wrap.style.removeProperty('height');
-                        } catch (_) {}
-                    }
+                    };
+                    applyDeckVolSliderSize(volA);
+                    applyDeckVolSliderSize(volB);
                     if (bpmA) bpmA.style.width = `${bpmTrackLenPx(bpmA)}px`;
                     if (bpmB) bpmB.style.width = `${bpmTrackLenPx(bpmB)}px`;
                     if (bpmA || bpmB) {
@@ -13082,7 +13100,7 @@ function stopAllAndShowStart() {
             <button type="button" class="btn dj-fx" id="dj-vis-blank" title="Switch to no visual (Blank mode)">NO VISUAL</button>
             <button type="button" class="btn dj-fx" id="dj-vis-pm2" title="Switch visual to ProjectM v2">ProjectM</button>
 
-            <button type="button" class="btn dj-fx" id="dj-fx-high" title="Toggle avatar / WebM overlay">Avatar</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-high" title="Show or re-centre Avatar in Deck B while a visual is playing there; otherwise toggle avatar overlay">Avatar</button>
             <button type="button" class="btn dj-fx" id="dj-a-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
             <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Open or close station list (top menu)">Stations</button>
 
@@ -15016,26 +15034,6 @@ function stopAllAndShowStart() {
                         if (typeof syncDjTextInDeckLights === 'function') syncDjTextInDeckLights();
                     } catch (_) {}
                 };
-                const djToggleAvatarDeckA = () => {
-                    try {
-                        if (typeof uiLocked !== 'undefined' && uiLocked) return;
-                        if (!webmOn) {
-                            if (!webmList.length) {
-                                loadWebmList().finally(() => {
-                                    try {
-                                        if (webmList.length > 0) showWebm();
-                                        this.syncFxLightsFromState();
-                                    } catch (_) {}
-                                });
-                                return;
-                            }
-                            showWebm();
-                        } else {
-                            hideWebm();
-                        }
-                        this.syncFxLightsFromState();
-                    } catch (_) {}
-                };
                 const djToggleAvatarDeckB = () => {
                     try {
                         if (typeof uiLocked !== 'undefined' && uiLocked) return;
@@ -15051,14 +15049,47 @@ function stopAllAndShowStart() {
                             }
                             showWebm({ deckBCenter: true });
                         } else {
-                            webmAnchorDeckB = true;
-                            webmSettings.posXvw = 50;
-                            webmSettings.posYvh = 50;
-                            try {
-                                if (typeof inpWebmX !== 'undefined' && inpWebmX) inpWebmX.value = '50';
-                                if (typeof inpWebmY !== 'undefined' && inpWebmY) inpWebmY.value = '50';
-                            } catch (_) {}
-                            applyWebmSettings();
+                            centerAvatarInDeckB();
+                        }
+                        this.syncFxLightsFromState();
+                    } catch (_) {}
+                };
+                const djToggleAvatarDeckA = () => {
+                    try {
+                        if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                        // While Deck B is showing a visual, Deck A Avatar matches Deck B Avatar:
+                        // show / re-centre in the Deck B viz area (resize & move still work via settings / arrows).
+                        if (this.isDeckBVisualModeActive()) {
+                            if (!webmOn) {
+                                if (!webmList.length) {
+                                    loadWebmList().finally(() => {
+                                        try {
+                                            if (webmList.length > 0) showWebm({ deckBCenter: true });
+                                            this.syncFxLightsFromState();
+                                        } catch (_) {}
+                                    });
+                                    return;
+                                }
+                                showWebm({ deckBCenter: true });
+                            } else {
+                                centerAvatarInDeckB();
+                            }
+                            this.syncFxLightsFromState();
+                            return;
+                        }
+                        if (!webmOn) {
+                            if (!webmList.length) {
+                                loadWebmList().finally(() => {
+                                    try {
+                                        if (webmList.length > 0) showWebm();
+                                        this.syncFxLightsFromState();
+                                    } catch (_) {}
+                                });
+                                return;
+                            }
+                            showWebm();
+                        } else {
+                            hideWebm();
                         }
                         this.syncFxLightsFromState();
                     } catch (_) {}
@@ -20107,16 +20138,25 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             webmIndex = 0;
         }
 
+        function centerAvatarInDeckB() {
+            webmAnchorDeckB = true;
+            webmSettings.posXvw = 50;
+            webmSettings.posYvh = 50;
+            try {
+                if (typeof inpWebmX !== 'undefined' && inpWebmX) inpWebmX.value = '50';
+                if (typeof inpWebmY !== 'undefined' && inpWebmY) inpWebmY.value = '50';
+                const aX = document.getElementById('avatar-inp-x');
+                const aY = document.getElementById('avatar-inp-y');
+                if (aX) aX.value = '50';
+                if (aY) aY.value = '50';
+            } catch (_) {}
+            if (webmOn) applyWebmSettings();
+        }
+
         function showWebm(opts) {
             if(webmList.length === 0) return;
             if (opts && opts.deckBCenter) {
-                webmAnchorDeckB = true;
-                webmSettings.posXvw = 50;
-                webmSettings.posYvh = 50;
-                try {
-                    if (typeof inpWebmX !== 'undefined' && inpWebmX) inpWebmX.value = '50';
-                    if (typeof inpWebmY !== 'undefined' && inpWebmY) inpWebmY.value = '50';
-                } catch (_) {}
+                centerAvatarInDeckB();
             } else {
                 webmAnchorDeckB = false;
             }
@@ -20483,7 +20523,11 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                     let rect = null;
                     if (mountFs) {
                         rect = mount.getBoundingClientRect();
-                    } else if (deckCol) {
+                    } else if (mount) {
+                        const mr = mount.getBoundingClientRect();
+                        if (mr.width >= 8 && mr.height >= 8) rect = mr;
+                    }
+                    if (!rect && deckCol) {
                         rect = deckCol.getBoundingClientRect();
                     }
                     stashWebmOverlayHome();
