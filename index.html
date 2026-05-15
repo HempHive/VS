@@ -14007,14 +14007,39 @@ function stopAllAndShowStart() {
                  *  - already-ready check passes synchronously (just retuned to a primed deck), OR
                  *  - `timeoutMs` elapses (safety cap so a dead/slow stream cannot block the UI).
                  *
-                 * The Promise always resolves (boolean indicates whether readiness was confirmed
-                 * vs the timeout fallback) so callers can `.then(...)` without try/catch.
+                 * Resolves with:
+                 *   'ready'   — stream is audible / buffered enough to play
+                 *   'failed'  — no URL, or a media error (skip to another station)
+                 *   'timeout' — still connecting when the wait budget expired (do NOT skip station)
                  */
+                const stationIndexHasStreamUrl = (idx) => {
+                    try {
+                        const st = Array.isArray(stations) && stations[idx];
+                        return !!(st && st.url && String(st.url).trim());
+                    } catch (_) {}
+                    return false;
+                };
+                const getDeckRadioStationIndex = (deckKey) => {
+                    try {
+                        if (deckKey === 'b') {
+                            return (typeof currentStationBIndex === 'number' && currentStationBIndex >= 0)
+                                ? currentStationBIndex : 0;
+                        }
+                        return (typeof currentStationIndex === 'number' && currentStationIndex >= 0)
+                            ? currentStationIndex : 0;
+                    } catch (_) {}
+                    return 0;
+                };
                 const awaitDeckRadioReady = (deckKey, timeoutMs) => {
                     return new Promise((resolve) => {
+                        const stationIdx = getDeckRadioStationIndex(deckKey);
+                        if (!stationIndexHasStreamUrl(stationIdx)) {
+                            resolve('failed');
+                            return;
+                        }
                         let el = null;
                         try { el = getRadioReadinessTargetEl(deckKey); } catch (_) {}
-                        if (!el) { resolve(false); return; }
+                        if (!el) { resolve('failed'); return; }
                         const isReady = () => {
                             try {
                                 if ((el.readyState | 0) >= 3) return true; // HAVE_FUTURE_DATA
@@ -14022,28 +14047,31 @@ function stopAllAndShowStart() {
                             } catch (_) {}
                             return false;
                         };
-                        if (isReady()) { resolve(true); return; }
-                        const cap = Math.max(500, Math.min(8000, Number(timeoutMs) || 5000));
+                        if (isReady()) { resolve('ready'); return; }
+                        const cap = Math.max(3000, Math.min(20000, Number(timeoutMs) || 12000));
                         let done = false;
                         let timer = null;
                         const cleanup = () => {
                             try { el.removeEventListener('playing', onPlaying); } catch (_) {}
                             try { el.removeEventListener('canplay', onMaybe); } catch (_) {}
                             try { el.removeEventListener('loadeddata', onMaybe); } catch (_) {}
+                            try { el.removeEventListener('error', onError); } catch (_) {}
                             if (timer) { try { clearTimeout(timer); } catch (_) {} timer = null; }
                         };
-                        const finish = (ok) => {
+                        const finish = (status) => {
                             if (done) return;
                             done = true;
                             cleanup();
-                            resolve(!!ok);
+                            resolve(status);
                         };
-                        const onPlaying = () => finish(true);
-                        const onMaybe = () => { if (isReady()) finish(true); };
+                        const onPlaying = () => finish('ready');
+                        const onMaybe = () => { if (isReady()) finish('ready'); };
+                        const onError = () => finish('failed');
                         try { el.addEventListener('playing', onPlaying); } catch (_) {}
                         try { el.addEventListener('canplay', onMaybe); } catch (_) {}
                         try { el.addEventListener('loadeddata', onMaybe); } catch (_) {}
-                        timer = setTimeout(() => finish(false), cap);
+                        try { el.addEventListener('error', onError); } catch (_) {}
+                        timer = setTimeout(() => finish('timeout'), cap);
                     });
                 };
                 const retuneDeckStationForAutoMix = (deckKey, triedIndexes) => {
@@ -14085,21 +14113,21 @@ function stopAllAndShowStart() {
                  */
                 const prepareIncomingDeckForAutoFade = async (deckKey, timeoutMs, opts) => {
                     const retuneIfNeeded = !(opts && opts.retuneIfNeeded === false);
-                    const cap = Math.max(500, Math.min(8000, Number(timeoutMs) || 5000));
-                    const perTryMs = Math.max(800, Math.floor(cap / MAX_RADIO_RETRIES));
+                    // Full connect budget per station — slow streams need time; do not split across retries.
+                    const perStationMs = Math.max(8000, Math.min(20000, Number(timeoutMs) || 12000));
                     if (isDeckRadioAudiblyReady(deckKey)) return true;
                     if (!retuneIfNeeded) {
                         try {
                             const el = getRadioReadinessTargetEl(deckKey);
                             if (el && el.src && el.paused) await el.play().catch(() => {});
                         } catch (_) {}
-                        await awaitDeckRadioReady(deckKey, cap);
-                        return isDeckRadioAudiblyReady(deckKey);
+                        const waitResult = await awaitDeckRadioReady(deckKey, perStationMs);
+                        return waitResult === 'ready' || isDeckRadioAudiblyReady(deckKey);
                     }
                     const tried = new Set();
                     const markTried = () => {
                         try {
-                            const idx = deckKey === 'b' ? currentStationBIndex : currentStationIndex;
+                            const idx = getDeckRadioStationIndex(deckKey);
                             if (typeof idx === 'number' && idx >= 0) tried.add(idx);
                         } catch (_) {}
                     };
@@ -14109,8 +14137,12 @@ function stopAllAndShowStart() {
                             try { retuneDeckStationForAutoMix(deckKey, tried); } catch (_) {}
                             markTried();
                         }
-                        await awaitDeckRadioReady(deckKey, perTryMs);
-                        if (isDeckRadioAudiblyReady(deckKey)) return true;
+                        const waitResult = await awaitDeckRadioReady(deckKey, perStationMs);
+                        if (waitResult === 'ready' || isDeckRadioAudiblyReady(deckKey)) return true;
+                        // Still buffering / slow connect — keep this station; do not hop to another.
+                        if (waitResult === 'timeout') return isDeckRadioAudiblyReady(deckKey);
+                        // 'failed' — dead URL or media error; try another eligible station.
+                        if (waitResult !== 'failed') return isDeckRadioAudiblyReady(deckKey);
                     }
                     return isDeckRadioAudiblyReady(deckKey);
                 };
@@ -14210,7 +14242,7 @@ function stopAllAndShowStart() {
                         } catch (_) {}
                     });
                 };
-                const AUTO_MIX_PRELOAD_MS = 5000;
+                const AUTO_MIX_PRELOAD_MS = 12000;
                 const scheduleNextAutoMix = () => {
                     clearAutoMixTimer();
                     this.autoMixNextFadeAt = 0;
