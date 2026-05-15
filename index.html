@@ -1615,14 +1615,29 @@
         /* VOL mute: same footprint / chrome as beat-map Sync (compact footer button) */
         #dj-visual-root .dj-beatmap-tempo-footer .btn.dj-fx.dj-beatmap-sync,
         #dj-visual-root .dj-deck-vol-stack .btn.dj-fx.dj-deck-vol-mute {
-            width: auto;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             min-height: 26px;
-            padding: 4px 10px;
+            padding: 4px 8px;
             font-size: 11px;
             letter-spacing: 0.06em;
             flex-shrink: 0;
             white-space: nowrap;
             line-height: 1.1;
+            text-align: center;
+        }
+        /* Fixed width so VOL / Sync labels do not shift layout when showing live slider values */
+        #dj-visual-root .dj-deck-vol-stack .btn.dj-fx.dj-deck-vol-mute {
+            width: 46px;
+            min-width: 46px;
+            max-width: 46px;
+        }
+        #dj-visual-root .dj-beatmap-tempo-footer .btn.dj-fx.dj-beatmap-sync {
+            width: 50px;
+            min-width: 50px;
+            max-width: 50px;
         }
         #dj-visual-root .dj-deck-vol-mute--live,
         #dj-visual-root .dj-beatmap-sync--live {
@@ -2114,16 +2129,24 @@
             gap: 6px;
             touch-action: none;
         }
-        .dj-jog-hint {
-            font-size: clamp(9px, 1.85vmin, 11px);
-            font-weight: 600;
-            letter-spacing: 0.06em;
-            color: rgba(255, 255, 255, 0.5);
+        .dj-jog-deck-label {
+            font-size: clamp(10px, 2vmin, 12px);
+            font-weight: 700;
+            letter-spacing: 0.2em;
             text-align: center;
             line-height: 1.15;
             user-select: none;
             pointer-events: none;
             white-space: nowrap;
+            opacity: 0.85;
+        }
+        .dj-jog-deck-label--a {
+            color: #FF0B55;
+            text-shadow: 0 0 10px rgba(255, 11, 85, 0.45);
+        }
+        .dj-jog-deck-label--b {
+            color: #9803FC;
+            text-shadow: 0 0 10px rgba(152, 3, 252, 0.45);
         }
         .dj-jog {
             width: clamp(calc(88px * var(--dj-control-scale)), calc(26vmin * var(--dj-control-scale)), calc(200px * var(--dj-control-scale)));
@@ -11157,9 +11180,31 @@ function stopAllAndShowStart() {
                 } catch (_) {}
             }
 
+            isDeckBVisualModeActive() {
+                const m = this.deckBVizMode || 'idle';
+                return m === 'bars' || m === 'projectm' || m === 'blank' || m === 'video' || m === 'karaoke' || m === 'kbop';
+            }
+
             toggleDeckBQueuePanel() {
+                if (this.deckBMediaPanelVisible) {
+                    this.showDeckBQueueView();
+                    return;
+                }
                 if (this.deckBQueueVisible) this.hideDeckBQueueView();
                 else this.showDeckBQueueView();
+            }
+
+            /** Toggle Deck B file-queue strip vs media queue + radio station cycle (Stations button). */
+            toggleDeckBStationMediaPanels() {
+                if (this.deckBQueueVisible) {
+                    this.showDeckBMediaView();
+                    return;
+                }
+                if (this.deckBMediaPanelVisible) {
+                    this.showDeckBQueueView();
+                    return;
+                }
+                this.showDeckBMediaView();
             }
 
             refreshQueueUi() {
@@ -12871,8 +12916,16 @@ function stopAllAndShowStart() {
                     const stationOpenUi = (typeof isTopMenuOpen === 'function') && isTopMenuOpen();
                     if (this.els.fxLow) this.els.fxLow.classList.toggle('on', videoOn);
                     if (this.els.fxLowB) this.els.fxLowB.classList.toggle('on', videoOn);
-                    if (this.els.queueA) this.els.queueA.classList.toggle('on', !!this.deckBQueueVisible);
-                    if (this.els.queueB) this.els.queueB.classList.toggle('on', !!this.deckBQueueVisible);
+                    const queuePanelOn = !!this.deckBQueueVisible;
+                    const mediaPanelOn = !!this.deckBMediaPanelVisible;
+                    const deckBPanelStrip = queuePanelOn || mediaPanelOn;
+                    const setPanelBtn = (el, panelOn) => {
+                        if (!el) return;
+                        el.classList.toggle('on', !!panelOn);
+                        el.classList.toggle('deck-b-active', !!panelOn);
+                    };
+                    setPanelBtn(this.els.queueA, queuePanelOn);
+                    setPanelBtn(this.els.queueB, queuePanelOn);
                     if (typeof syncDjTextInDeckLights === 'function') {
                         try { syncDjTextInDeckLights(); } catch(_) {}
                     }
@@ -12880,8 +12933,11 @@ function stopAllAndShowStart() {
                     if (this.els.fxHighB) this.els.fxHighB.classList.toggle('on', avatarOn);
                     if (this.els.fxTrebleA) this.els.fxTrebleA.classList.toggle('on', mixOpenUi);
                     if (this.els.fxTrebleB) this.els.fxTrebleB.classList.toggle('on', mixOpenUi);
-                    if (this.els.fxDistortA) this.els.fxDistortA.classList.toggle('on', stationOpenUi);
-                    if (this.els.fxDistortB) this.els.fxDistortB.classList.toggle('on', !!this.deckBMediaPanelVisible);
+                    if (this.els.fxDistortA) {
+                        this.els.fxDistortA.classList.toggle('on', mediaPanelOn || (stationOpenUi && !deckBPanelStrip));
+                        this.els.fxDistortA.classList.toggle('deck-b-active', mediaPanelOn);
+                    }
+                    setPanelBtn(this.els.fxDistortB, mediaPanelOn);
                     if (this.root && typeof syncDjBeatFxKnobActiveDom === 'function') syncDjBeatFxKnobActiveDom(this.root);
                 } catch (_) {}
             }
@@ -13015,7 +13071,7 @@ function stopAllAndShowStart() {
               </svg>
               <span class="dj-jog-marker"></span>
             </div>
-            <span class="dj-jog-hint">Load File ⊕</span>
+            <span class="dj-jog-deck-label dj-jog-deck-label--a">DECK A</span>
           </div>
           <div class="dj-deck-vol-col" aria-label="Deck A volume">
             <div class="dj-deck-vol-stack">
@@ -13197,7 +13253,7 @@ function stopAllAndShowStart() {
                   </svg>
                   <span class="dj-jog-marker"></span>
                 </div>
-                <span class="dj-jog-hint">Load File ⊕</span>
+                <span class="dj-jog-deck-label dj-jog-deck-label--b">DECK B</span>
               </div>
               <div class="dj-deck-vol-col" aria-label="Deck B volume">
                 <div class="dj-deck-vol-stack">
@@ -14940,9 +14996,13 @@ function stopAllAndShowStart() {
                 const djToggleStationUi = () => {
                     try {
                         if (typeof uiLocked !== 'undefined' && uiLocked) return;
-                        if (this.deckBQueueVisible) {
+                        if (this.deckBQueueVisible || this.deckBMediaPanelVisible) {
+                            this.toggleDeckBStationMediaPanels();
+                            this.syncFxLightsFromState();
+                            return;
+                        }
+                        if (this.isDeckBVisualModeActive()) {
                             this.showDeckBMediaView();
-                            this._deckAStationsTopMenuOnNextClick = true;
                             this.syncFxLightsFromState();
                             return;
                         }
@@ -14953,10 +15013,10 @@ function stopAllAndShowStart() {
                         this.syncFxLightsFromState();
                     } catch (_) {}
                 };
-                const djToggleDeckBMediaUi = () => {
+                const djToggleDeckBStationPanel = () => {
                     try {
                         if (typeof uiLocked !== 'undefined' && uiLocked) return;
-                        this.toggleDeckBMediaPanel();
+                        this.toggleDeckBStationMediaPanels();
                         this.syncFxLightsFromState();
                     } catch (_) {}
                 };
@@ -15292,7 +15352,7 @@ function stopAllAndShowStart() {
                 if (this.els.fxTrebleA) this.els.fxTrebleA.addEventListener('click', djToggleMixerUi, sig);
                 if (this.els.fxTrebleB) this.els.fxTrebleB.addEventListener('click', djToggleMixerUi, sig);
                 if (this.els.fxDistortA) this.els.fxDistortA.addEventListener('click', djToggleStationUi, sig);
-                if (this.els.fxDistortB) this.els.fxDistortB.addEventListener('click', djToggleDeckBMediaUi, sig);
+                if (this.els.fxDistortB) this.els.fxDistortB.addEventListener('click', djToggleDeckBStationPanel, sig);
 
                 const TK_HOLD_MS = 450;
                 const TK_F_MIN = 200;
@@ -15639,6 +15699,26 @@ function stopAllAndShowStart() {
                             (name === 'ProjectM v2' ? 'projectm' :
                             (name === 'Blank' ? 'blank' : null))
                         );
+                        if (name === 'Blank') {
+                            if (this.deckBQueueVisible) {
+                                try { this.hideDeckBQueueView(); } catch (_) {}
+                            }
+                            if (this.deckBMediaPanelVisible) {
+                                try { this.hideDeckBMediaView(); } catch (_) {}
+                            }
+                            if (this.isDeckBVisualModeActive()) {
+                                if (this.deckBVizMode === 'blank') {
+                                    this.tearDownDeckBViz();
+                                    this.syncDeckBVisualButtons();
+                                    try { this.updateStationTitles(); } catch (_) {}
+                                    return;
+                                }
+                                this.startDeckBBlankVisual();
+                                this.syncDeckBVisualButtons();
+                                try { this.updateStationTitles(); } catch (_) {}
+                                return;
+                            }
+                        }
                         if (name === 'Audio Bars' && this.deckBVizMode === 'projectm') {
                             this.startDeckBAudioBars();
                             this._deckAAudioBarsMainOnNextClick = true;
