@@ -6894,6 +6894,7 @@ const QUALITY = {
         }
         // Radio retry policy
         let radioRetryAttempts = 0;
+        let radioBRetryAttempts = 0;
         const MAX_RADIO_RETRIES = 6;
         // WebM auto-random toggle
         let webmAutoOn = false;
@@ -13941,21 +13942,21 @@ function stopAllAndShowStart() {
                     }
                 };
                 /**
-                 * True when `deckKey` is already cued in radio mode with a non-empty media
-                 * source. Used by AUTO-FADE / AUTO-MIX to decide whether runAutoFade can skip
-                 * the redundant playRadioB()/setStation() reload that would otherwise
-                 * interrupt an in-flight stream load.
+                 * True when the deck's radio element is actually producing (or buffered to play)
+                 * audio — not merely holding a URL that failed to connect.
                  */
-                const isDeckRadioReady = (deckKey) => {
+                const isDeckRadioAudiblyReady = (deckKey) => {
                     try {
                         const mode = state && state.deckSourceMode && state.deckSourceMode[deckKey];
                         if (mode !== 'radio') return false;
-                        const el = deckKey === 'b' ? audioElB : audioEl;
-                        const src = el && (el.currentSrc || el.src || '');
-                        return !!(src && src !== 'about:blank');
-                    } catch (_) {
-                        return false;
-                    }
+                        const el = getRadioReadinessTargetEl(deckKey);
+                        if (!el) return false;
+                        const src = String(el.currentSrc || el.src || '');
+                        if (!src || src === 'about:blank') return false;
+                        if ((el.readyState | 0) >= 3) return true;
+                        if (!el.paused && (Number(el.currentTime) || 0) > 0) return true;
+                    } catch (_) {}
+                    return false;
                 };
                 /**
                  * Picks the <audio> element whose readiness *actually* reflects whether the
@@ -14045,24 +14046,77 @@ function stopAllAndShowStart() {
                         timer = setTimeout(() => finish(false), cap);
                     });
                 };
-                const retuneDeckStationForAutoMix = (deckKey) => {
+                const retuneDeckStationForAutoMix = (deckKey, triedIndexes) => {
                     try {
-                        if (!Array.isArray(stations) || stations.length === 0) return;
+                        if (!Array.isArray(stations) || stations.length === 0) return null;
+                        const tried = (triedIndexes instanceof Set) ? triedIndexes : new Set();
                         if (deckKey === 'b') {
                             const cur = (typeof currentStationBIndex === 'number' && Number.isFinite(currentStationBIndex)) ? currentStationBIndex : 0;
-                            const eligible = (typeof getCycleEligibleStationIndexes === 'function') ? getCycleEligibleStationIndexes(cur) : [];
+                            let eligible = (typeof getCycleEligibleStationIndexes === 'function') ? getCycleEligibleStationIndexes(cur) : [];
+                            if (tried.size) {
+                                const filtered = eligible.filter((idx) => !tried.has(idx));
+                                if (filtered.length) eligible = filtered;
+                            }
                             const idx = eligible.length ? eligible[Math.floor(Math.random() * eligible.length)] : cur;
-                            currentStationBIndex = Math.max(0, Math.min(stations.length - 1, Number(idx) || 0));
+                            const next = Math.max(0, Math.min(stations.length - 1, Number(idx) || 0));
+                            currentStationBIndex = next;
+                            if (mixStationB) mixStationB.value = String(next);
                             try { if (typeof refreshMixStationB === 'function') refreshMixStationB(); } catch (_) {}
                             try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
-                        } else {
-                            const cur = (typeof currentStationIndex === 'number' && Number.isFinite(currentStationIndex)) ? currentStationIndex : 0;
-                            const eligible = (typeof getCycleEligibleStationIndexes === 'function') ? getCycleEligibleStationIndexes(cur) : [];
-                            const idx = eligible.length ? eligible[Math.floor(Math.random() * eligible.length)] : cur;
-                            if (typeof setStation === 'function') setStation(Math.max(0, Math.min(stations.length - 1, Number(idx) || 0)), { force: true });
-                            else if (typeof playRadio === 'function') playRadio();
+                            return next;
                         }
+                        const cur = (typeof currentStationIndex === 'number' && Number.isFinite(currentStationIndex)) ? currentStationIndex : 0;
+                        let eligible = (typeof getCycleEligibleStationIndexes === 'function') ? getCycleEligibleStationIndexes(cur) : [];
+                        if (tried.size) {
+                            const filtered = eligible.filter((idx) => !tried.has(idx));
+                            if (filtered.length) eligible = filtered;
+                        }
+                        const idx = eligible.length ? eligible[Math.floor(Math.random() * eligible.length)] : cur;
+                        const next = Math.max(0, Math.min(stations.length - 1, Number(idx) || 0));
+                        if (typeof setStation === 'function') setStation(next, { force: true });
+                        else if (typeof playRadio === 'function') playRadio();
+                        return next;
                     } catch (_) {}
+                    return null;
+                };
+                /**
+                 * Before AUTO-FADE / AUTO-MIX crossfades, ensure the incoming deck has a playable
+                 * station. Retries other eligible stations when the first pick fails to connect.
+                 */
+                const prepareIncomingDeckForAutoFade = async (deckKey, timeoutMs, opts) => {
+                    const retuneIfNeeded = !(opts && opts.retuneIfNeeded === false);
+                    const cap = Math.max(500, Math.min(8000, Number(timeoutMs) || 5000));
+                    const perTryMs = Math.max(800, Math.floor(cap / MAX_RADIO_RETRIES));
+                    if (isDeckRadioAudiblyReady(deckKey)) return true;
+                    if (!retuneIfNeeded) {
+                        try {
+                            const el = getRadioReadinessTargetEl(deckKey);
+                            if (el && el.src && el.paused) await el.play().catch(() => {});
+                        } catch (_) {}
+                        await awaitDeckRadioReady(deckKey, cap);
+                        return isDeckRadioAudiblyReady(deckKey);
+                    }
+                    const tried = new Set();
+                    const markTried = () => {
+                        try {
+                            const idx = deckKey === 'b' ? currentStationBIndex : currentStationIndex;
+                            if (typeof idx === 'number' && idx >= 0) tried.add(idx);
+                        } catch (_) {}
+                    };
+                    markTried();
+                    for (let attempt = 0; attempt < MAX_RADIO_RETRIES; attempt++) {
+                        if (attempt > 0 || !(opts && opts.skipInitialRetune)) {
+                            try { retuneDeckStationForAutoMix(deckKey, tried); } catch (_) {}
+                            markTried();
+                        }
+                        await awaitDeckRadioReady(deckKey, perTryMs);
+                        if (isDeckRadioAudiblyReady(deckKey)) return true;
+                    }
+                    return isDeckRadioAudiblyReady(deckKey);
+                };
+                const clearAutoFadePreloadUi = () => {
+                    this.autoFadePreloadPending = false;
+                    if (btnAutoFade) btnAutoFade.classList.remove('is-preloading');
                 };
                 const clearAutoMixTimer = () => {
                     if (this.autoMixTimerId) {
@@ -14195,30 +14249,33 @@ function stopAllAndShowStart() {
                         const fireFade = () => {
                             if (!autoMixEnabled) return;
                             if (sig && sig.signal && sig.signal.aborted) return;
-                            // stationPreloaded skips the redundant playRadioB()/setStation() reload
-                            // inside runAutoFade. True when we just retuned (deck has a fresh src
-                            // mid-load) OR when the deck was already cued in radio mode.
-                            const stationPreloaded = preloadCompleted || isDeckRadioReady(targetDeck);
-                            runAutoFade(targetDeck, { stationPreloaded });
-                            scheduleNextAutoMix();
+                            const needsIncomingReady = autoFadeChangeStationEnabled || autoMixEnabled;
+                            const finish = (ready) => {
+                                if (!ready) {
+                                    try { statusEl.innerText = 'Incoming deck has no playable station — skipping crossfade.'; } catch (_) {}
+                                    scheduleNextAutoMix();
+                                    return;
+                                }
+                                runAutoFade(targetDeck, { stationPreloaded: isDeckRadioAudiblyReady(targetDeck) });
+                                scheduleNextAutoMix();
+                            };
+                            if (!needsIncomingReady) {
+                                finish(true);
+                                return;
+                            }
+                            prepareIncomingDeckForAutoFade(targetDeck, AUTO_MIX_PRELOAD_MS, {
+                                retuneIfNeeded: autoFadeChangeStationEnabled,
+                                skipInitialRetune: preloadCompleted
+                            }).then(finish);
                         };
-                        // If the user enabled "Change station before fading" after the preload
-                        // window passed, do the retune now AND wait for the stream to actually
-                        // start before fading (mirrors the manual click path so AUTO-MIX never
-                        // fades into a silent deck mid-load).
-                        if (autoFadeChangeStationEnabled && !preloadCompleted) {
-                            try { retuneDeckStationForAutoMix(targetDeck); } catch (_) {}
-                            preloadCompleted = true;
-                            awaitDeckRadioReady(targetDeck, AUTO_MIX_PRELOAD_MS).finally(fireFade);
-                        } else {
-                            fireFade();
-                        }
+                        fireFade();
                     }, waitMs);
                 };
                 const runAutoFade = (toDeck, fadeOpts) => {
                     try { this.clearSuppressEnsureCrossfadeDeckPlayback(); } catch (_) {}
                     const targetDeck = toDeck === 'a' ? 'a' : 'b';
-                    const stationPreloaded = !!(fadeOpts && fadeOpts.stationPreloaded);
+                    let stationPreloaded = !!(fadeOpts && fadeOpts.stationPreloaded);
+                    if (stationPreloaded && !isDeckRadioAudiblyReady(targetDeck)) stationPreloaded = false;
                     if (!stationPreloaded) {
                         ensureDeckStationPlayback(targetDeck);
                     } else {
@@ -14386,20 +14443,20 @@ function stopAllAndShowStart() {
                             // Keep mid-stream playback flowing on the outgoing deck so it
                             // doesn't pause / glitch while we wait for the incoming one.
                             try { ensureCrossfadeDeckPlayback(); } catch (_) {}
-                            awaitDeckRadioReady(target, AUTO_MIX_PRELOAD_MS).finally(() => {
-                                // Bail out if another click superseded this preload, or if the
-                                // engine was torn down (signal aborted) — runAutoFade no-ops safely
-                                // either way, but skipping avoids touching the UI from a stale path.
+                            prepareIncomingDeckForAutoFade(target, AUTO_MIX_PRELOAD_MS, {
+                                retuneIfNeeded: doRetune,
+                                skipInitialRetune: false
+                            }).then((ready) => {
                                 if (myGen !== this.autoFadePreloadGen) return;
-                                this.autoFadePreloadPending = false;
-                                if (btnAutoFade) btnAutoFade.classList.remove('is-preloading');
+                                clearAutoFadePreloadUi();
                                 if (sig && sig.signal && sig.signal.aborted) return;
-                                // stationPreloaded skips the redundant playRadioB()/setStation()
-                                // reload inside runAutoFade. True after our retune (deck just got
-                                // a fresh src that we already awaited) AND when AUTO-MIX is on
-                                // but the user kept their cued station (deck was already ready or
-                                // we just booted it via ensureCrossfadeDeckPlayback).
-                                runAutoFade(target, { stationPreloaded: true });
+                                if (!ready) {
+                                    try { statusEl.innerText = 'Incoming deck has no playable station — crossfade cancelled.'; } catch (_) {}
+                                    try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                                    if (autoMixEnabled) scheduleNextAutoMix();
+                                    return;
+                                }
+                                runAutoFade(target, { stationPreloaded: isDeckRadioAudiblyReady(target) });
                                 try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                                 if (autoMixEnabled) scheduleNextAutoMix();
                             });
@@ -14409,7 +14466,7 @@ function stopAllAndShowStart() {
                             // skip the redundant playRadioB()/setStation() reload so we don't
                             // interrupt an in-flight load with "play() request was interrupted by
                             // a new load request" or re-randomize the station the user just picked.
-                            runAutoFade(target, { stationPreloaded: isDeckRadioReady(target) });
+                            runAutoFade(target, { stationPreloaded: isDeckRadioAudiblyReady(target) });
                             try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                             if (autoMixEnabled) scheduleNextAutoMix();
                         }
@@ -18589,11 +18646,19 @@ function stopAllAndShowStart() {
             }
 
             media.play().then(() => {
+                radioBRetryAttempts = 0;
                 try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
                 updateMixBStatus();
             }).catch((e) => {
                 console.warn("Stream B Playback Error:", e);
                 try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
+                radioBRetryAttempts = (radioBRetryAttempts || 0) + 1;
+                if (radioBRetryAttempts <= MAX_RADIO_RETRIES && stations.length > 0) {
+                    try { statusEl.innerText = 'Deck B stream failed. Trying another station...'; } catch (_) {}
+                    try { if (typeof pickRandomStationB === 'function') pickRandomStationB(); } catch (_) {}
+                } else {
+                    try { statusEl.innerText = 'Deck B: no playable station found.'; } catch (_) {}
+                }
                 updateMixBStatus();
             });
         }
