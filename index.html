@@ -1853,13 +1853,6 @@
             flex-shrink: 0;
             width: 100%;
         }
-        #dj-visual-root .dj-beatmap-tempo-footer .dj-beatmap-bpm-readout {
-            font-size: 9px;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.75);
-            line-height: 1;
-            flex-shrink: 0;
-        }
         /* Match .dj-btn-block: 1px gutters; row height from content (same as btn rows minmax(30px, auto)), not 1fr stretch */
         #dj-visual-root .dj-beatmap-pads {
             flex: 0 1 auto;
@@ -10811,7 +10804,6 @@ function stopAllAndShowStart() {
                     this.beatMapSlots[deckKey] = slots;
 
                     const bpmSlider = root.querySelector('#' + prefix + '-beat-bpm');
-                    const bpmOut = root.querySelector('#' + prefix + '-beat-bpm-out');
                     const syncBtn = root.querySelector('#' + prefix + '-beat-sync');
                     const fi = root.querySelector('#' + prefix + '-beat-file');
 
@@ -10841,7 +10833,6 @@ function stopAllAndShowStart() {
 
                     if (bpmSlider) {
                         bpmSlider.addEventListener('input', () => {
-                            if (bpmOut) bpmOut.textContent = String(Math.round(parseFloat(bpmSlider.value) || REF_BPM));
                             applyRates();
                         }, sig);
                     }
@@ -10861,7 +10852,6 @@ function stopAllAndShowStart() {
                                 const bpm = raw && raw > 40 && raw < 300 ? Math.round(raw) : null;
                                 if (bpm && bpmSlider) {
                                     bpmSlider.value = String(bpm);
-                                    if (bpmOut) bpmOut.textContent = String(bpm);
                                     applyRates();
                                 }
                             } catch (_) {}
@@ -13054,7 +13044,6 @@ function stopAllAndShowStart() {
                   <input type="range" id="dj-a-beat-bpm" class="dj-beatmap-bpm-slider" min="60" max="240" step="1" value="120" aria-label="Deck A beat tempo BPM" />
                 </div>
                 <div class="dj-beatmap-tempo-footer">
-                  <span class="dj-beatmap-bpm-readout" id="dj-a-beat-bpm-out">120</span>
                   <button type="button" class="btn dj-fx dj-beatmap-sync" id="dj-a-beat-sync">Sync</button>
                 </div>
               </div>
@@ -13236,7 +13225,6 @@ function stopAllAndShowStart() {
                       <input type="range" id="dj-b-beat-bpm" class="dj-beatmap-bpm-slider" min="60" max="240" step="1" value="120" aria-label="Deck B beat tempo BPM" />
                     </div>
                     <div class="dj-beatmap-tempo-footer">
-                      <span class="dj-beatmap-bpm-readout" id="dj-b-beat-bpm-out">120</span>
                       <button type="button" class="btn dj-fx dj-beatmap-sync" id="dj-b-beat-sync">Sync</button>
                     </div>
                   </div>
