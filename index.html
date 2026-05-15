@@ -255,19 +255,25 @@
             margin-right: 0.35em;
             color: rgba(250, 250, 250, 0.95);
         }
-        #dj-visual-root .dj-head-station-name--b .dj-local-prefix {
+        #dj-visual-root .dj-head-station-name--a .dj-local-prefix {
             color: #9803FC;
-            opacity: 0.9;
+            opacity: 0.92;
         }
-        .dj-head-station-name .dj-local-filename {
+        #dj-visual-root .dj-head-station-name--b .dj-local-prefix {
+            color: #FF0B55;
+            opacity: 0.92;
+        }
+        #dj-visual-root .dj-head-station-name--a .dj-local-filename {
+            color: #9803FC;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-shadow: 0 0 12px rgba(152, 3, 252, 0.55), 0 0 22px rgba(152, 3, 252, 0.22);
+        }
+        #dj-visual-root .dj-head-station-name--b .dj-local-filename {
             color: #FF0B55;
             font-weight: 700;
             letter-spacing: 0.04em;
-            text-shadow: 0 0 12px rgba(255, 11, 85, 0.55), 0 0 22px rgba(255, 11, 85, 0.2);
-        }
-        #dj-visual-root .dj-head-station-name--b .dj-local-filename {
-            color: #9803FC;
-            text-shadow: 0 0 12px rgba(152, 3, 252, 0.45), 0 0 22px rgba(152, 3, 252, 0.18);
+            text-shadow: 0 0 12px rgba(255, 11, 85, 0.55), 0 0 22px rgba(255, 11, 85, 0.22);
         }
         .dj-head-datetime {
             flex: 0 0 auto;
@@ -6158,14 +6164,17 @@ const QUALITY = {
         function isLikelyVideoUrl(url) {
             const v = sanitizeUrlForAudio(url).toLowerCase();
             if (!v) return false;
-            if (v.startsWith('blob:') || v.startsWith('data:')) return true;
+            /* blob: is ambiguous (Deck A local audio vs queued video) — do not treat as video by URL alone. */
+            if (v.startsWith('blob:')) return false;
+            if (v.startsWith('data:')) return /^data:video\//i.test(v);
             return /\.(mp4|webm|mkv|mov|m4v|ogv|ogg|avi)(\?|#|$)/i.test(v);
         }
         /** URLs eligible for the Video queue list (files, extensions, common embed hosts). */
         function isVideoQueueEligibleUrl(url) {
-            if (isLikelyVideoUrl(url)) return true;
             const v = sanitizeUrlForAudio(url).toLowerCase();
             if (!v) return false;
+            if (v.startsWith('blob:')) return true;
+            if (isLikelyVideoUrl(url)) return true;
             return /youtube\.com|youtu\.be|vimeo\.com|twitch\.tv\/videos/i.test(v);
         }
         function registerDeckVideoFeed(deckKey, url, label, forceVideo) {
@@ -6216,9 +6225,11 @@ const QUALITY = {
             try {
                 const el = getDeckAMediaForPlaybackState();
                 if (!el) return false;
+                /* Deck A primary output is <audio>; never mirror it as Deck B video from blob/heuristics alone. */
+                if (el instanceof HTMLAudioElement) return false;
                 const src = String(el.currentSrc || el.src || '').trim();
                 if (!src || el.paused || el.ended) return false;
-                return isLikelyVideoUrl(src);
+                return isLikelyVideoUrl(src) || isVideoQueueEligibleUrl(src);
             } catch (_) {
                 return false;
             }
@@ -11314,7 +11325,6 @@ function stopAllAndShowStart() {
             startDeckBVideoVisual(opts) {
                 if (!this.root) return;
                 deckBVideoUserIdle = false;
-                const list = getDeckBVideoPlaybackSources();
                 this.tearDownDeckBViz();
                 try {
                     if (this._deckBVideoUiAbortCtrl) {
@@ -11325,7 +11335,7 @@ function stopAllAndShowStart() {
                 this._deckBVideoUiAbortCtrl = new AbortController();
                 const uiSig = { signal: this._deckBVideoUiAbortCtrl.signal };
                 this.deckBVizMode = 'video';
-                this.deckBVideoList = list;
+                this.deckBVideoList = getDeckBVideoPlaybackSources();
                 this.deckBVideoIndex = 0;
                 try {
                     const pi = opts && typeof opts.mediaQueueIndex === 'number' ? opts.mediaQueueIndex : -1;
@@ -11334,6 +11344,8 @@ function stopAllAndShowStart() {
                         if (this.deckBVideoList.length && this.deckBVideoIndex >= this.deckBVideoList.length) {
                             this.deckBVideoIndex = 0;
                         }
+                    } else if (deckBVideoShuffleEnabled && this.deckBVideoList.length > 1) {
+                        this.deckBVideoIndex = Math.floor(Math.random() * this.deckBVideoList.length);
                     }
                 } catch (_) {
                     this.deckBVideoIndex = 0;
