@@ -1624,6 +1624,11 @@
             white-space: nowrap;
             line-height: 1.1;
         }
+        #dj-visual-root .dj-deck-vol-mute--live,
+        #dj-visual-root .dj-beatmap-sync--live {
+            letter-spacing: 0.02em;
+            font-variant-numeric: tabular-nums;
+        }
         #dj-visual-root .dj-deck-vol-wrap,
         #dj-visual-root .dj-beatmap-tempo-slider-wrap {
             display: flex;
@@ -2106,8 +2111,19 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
             touch-action: none;
+        }
+        .dj-jog-hint {
+            font-size: clamp(9px, 1.85vmin, 11px);
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            color: rgba(255, 255, 255, 0.5);
+            text-align: center;
+            line-height: 1.15;
+            user-select: none;
+            pointer-events: none;
+            white-space: nowrap;
         }
         .dj-jog {
             width: clamp(calc(88px * var(--dj-control-scale)), calc(26vmin * var(--dj-control-scale)), calc(200px * var(--dj-control-scale)));
@@ -4533,6 +4549,10 @@
             z-index: 45;
             pointer-events: none;
         }
+        /* Above Deck B viz mount when it is element-fullscreen (avatar stays visible with ProjectM / AUDIO:BAR). */
+        #webm-overlay.webm-overlay--deck-b-viz-fs {
+            z-index: 2147483640;
+        }
         #webm-overlay video {
             width: 100vw; height: auto; display: block;
             pointer-events: none;
@@ -5234,7 +5254,7 @@
             <div style="flex:1; display:flex; align-items:center; gap:8px; min-width:0;">
                 <span style="font-size:12px; color:#FF0B55; font-weight:bold">A</span>
                 <span class="mix-crossfader-wrap">
-                    <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%; cursor:pointer; min-width:0;" title="Drag: crossfade. Right-click hold: cut to the position under the pointer; release restores the previous position." aria-label="Crossfade from A to B">
+                    <input type="range" id="mix-crossfader" min="0" max="1" step="0.01" value="0" style="width:100%; cursor:pointer; min-width:0;" aria-label="Crossfade from A to B">
                 </span>
                 <span style="font-size:12px; color:#5800FF; font-weight:bold">B</span>
             </div>
@@ -6182,7 +6202,8 @@ const QUALITY = {
             if (!clean) return;
             if (!forceVideo && !isLikelyVideoUrl(clean) && !isVideoQueueEligibleUrl(clean)) return;
             const k = deckKey === 'b' ? 'b' : 'a';
-            deckVideoFeeds[k] = { url: clean, label: String(label || deriveNameFromUrl(clean) || 'Video source') };
+            const videoFile = !!forceVideo || isLikelyVideoUrl(clean);
+            deckVideoFeeds[k] = { url: clean, label: String(label || deriveNameFromUrl(clean) || 'Video source'), videoFile };
             const arr = deckVideoHistory[k];
             const idx = arr.findIndex((it) => it && it.url === clean);
             if (idx >= 0) arr.splice(idx, 1);
@@ -6234,6 +6255,101 @@ const QUALITY = {
                 return false;
             }
         }
+        function urlsMediaMatch(a, b) {
+            if (!a || !b) return false;
+            if (a === b) return true;
+            try {
+                return sanitizeUrlForAudio(String(a)) === sanitizeUrlForAudio(String(b));
+            } catch (_) {
+                return false;
+            }
+        }
+        function getDjCrossfade01() {
+            try {
+                const dc = document.getElementById('dj-crossfader');
+                const mc = document.getElementById('mix-crossfader');
+                const raw = dc && dc.value !== undefined && dc.value !== '' ? dc.value : mc && mc.value;
+                return Math.max(0, Math.min(1, Number(raw) || 0));
+            } catch (_) {
+                return 0;
+            }
+        }
+        /**
+         * MP4 etc. play through <audio> into the mix; VIDEO mirror follows the deck winning the DJ crossfader
+         * (same 0.5 threshold as pickRandomStationForCrossfadedDeck).
+         */
+        function getDeckAudioVjsMirrorMeta() {
+            const tryDeck = (key) => {
+                const feed = deckVideoFeeds[key === 'b' ? 'b' : 'a'];
+                const media = key === 'b' ? audioElB : audioEl;
+                if (!feed || !feed.url || !media) return null;
+                const vf = feed.videoFile === undefined ? isLikelyVideoUrl(feed.url) : !!feed.videoFile;
+                if (!vf) return null;
+                const src = String(media.currentSrc || media.src || '').trim();
+                if (!src || media.ended) return null;
+                if (!urlsMediaMatch(src, feed.url)) return null;
+                return {
+                    deckKey: key,
+                    media,
+                    url: src,
+                    label: feed.label || (typeof deriveNameFromUrl === 'function' ? deriveNameFromUrl(src) : '') || 'Deck ' + String(key).toUpperCase() + ' video'
+                };
+            };
+            const xf = getDjCrossfade01();
+            const preferB = xf >= 0.5;
+            return tryDeck(preferB ? 'b' : 'a') || tryDeck(preferB ? 'a' : 'b');
+        }
+        function applyDeckBVideoPayloadToElement(vid, cur, hooks) {
+            if (!vid || !cur || !cur.url) return;
+            try {
+                vid.loop = !!deckBVideoSingleLoopActive();
+            } catch (_) {}
+            const setLbl = hooks && typeof hooks.setPlayingLabel === 'function' ? hooks.setPlayingLabel : null;
+            if (cur.syncFrom) {
+                const sf = cur.syncFrom;
+                const apply = () => {
+                    try {
+                        let t = Number(sf.currentTime) || 0;
+                        const md = sf.duration;
+                        if (Number.isFinite(md) && md > 0) t = Math.min(Math.max(0, t), md - 0.05);
+                        const vd = vid.duration;
+                        if (Number.isFinite(vd) && vd > 0) t = Math.min(t, vd - 0.05);
+                        vid.currentTime = t;
+                    } catch (_) {}
+                    try {
+                        if (sf.paused || sf.ended) {
+                            vid.pause();
+                            if (setLbl) setLbl(false);
+                        } else {
+                            vid.play().catch(() => {
+                                if (setLbl) setLbl(false);
+                            });
+                            if (setLbl) setLbl(true);
+                        }
+                    } catch (_) {}
+                };
+                const want = String(cur.url);
+                const had = String(vid.currentSrc || vid.src || '');
+                const same = urlsMediaMatch(want, had);
+                if (!same) {
+                    vid.src = want;
+                    vid.addEventListener('loadedmetadata', apply, { once: true });
+                    vid.addEventListener('loadeddata', apply, { once: true });
+                } else {
+                    apply();
+                }
+                return;
+            }
+            const samePlain = urlsMediaMatch(String(cur.url), String(vid.currentSrc || vid.src || ''));
+            if (!samePlain) vid.src = cur.url;
+            vid.play()
+                .then(() => {
+                    if (setLbl) setLbl(true);
+                })
+                .catch(() => {
+                    if (setLbl) setLbl(false);
+                });
+        }
         /** Deck B video panel: live Deck A video overrides media queue / B feeds until A stops. */
         function getDeckBVideoPlaybackSources() {
             if (isDeckAVideoActivelyPlaying()) {
@@ -6254,6 +6370,10 @@ const QUALITY = {
                     } catch (_) {}
                     return [{ url: src, label }];
                 } catch (_) {}
+            }
+            const vjs = getDeckAudioVjsMirrorMeta();
+            if (vjs) {
+                return [{ url: vjs.url, label: vjs.label, syncFrom: vjs.media }];
             }
             if (mediaVideoQueue.length) {
                 return mediaVideoQueue.map((m) => ({ url: m.url, label: m.label }));
@@ -7086,28 +7206,69 @@ function randomGlowColor() {
             }
         }
 
-        /** Fullscreen only `#dj-deck-b-viz-mount` (ProjectM / AUDIO:BAR / No Visual), not the whole DJ canvas. */
-        function toggleDeckBVizMountFullscreen() {
-            const mount = document.getElementById('dj-deck-b-viz-mount');
-            if (!mount) return false;
-            const getFs = () => document.fullscreenElement || document.webkitFullscreenElement;
+        function getDeckBVizMountEl() {
+            return document.getElementById('dj-deck-b-viz-mount');
+        }
+        function getDeckBVizFullscreenEl() {
+            const mount = getDeckBVizMountEl();
+            if (!mount) return null;
+            const fs = document.fullscreenElement || document.webkitFullscreenElement;
+            if (!fs) return null;
+            if (fs === mount || mount.contains(fs)) return fs;
+            return null;
+        }
+        function afterDeckBVizFullscreenChange() {
+            setTimeout(() => {
+                try { forceResize(); } catch (_) {}
+                try { applyWebmSettings(); } catch (_) {}
+            }, 200);
+        }
+        function exitDeckBVizFullscreen() {
             try {
-                if (getFs() === mount) {
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen().then(() => setTimeout(() => forceResize(), 200)).catch(() => {});
-                    } else if (document.webkitExitFullscreen) {
-                        document.webkitExitFullscreen();
-                        setTimeout(() => forceResize(), 200);
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().then(afterDeckBVizFullscreenChange).catch(afterDeckBVizFullscreenChange);
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                    afterDeckBVizFullscreenChange();
+                }
+            } catch (_) {}
+        }
+        /** Fullscreen Deck B visuals (`#dj-deck-b-viz-mount` or nested `.dj-video-shell`), not the whole DJ canvas. */
+        function toggleDeckBVizMountFullscreen() {
+            const mount = getDeckBVizMountEl();
+            if (!mount) return false;
+            const now = Date.now();
+            if (now - (window.__deckBVizFsToggleAt || 0) < 450) return false;
+            window.__deckBVizFsToggleAt = now;
+            try {
+                if (getDeckBVizFullscreenEl()) {
+                    exitDeckBVizFullscreen();
+                    return true;
+                }
+                let target = mount;
+                try {
+                    const av = state && state.activeVisualizer;
+                    if (av && av.name === 'DJ Decks' && av.deckBVizMode === 'video') {
+                        const shell = mount.querySelector('.dj-video-shell');
+                        if (shell) target = shell;
                     }
-                } else {
-                    const req = mount.requestFullscreen || mount.webkitRequestFullscreen;
-                    if (req) {
-                        req.call(mount).then(() => setTimeout(() => forceResize(), 200)).catch(() => {});
-                    }
+                } catch (_) {}
+                const req = target.requestFullscreen || target.webkitRequestFullscreen;
+                if (req) {
+                    req.call(target).then(afterDeckBVizFullscreenChange).catch(() => {});
                 }
             } catch (_) {}
             return true;
         }
+        (function wireDeckBVizFullscreenChange() {
+            if (window.__deckBVizFsChangeWired) return;
+            window.__deckBVizFsChangeWired = true;
+            const onFs = () => {
+                try { afterDeckBVizFullscreenChange(); } catch (_) {}
+            };
+            document.addEventListener('fullscreenchange', onFs);
+            document.addEventListener('webkitfullscreenchange', onFs);
+        })();
 
         /** Reliable hit-test for Deck B ProjectM / AUDIO:BAR canvas — WebGL targets sometimes skip closest() from container. */
         function isEventOnDeckBVizMount(e) {
@@ -10524,6 +10685,48 @@ function stopAllAndShowStart() {
                 } catch (_) {}
             }
 
+            wireFooterBtnLiveFromSlider(slider, btn, opts, sig) {
+                if (!slider || !btn || !sig) return;
+                const restLabel = opts && opts.restLabel != null ? String(opts.restLabel) : String(btn.textContent || '').trim();
+                const liveClass = (opts && opts.liveClass) || '';
+                const format = (opts && opts.format) || ((raw) => String(raw));
+                const restoreMs = (opts && opts.restoreMs) || 450;
+                let dragging = false;
+                let restoreTimer = null;
+                const showLive = () => {
+                    btn.textContent = format(slider.value);
+                    if (liveClass) btn.classList.add(liveClass);
+                };
+                const restore = () => {
+                    dragging = false;
+                    btn.textContent = restLabel;
+                    if (liveClass) btn.classList.remove(liveClass);
+                };
+                const scheduleRestore = () => {
+                    if (restoreTimer != null) clearTimeout(restoreTimer);
+                    restoreTimer = setTimeout(() => {
+                        restoreTimer = null;
+                        restore();
+                    }, restoreMs);
+                };
+                const onStart = () => {
+                    dragging = true;
+                    if (restoreTimer != null) {
+                        clearTimeout(restoreTimer);
+                        restoreTimer = null;
+                    }
+                    showLive();
+                };
+                try {
+                    slider.addEventListener('pointerdown', onStart, sig);
+                    slider.addEventListener('input', () => { if (dragging) showLive(); }, sig);
+                    slider.addEventListener('pointerup', scheduleRestore, sig);
+                    slider.addEventListener('pointercancel', scheduleRestore, sig);
+                    slider.addEventListener('touchend', scheduleRestore, { signal: sig.signal, passive: true });
+                    slider.addEventListener('change', scheduleRestore, sig);
+                } catch (_) {}
+            }
+
             bindDeckBeatMaps(root, sig) {
                 const REF_BPM = 120;
                 const BEAT_MAP_DEFAULTS = [
@@ -10617,6 +10820,13 @@ function stopAllAndShowStart() {
                         bpmSlider.addEventListener('input', () => {
                             if (bpmOut) bpmOut.textContent = String(Math.round(parseFloat(bpmSlider.value) || REF_BPM));
                             applyRates();
+                        }, sig);
+                    }
+                    if (syncBtn && bpmSlider) {
+                        this.wireFooterBtnLiveFromSlider(bpmSlider, syncBtn, {
+                            restLabel: 'Sync',
+                            liveClass: 'dj-beatmap-sync--live',
+                            format: (v) => String(Math.round(parseFloat(v) || REF_BPM))
                         }, sig);
                     }
 
@@ -11274,10 +11484,8 @@ function stopAllAndShowStart() {
                     const src = this.deckBVideoList[this.deckBVideoIndex];
                     if (!src || !src.url) return;
                     if (!this.deckBVideoEl) return;
-                    if (this.deckBVideoEl.src !== src.url) this.deckBVideoEl.src = src.url;
-                    try { this.deckBVideoEl.loop = !!deckBVideoSingleLoopActive(); } catch (_) {}
+                    applyDeckBVideoPayloadToElement(this.deckBVideoEl, src, null);
                     this.showDeckBVisualBackButton(src.label || 'Video');
-                    this.deckBVideoEl.play().catch(() => {});
                 } catch (_) {}
             }
 
@@ -11292,10 +11500,7 @@ function stopAllAndShowStart() {
                 try { mount.title = 'Double-click for fullscreen · Esc to exit'; } catch (_) {}
                 const getFs = () => document.fullscreenElement || document.webkitFullscreenElement;
                 const exitFs = () => {
-                    try {
-                        if (document.exitFullscreen) document.exitFullscreen();
-                        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                    } catch (_) {}
+                    try { exitDeckBVizFullscreen(); } catch (_) {}
                 };
                 const onDblClick = (e) => {
                     try {
@@ -11310,7 +11515,7 @@ function stopAllAndShowStart() {
                 };
                 const onKeyDown = (e) => {
                     if (e.key !== 'Escape') return;
-                    if (getFs() !== mount) return;
+                    if (!getDeckBVizFullscreenEl()) return;
                     try { e.preventDefault(); } catch (_) {}
                     exitFs();
                 };
@@ -11484,17 +11689,7 @@ function stopAllAndShowStart() {
                         transportMount.addEventListener('touchstart', onFsShellActivity, { passive: true });
                     }
                     btnFullscreen.addEventListener('click', () => {
-                        if (isShellFs()) {
-                            try {
-                                if (document.exitFullscreen) document.exitFullscreen();
-                                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                            } catch (_) {}
-                        } else {
-                            const req = shell.requestFullscreen || shell.webkitRequestFullscreen;
-                            if (req) {
-                                try { req.call(shell); } catch (_) {}
-                            }
-                        }
+                        try { toggleDeckBVizMountFullscreen(); } catch (_) {}
                     });
                     btnMediaQueue.addEventListener('click', () => {
                         try { this.toggleDeckBMediaPanel(); } catch (_) {}
@@ -11515,15 +11710,7 @@ function stopAllAndShowStart() {
                                 e.stopPropagation();
                                 e.stopImmediatePropagation();
                             } catch (_) {}
-                            if (isShellFs()) {
-                                try {
-                                    if (document.exitFullscreen) document.exitFullscreen();
-                                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                                } catch (_) {}
-                            } else {
-                                const req = shell.requestFullscreen || shell.webkitRequestFullscreen;
-                                if (req) try { req.call(shell); } catch (_) {}
-                            }
+                            try { toggleDeckBVizMountFullscreen(); } catch (_) {}
                         },
                         { capture: true, signal: uiSig.signal }
                     );
@@ -11598,20 +11785,70 @@ function stopAllAndShowStart() {
                         if (this.deckBVideoIndex >= this.deckBVideoList.length) this.deckBVideoIndex = 0;
                         const cur = this.deckBVideoList[this.deckBVideoIndex];
                         if (!cur || !cur.url) return;
-                        vid.src = cur.url;
-                        vid.loop = !!deckBVideoSingleLoopActive();
                         this.showDeckBVisualBackButton(cur.label || 'Video');
-                        vid.play().then(() => {
-                            btnPlay.textContent = 'Pause';
-                        }).catch(() => {
-                            btnPlay.textContent = 'Play';
+                        applyDeckBVideoPayloadToElement(vid, cur, {
+                            setPlayingLabel: (on) => {
+                                btnPlay.textContent = on ? 'Pause' : 'Play';
+                            }
                         });
                         try { this.refreshQueueUi(); } catch (_) {}
                         try { this.updateStationTitles(); } catch (_) {}
                     };
 
+                    const syncMirrorTick = () => {
+                        if (this.deckBVizMode !== 'video' || deckBVideoUserIdle || !this.deckBVideoEl) return;
+                        try {
+                            const list = getDeckBVideoPlaybackSources();
+                            if (!list || !list.length) return;
+                            const idx = Math.min(this.deckBVideoIndex, list.length - 1);
+                            const cur = list[idx];
+                            if (!cur || !cur.syncFrom) return;
+                            if (!urlsMediaMatch(String(cur.url), String(this.deckBVideoEl.currentSrc || this.deckBVideoEl.src || ''))) return;
+                            const sf = cur.syncFrom;
+                            const vd = this.deckBVideoEl;
+                            if (sf.paused || sf.ended) {
+                                if (!vd.paused) vd.pause();
+                                btnPlay.textContent = 'Play';
+                                return;
+                            }
+                            if (vd.paused) {
+                                btnPlay.textContent = 'Play';
+                                return;
+                            }
+                            const drift = Math.abs(vd.currentTime - sf.currentTime);
+                            if (drift > 0.35) {
+                                let t = Number(sf.currentTime) || 0;
+                                const md = sf.duration;
+                                if (Number.isFinite(md) && md > 0) t = Math.min(Math.max(0, t), md - 0.05);
+                                const vdur = vd.duration;
+                                if (Number.isFinite(vdur) && vdur > 0) t = Math.min(t, vdur - 0.05);
+                                try {
+                                    vd.currentTime = t;
+                                } catch (_) {}
+                            }
+                            btnPlay.textContent = 'Pause';
+                        } catch (_) {}
+                    };
+                    try {
+                        if (audioEl) audioEl.addEventListener('timeupdate', syncMirrorTick, { passive: true, signal: uiSig.signal });
+                    } catch (_) {}
+                    try {
+                        if (audioElB) audioElB.addEventListener('timeupdate', syncMirrorTick, { passive: true, signal: uiSig.signal });
+                    } catch (_) {}
+
                     btnRestart.addEventListener('click', () => {
-                        try { vid.currentTime = 0; } catch (_) {}
+                        try {
+                            const list = this.deckBVideoList;
+                            const cur = list && list[this.deckBVideoIndex];
+                            if (cur && cur.syncFrom) {
+                                try {
+                                    cur.syncFrom.currentTime = 0;
+                                } catch (_) {}
+                            }
+                            try {
+                                vid.currentTime = 0;
+                            } catch (_) {}
+                        } catch (_) {}
                         vid.play().then(() => { btnPlay.textContent = 'Pause'; }).catch(() => { btnPlay.textContent = 'Play'; });
                     });
                     btnPlay.addEventListener('click', () => {
@@ -11632,6 +11869,18 @@ function stopAllAndShowStart() {
                             }
                             return;
                         }
+                        try {
+                            const list = this.deckBVideoList;
+                            const cur = list && list[this.deckBVideoIndex];
+                            if (cur && cur.syncFrom) {
+                                applyDeckBVideoPayloadToElement(vid, cur, {
+                                    setPlayingLabel: (on) => {
+                                        btnPlay.textContent = on ? 'Pause' : 'Play';
+                                    }
+                                });
+                                return;
+                            }
+                        } catch (_) {}
                         vid.play().then(() => { btnPlay.textContent = 'Pause'; }).catch(() => { btnPlay.textContent = 'Play'; });
                     });
                     btnNext.addEventListener('click', () => {
@@ -11728,6 +11977,15 @@ function stopAllAndShowStart() {
                     vid.addEventListener('pause', () => { btnPlay.textContent = 'Play'; });
                     vid.addEventListener('ended', () => {
                         if (deckBVideoUserIdle) return;
+                        try {
+                            const list = getDeckBVideoPlaybackSources();
+                            const idx = Math.min(this.deckBVideoIndex, Math.max(0, (list && list.length) ? list.length - 1 : 0));
+                            const cur = list && list[idx];
+                            if (cur && cur.syncFrom && !cur.syncFrom.ended) {
+                                applyCurrent();
+                                return;
+                            }
+                        } catch (_) {}
                         if (!deckBVideoPlayAllEnabled) {
                             if (deckBVideoSingleLoopActive()) {
                                 try { vid.currentTime = 0; vid.play().catch(() => {}); } catch (_) {}
@@ -12746,7 +13004,7 @@ function stopAllAndShowStart() {
               </div>
             </div>
           </div>
-          <div class="dj-jog-wrap" title="Double-click or drop audio/video files to load Deck A and start playback immediately.">
+          <div class="dj-jog-wrap" title="Load File ⊕">
             <div class="dj-jog" id="dj-jog-a" aria-hidden="true">
               <svg class="dj-jog-progress-svg dj-jog-progress-svg--a dj-jog-progress-svg--hidden" id="dj-jog-a-progress" viewBox="0 0 100 100" aria-hidden="true">
                 <g transform="translate(50 50) rotate(-90)">
@@ -12757,6 +13015,7 @@ function stopAllAndShowStart() {
               </svg>
               <span class="dj-jog-marker"></span>
             </div>
+            <span class="dj-jog-hint">Load File ⊕</span>
           </div>
           <div class="dj-deck-vol-col" aria-label="Deck A volume">
             <div class="dj-deck-vol-stack">
@@ -12840,7 +13099,7 @@ function stopAllAndShowStart() {
       <span class="dj-fader-label-a">A</span>
       <div class="dj-crossfader-mount">
         <span class="dj-crossfader-wrap">
-          <input type="range" id="dj-crossfader" min="0" max="1" step="0.01" value="0" aria-label="Crossfade from A to B" title="Drag: crossfade. Right-click hold: cut to the position under the pointer; release restores the previous position." />
+          <input type="range" id="dj-crossfader" min="0" max="1" step="0.01" value="0" aria-label="Crossfade from A to B" />
         </span>
       </div>
       <span class="dj-fader-label-b">B</span>
@@ -12927,7 +13186,7 @@ function stopAllAndShowStart() {
                   </div>
                 </div>
               </div>
-              <div class="dj-jog-wrap" title="Double-click or drop audio/video files to load Deck B and start playback immediately.">
+              <div class="dj-jog-wrap" title="Load File ⊕">
                 <div class="dj-jog" id="dj-jog-b" aria-hidden="true">
                   <svg class="dj-jog-progress-svg dj-jog-progress-svg--b dj-jog-progress-svg--hidden" id="dj-jog-b-progress" viewBox="0 0 100 100" aria-hidden="true">
                     <g transform="translate(50 50) rotate(-90)">
@@ -12938,6 +13197,7 @@ function stopAllAndShowStart() {
                   </svg>
                   <span class="dj-jog-marker"></span>
                 </div>
+                <span class="dj-jog-hint">Load File ⊕</span>
               </div>
               <div class="dj-deck-vol-col" aria-label="Deck B volume">
                 <div class="dj-deck-vol-stack">
@@ -14488,6 +14748,13 @@ function stopAllAndShowStart() {
                         setDeckVolA(ia);
                         this.els.deckVolA.addEventListener('input', () => setDeckVolA(this.els.deckVolA.value), sig);
                         blurDjRangeIfFocused(this.els.deckVolA);
+                        if (this.els.deckVolMuteA) {
+                            this.wireFooterBtnLiveFromSlider(this.els.deckVolA, this.els.deckVolMuteA, {
+                                restLabel: 'VOL',
+                                liveClass: 'dj-deck-vol-mute--live',
+                                format: (v) => String(Math.round(clampVol(v) * 100))
+                            }, sig);
+                        }
                     }
                     if (this.els.deckVolB) {
                         const initB = (audioElB && Number.isFinite(audioElB.volume)) ? audioElB.volume : 1;
@@ -14497,6 +14764,13 @@ function stopAllAndShowStart() {
                         setDeckVolB(ib);
                         this.els.deckVolB.addEventListener('input', () => setDeckVolB(this.els.deckVolB.value), sig);
                         blurDjRangeIfFocused(this.els.deckVolB);
+                        if (this.els.deckVolMuteB) {
+                            this.wireFooterBtnLiveFromSlider(this.els.deckVolB, this.els.deckVolMuteB, {
+                                restLabel: 'VOL',
+                                liveClass: 'dj-deck-vol-mute--live',
+                                format: (v) => String(Math.round(clampVol(v) * 100))
+                            }, sig);
+                        }
                     }
                     try {
                         blurDjRangeIfFocused(this.root && this.root.querySelector('#dj-crossfader'));
@@ -15491,6 +15765,7 @@ function stopAllAndShowStart() {
                         if (audioElB) {
                             audioElB.addEventListener(ev, () => {
                                 try { this.syncPlayLabels(); } catch (_) {}
+                                try { this.refreshDeckBVideoSource(); } catch (_) {}
                                 try { this.updateStationTitles(); } catch (_) {}
                             }, sig);
                         }
@@ -17811,6 +18086,11 @@ function stopAllAndShowStart() {
                     try { if (djX.parentElement) djX.parentElement.style.setProperty('--cross-x', cx); } catch (_) {}
                 }
             } catch(_) {}
+            try {
+                if (state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks' && typeof state.activeVisualizer.refreshDeckBVideoSource === 'function') {
+                    state.activeVisualizer.refreshDeckBVideoSource();
+                }
+            } catch (_) {}
         }
         if (mixCross) {
             mixCross.addEventListener('input', () => applyCrossfade(mixCross.value));
@@ -20013,25 +20293,69 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 setWebmAuto(!webmAutoOn);
             });
         }
+        function stashWebmOverlayHome() {
+            try {
+                if (!webmOverlayEl || webmOverlayEl.__webmHomeParent) return;
+                webmOverlayEl.__webmHomeParent = webmOverlayEl.parentElement;
+                webmOverlayEl.__webmHomeNext = webmOverlayEl.nextSibling;
+            } catch (_) {}
+        }
+        function restoreWebmOverlayHome() {
+            try {
+                if (!webmOverlayEl || !webmOverlayEl.__webmHomeParent) return;
+                if (webmOverlayEl.parentElement !== webmOverlayEl.__webmHomeParent) {
+                    webmOverlayEl.__webmHomeParent.insertBefore(webmOverlayEl, webmOverlayEl.__webmHomeNext);
+                }
+            } catch (_) {}
+        }
         function applyWebmSettings() {
             try {
                 if (webmOn && webmAnchorDeckB) {
+                    const mount = document.getElementById('dj-deck-b-viz-mount');
+                    const fsEl = typeof getDeckBVizFullscreenEl === 'function' ? getDeckBVizFullscreenEl() : null;
+                    const mountFs = !!(mount && fsEl && mount.contains(fsEl));
                     const deckCol = document.querySelector('#dj-visual-root .dj-deck-b');
-                    const rect = deckCol ? deckCol.getBoundingClientRect() : null;
-                    if (deckCol && rect && rect.width >= 8 && rect.height >= 8) {
+                    let rect = null;
+                    if (mountFs) {
+                        rect = mount.getBoundingClientRect();
+                    } else if (deckCol) {
+                        rect = deckCol.getBoundingClientRect();
+                    }
+                    stashWebmOverlayHome();
+                    try {
+                        if (webmOverlayEl) {
+                            if (mountFs) {
+                                if (webmOverlayEl.parentElement !== mount) mount.appendChild(webmOverlayEl);
+                                webmOverlayEl.classList.add('webm-overlay--deck-b-viz-fs');
+                            } else {
+                                restoreWebmOverlayHome();
+                                webmOverlayEl.classList.remove('webm-overlay--deck-b-viz-fs');
+                            }
+                        }
+                    } catch (_) {}
+                    if (rect && rect.width >= 8 && rect.height >= 8 && (fsEl || deckCol)) {
                         bindWebmDeckBLayoutWatchers();
-                        const cx = rect.left + rect.width * 0.5;
-                        const cy = rect.top + rect.height * 0.5;
                         const pxOff = ((Number(webmSettings.posXvw) || 50) - 50) / 100 * rect.width;
                         const pyOff = ((Number(webmSettings.posYvh) || 50) - 50) / 100 * rect.height;
-                        const fixLeft = cx + pxOff;
-                        const fixTop = cy + pyOff;
                         const sw = Number(webmSettings.scaleVw) || 100;
                         const wPx = Math.min(rect.width * 0.94, Math.max(72, rect.width * 0.34 * (sw / 50)));
-                        webmOverlayEl.style.position = 'fixed';
-                        webmOverlayEl.style.left = `${fixLeft}px`;
-                        webmOverlayEl.style.top = `${fixTop}px`;
-                        webmOverlayEl.style.transform = 'translate(-50%, -50%)';
+                        if (mountFs) {
+                            webmOverlayEl.style.position = 'absolute';
+                            webmOverlayEl.style.left = '50%';
+                            webmOverlayEl.style.top = '50%';
+                            webmOverlayEl.style.transform = `translate(calc(-50% + ${pxOff}px), calc(-50% + ${pyOff}px))`;
+                            webmOverlayEl.style.zIndex = '8';
+                        } else {
+                            const cx = rect.left + rect.width * 0.5;
+                            const cy = rect.top + rect.height * 0.5;
+                            const fixLeft = cx + pxOff;
+                            const fixTop = cy + pyOff;
+                            webmOverlayEl.style.position = 'fixed';
+                            webmOverlayEl.style.left = `${fixLeft}px`;
+                            webmOverlayEl.style.top = `${fixTop}px`;
+                            webmOverlayEl.style.transform = 'translate(-50%, -50%)';
+                            webmOverlayEl.style.zIndex = '';
+                        }
                         webmVideoEl.style.width = `${wPx}px`;
                         webmVideoEl.style.transform = `rotate(${webmSettings.rotationDeg}deg)`;
                         webmVideoEl.style.opacity = String(webmSettings.opacity);
@@ -20069,10 +20393,17 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                         webmVideoLeftEl.style.top = '0';
                         webmVideoRightEl.style.left = `${offsetPx}px`;
                         webmVideoRightEl.style.top = '0';
+                        try { if (webmVideoEl && webmVideoEl.paused) webmVideoEl.play().catch(() => {}); } catch (_) {}
                         return;
                     }
                     webmAnchorDeckB = false;
                 }
+                try {
+                    if (webmOverlayEl) {
+                        webmOverlayEl.classList.remove('webm-overlay--deck-b-viz-fs');
+                        restoreWebmOverlayHome();
+                    }
+                } catch (_) {}
                 unbindWebmDeckBLayoutWatchers();
                 try {
                     webmOverlayEl.style.position = '';
