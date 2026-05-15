@@ -255,11 +255,19 @@
             margin-right: 0.35em;
             color: rgba(250, 250, 250, 0.95);
         }
+        #dj-visual-root .dj-head-station-name--b .dj-local-prefix {
+            color: #9803FC;
+            opacity: 0.9;
+        }
         .dj-head-station-name .dj-local-filename {
             color: #FF0B55;
             font-weight: 700;
             letter-spacing: 0.04em;
             text-shadow: 0 0 12px rgba(255, 11, 85, 0.55), 0 0 22px rgba(255, 11, 85, 0.2);
+        }
+        #dj-visual-root .dj-head-station-name--b .dj-local-filename {
+            color: #9803FC;
+            text-shadow: 0 0 12px rgba(152, 3, 252, 0.45), 0 0 22px rgba(152, 3, 252, 0.18);
         }
         .dj-head-datetime {
             flex: 0 0 auto;
@@ -1627,11 +1635,11 @@
             --deck-vol-thumb-half: calc(23px * var(--dj-control-scale));
             --deck-vol-rail: rgba(255, 255, 255, 0.08);
             --deck-vol-pct: 1;
-            /* Segment above thumb: Deck A = same tint as .dj-deck-a border; Deck B overridden below */
-            --deck-vol-fill-high: rgba(255, 11, 85, 0.35);
+            /* Segment above thumb: match crossfader rail hues (--cross-deck-a / --cross-deck-b on .dj-crossfader-wrap) */
+            --deck-vol-fill-high: rgba(208, 18, 18, 0.6);
         }
         #dj-visual-root .dj-deck-b .dj-deck-vol-wrap {
-            --deck-vol-fill-high: rgba(88, 0, 255, 0.35);
+            --deck-vol-fill-high: rgba(30, 26, 77, 0.6);
         }
         #dj-visual-root .dj-deck-vol-wrap::before {
             content: '';
@@ -1645,7 +1653,7 @@
             transform: translateX(-50%);
             border-radius: 7px;
             border: 3px solid rgba(212, 175, 55, 0.45);
-            /* Bottom = min (mute), top = max; fill above thumb uses deck border hue */
+            /* Bottom = min (mute), top = max; fill above thumb matches crossfader deck hues */
             background: linear-gradient(
                 to top,
                 var(--deck-vol-rail) 0%,
@@ -12509,7 +12517,8 @@ function stopAllAndShowStart() {
                     if (this.els.titleA) {
                         if (titleAUseLocal) {
                             this.els.titleA.classList.add('dj-head-station--local');
-                            this.els.titleA.innerHTML = '<span class="dj-local-prefix">LOCAL</span><span class="dj-local-filename">' + escapeHtml(titleALocalFile) + '</span>';
+                            /* DECK A stays on the left badge; title is the file name only */
+                            this.els.titleA.innerHTML = '<span class="dj-local-filename">' + escapeHtml(titleALocalFile) + '</span>';
                         } else {
                             this.els.titleA.classList.remove('dj-head-station--local');
                             this.els.titleA.textContent = na;
@@ -12520,7 +12529,14 @@ function stopAllAndShowStart() {
                         if (titleBUseLocal) {
                             this.els.titleB.classList.add('dj-head-station--local');
                             this.els.titleB.classList.remove('is-deck-b-label');
-                            this.els.titleB.innerHTML = '<span class="dj-local-prefix">LOCAL</span><span class="dj-local-filename">' + escapeHtml(titleBLocalFile) + '</span>';
+                            if (showDeckBBadge) {
+                                this.els.titleB.innerHTML = '<span class="dj-local-filename">' + escapeHtml(titleBLocalFile) + '</span>';
+                            } else {
+                                this.els.titleB.innerHTML =
+                                    '<span class="dj-local-prefix">DECK B</span><span class="dj-local-filename">' +
+                                    escapeHtml(titleBLocalFile) +
+                                    '</span>';
+                            }
                         } else {
                             this.els.titleB.classList.remove('dj-head-station--local');
                             this.els.titleB.textContent = nb;
