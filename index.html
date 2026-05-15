@@ -1810,6 +1810,7 @@
             flex-direction: column;
             align-items: stretch;
             justify-content: flex-start;
+            flex: 1 1 0;
             height: 100%;
             min-height: 0;
             gap: 4px;
@@ -1955,6 +1956,9 @@
             z-index: 1;
             margin: 0;
             padding: 0;
+            /* Wrap is a narrow row flexbox; default shrink=1 squashes the long pre-rotate width so thumb travel
+             * no longer matches the full-height gold ::before rail (especially noticeable on the BPM slider). */
+            flex-shrink: 0;
         }
         #dj-visual-root .dj-deck-vol::-webkit-slider-runnable-track,
         #dj-visual-root .dj-beatmap-bpm-slider::-webkit-slider-runnable-track {
@@ -12119,10 +12123,12 @@ function stopAllAndShowStart() {
                     if (bpmB) bpmB.style.width = `${bpmTrackLenPx(bpmB)}px`;
                     if (bpmA || bpmB) {
                         requestAnimationFrame(() => {
-                            try {
-                                if (bpmA) bpmA.style.width = `${bpmTrackLenPx(bpmA)}px`;
-                                if (bpmB) bpmB.style.width = `${bpmTrackLenPx(bpmB)}px`;
-                            } catch (_) {}
+                            requestAnimationFrame(() => {
+                                try {
+                                    if (bpmA) bpmA.style.width = `${bpmTrackLenPx(bpmA)}px`;
+                                    if (bpmB) bpmB.style.width = `${bpmTrackLenPx(bpmB)}px`;
+                                } catch (_) {}
+                            });
                         });
                     }
                 } catch (_) {}
@@ -14448,6 +14454,19 @@ function stopAllAndShowStart() {
                     if (cv > 0.001) savedDeckVolB = cv;
                     syncDeckVolMuteButtons();
                 };
+                const blurDjRangeIfFocused = (el) => {
+                    if (!el) return;
+                    const fn = () => {
+                        try {
+                            if (document.activeElement === el) el.blur();
+                        } catch (_) {}
+                    };
+                    try {
+                        el.addEventListener('pointerup', fn, sig);
+                        el.addEventListener('touchend', fn, { signal: sig.signal, passive: true });
+                        el.addEventListener('change', fn, sig);
+                    } catch (_) {}
+                };
                 try {
                     if (this.els.deckVolA) {
                         const initA = (audioEl && Number.isFinite(audioEl.volume)) ? audioEl.volume : 1;
@@ -14456,6 +14475,7 @@ function stopAllAndShowStart() {
                         this.els.deckVolA.value = String(ia);
                         setDeckVolA(ia);
                         this.els.deckVolA.addEventListener('input', () => setDeckVolA(this.els.deckVolA.value), sig);
+                        blurDjRangeIfFocused(this.els.deckVolA);
                     }
                     if (this.els.deckVolB) {
                         const initB = (audioElB && Number.isFinite(audioElB.volume)) ? audioElB.volume : 1;
@@ -14464,7 +14484,13 @@ function stopAllAndShowStart() {
                         this.els.deckVolB.value = String(ib);
                         setDeckVolB(ib);
                         this.els.deckVolB.addEventListener('input', () => setDeckVolB(this.els.deckVolB.value), sig);
+                        blurDjRangeIfFocused(this.els.deckVolB);
                     }
+                    try {
+                        blurDjRangeIfFocused(this.root && this.root.querySelector('#dj-crossfader'));
+                        blurDjRangeIfFocused(this.root && this.root.querySelector('#dj-a-beat-bpm'));
+                        blurDjRangeIfFocused(this.root && this.root.querySelector('#dj-b-beat-bpm'));
+                    } catch (_) {}
                     if (this.els.deckVolMuteA) {
                         this.els.deckVolMuteA.addEventListener(
                             'click',
@@ -19289,8 +19315,18 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 if (shortcutsLocked) return;
                 if (uiLocked) { e.preventDefault(); return; }
                 const ae = document.activeElement;
-                if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable || (ae.closest && ae.closest('#textin-panel')))) {
-                    return;
+                if (ae) {
+                    if (ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable || (ae.closest && ae.closest('#textin-panel'))) {
+                        return;
+                    }
+                    if (ae.tagName === 'INPUT') {
+                        const it = String(ae.type || '').toLowerCase();
+                        if (it === 'range' && ae.closest && ae.closest('#dj-visual-root')) {
+                            /* Deck VOL, crossfader, BPM inside DJ overlay — keep Space / shortcuts */
+                        } else {
+                            return;
+                        }
+                    }
                 }
             } catch(_) {}
 
