@@ -1607,7 +1607,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: center;
             height: 100%;
             min-height: 0;
             gap: 4px;
@@ -1656,10 +1656,8 @@
             position: relative;
         }
         #dj-visual-root .dj-deck-vol-wrap {
-            flex: 1 1 auto;
-            width: 100%;
-            min-height: 0;
-            max-height: none;
+            height: 100%;
+            max-height: 100%;
             --deck-vol-thumb-half: calc(23px * var(--dj-control-scale));
             --deck-vol-rail: rgba(255, 255, 255, 0.08);
             --deck-vol-pct: 1;
@@ -6422,10 +6420,15 @@ const QUALITY = {
         let webmAnchorDeckB = false;
         let webmDeckBLayoutBound = false;
         let webmDeckBResizeObserver = null;
+        let webmDeckBLayoutRaf = null;
         function __webmDeckBOnLayout() {
-            try {
-                if (webmOn && webmAnchorDeckB) applyWebmSettings();
-            } catch (_) {}
+            if (webmDeckBLayoutRaf) return;
+            webmDeckBLayoutRaf = requestAnimationFrame(() => {
+                webmDeckBLayoutRaf = null;
+                try {
+                    if (webmOn && webmAnchorDeckB) applyWebmSettings();
+                } catch (_) {}
+            });
         }
         function bindWebmDeckBLayoutWatchers() {
             if (webmDeckBLayoutBound) return;
@@ -6435,10 +6438,12 @@ const QUALITY = {
                 try { window.addEventListener('resize', __webmDeckBOnLayout); } catch (_) {}
             }
             try {
-                const dj = document.getElementById('dj-visual-root');
-                if (dj && typeof ResizeObserver !== 'undefined') {
+                if (typeof ResizeObserver !== 'undefined') {
                     webmDeckBResizeObserver = new ResizeObserver(() => __webmDeckBOnLayout());
-                    webmDeckBResizeObserver.observe(dj);
+                    const mount = document.getElementById('dj-deck-b-viz-mount');
+                    const vizLayer = document.getElementById('dj-deck-b-viz-layer');
+                    if (mount) webmDeckBResizeObserver.observe(mount);
+                    if (vizLayer) webmDeckBResizeObserver.observe(vizLayer);
                 }
             } catch (_) {}
             webmDeckBLayoutBound = true;
@@ -10679,6 +10684,7 @@ function stopAllAndShowStart() {
                 this._panelPointerPos = null;
                 this.deckBVizResizeObs = null;
                 this.deckVolResizeObs = null;
+                this._deckLayoutResizeRaf = null;
                 this.deckBQueueVisible = false;
                 this.deckBMediaPanelVisible = false;
                 /** After Deck A "Audio Bars" moves Deck B from ProjectM → in-panel bars, next Deck A "Audio Bars" loads main Audio Bars. */
@@ -12378,30 +12384,18 @@ function stopAllAndShowStart() {
                      * thumb centres travel `width - thumb` along that span. Matching crossfader geometry requires
                      * `width === h` so extremes sit at y = thumb_half and y = h - thumb_half (same as .dj-deck-vol-wrap::before). */
                     const DECK_VOL_SLIDER_LENGTH_MULT = 2;
-                    const deckVolTrackCapPx = (volEl) => {
+                    /** Length from btn-block row; cap by mosaic height only (never stack/wrap — avoids ResizeObserver feedback). */
+                    const volLenPx = (volEl) => {
+                        let px = Math.round(len * DECK_VOL_SLIDER_LENGTH_MULT);
                         try {
-                            const stack = volEl && volEl.closest('.dj-deck-vol-stack');
-                            if (!stack) return null;
-                            let gapPx = 4;
-                            try {
-                                const gs = getComputedStyle(stack);
-                                gapPx = parseFloat(gs.rowGap) || parseFloat(gs.gap) || 4;
-                            } catch (_) {}
-                            if (!Number.isFinite(gapPx)) gapPx = 4;
-                            const footer = stack.querySelector('.dj-deck-vol-mute');
-                            const fh = footer ? (footer.offsetHeight || footer.clientHeight || 0) : 0;
-                            const h = stack.clientHeight || stack.getBoundingClientRect().height || 0;
-                            if (h < 96) return null;
-                            return Math.max(120, Math.floor(Math.max(0, h - fh - gapPx)));
-                        } catch (_) {
-                            return null;
-                        }
+                            const mosaic = volEl && volEl.closest('.dj-deck-mosaic');
+                            if (mosaic) {
+                                const mh = Math.floor(mosaic.getBoundingClientRect().height || 0);
+                                if (mh > 80) px = Math.min(px, Math.max(120, mh - 36));
+                            }
+                        } catch (_) {}
+                        return px;
                     };
-                    const volBaseLenPx = (volEl) => {
-                        const cap = deckVolTrackCapPx(volEl);
-                        return cap != null ? Math.min(len, cap) : len;
-                    };
-                    const volLenPx = (volEl) => Math.round(volBaseLenPx(volEl) * DECK_VOL_SLIDER_LENGTH_MULT);
                     const bpmTrackLenPx = (bpmEl) => {
                         const fallback = target > 0 ? Math.max(300, target + 80) : 320;
                         try {
@@ -12431,13 +12425,16 @@ function stopAllAndShowStart() {
                     };
                     const applyDeckVolSliderSize = (volEl) => {
                         if (!volEl) return;
-                        const px = Math.round(volLenPx(volEl));
+                        const px = volLenPx(volEl);
+                        const key = String(px);
+                        if (volEl.dataset.volSyncPx === key) return;
+                        volEl.dataset.volSyncPx = key;
                         volEl.style.width = `${px}px`;
                         try {
                             const wrap = volEl.closest('.dj-deck-vol-wrap');
                             if (wrap) {
-                                wrap.style.minHeight = `${px}px`;
-                                wrap.style.height = `${px}px`;
+                                wrap.style.removeProperty('min-height');
+                                wrap.style.removeProperty('height');
                             }
                         } catch (_) {}
                     };
@@ -12580,7 +12577,9 @@ function stopAllAndShowStart() {
                         const widthBiased = Math.min(1.28, fitW);
                         const heightBiased = Math.min(1.28, fitH);
                         const scale = Math.max(scaleMin, Math.min(1.28, (widthBiased * 0.52) + (heightBiased * 0.48)));
-                        mosaic.style.setProperty('--dj-control-scale', scale.toFixed(3));
+                        const scaleStr = scale.toFixed(3);
+                        const prev = mosaic.style.getPropertyValue('--dj-control-scale');
+                        if (prev !== scaleStr) mosaic.style.setProperty('--dj-control-scale', scaleStr);
                     });
                 } catch (_) {}
                 /* After --dj-control-scale settles, fit each button's text to its own box
@@ -13413,14 +13412,15 @@ function stopAllAndShowStart() {
                 try {
                     if (typeof ResizeObserver !== 'undefined') {
                         this.deckVolResizeObs = new ResizeObserver(() => {
-                            try {
-                                this.syncDeckMosaicScale();
-                                this.syncDeckVolumeSliderLengths();
-                            } catch (_) {}
+                            if (this._deckLayoutResizeRaf) return;
+                            this._deckLayoutResizeRaf = requestAnimationFrame(() => {
+                                this._deckLayoutResizeRaf = null;
+                                try {
+                                    this.syncDeckMosaicScale();
+                                } catch (_) {}
+                            });
                         });
                         root.querySelectorAll('.dj-deck-mosaic').forEach((el) => this.deckVolResizeObs.observe(el));
-                        root.querySelectorAll('.dj-beatmap-tempo-stack').forEach((el) => this.deckVolResizeObs.observe(el));
-                        root.querySelectorAll('.dj-beatmap-tempo-slider-wrap').forEach((el) => this.deckVolResizeObs.observe(el));
                     }
                 } catch (_) {}
 
