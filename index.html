@@ -5620,7 +5620,9 @@ const QUALITY = {
             /** Deck A/B playback source: affects queue advance vs radio */
             deckSourceMode: { a: 'radio', b: 'radio' },
             /** Human-readable filename for the current local track (DJ head titles). */
-            deckLocalDisplayName: { a: '', b: '' }
+            deckLocalDisplayName: { a: '', b: '' },
+            /** AUTO-MIX runs only after the user enables it this session (never resumed on page load). */
+            autoMixEnabled: false
         };
 
         function escapeHtml(str) {
@@ -5645,7 +5647,10 @@ const QUALITY = {
             return state.autoMixDeferLocal;
         }
         function isAutoMixEnabledGlobal() {
-            try { return localStorage.getItem(AUTOMIX_ENABLED_STORAGE_KEY) === '1'; } catch (_) { return false; }
+            try {
+                if (state && typeof state.autoMixEnabled === 'boolean') return state.autoMixEnabled;
+            } catch (_) {}
+            return false;
         }
         function isAutoFadeChangeStationEnabledGlobal() {
             try {
@@ -13882,9 +13887,12 @@ function stopAllAndShowStart() {
                     const limStored = Number(localStorage.getItem(AUTOMIX_LIMIT_MIN_KEY));
                     if (Number.isFinite(limStored) && limStored >= 5 && limStored <= 300) autoMixLimitMin = Math.round(limStored);
                 } catch (_) {}
-                try {
-                    autoMixEnabled = localStorage.getItem(AUTOMIX_ENABLED_KEY) === '1';
-                } catch (_) {}
+                // AUTO-MIX always starts off on page load; enable only via the Auto-Mix button.
+                autoMixEnabled = false;
+                try { state.autoMixEnabled = false; } catch (_) {}
+                const syncAutoMixRuntimeState = () => {
+                    try { state.autoMixEnabled = !!autoMixEnabled; } catch (_) {}
+                };
                 const syncAutoFadeDurationUi = () => {
                     const sec = Math.max(2, Math.min(10, Math.round((Number(autoFadeDurationMs) || 5000) / 1000)));
                     if (autoFadeDuration) autoFadeDuration.value = String(sec);
@@ -14001,6 +14009,7 @@ function stopAllAndShowStart() {
                     if (autoMixLimitEn) autoMixLimitEn.checked = !!autoMixLimitEnabled;
                     if (autoMixLimitReadout) autoMixLimitReadout.textContent = formatLimitMinutesReadout(autoMixLimitMin);
                     if (btnAutoMix) btnAutoMix.classList.toggle('on', !!autoMixEnabled);
+                    syncAutoMixRuntimeState();
                     try { updateAutoMixSessionRemainingUi(); } catch (_) {}
                     try { updateAutoMixNextFadeUi(); } catch (_) {}
                 };
@@ -14799,6 +14808,7 @@ function stopAllAndShowStart() {
                     const fadeDur = Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 5000));
                     runMasterFadeOut(fadeDur, () => {
                         autoMixEnabled = false;
+                        syncAutoMixRuntimeState();
                         clearAutoMixTimer();
                         this.autoMixNextFadeAt = 0;
                         clearAutoMixNextFadeTick();
@@ -15301,6 +15311,7 @@ function stopAllAndShowStart() {
                         } catch (_) {}
                         closeAutoFadePanel();
                         autoMixEnabled = !autoMixEnabled;
+                        syncAutoMixRuntimeState();
                         syncAutoMixUi();
                         try { localStorage.setItem(AUTOMIX_ENABLED_KEY, autoMixEnabled ? '1' : '0'); } catch (_) {}
                         if (autoMixEnabled) {
@@ -15390,11 +15401,6 @@ function stopAllAndShowStart() {
                         closeAutoMixPanel();
                     }
                 }, sig);
-                if (autoMixEnabled) {
-                    autoMixSessionStartedAt = Date.now();
-                    scheduleNextAutoMix();
-                    scheduleAutoMixSessionLimit();
-                }
 
                 const clampVol = (v) => Math.max(0, Math.min(1, Number(v) || 0));
                 const syncDeckVolFillCss = (inputEl, cv) => {
