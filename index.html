@@ -13327,7 +13327,7 @@ function stopAllAndShowStart() {
           </div>
           <div class="dj-autofade-station-block">
             <div class="dj-autofade-station-title">On Auto-Fade</div>
-            <label class="dj-autofade-station-check" title="When on, every Auto-Fade (manual or scheduled by Auto-Mix) switches the incoming deck to a fresh random station just before the fade. Toggling resets the Auto-Mix next-crossfade timer.">
+            <label class="dj-autofade-station-check" title="When on, Auto-Fade and Auto-Mix switch the incoming deck to a random station before each crossfade. Turning on Auto-Mix checks this. Uncheck to keep each deck's current station or local file until you use RAND or pick a station manually.">
               <input type="checkbox" id="dj-autofade-change-station" />
               <span>Change station before fading</span>
             </label>
@@ -13726,6 +13726,13 @@ function stopAllAndShowStart() {
                 };
                 const syncAutoFadeChangeStationUi = () => {
                     if (autoFadeChangeStationEn) autoFadeChangeStationEn.checked = !!autoFadeChangeStationEnabled;
+                };
+                const setAutoFadeChangeStationEnabled = (on, persist) => {
+                    autoFadeChangeStationEnabled = !!on;
+                    if (persist !== false) {
+                        try { localStorage.setItem(AUTOFADE_CHANGE_STATION_KEY, autoFadeChangeStationEnabled ? '1' : '0'); } catch (_) {}
+                    }
+                    syncAutoFadeChangeStationUi();
                 };
                 const syncRadioStationCrossfadeUi = () => {
                     if (radioStationXfadeEn) radioStationXfadeEn.checked = !!radioStationCrossfadeEnabled;
@@ -14150,22 +14157,8 @@ function stopAllAndShowStart() {
                 const ensureDeckStationPlayback = (deckKey) => {
                     if (deckKey === 'b') {
                         try { state.deckSourceMode.b = 'radio'; } catch (_) {}
-                        try {
-                            if (typeof stations !== 'undefined' && Array.isArray(stations) && stations.length > 1 && typeof currentStationIndex === 'number') {
-                                let val = parseInt((mixStationB && mixStationB.value) || '0', 10);
-                                if (isNaN(val)) val = (typeof currentStationBIndex === 'number' && !isNaN(currentStationBIndex)) ? currentStationBIndex : 0;
-                                val = Math.max(0, Math.min(stations.length - 1, val));
-                                if (val === currentStationIndex && typeof getCycleEligibleStationIndexes === 'function') {
-                                    const eligible = getCycleEligibleStationIndexes(currentStationIndex);
-                                    if (eligible && eligible.length) {
-                                        const idx = eligible[Math.floor(Math.random() * eligible.length)];
-                                        currentStationBIndex = idx;
-                                        if (mixStationB) mixStationB.value = String(idx);
-                                        try { if (typeof refreshMixStationB === 'function') refreshMixStationB(); } catch (_) {}
-                                    }
-                                }
-                            }
-                        } catch (_) {}
+                        // Keep the cued Deck B station — random retune is only via RAND / retuneDeckStationForAutoMix
+                        // when "Change station before fading" is on, not when ensuring playback.
                         try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
                     } else {
                         try { state.deckSourceMode.a = 'radio'; } catch (_) {}
@@ -15035,10 +15028,8 @@ function stopAllAndShowStart() {
                 }
                 if (autoFadeChangeStationEn) {
                     autoFadeChangeStationEn.addEventListener('change', () => {
-                        autoFadeChangeStationEnabled = !!autoFadeChangeStationEn.checked;
-                        try { localStorage.setItem(AUTOFADE_CHANGE_STATION_KEY, autoFadeChangeStationEnabled ? '1' : '0'); } catch (_) {}
-                        // The user asked for AUTO-MIX to be "aware of this change" — toggling the
-                        // checkbox resets AUTO-MIX's next-crossfade timer so the upcoming scheduled
+                        setAutoFadeChangeStationEnabled(!!autoFadeChangeStationEn.checked);
+                        // Toggling resets AUTO-MIX's next-crossfade timer so the upcoming scheduled
                         // fade is recomputed from now with the new station-change preference.
                         if (autoMixEnabled) {
                             try { scheduleNextAutoMix(); } catch (_) {}
@@ -15111,6 +15102,8 @@ function stopAllAndShowStart() {
                         try { localStorage.setItem(AUTOMIX_ENABLED_KEY, autoMixEnabled ? '1' : '0'); } catch (_) {}
                         if (autoMixEnabled) {
                             autoMixSessionStartedAt = Date.now();
+                            // AUTO-MIX expects random incoming stations — re-enable On Auto-Fade retune.
+                            setAutoFadeChangeStationEnabled(true);
                             // Do not retune/reload the audible deck — only schedule the next crossfade.
                             try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                             scheduleNextAutoMix();
