@@ -7136,6 +7136,7 @@ const QUALITY = {
 						const border = document.getElementById('border-frame');
 						if (border) border.classList.add('visible');
 					} catch (_) {}
+					try { applyOverlayGlowFx(); } catch (_) {}
 				});
 			});
 		}
@@ -9090,21 +9091,22 @@ function randomGlowColor() {
                 }
             });
         }
-		function applyOverlayGlowAndLogo() {
-            const overlay = document.getElementById('overlay');
-			// Randomize overlay glow and OMNI shimmer color
+		/** Pulsing coloured edge glow on #overlay — only after tap.gif is ready (see revealStartScreenEdgeFx). */
+		function applyOverlayGlowFx() {
+			const overlay = document.getElementById('overlay');
+			if (!overlay) return;
 			const glowHex = randomHexColor();
 			overlay.style.setProperty('--glowColor', glowHex);
 			overlay.classList.add('glow-on');
-			// reset cycle counter so next change happens on next min pass
 			overlayGlowCycleCount = 0;
-			// Use a timer aligned to animation minima (every 2 cycles of the 2400ms animation)
 			if (overlayGlowColorTimer) { clearInterval(overlayGlowColorTimer); overlayGlowColorTimer = null; }
 			overlayGlowColorTimer = setInterval(() => {
 				if (overlay.classList.contains('glow-on')) {
 					overlay.style.setProperty('--glowColor', randomHexColor());
 				}
 			}, overlayGlowDurationMs * 2);
+		}
+		function applyOverlayLogoFx() {
 			const logo = document.getElementById('logo-omni');
 			if (logo) {
 				const omniHex = randomHexColor();
@@ -9133,6 +9135,10 @@ function randomGlowColor() {
 				} catch (_) {}
 			}
 		}
+		function applyOverlayGlowAndLogo() {
+			try { applyOverlayLogoFx(); } catch (_) {}
+			try { applyOverlayGlowFx(); } catch (_) {}
+		}
 		function showOverlay() {
 			const overlay = document.getElementById('overlay');
 			overlay.classList.remove('hidden');
@@ -9141,7 +9147,7 @@ function randomGlowColor() {
 				const logo = document.getElementById('logo-omni');
 				if (logo) logo.classList.remove('pat-revealed');
 			} catch (_) {}
-			try { applyOverlayGlowAndLogo(); } catch (_) {}
+			try { applyOverlayLogoFx(); } catch (_) {}
             // Restore tiled background for start screen
             try { fadeInPtaStartBg(); } catch (_) {}
 			revealStartScreenEdgeFx();
@@ -9151,7 +9157,7 @@ function randomGlowColor() {
 			}
 			// Hide volume slider on start overlay
 			(() => { const vs = document.getElementById('volume-slider-container'); if (vs) vs.style.display = 'none'; })();
-			// Border frame + pulsing edge glow (tap.gif) — revealed after tap.gif loads (see revealStartScreenEdgeFx)
+			// tap.gif frame + pulsing edge glow — both after tap.gif loads (see revealStartScreenEdgeFx)
 			// Type the current status line on start screen, then shortcuts
 			const shortcuts = [
 					'F Fullscreen  •  C Next Visual  •  ,/. Visual',
@@ -9200,11 +9206,11 @@ function randomGlowColor() {
 					if (logo) logo.classList.remove('pat-revealed');
 				} catch(e) {}
 
-				try { applyOverlayGlowAndLogo(); } catch(e) {}
+				try { applyOverlayLogoFx(); } catch(e) {}
 
 				try { fadeInPtaStartBg(); } catch(e) {}
 
-				// Edge glow + tap.gif frame only after tap.gif is loaded/decoded (no arbitrary timer)
+				// tap.gif frame + coloured edge glow only after tap.gif is loaded/decoded
 				revealStartScreenEdgeFx();
 
 				// Ensure radio quick button is hidden on the start screen
