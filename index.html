@@ -5660,15 +5660,23 @@ const QUALITY = {
             } catch (_) {}
             return true;
         }
-        /** Incoming deck for the next scheduled AUTO-MIX crossfade (opposite side of the fader). */
-        function getAutoMixIncomingDeckKey() {
+        /** Opposite deck from current crossfader (low = incoming B, high = incoming A). */
+        function getCrossfaderIncomingDeckKey() {
             try {
-                if (!isAutoMixEnabledGlobal()) return null;
                 const dc = document.getElementById('dj-crossfader');
                 const mc = document.getElementById('mix-crossfader');
                 const raw = (dc && dc.value !== undefined && dc.value !== '') ? dc.value : (mc && mc.value);
                 const x = Math.max(0, Math.min(1, Number(raw) || 0));
                 return x < 0.5 ? 'b' : 'a';
+            } catch (_) {
+                return 'b';
+            }
+        }
+        /** Incoming deck for the next scheduled AUTO-MIX crossfade (opposite side of the fader). */
+        function getAutoMixIncomingDeckKey() {
+            try {
+                if (!isAutoMixEnabledGlobal()) return null;
+                return getCrossfaderIncomingDeckKey();
             } catch (_) {
                 return null;
             }
@@ -14691,7 +14699,12 @@ function stopAllAndShowStart() {
                     const wantRadioRetune = !!(opts && opts.retuneIfNeeded) && autoFadeChangeStationEnabled;
                     const retuneIfNeeded = wantRadioRetune && !shouldPreserveLocalDeckForAutoFade(deckKey);
                     const perStationMs = Math.max(8000, Math.min(20000, Number(timeoutMs) || 12000));
-                    if (isDeckIncomingReadyForAutoFade(deckKey)) return true;
+                    if (!retuneIfNeeded && isDeckIncomingReadyForAutoFade(deckKey)) return true;
+                    if (retuneIfNeeded) {
+                        try {
+                            if (typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed(deckKey)) return true;
+                        } catch (_) {}
+                    }
                     if (isDeckLocalMode(deckKey) && shouldPreserveLocalDeckForAutoFade(deckKey)) {
                         try { ensureDeckPlaybackForAutoFade(deckKey); } catch (_) {}
                         const waitResult = await awaitDeckLocalReady(deckKey, perStationMs);
@@ -14840,8 +14853,6 @@ function stopAllAndShowStart() {
                     const maxMs = Math.max(minMs, Math.max(1, Math.min(20, Number(autoMixMaxMin) || 20)) * 60 * 1000);
                     const span = Math.max(0, maxMs - minMs);
                     const waitMs = minMs + (span > 0 ? Math.floor(Math.random() * (span + 1)) : 0);
-                    const xSchedule = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
-                    const targetDeck = xSchedule < 0.5 ? 'b' : 'a';
                     this.autoMixNextFadeAt = Date.now() + waitMs;
                     syncAutoMixNextFadeDisplay();
                     // Tracks whether this cycle's preload-retune actually ran. The "Change
@@ -14853,24 +14864,28 @@ function stopAllAndShowStart() {
                     this.autoMixPreloadTimerId = setTimeout(() => {
                         this.autoMixPreloadTimerId = null;
                         if (!autoMixEnabled) return;
-                        // Honor the AUTO-FADE "Change station before fading" toggle: when off,
-                        // AUTO-MIX must NOT retune the incoming deck — it should just fade to
-                        // whatever station that deck already holds.
+                        const preloadDeck = (typeof getCrossfaderIncomingDeckKey === 'function')
+                            ? getCrossfaderIncomingDeckKey() : 'b';
                         if (!autoFadeChangeStationEnabled) return;
-                        if (shouldPreserveLocalDeckForAutoFade(targetDeck)) return;
-                        if (isDeckRadioAudiblyReady(targetDeck)) return;
-                        try { maybeRetuneDeckForAutoFade(targetDeck); } catch (_) {}
+                        if (shouldPreserveLocalDeckForAutoFade(preloadDeck)) return;
+                        try { maybeRetuneDeckForAutoFade(preloadDeck); } catch (_) {}
                         preloadCompleted = true;
                     }, preloadDelay);
                     this.autoMixTimerId = setTimeout(() => {
                         this.autoMixTimerId = null;
                         if (!autoMixEnabled) return;
+                        const targetDeck = (typeof getCrossfaderIncomingDeckKey === 'function')
+                            ? getCrossfaderIncomingDeckKey() : 'b';
                         const fireFade = () => {
                             if (!autoMixEnabled) return;
                             if (sig && sig.signal && sig.signal.aborted) return;
                             const needsIncomingReady = autoFadeChangeStationEnabled || autoMixEnabled;
                             const preserveIncomingLocal = shouldPreserveLocalDeckForAutoFade(targetDeck);
                             const incomingReadyNow = isDeckIncomingReadyForAutoFade(targetDeck);
+                            let deferArmed = false;
+                            try {
+                                deferArmed = !!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed(targetDeck));
+                            } catch (_) {}
                             const finish = (ready) => {
                                 if (!ready) {
                                     try { statusEl.innerText = 'Incoming deck has no playable audio — skipping crossfade.'; } catch (_) {}
@@ -14884,9 +14899,13 @@ function stopAllAndShowStart() {
                                 finish(true);
                                 return;
                             }
-                            // AUTO-MIX: keep local / already-playing radio on the incoming deck;
-                            // only retune when "Change station before fading" is on and local is not protected.
-                            if (incomingReadyNow && (!autoFadeChangeStationEnabled || preserveIncomingLocal)) {
+                            // With "Change station before fading" on, still retune when incoming
+                            // radio is already playing — only skip prepare for cued local / deferred.
+                            if (incomingReadyNow && !autoFadeChangeStationEnabled) {
+                                finish(true);
+                                return;
+                            }
+                            if (incomingReadyNow && (preserveIncomingLocal || deferArmed)) {
                                 finish(true);
                                 return;
                             }
