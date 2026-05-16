@@ -10980,6 +10980,8 @@ function stopAllAndShowStart() {
                 this.autoMixSessionRemainingIntervalId = null;
                 this.autoMixNextFadeAt = 0;
                 this.autoMixNextFadeIntervalId = null;
+                /** Next deck AUTO-MIX will fade toward (alternates a/b each completed cycle). */
+                this.autoMixNextTargetDeck = null;
                 this.masterFadeOutRafId = null;
                 this._panelPointerPos = null;
                 this.deckBVizResizeObs = null;
@@ -14825,6 +14827,7 @@ function stopAllAndShowStart() {
                         autoMixEnabled = false;
                         syncAutoMixRuntimeState();
                         clearAutoMixTimer();
+                        this.autoMixNextTargetDeck = null;
                         this.autoMixNextFadeAt = 0;
                         clearAutoMixNextFadeTick();
                         if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = '';
@@ -14862,12 +14865,15 @@ function stopAllAndShowStart() {
                     // time; this flag lets the fire callback decide whether the incoming deck
                     // still needs a station change.
                     let preloadCompleted = false;
+                    const cycleTarget = (this.autoMixNextTargetDeck === 'a' || this.autoMixNextTargetDeck === 'b')
+                        ? this.autoMixNextTargetDeck
+                        : ((typeof getCrossfaderIncomingDeckKey === 'function') ? getCrossfaderIncomingDeckKey() : 'b');
+                    this.autoMixNextTargetDeck = cycleTarget;
                     const preloadDelay = Math.max(0, waitMs - AUTO_MIX_PRELOAD_MS);
                     this.autoMixPreloadTimerId = setTimeout(() => {
                         this.autoMixPreloadTimerId = null;
                         if (!autoMixEnabled) return;
-                        const preloadDeck = (typeof getCrossfaderIncomingDeckKey === 'function')
-                            ? getCrossfaderIncomingDeckKey() : 'b';
+                        const preloadDeck = cycleTarget;
                         if (!autoFadeChangeStationEnabled) return;
                         if (shouldPreserveLocalDeckForAutoFade(preloadDeck)) return;
                         try { maybeRetuneDeckForAutoFade(preloadDeck); } catch (_) {}
@@ -14876,8 +14882,7 @@ function stopAllAndShowStart() {
                     this.autoMixTimerId = setTimeout(() => {
                         this.autoMixTimerId = null;
                         if (!autoMixEnabled) return;
-                        const targetDeck = (typeof getCrossfaderIncomingDeckKey === 'function')
-                            ? getCrossfaderIncomingDeckKey() : 'b';
+                        const targetDeck = cycleTarget;
                         const fireFade = () => {
                             if (!autoMixEnabled) return;
                             if (sig && sig.signal && sig.signal.aborted) return;
@@ -14888,14 +14893,21 @@ function stopAllAndShowStart() {
                             try {
                                 deferArmed = !!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed(targetDeck));
                             } catch (_) {}
+                            const onAutoMixCycleComplete = () => {
+                                if (!autoMixEnabled) return;
+                                this.autoMixNextTargetDeck = targetDeck === 'a' ? 'b' : 'a';
+                                scheduleNextAutoMix();
+                            };
                             const finish = (ready) => {
                                 if (!ready) {
                                     try { statusEl.innerText = 'Incoming deck has no playable audio — skipping crossfade.'; } catch (_) {}
                                     scheduleNextAutoMix();
                                     return;
                                 }
-                                runAutoFade(targetDeck, { stationPreloaded: isDeckIncomingReadyForAutoFade(targetDeck) });
-                                scheduleNextAutoMix();
+                                runAutoFade(targetDeck, {
+                                    stationPreloaded: isDeckIncomingReadyForAutoFade(targetDeck),
+                                    onComplete: onAutoMixCycleComplete
+                                });
                             };
                             if (!needsIncomingReady) {
                                 finish(true);
@@ -14922,6 +14934,9 @@ function stopAllAndShowStart() {
                 const runAutoFade = (toDeck, fadeOpts) => {
                     try { this.clearSuppressEnsureCrossfadeDeckPlayback(); } catch (_) {}
                     const targetDeck = toDeck === 'a' ? 'a' : 'b';
+                    const invokeFadeComplete = () => {
+                        try { if (fadeOpts && typeof fadeOpts.onComplete === 'function') fadeOpts.onComplete(); } catch (_) {}
+                    };
                     try { if (typeof tryStartAutoMixDeferredLocal === 'function') tryStartAutoMixDeferredLocal(targetDeck); } catch (_) {}
                     let incomingReady = !!(fadeOpts && fadeOpts.stationPreloaded);
                     if (incomingReady && !isDeckIncomingReadyForAutoFade(targetDeck)) incomingReady = false;
@@ -14942,6 +14957,7 @@ function stopAllAndShowStart() {
                         // Space shortcut doesn't try to "reverse" a fade that isn't running.
                         this.autoFadeTargetDeck = null;
                         try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                        invokeFadeComplete();
                         return;
                     }
                     if (this.autoFadeRafId) {
@@ -14967,6 +14983,7 @@ function stopAllAndShowStart() {
                             // Do not call ensureDeckStationPlayback here: setStation/playRadioB reload the
                             // stream and cause a second silence gap after the fader has already arrived.
                             try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                            invokeFadeComplete();
                             return;
                         }
                         this.autoFadeRafId = requestAnimationFrame(tick);
@@ -15098,14 +15115,24 @@ function stopAllAndShowStart() {
                                     if (autoMixEnabled) scheduleNextAutoMix();
                                     return;
                                 }
-                                runAutoFade(target, { stationPreloaded: isDeckIncomingReadyForAutoFade(target) });
+                                runAutoFade(target, {
+                                    stationPreloaded: isDeckIncomingReadyForAutoFade(target),
+                                    onComplete: autoMixEnabled ? () => {
+                                        this.autoMixNextTargetDeck = target === 'a' ? 'b' : 'a';
+                                        scheduleNextAutoMix();
+                                    } : undefined
+                                });
                                 try { ensureCrossfadeDeckPlayback(); } catch (_) {}
-                                if (autoMixEnabled) scheduleNextAutoMix();
                             });
                         } else {
-                            runAutoFade(target, { stationPreloaded: isDeckIncomingReadyForAutoFade(target) });
+                            runAutoFade(target, {
+                                stationPreloaded: isDeckIncomingReadyForAutoFade(target),
+                                onComplete: autoMixEnabled ? () => {
+                                    this.autoMixNextTargetDeck = target === 'a' ? 'b' : 'a';
+                                    scheduleNextAutoMix();
+                                } : undefined
+                            });
                             try { ensureCrossfadeDeckPlayback(); } catch (_) {}
-                            if (autoMixEnabled) scheduleNextAutoMix();
                         }
                     }, sig);
                 }
@@ -15341,11 +15368,14 @@ function stopAllAndShowStart() {
                             setAutoFadeChangeStationEnabled(true);
                             // Do not retune/reload the audible deck — only schedule the next crossfade.
                             try { ensureCrossfadeDeckPlayback(); } catch (_) {}
+                            this.autoMixNextTargetDeck = (typeof getCrossfaderIncomingDeckKey === 'function')
+                                ? getCrossfaderIncomingDeckKey() : 'b';
                             scheduleNextAutoMix();
                             scheduleAutoMixSessionLimit();
                         }
                         else {
                             clearAutoMixTimer();
+                            this.autoMixNextTargetDeck = null;
                             this.autoMixNextFadeAt = 0;
                             clearAutoMixNextFadeTick();
                             if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = '';
@@ -16603,6 +16633,7 @@ function stopAllAndShowStart() {
                 this.autoMixTimerId = null;
                 try { if (this.autoMixPreloadTimerId) clearTimeout(this.autoMixPreloadTimerId); } catch (_) {}
                 this.autoMixPreloadTimerId = null;
+                this.autoMixNextTargetDeck = null;
                 try { if (this.autoMixSessionLimitTimerId) clearTimeout(this.autoMixSessionLimitTimerId); } catch (_) {}
                 this.autoMixSessionLimitTimerId = null;
                 try { if (this.masterFadeOutRafId) cancelAnimationFrame(this.masterFadeOutRafId); } catch (_) {}
