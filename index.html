@@ -14523,12 +14523,19 @@ function stopAllAndShowStart() {
                     try {
                         const mode = state && state.deckSourceMode && state.deckSourceMode[deckKey];
                         if (mode !== 'radio') return false;
-                        const el = getRadioReadinessTargetEl(deckKey);
-                        if (!el) return false;
-                        const src = String(el.currentSrc || el.src || '');
-                        if (!src || src === 'about:blank') return false;
-                        if ((el.readyState | 0) >= 3) return true;
-                        if (!el.paused && (Number(el.currentTime) || 0) > 0) return true;
+                        const idx = getDeckRadioStationIndex(deckKey);
+                        if (!stationIndexHasStreamUrl(idx)) return false;
+                        const expected = sanitizeUrlForAudio(String(stations[idx].url || ''));
+                        const elements = (deckKey === 'b')
+                            ? [audioElB]
+                            : [audioEl, audioElRadioAAlt].filter(Boolean);
+                        for (const el of elements) {
+                            if (!el) continue;
+                            const src = sanitizeUrlForAudio(String(el.currentSrc || el.src || ''));
+                            if (!src || src === 'about:blank' || src !== expected) continue;
+                            if ((el.readyState | 0) >= 3) return true;
+                            if (!el.paused && (Number(el.currentTime) || 0) > 0) return true;
+                        }
                     } catch (_) {}
                     return false;
                 };
@@ -14553,6 +14560,23 @@ function stopAllAndShowStart() {
                 const getRadioReadinessTargetEl = (deckKey) => {
                     if (deckKey === 'b') return audioElB;
                     try {
+                        const idx = getDeckRadioStationIndex('a');
+                        const expected = stationIndexHasStreamUrl(idx)
+                            ? sanitizeUrlForAudio(String(stations[idx].url || ''))
+                            : '';
+                        const pickLoaded = (el) => {
+                            if (!el) return null;
+                            const src = sanitizeUrlForAudio(String(el.currentSrc || el.src || ''));
+                            if (!src || src === 'about:blank') return null;
+                            if (expected && src !== expected) return null;
+                            return el;
+                        };
+                        if (expected) {
+                            const onAlt = pickLoaded(audioElRadioAAlt);
+                            if (onAlt) return onAlt;
+                            const onMain = pickLoaded(audioEl);
+                            if (onMain) return onMain;
+                        }
                         if (
                             typeof radioAHandoffAbortCtrl !== 'undefined' && radioAHandoffAbortCtrl &&
                             audioElRadioAAlt &&
@@ -14734,7 +14758,8 @@ function stopAllAndShowStart() {
                     };
                     markTried();
                     for (let attempt = 0; attempt < MAX_RADIO_RETRIES; attempt++) {
-                        if (attempt > 0 || !(opts && opts.skipInitialRetune)) {
+                        const skipFirstRetune = !!(opts && opts.skipInitialRetune) && isDeckIncomingReadyForAutoFade(deckKey);
+                        if (attempt > 0 || !skipFirstRetune) {
                             try { maybeRetuneDeckForAutoFade(deckKey, tried); } catch (_) {}
                             markTried();
                         }
@@ -14898,16 +14923,25 @@ function stopAllAndShowStart() {
                                 this.autoMixNextTargetDeck = targetDeck === 'a' ? 'b' : 'a';
                                 scheduleNextAutoMix();
                             };
-                            const finish = (ready) => {
-                                if (!ready) {
-                                    try { statusEl.innerText = 'Incoming deck has no playable audio — skipping crossfade.'; } catch (_) {}
-                                    scheduleNextAutoMix();
-                                    return;
-                                }
+                            const startAutoMixCrossfade = (stationPreloaded) => {
                                 runAutoFade(targetDeck, {
-                                    stationPreloaded: isDeckIncomingReadyForAutoFade(targetDeck),
+                                    autoMixCycle: true,
+                                    stationPreloaded: !!stationPreloaded,
                                     onComplete: onAutoMixCycleComplete
                                 });
+                            };
+                            const finish = (ready) => {
+                                if (!ready) {
+                                    try {
+                                        ensureDeckPlaybackForAutoFade(targetDeck);
+                                    } catch (_) {}
+                                    try {
+                                        statusEl.innerText = 'Incoming deck still buffering — crossfading anyway.';
+                                    } catch (_) {}
+                                    startAutoMixCrossfade(false);
+                                    return;
+                                }
+                                startAutoMixCrossfade(isDeckIncomingReadyForAutoFade(targetDeck));
                             };
                             if (!needsIncomingReady) {
                                 finish(true);
@@ -14938,9 +14972,10 @@ function stopAllAndShowStart() {
                         try { if (fadeOpts && typeof fadeOpts.onComplete === 'function') fadeOpts.onComplete(); } catch (_) {}
                     };
                     try { if (typeof tryStartAutoMixDeferredLocal === 'function') tryStartAutoMixDeferredLocal(targetDeck); } catch (_) {}
+                    const autoMixCycle = !!(fadeOpts && fadeOpts.autoMixCycle);
                     let incomingReady = !!(fadeOpts && fadeOpts.stationPreloaded);
                     if (incomingReady && !isDeckIncomingReadyForAutoFade(targetDeck)) incomingReady = false;
-                    if (!incomingReady) {
+                    if (autoMixCycle || !incomingReady) {
                         ensureDeckPlaybackForAutoFade(targetDeck);
                     } else {
                         try {
@@ -14950,9 +14985,14 @@ function stopAllAndShowStart() {
                         } catch (_) {}
                         try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                     }
-                    const startVal = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                     const endVal = targetDeck === 'b' ? 1 : 0;
-                    if (Math.abs(endVal - startVal) < 0.001) {
+                    let startVal = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
+                    if (autoMixCycle && Math.abs(endVal - startVal) < 0.001) {
+                        // Scheduled AUTO-MIX always sweeps from the opposite end so every cycle
+                        // produces a visible crossfade (avoids stalling when the fader already
+                        // matches the target after preload / Deck A warm handoff).
+                        startVal = endVal === 1 ? 0 : 1;
+                    } else if (Math.abs(endVal - startVal) < 0.001) {
                         // Already at the destination — clear any stale "in-flight" target so the
                         // Space shortcut doesn't try to "reverse" a fade that isn't running.
                         this.autoFadeTargetDeck = null;
