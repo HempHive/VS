@@ -284,6 +284,18 @@
             white-space: nowrap;
             color: #FFFF00;
         }
+        #dj-visual-root .dj-head-automix-timer {
+            flex: 0 0 auto;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            white-space: nowrap;
+            color: #39FF14;
+            text-shadow:
+                0 0 8px rgba(57, 255, 20, 0.95),
+                0 0 18px rgba(57, 255, 20, 0.55),
+                0 0 32px rgba(57, 255, 20, 0.28);
+        }
         .dj-head-video-inline {
             display: inline-flex;
             flex-wrap: nowrap;
@@ -13375,6 +13387,7 @@ function stopAllAndShowStart() {
         <span class="dj-station-load-spinner display-none" id="dj-station-a-load-spinner" role="status" aria-live="polite" aria-label="Station buffering"></span>
       </span>
       <span class="dj-head-datetime" id="dj-head-datetime"></span>
+      <span class="dj-head-automix-timer display-none" id="dj-head-automix-timer" aria-live="polite" aria-hidden="true"></span>
       <span class="dj-head-cluster dj-head-cluster--b">
         <span class="dj-deck-badge dj-deck-badge--b dj-deck-badge--head display-none" id="dj-head-deck-b-badge">DECK B</span>
         <span class="dj-head-station-name dj-head-station-name--b dj-station-title--b display-none" id="dj-station-b-title">—</span>
@@ -13856,6 +13869,7 @@ function stopAllAndShowStart() {
                 const autoMixLimitReadout = root.querySelector('#dj-automix-limit-readout');
                 const autoMixLimitRemainingEl = root.querySelector('#dj-automix-limit-remaining');
                 const autoMixNextFadeEl = root.querySelector('#dj-automix-next-fade');
+                const autoMixHeadTimerEl = root.querySelector('#dj-head-automix-timer');
                 let suppressAutoFadeClickUntil = 0;
                 let autoFadeLongPressFired = false;
                 const AUTOFADE_MS_KEY = 'dj.autofade.duration.ms.v1';
@@ -13962,14 +13976,28 @@ function stopAllAndShowStart() {
                     const left = Math.max(0, limitMs - elapsed);
                     autoMixLimitRemainingEl.textContent = left <= 0 ? ' · 0:00 left' : ` · ${formatSessionRemainingClock(left)} left`;
                 };
+                const clearAutoMixNextFadeUi = () => {
+                    if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = '';
+                    if (autoMixHeadTimerEl) {
+                        autoMixHeadTimerEl.textContent = '';
+                        autoMixHeadTimerEl.classList.add('display-none');
+                        autoMixHeadTimerEl.setAttribute('aria-hidden', 'true');
+                    }
+                };
                 const updateAutoMixNextFadeUi = () => {
-                    if (!autoMixNextFadeEl) return;
                     if (!autoMixEnabled || !this.autoMixNextFadeAt) {
-                        autoMixNextFadeEl.textContent = '';
+                        clearAutoMixNextFadeUi();
                         return;
                     }
                     const left = Math.max(0, this.autoMixNextFadeAt - Date.now());
-                    autoMixNextFadeEl.textContent = formatSessionRemainingClock(left);
+                    const clock = formatSessionRemainingClock(left);
+                    if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = clock;
+                    if (autoMixHeadTimerEl) {
+                        autoMixHeadTimerEl.textContent = `· ${clock}`;
+                        autoMixHeadTimerEl.classList.remove('display-none');
+                        autoMixHeadTimerEl.setAttribute('aria-hidden', 'false');
+                        autoMixHeadTimerEl.setAttribute('aria-label', `Next auto-mix crossfade in ${clock}`);
+                    }
                 };
                 const clearAutoMixNextFadeTick = () => {
                     if (this.autoMixNextFadeIntervalId) {
@@ -13980,7 +14008,7 @@ function stopAllAndShowStart() {
                 const syncAutoMixNextFadeDisplay = () => {
                     clearAutoMixNextFadeTick();
                     if (!autoMixEnabled || !this.autoMixNextFadeAt) {
-                        if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = '';
+                        clearAutoMixNextFadeUi();
                         return;
                     }
                     updateAutoMixNextFadeUi();
@@ -14855,7 +14883,7 @@ function stopAllAndShowStart() {
                         this.autoMixNextTargetDeck = null;
                         this.autoMixNextFadeAt = 0;
                         clearAutoMixNextFadeTick();
-                        if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = '';
+                        clearAutoMixNextFadeUi();
                         clearAutoMixSessionLimitTimer();
                         autoMixSessionStartedAt = 0;
                         try { localStorage.setItem(AUTOMIX_ENABLED_KEY, '0'); } catch (_) {}
@@ -14874,7 +14902,7 @@ function stopAllAndShowStart() {
                     this.autoMixNextFadeAt = 0;
                     clearAutoMixNextFadeTick();
                     if (!autoMixEnabled) {
-                        if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = '';
+                        clearAutoMixNextFadeUi();
                         try { if (typeof clearAllAutoMixDeferLocal === 'function') clearAllAutoMixDeferLocal(); } catch (_) {}
                         return;
                     }
@@ -15418,7 +15446,7 @@ function stopAllAndShowStart() {
                             this.autoMixNextTargetDeck = null;
                             this.autoMixNextFadeAt = 0;
                             clearAutoMixNextFadeTick();
-                            if (autoMixNextFadeEl) autoMixNextFadeEl.textContent = '';
+                            clearAutoMixNextFadeUi();
                             clearAutoMixSessionLimitTimer();
                             autoMixSessionStartedAt = 0;
                             try { if (typeof clearAllAutoMixDeferLocal === 'function') clearAllAutoMixDeferLocal(); } catch (_) {}
