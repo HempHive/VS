@@ -14247,6 +14247,13 @@ function stopAllAndShowStart() {
                             return;
                         }
                     }
+                    if (isDeckRadioAudiblyReady(deckKey)) {
+                        try {
+                            const el = getRadioReadinessTargetEl(deckKey);
+                            if (el && el.paused) el.play().catch(() => {});
+                        } catch (_) {}
+                        return;
+                    }
                     ensureDeckStationPlayback(deckKey);
                 };
                 const maybeRetuneDeckForAutoFade = (deckKey, triedIndexes) => {
@@ -14441,6 +14448,13 @@ function stopAllAndShowStart() {
                             }
                             const idx = eligible.length ? eligible[Math.floor(Math.random() * eligible.length)] : cur;
                             const next = Math.max(0, Math.min(stations.length - 1, Number(idx) || 0));
+                            if (next === cur && isDeckRadioAudiblyReady('b')) {
+                                try {
+                                    const el = getRadioReadinessTargetEl('b');
+                                    if (el && el.paused) el.play().catch(() => {});
+                                } catch (_) {}
+                                return next;
+                            }
                             currentStationBIndex = next;
                             if (mixStationB) mixStationB.value = String(next);
                             try { if (typeof refreshMixStationB === 'function') refreshMixStationB(); } catch (_) {}
@@ -14455,6 +14469,13 @@ function stopAllAndShowStart() {
                         }
                         const idx = eligible.length ? eligible[Math.floor(Math.random() * eligible.length)] : cur;
                         const next = Math.max(0, Math.min(stations.length - 1, Number(idx) || 0));
+                        if (next === cur && isDeckRadioAudiblyReady('a')) {
+                            try {
+                                const el = getRadioReadinessTargetEl('a');
+                                if (el && el.paused) el.play().catch(() => {});
+                            } catch (_) {}
+                            return next;
+                        }
                         if (typeof setStation === 'function') setStation(next, { force: true });
                         else if (typeof playRadio === 'function') playRadio();
                         return next;
@@ -14632,10 +14653,10 @@ function stopAllAndShowStart() {
                         // AUTO-MIX must NOT retune the incoming deck — it should just fade to
                         // whatever station that deck already holds.
                         if (!autoFadeChangeStationEnabled) return;
-                        if (!shouldPreserveLocalDeckForAutoFade(targetDeck)) {
-                            try { maybeRetuneDeckForAutoFade(targetDeck); } catch (_) {}
-                            preloadCompleted = true;
-                        }
+                        if (shouldPreserveLocalDeckForAutoFade(targetDeck)) return;
+                        if (isDeckRadioAudiblyReady(targetDeck)) return;
+                        try { maybeRetuneDeckForAutoFade(targetDeck); } catch (_) {}
+                        preloadCompleted = true;
                     }, preloadDelay);
                     this.autoMixTimerId = setTimeout(() => {
                         this.autoMixTimerId = null;
@@ -14644,6 +14665,8 @@ function stopAllAndShowStart() {
                             if (!autoMixEnabled) return;
                             if (sig && sig.signal && sig.signal.aborted) return;
                             const needsIncomingReady = autoFadeChangeStationEnabled || autoMixEnabled;
+                            const preserveIncomingLocal = shouldPreserveLocalDeckForAutoFade(targetDeck);
+                            const incomingReadyNow = isDeckIncomingReadyForAutoFade(targetDeck);
                             const finish = (ready) => {
                                 if (!ready) {
                                     try { statusEl.innerText = 'Incoming deck has no playable audio — skipping crossfade.'; } catch (_) {}
@@ -14654,6 +14677,12 @@ function stopAllAndShowStart() {
                                 scheduleNextAutoMix();
                             };
                             if (!needsIncomingReady) {
+                                finish(true);
+                                return;
+                            }
+                            // AUTO-MIX: keep local / already-playing radio on the incoming deck;
+                            // only retune when "Change station before fading" is on and local is not protected.
+                            if (incomingReadyNow && (!autoFadeChangeStationEnabled || preserveIncomingLocal)) {
                                 finish(true);
                                 return;
                             }
@@ -15082,8 +15111,8 @@ function stopAllAndShowStart() {
                         try { localStorage.setItem(AUTOMIX_ENABLED_KEY, autoMixEnabled ? '1' : '0'); } catch (_) {}
                         if (autoMixEnabled) {
                             autoMixSessionStartedAt = Date.now();
-                            const x = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
-                            ensureDeckStationPlayback(x < 0.5 ? 'a' : 'b');
+                            // Do not retune/reload the audible deck — only schedule the next crossfade.
+                            try { ensureCrossfadeDeckPlayback(); } catch (_) {}
                             scheduleNextAutoMix();
                             scheduleAutoMixSessionLimit();
                         }
