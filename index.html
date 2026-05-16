@@ -13501,7 +13501,7 @@ function stopAllAndShowStart() {
         <div class="dj-autofade-panel" id="dj-autofade-panel" aria-hidden="true">
           <div class="dj-autofade-title">Auto-fade time</div>
           <div class="dj-autofade-row">
-            <input type="range" id="dj-autofade-duration" min="2" max="10" step="1" value="5" aria-label="Auto-fade duration seconds">
+            <input type="range" id="dj-autofade-duration" min="2" max="15" step="1" value="5" aria-label="Auto-fade duration seconds">
             <span class="dj-autofade-readout" id="dj-autofade-readout">5s</span>
           </div>
           <div class="dj-autofade-station-block">
@@ -13858,6 +13858,8 @@ function stopAllAndShowStart() {
                 let autoFadeLongPressFired = false;
                 const AUTOFADE_MS_KEY = 'dj.autofade.duration.ms.v1';
                 const AUTOFADE_CHANGE_STATION_KEY = 'dj.autofade.changeStation.enabled.v1';
+                const AUTOFADE_MIN_MS = 2000;
+                const AUTOFADE_MAX_MS = 15000;
                 let autoFadeDurationMs = 5000;
                 // Default ON so Auto-Mix keeps doing what it used to (preload + retune before
                 // each scheduled fade). Users can untick it to fade between the same stations.
@@ -13877,7 +13879,7 @@ function stopAllAndShowStart() {
                 let autoMixSessionStartedAt = 0;
                 try {
                     const stored = Number(localStorage.getItem(AUTOFADE_MS_KEY));
-                    if (Number.isFinite(stored) && stored >= 2000 && stored <= 10000) autoFadeDurationMs = stored;
+                    if (Number.isFinite(stored) && stored >= AUTOFADE_MIN_MS && stored <= AUTOFADE_MAX_MS) autoFadeDurationMs = stored;
                 } catch (_) {}
                 try {
                     const raw = localStorage.getItem(AUTOFADE_CHANGE_STATION_KEY);
@@ -13902,7 +13904,7 @@ function stopAllAndShowStart() {
                     try { state.autoMixEnabled = !!autoMixEnabled; } catch (_) {}
                 };
                 const syncAutoFadeDurationUi = () => {
-                    const sec = Math.max(2, Math.min(10, Math.round((Number(autoFadeDurationMs) || 5000) / 1000)));
+                    const sec = Math.max(2, Math.min(15, Math.round((Number(autoFadeDurationMs) || 5000) / 1000)));
                     if (autoFadeDuration) autoFadeDuration.value = String(sec);
                     if (autoFadeReadout) autoFadeReadout.textContent = `${sec}s`;
                 };
@@ -14818,7 +14820,7 @@ function stopAllAndShowStart() {
                 };
                 const onAutoMixSessionLimitReached = () => {
                     if (!autoMixEnabled) return;
-                    const fadeDur = Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 5000));
+                    const fadeDur = Math.max(AUTOFADE_MIN_MS, Math.min(AUTOFADE_MAX_MS, Number(autoFadeDurationMs) || 5000));
                     runMasterFadeOut(fadeDur, () => {
                         autoMixEnabled = false;
                         syncAutoMixRuntimeState();
@@ -14950,7 +14952,7 @@ function stopAllAndShowStart() {
                     // shortcut reads this to reverse direction on a second tap.
                     this.autoFadeTargetDeck = targetDeck;
                     if (btnAutoFade) btnAutoFade.classList.add('on');
-                    const durMs = Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 5000));
+                    const durMs = Math.max(AUTOFADE_MIN_MS, Math.min(AUTOFADE_MAX_MS, Number(autoFadeDurationMs) || 5000));
                     const startTs = performance.now();
                     const tick = (ts) => {
                         const t = Math.max(0, Math.min(1, (ts - startTs) / durMs));
@@ -15250,12 +15252,12 @@ function stopAllAndShowStart() {
                 };
                 if (autoFadeDuration) {
                     autoFadeDuration.addEventListener('input', () => {
-                        const sec = Math.max(2, Math.min(10, Number(autoFadeDuration.value) || 2));
+                        const sec = Math.max(2, Math.min(15, Number(autoFadeDuration.value) || 2));
                         autoFadeDurationMs = Math.round(sec * 1000);
                         if (autoFadeReadout) autoFadeReadout.textContent = `${Math.round(sec)}s`;
                     }, sig);
                     autoFadeDuration.addEventListener('change', () => {
-                        try { localStorage.setItem(AUTOFADE_MS_KEY, String(Math.max(2000, Math.min(10000, Number(autoFadeDurationMs) || 5000)))); } catch (_) {}
+                        try { localStorage.setItem(AUTOFADE_MS_KEY, String(Math.max(AUTOFADE_MIN_MS, Math.min(AUTOFADE_MAX_MS, Number(autoFadeDurationMs) || 5000)))); } catch (_) {}
                     }, sig);
                 }
                 if (autoFadeChangeStationEn) {
