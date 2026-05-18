@@ -568,18 +568,10 @@ const QUALITY = {
             window.sampleLoop5 = false;
             window.sampleLoop6 = false;
         } catch (_) {}
-        // Deck A/B: mute direct <audio> output (Firefox duplicates speakers + Web Audio); crossfader uses streamA/B Gain.
-        // MediaElementSource still receives signal when muted; volume scales into the graph.
-        const silenceDeckMediaDirect = (el) => {
-            if (!el) return;
-            try {
-                el.muted = true;
-                if (!Number.isFinite(el.volume) || el.volume < 0.001) el.volume = 1;
-            } catch (_) {}
-        };
-        silenceDeckMediaDirect(audioEl);
-        silenceDeckMediaDirect(audioElRadioAAlt);
-        silenceDeckMediaDirect(audioElB);
+        // Ensure media elements don't double-play outside the WebAudio graph (Firefox uses captureStream in connectDeckMediaToEq).
+        try { audioEl.muted = false; } catch(_) {}
+        try { if (audioElRadioAAlt) audioElRadioAAlt.muted = false; } catch (_) {}
+        try { audioElB.muted = false; } catch(_) {}
         try { audioElSample.muted = false; } catch(_) {}
         try { audioElSample1.muted = false; } catch(_) {}
         try { audioElSample2.muted = false; } catch(_) {}
@@ -2048,11 +2040,9 @@ function randomGlowColor() {
 		function scheduleStartTextLoop() {
 			try { cancelStartTextLoop(); } catch(e) {}
 			if (state.isPlaying) return;
-			const l = document.getElementById('loading-status');
 			const sh = document.getElementById('shortcuts-status');
-			if (!l || !sh) return;
-			l.style.opacity = '1'; sh.style.opacity = '1';
-			const defaultLine = 'Select a source to begin';
+			if (!sh) return;
+			sh.style.opacity = '1';
 			const shortcuts = [
 				'F Fullscreen  •  C Next Visual  •  ,/. Visual',
 				'V Play/Pause A  •  B Play/Pause B  •  N Next Station  •  L Lock',
@@ -2066,23 +2056,15 @@ function randomGlowColor() {
 				if (state.isPlaying) { cancelStartTextLoop(); return; }
 				if (phase === 'visible') {
 					startTextLoopTimer = setTimeout(() => {
-						l.style.opacity = '0';
 						sh.style.opacity = '0';
 						phase = 'hidden';
 						loop();
 					}, 30000);
 				} else {
 					startTextLoopTimer = setTimeout(() => {
-                        // Clear previous content BEFORE showing, to avoid flash
-                        try { l.innerText = ''; } catch(_) {}
                         try { sh.innerText = ''; } catch(_) {}
-						l.style.opacity = '1';
 						sh.style.opacity = '1';
-						try { 
-							typeStatus(defaultLine, () => { 
-								try { typeStatusTo('shortcuts-status', shortcuts, 30); } catch(e) {}
-							}); 
-						} catch(e) {}
+						try { typeStatusTo('shortcuts-status', shortcuts, 30); } catch(e) {}
 						phase = 'visible';
 						loop();
 					}, 30000);
@@ -2940,7 +2922,6 @@ function exposeAppBindingsToGlobal() {
     try { g.deckVideoFeeds = deckVideoFeeds; } catch (_) {}
     try { g.deckVideoHistory = deckVideoHistory; } catch (_) {}
     try { g.def = def; } catch (_) {}
-    try { g.defaultLine = defaultLine; } catch (_) {}
     try { g.deg = deg; } catch (_) {}
     try { g.delayMs = delayMs; } catch (_) {}
     try { g.delta = delta; } catch (_) {}
@@ -4343,14 +4324,12 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                 try {
                     if (state.audioCtx && state.mixInput) {
                         if (!state[sourceKey]) {
-                            state[sourceKey] = state.audioCtx.createMediaElementSource(media);
-                            state[sourceKey].connect(state.mixInput);
+                            const mkSrc = (typeof globalThis.createMediaSourceFromElement === 'function')
+                                ? globalThis.createMediaSourceFromElement
+                                : (ctx, el) => ctx.createMediaElementSource(el);
+                            state[sourceKey] = mkSrc(state.audioCtx, media);
+                            if (state[sourceKey]) state[sourceKey].connect(state.mixInput);
                         }
-                        try {
-                            if (typeof globalThis.silenceMediaElementDirectOutput === 'function') {
-                                globalThis.silenceMediaElementDirectOutput(media);
-                            }
-                        } catch (_) {}
                     }
                 } catch(e) { console.warn(e); }
                 media.play().catch(()=>{});

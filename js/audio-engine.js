@@ -922,8 +922,8 @@
 					'H QUEUE  •  J VIDEO  •  K KARAOKE (Deck B)',
 					'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Auto-Fade  •  Esc Back'
 				].join('\n');
-			if (statusEl) {
-				typeStatus(statusEl.innerText || 'Select a source to begin', () => {
+			if (statusEl && statusEl.innerText && statusEl.innerText.trim().length > 0) {
+				typeStatus(statusEl.innerText.trim(), () => {
 					typeStatusTo('shortcuts-status', shortcuts, 30);
 					try { layoutOverlayElements(); } catch(e) {}
 					try { scheduleStartTextLoop(); } catch(e) {}
@@ -1001,13 +1001,45 @@
             } catch (_) {}
         }
 
-        /** Firefox plays <audio> to speakers AND through Web Audio unless muted; Chrome does not. */
-        function silenceMediaElementDirectOutput(mediaEl) {
-            if (!mediaEl) return;
+        function isFirefoxBrowser() {
             try {
-                mediaEl.muted = true;
-                if (!Number.isFinite(mediaEl.volume) || mediaEl.volume < 0.001) mediaEl.volume = 1;
-            } catch (_) {}
+                return typeof InstallTrigger !== 'undefined' || /firefox/i.test(navigator.userAgent);
+            } catch (_) {
+                return false;
+            }
+        }
+
+        /**
+         * Chrome: MediaElementSource disconnects direct output.
+         * Firefox: element + graph both play unless we use captureStream + muted element.
+         */
+        function createMediaSourceFromElement(ctx, media) {
+            if (!ctx || !media) return null;
+            if (isFirefoxBrowser()) {
+                const captureFn = typeof media.captureStream === 'function'
+                    ? media.captureStream.bind(media)
+                    : (typeof media.mozCaptureStream === 'function' ? media.mozCaptureStream.bind(media) : null);
+                if (captureFn) {
+                    try {
+                        media.muted = true;
+                        const stream = captureFn();
+                        const tracks = stream && stream.getAudioTracks ? stream.getAudioTracks() : [];
+                        if (stream && tracks.length) {
+                            return ctx.createMediaStreamSource(stream);
+                        }
+                    } catch (e) {
+                        console.warn('Firefox captureStream source failed:', e);
+                        try { media.muted = false; } catch (_) {}
+                    }
+                }
+            }
+            try {
+                media.muted = false;
+                return ctx.createMediaElementSource(media);
+            } catch (e) {
+                console.warn('createMediaElementSource failed:', e);
+                return null;
+            }
         }
 
         /** Route Deck A/B HTMLAudioElement into EQ chain (same path as streaming radio). */
@@ -1020,12 +1052,8 @@
             const gainFb = isA ? state.streamAGain : state.streamBGain;
             if (!media) return;
             if (!state[srcKey]) {
-                try {
-                    state[srcKey] = state.audioCtx.createMediaElementSource(media);
-                } catch (e) {
-                    console.warn('createMediaElementSource failed:', deck, e);
-                    return;
-                }
+                state[srcKey] = createMediaSourceFromElement(state.audioCtx, media);
+                if (!state[srcKey]) return;
             }
             const srcNode = state[srcKey];
             if (isA) state.sourceNode = srcNode;
@@ -1039,7 +1067,6 @@
                 } else if (eqHigh) srcNode.connect(eqHigh);
                 else if (gainFb) srcNode.connect(gainFb);
             } catch (_) {}
-            silenceMediaElementDirectOutput(media);
             rebuildEffectsChain();
             try { applyCrossfade(mixCross ? mixCross.value : 0); } catch (_) {}
         }
@@ -1566,11 +1593,11 @@
             if (!state.audioCtx || !state.eqA || !state.eqA.high || !state.gainRadioSecondaryPath || !audioElRadioAAlt) return;
             if (state.radioAltAMediaWired) return;
             try {
-                state.radioElementSourceAAlt = state.audioCtx.createMediaElementSource(audioElRadioAAlt);
+                state.radioElementSourceAAlt = createMediaSourceFromElement(state.audioCtx, audioElRadioAAlt);
+                if (!state.radioElementSourceAAlt) return;
                 state.radioElementSourceAAlt.connect(state.gainRadioSecondaryPath);
                 state.gainRadioSecondaryPath.connect(state.eqA.high);
                 state.radioAltAMediaWired = true;
-                silenceMediaElementDirectOutput(audioElRadioAAlt);
             } catch (e) {
                 console.warn('Deck A radio alt element wiring failed:', e);
             }

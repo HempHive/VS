@@ -393,6 +393,7 @@
         .display-none { display: none !important; }
         
 		#loading-status { color: #39ff14; margin-top: 6px; font-size: 12px; height: 20px; transition: opacity 0.6s ease; }
+		#overlay #loading-status:empty { display: none; margin: 0; height: 0; }
 		#shortcuts-status { 
 			color: #ff1493; margin-top: 8px; font-size: 12px; min-height: 18px; 
 			white-space: pre-line; text-align: center;
