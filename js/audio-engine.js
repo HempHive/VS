@@ -1009,30 +1009,9 @@
             }
         }
 
-        /**
-         * Chrome: MediaElementSource disconnects direct output.
-         * Firefox: element + graph both play unless we use captureStream + muted element.
-         */
+        /** Route <audio> into Web Audio (same path for Chrome and Firefox). */
         function createMediaSourceFromElement(ctx, media) {
             if (!ctx || !media) return null;
-            if (isFirefoxBrowser()) {
-                const captureFn = typeof media.captureStream === 'function'
-                    ? media.captureStream.bind(media)
-                    : (typeof media.mozCaptureStream === 'function' ? media.mozCaptureStream.bind(media) : null);
-                if (captureFn) {
-                    try {
-                        media.muted = true;
-                        const stream = captureFn();
-                        const tracks = stream && stream.getAudioTracks ? stream.getAudioTracks() : [];
-                        if (stream && tracks.length) {
-                            return ctx.createMediaStreamSource(stream);
-                        }
-                    } catch (e) {
-                        console.warn('Firefox captureStream source failed:', e);
-                        try { media.muted = false; } catch (_) {}
-                    }
-                }
-            }
             try {
                 media.muted = false;
                 return ctx.createMediaElementSource(media);
@@ -1040,6 +1019,17 @@
                 console.warn('createMediaElementSource failed:', e);
                 return null;
             }
+        }
+
+        /** Drop legacy MediaStreamSource nodes from an earlier Firefox experiment. */
+        function clearStaleDeckMediaSource(stateKey) {
+            try {
+                const node = state[stateKey];
+                if (!node) return;
+                if (node.mediaElement) return;
+                try { node.disconnect(); } catch (_) {}
+                state[stateKey] = null;
+            } catch (_) {}
         }
 
         /** Route Deck A/B HTMLAudioElement into EQ chain (same path as streaming radio). */
@@ -1051,6 +1041,15 @@
             const eqHigh = isA ? state.eqA && state.eqA.high : state.eqB && state.eqB.high;
             const gainFb = isA ? state.streamAGain : state.streamBGain;
             if (!media) return;
+            if (isFirefoxBrowser() && media.paused) {
+                const onPlaying = () => {
+                    try { media.removeEventListener('playing', onPlaying); } catch (_) {}
+                    connectDeckMediaToEq(deck);
+                };
+                try { media.addEventListener('playing', onPlaying, { once: true }); } catch (_) {}
+                return;
+            }
+            clearStaleDeckMediaSource(srcKey);
             if (!state[srcKey]) {
                 state[srcKey] = createMediaSourceFromElement(state.audioCtx, media);
                 if (!state[srcKey]) return;
@@ -1592,6 +1591,7 @@
         function ensureRadioAAltWired() {
             if (!state.audioCtx || !state.eqA || !state.eqA.high || !state.gainRadioSecondaryPath || !audioElRadioAAlt) return;
             if (state.radioAltAMediaWired) return;
+            clearStaleDeckMediaSource('radioElementSourceAAlt');
             try {
                 state.radioElementSourceAAlt = createMediaSourceFromElement(state.audioCtx, audioElRadioAAlt);
                 if (!state.radioElementSourceAAlt) return;
@@ -1797,6 +1797,7 @@
                 audioEl.crossOrigin = 'anonymous';
                 audioEl.src = url;
                 audioEl.play().then(() => {
+                    try { if (state.audioCtx && state.audioCtx.state === 'suspended') state.audioCtx.resume(); } catch (_) {}
                     connectDeckMediaToEq('a');
                     afterConnect();
                 }).catch(onPlayFail);

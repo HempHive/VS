@@ -568,7 +568,7 @@ const QUALITY = {
             window.sampleLoop5 = false;
             window.sampleLoop6 = false;
         } catch (_) {}
-        // Ensure media elements don't double-play outside the WebAudio graph (Firefox uses captureStream in connectDeckMediaToEq).
+        // Ensure media elements are unmuted; mixing is via Web Audio gain nodes (streamA/B + crossfader).
         try { audioEl.muted = false; } catch(_) {}
         try { if (audioElRadioAAlt) audioElRadioAAlt.muted = false; } catch (_) {}
         try { audioElB.muted = false; } catch(_) {}
@@ -4366,14 +4366,13 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             media.src = sel.url;
             state.audioElB = media;
 
-            // Connect to Web Audio Graph (EQ chain B)
-            try {
-                connectDeckMediaToEq('b');
-            } catch(e) {
-                console.warn("Web Audio setup failed:", e);
-            }
-
             media.play().then(() => {
+                try {
+                    if (state.audioCtx && state.audioCtx.state === 'suspended') state.audioCtx.resume();
+                } catch (_) {}
+                try { connectDeckMediaToEq('b'); } catch (e) {
+                    console.warn('Web Audio setup failed:', e);
+                }
                 radioBRetryAttempts = 0;
                 try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
                 updateMixBStatus();
