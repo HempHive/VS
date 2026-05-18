@@ -2840,6 +2840,7 @@ function exposeAppBindingsToGlobal() {
     try { g.applyDeckBVideoCrossfadeLayers = applyDeckBVideoCrossfadeLayers; } catch (_) {}
     try { g.applyDeckBVideoPayloadToElement = applyDeckBVideoPayloadToElement; } catch (_) {}
     try { g.applyUiLockState = applyUiLockState; } catch (_) {}
+    try { g.applyCrossfade = applyCrossfade; } catch (_) {}
     try { g.area = area; } catch (_) {}
     try { g.arr = arr; } catch (_) {}
     try { g.attempts = attempts; } catch (_) {}
@@ -2908,8 +2909,22 @@ function exposeAppBindingsToGlobal() {
     try { g.cur = cur; } catch (_) {}
     try { g.current = current; } catch (_) {}
     try { g.currentNowPlayingICY = currentNowPlayingICY; } catch (_) {}
-    try { g.currentStationBIndex = currentStationBIndex; } catch (_) {}
-    try { g.currentStationIndex = currentStationIndex; } catch (_) {}
+    try {
+        Object.defineProperty(g, 'currentStationBIndex', {
+            get: () => currentStationBIndex,
+            set: (v) => { currentStationBIndex = v; },
+            enumerable: true,
+            configurable: true,
+        });
+    } catch (_) {}
+    try {
+        Object.defineProperty(g, 'currentStationIndex', {
+            get: () => currentStationIndex,
+            set: (v) => { currentStationIndex = v; },
+            enumerable: true,
+            configurable: true,
+        });
+    } catch (_) {}
     try { g.cut = cut; } catch (_) {}
     try { g.cx = cx; } catch (_) {}
     try { g.d = d; } catch (_) {}
@@ -2992,6 +3007,7 @@ function exposeAppBindingsToGlobal() {
     try { g.getAutoMixIncomingDeckKey = getAutoMixIncomingDeckKey; } catch (_) {}
     try { g.getCrossfaderIncomingDeckKey = getCrossfaderIncomingDeckKey; } catch (_) {}
     try { g.getCycleEligibleStationIndexes = getCycleEligibleStationIndexes; } catch (_) {}
+    try { g.goPreviousStation = goPreviousStation; } catch (_) {}
     try { g.getDeckARadioCrossfadeRampSec = getDeckARadioCrossfadeRampSec; } catch (_) {}
     try { g.getDeckActiveVideoMeta = getDeckActiveVideoMeta; } catch (_) {}
     try { g.getDeckAudioVjsMirrorMeta = getDeckAudioVjsMirrorMeta; } catch (_) {}
@@ -3181,6 +3197,10 @@ function exposeAppBindingsToGlobal() {
     try { g.phaseOffsetBms = phaseOffsetBms; } catch (_) {}
     try { g.plan = plan; } catch (_) {}
     try { g.playing = playing; } catch (_) {}
+    try { g.pickRandomStation = pickRandomStation; } catch (_) {}
+    try { g.pickRandomStationB = pickRandomStationB; } catch (_) {}
+    try { g.pickRandomStationForCrossfadedDeck = pickRandomStationForCrossfadedDeck; } catch (_) {}
+    try { g.playRadioB = playRadioB; } catch (_) {}
     try { g.pos = pos; } catch (_) {}
     try { g.preferB = preferB; } catch (_) {}
     try { g.prevA = prevA; } catch (_) {}
@@ -3195,6 +3215,7 @@ function exposeAppBindingsToGlobal() {
     try { g.radioAHandoffAbortCtrl = radioAHandoffAbortCtrl; } catch (_) {}
     try { g.radioBRetryAttempts = radioBRetryAttempts; } catch (_) {}
     try { g.radioInputEl = radioInputEl; } catch (_) {}
+    try { g.refreshMixStationB = refreshMixStationB; } catch (_) {}
     try { g.radioListEl = radioListEl; } catch (_) {}
     try { g.radioPanel = radioPanel; } catch (_) {}
     try { g.radioPanelTimer = radioPanelTimer; } catch (_) {}
@@ -3242,6 +3263,7 @@ function exposeAppBindingsToGlobal() {
     try { g.setKnobUi = setKnobUi; } catch (_) {}
     try { g.setLayer = setLayer; } catch (_) {}
     try { g.setLbl = setLbl; } catch (_) {}
+    try { g.setStation = setStation; } catch (_) {}
     try { g.setVolume = setVolume; } catch (_) {}
     try { g.setWebmSpeed = setWebmSpeed; } catch (_) {}
     try { g.settingsApplyBtn = settingsApplyBtn; } catch (_) {}
