@@ -2417,10 +2417,14 @@
                         return !!(stage && stage.classList.contains('dj-deck-b-text-mode'));
                     } catch (_) { return false; }
                 })();
+                const onRadioVisual = !!(state.activeVisualizer && state.activeVisualizer.name === 'Radio Visual');
                 const showReturn = onDj && (deckBVisualActive || deckBTextActive);
                 // In DJ mode: show 🎧 when a Deck B view is active (visual layer / queue / media panel / TEXT-IN) as a quick "return to controls".
-                btn.classList.toggle('display-none', onDj && !showReturn);
-                btn.title = showReturn ? 'Return Deck B controls' : 'Open DJ Decks visual';
+                // On Radio Visual (and other non-DJ modes): always show 🎧 to open DJ Decks.
+                btn.classList.toggle('display-none', onDj && !showReturn && !onRadioVisual);
+                btn.title = showReturn
+                    ? 'Return Deck B controls'
+                    : (onRadioVisual ? 'Open DJ Decks' : 'Open DJ Decks visual');
             } catch (_) {}
         }
 

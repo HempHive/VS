@@ -568,11 +568,18 @@ const QUALITY = {
             window.sampleLoop5 = false;
             window.sampleLoop6 = false;
         } catch (_) {}
-        // Ensure media elements don't double-play outside the WebAudio graph
-        // Allow HTML elements to output so MediaElementSource has signal; mixing is controlled in WebAudio
-        try { audioEl.muted = false; } catch(_) {}
-        try { if (audioElRadioAAlt) audioElRadioAAlt.muted = false; } catch (_) {}
-        try { audioElB.muted = false; } catch(_) {}
+        // Deck A/B: mute direct <audio> output (Firefox duplicates speakers + Web Audio); crossfader uses streamA/B Gain.
+        // MediaElementSource still receives signal when muted; volume scales into the graph.
+        const silenceDeckMediaDirect = (el) => {
+            if (!el) return;
+            try {
+                el.muted = true;
+                if (!Number.isFinite(el.volume) || el.volume < 0.001) el.volume = 1;
+            } catch (_) {}
+        };
+        silenceDeckMediaDirect(audioEl);
+        silenceDeckMediaDirect(audioElRadioAAlt);
+        silenceDeckMediaDirect(audioElB);
         try { audioElSample.muted = false; } catch(_) {}
         try { audioElSample1.muted = false; } catch(_) {}
         try { audioElSample2.muted = false; } catch(_) {}
@@ -580,7 +587,6 @@ const QUALITY = {
         try { audioElSample4.muted = false; } catch(_) {}
         try { audioElSample5.muted = false; } catch(_) {}
         try { audioElSample6.muted = false; } catch(_) {}
-        // Element volume at 1 so MediaElementSourceNode receives full-strength signal
         try { audioEl.volume = 1; } catch(_) {}
         try { if (audioElRadioAAlt) audioElRadioAAlt.volume = 1; } catch (_) {}
         try { audioElB.volume = 1; } catch(_) {}
@@ -2791,11 +2797,6 @@ function randomGlowColor() {
                     gainLinear = 1.0;
                 }
                 state.gainNode.gain.value = gainLinear;
-                // Also toggle media element mute to guarantee silence at 0
-                try {
-                    const el = document.getElementById('radio-element');
-                    if (el) el.muted = (v === 0);
-                } catch(e) {}
             }
         }
 
@@ -3654,7 +3655,20 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             btnDjDecksShortcut.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                const loadDjDecksMode = () => {
+                    const m = (typeof globalThis.modes !== 'undefined' && globalThis.modes) || modes;
+                    const load = (typeof globalThis.loadMode === 'function') ? globalThis.loadMode : loadMode;
+                    if (!Array.isArray(m) || typeof load !== 'function') return;
+                    const idx = m.findIndex((x) => x && x.name === 'DJ Decks');
+                    if (idx >= 0) load(idx);
+                };
                 try {
+                    const visName = state.activeVisualizer && state.activeVisualizer.name;
+                    if (visName && visName !== 'DJ Decks') {
+                        loadDjDecksMode();
+                        resetIdleTimer();
+                        return;
+                    }
                     const onDj = !!(state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks');
                     const deckBVisualActive = !!(
                         onDj &&
@@ -3706,8 +3720,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                         return;
                     }
                 } catch (_) {}
-                const idx = modes.findIndex((m) => m && m.name === 'DJ Decks');
-                if (idx >= 0) loadMode(idx);
+                loadDjDecksMode();
                 resetIdleTimer();
             });
         }
@@ -4333,6 +4346,11 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                             state[sourceKey] = state.audioCtx.createMediaElementSource(media);
                             state[sourceKey].connect(state.mixInput);
                         }
+                        try {
+                            if (typeof globalThis.silenceMediaElementDirectOutput === 'function') {
+                                globalThis.silenceMediaElementDirectOutput(media);
+                            }
+                        } catch (_) {}
                     }
                 } catch(e) { console.warn(e); }
                 media.play().catch(()=>{});

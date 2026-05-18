@@ -458,29 +458,28 @@
 			display: flex; align-items: center; justify-content: center;
 			min-width: 360px;
 		}
-        /* UI Lock (Top-right, 80x80, left of radio-quick) */
-        #ui-lock-toggle {
-            position: absolute;
-            top: 14px;
-            right: 14px; /* align with top spacing */
-            z-index: 85; /* below all sliding panels (>=90), above top bar (80) */
-            width: 80px; height: 80px;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.5);
-            color: rgba(255,255,255,0.9);
-            border: 1px solid rgba(255,255,255,0.18);
-            border-radius: 6px;
-            cursor: pointer;
-            user-select: none;
-            backdrop-filter: blur(6px);
-            transition: opacity 1s ease-in-out, filter 0.2s;
-            font-size: 36px;
-            opacity: 1; pointer-events: auto;
+        /* UI Lock (bottom HUD, after 🎚️) */
+        .center-controls #ui-lock-toggle {
+            position: static;
+            width: auto;
+            height: auto;
+            min-width: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            backdrop-filter: none;
+            font-size: clamp(22px, 3vw, 32px);
+            padding: 6px 8px;
+            opacity: 1;
+            pointer-events: auto;
         }
-        #ui-lock-toggle:hover { filter: brightness(1.15); }
-        #ui-lock-toggle.on {
-            border: 1px solid rgba(212,175,55,0.6);
-            box-shadow: 0 0 16px rgba(212,175,55,0.25);
+        .center-controls #ui-lock-toggle:hover { filter: brightness(1.15); }
+        .center-controls #ui-lock-toggle.on {
+            color: #e8c86a;
+            text-shadow: 0 0 12px rgba(212, 175, 55, 0.55);
         }
         /* Shield to block interactions when locked */
         #ui-lock-shield {
@@ -492,7 +491,7 @@
         }
         #ui-lock-shield.active { display: block; }
         /* Hide lock button/shield on start overlay (before playback) */
-        #overlay:not(.hidden) ~ #ui-lock-toggle,
+        #overlay:not(.hidden) ~ #ui-layer #ui-lock-toggle,
         #overlay:not(.hidden) ~ #ui-lock-shield {
             display: none !important;
         }

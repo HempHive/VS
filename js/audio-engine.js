@@ -1001,6 +1001,15 @@
             } catch (_) {}
         }
 
+        /** Firefox plays <audio> to speakers AND through Web Audio unless muted; Chrome does not. */
+        function silenceMediaElementDirectOutput(mediaEl) {
+            if (!mediaEl) return;
+            try {
+                mediaEl.muted = true;
+                if (!Number.isFinite(mediaEl.volume) || mediaEl.volume < 0.001) mediaEl.volume = 1;
+            } catch (_) {}
+        }
+
         /** Route Deck A/B HTMLAudioElement into EQ chain (same path as streaming radio). */
         function connectDeckMediaToEq(deck) {
             if (!state.audioCtx) return;
@@ -1030,6 +1039,7 @@
                 } else if (eqHigh) srcNode.connect(eqHigh);
                 else if (gainFb) srcNode.connect(gainFb);
             } catch (_) {}
+            silenceMediaElementDirectOutput(media);
             rebuildEffectsChain();
             try { applyCrossfade(mixCross ? mixCross.value : 0); } catch (_) {}
         }
@@ -1560,6 +1570,7 @@
                 state.radioElementSourceAAlt.connect(state.gainRadioSecondaryPath);
                 state.gainRadioSecondaryPath.connect(state.eqA.high);
                 state.radioAltAMediaWired = true;
+                silenceMediaElementDirectOutput(audioElRadioAAlt);
             } catch (e) {
                 console.warn('Deck A radio alt element wiring failed:', e);
             }
