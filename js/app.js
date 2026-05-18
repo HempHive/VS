@@ -3912,9 +3912,21 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             // Linear crossfade: exact 50/50 amplitude at midpoint
             const ga = 1 - x;
             const gb = x;
-            if (state && state.streamAGain && state.streamBGain) {
-                state.streamAGain.gain.value = ga;
-                state.streamBGain.gain.value = gb;
+            if (state && state.audioCtx) {
+                const t = state.audioCtx.currentTime;
+                try {
+                    if (state.streamAGain) {
+                        state.streamAGain.gain.cancelScheduledValues(t);
+                        state.streamAGain.gain.setValueAtTime(ga, t);
+                    }
+                    if (state.streamBGain) {
+                        state.streamBGain.gain.cancelScheduledValues(t);
+                        state.streamBGain.gain.setValueAtTime(gb, t);
+                    }
+                } catch (_) {
+                    if (state.streamAGain) state.streamAGain.gain.value = ga;
+                    if (state.streamBGain) state.streamBGain.gain.value = gb;
+                }
             }
             try {
                 // Also drive the two-tone gauge fill on each slider rail wrapper.

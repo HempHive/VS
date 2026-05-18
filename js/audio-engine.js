@@ -1009,9 +1009,31 @@
             }
         }
 
-        /** Route <audio> into Web Audio (same path for Chrome and Firefox). */
+        /**
+         * Chrome: createMediaElementSource disconnects speaker output.
+         * Firefox: element + Web Audio both play unless we tap captureStream first, then mute speakers.
+         * (Mute before captureStream silences the stream — do not do that.)
+         */
         function createMediaSourceFromElement(ctx, media) {
             if (!ctx || !media) return null;
+            if (isFirefoxBrowser()) {
+                const captureFn = typeof media.captureStream === 'function'
+                    ? media.captureStream.bind(media)
+                    : (typeof media.mozCaptureStream === 'function' ? media.mozCaptureStream.bind(media) : null);
+                if (captureFn && (media.readyState | 0) >= 2) {
+                    try {
+                        const stream = captureFn();
+                        const tracks = stream && stream.getAudioTracks ? stream.getAudioTracks() : [];
+                        if (stream && tracks.length > 0) {
+                            const src = ctx.createMediaStreamSource(stream);
+                            try { media.muted = true; } catch (_) {}
+                            return src;
+                        }
+                    } catch (e) {
+                        console.warn('Firefox captureStream routing failed:', e);
+                    }
+                }
+            }
             try {
                 media.muted = false;
                 return ctx.createMediaElementSource(media);
@@ -1050,6 +1072,15 @@
                 return;
             }
             clearStaleDeckMediaSource(srcKey);
+            if (
+                isFirefoxBrowser() &&
+                state[srcKey] &&
+                state[srcKey].mediaElement &&
+                (typeof media.captureStream === 'function' || typeof media.mozCaptureStream === 'function')
+            ) {
+                try { state[srcKey].disconnect(); } catch (_) {}
+                state[srcKey] = null;
+            }
             if (!state[srcKey]) {
                 state[srcKey] = createMediaSourceFromElement(state.audioCtx, media);
                 if (!state[srcKey]) return;
