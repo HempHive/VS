@@ -322,7 +322,8 @@
             z-index: 2;
         }
         #radio-visual-root .radio-visual-knob--deck-a.radio-visual-knob--switch::before,
-        #radio-visual-root .radio-visual-knob--deck-b.radio-visual-knob--switch::before {
+        #radio-visual-root .radio-visual-knob--deck-b.radio-visual-knob--switch::before,
+        #radio-visual-root .radio-visual-knob--fade-btn.radio-visual-knob--switch::before {
             content: '';
             position: absolute;
             left: 50%;
@@ -339,7 +340,8 @@
             transition: background 0.2s, box-shadow 0.2s;
         }
         #radio-visual-root .radio-visual-knob--deck-a.is-on::before,
-        #radio-visual-root .radio-visual-knob--deck-b.is-on::before {
+        #radio-visual-root .radio-visual-knob--deck-b.is-on::before,
+        #radio-visual-root .radio-visual-knob--fade-btn.is-on::before {
             background: radial-gradient(circle at 45% 40%, #ff6a58, #c01810);
             box-shadow: 0 0 10px rgba(255, 45, 35, 0.85), 0 0 4px rgba(255, 100, 80, 0.5);
         }

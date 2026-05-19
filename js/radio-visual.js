@@ -144,8 +144,19 @@
 
             _syncCrossfadeKnob() {
                 const x = this._getCrossfadeX();
-                this._setKnobRotation(this.els.crossKnob, (x * 270) - 135);
+                if (this.els.crossKnob && !this.els.crossKnob.classList.contains('radio-visual-knob--fade-btn')) {
+                    this._setKnobRotation(this.els.crossKnob, (x * 270) - 135);
+                }
                 if (this.els.crossDigital) this.els.crossDigital.value = String(x);
+            }
+
+            _syncFadeKnobs() {
+                const active = !!(this._rvFadeActive || this._rvAutoFadeRaf);
+                [this.els.crossKnob, this.els.autoFadeKnob].forEach((el) => {
+                    if (!el) return;
+                    el.classList.toggle('is-on', active);
+                    el.setAttribute('aria-pressed', active ? 'true' : 'false');
+                });
             }
 
             _readAutoFadeDurationMs() {
@@ -242,16 +253,39 @@
                     try { cancelAnimationFrame(this._rvAutoFadeRaf); } catch (_) {}
                     this._rvAutoFadeRaf = null;
                 }
+                this._rvFadeActive = true;
+                this._syncFadeKnobs();
+                const endFadeLed = () => {
+                    if (!this._rvAutoFadeRaf) {
+                        this._rvFadeActive = false;
+                        this._syncFadeKnobs();
+                    }
+                };
+                const scheduleFadeLedOff = () => {
+                    const dur = this._readAutoFadeDurationMs();
+                    if (this._rvFadeLedTimer) {
+                        try { clearTimeout(this._rvFadeLedTimer); } catch (_) {}
+                    }
+                    this._rvFadeLedTimer = setTimeout(() => {
+                        endFadeLed();
+                        this._rvFadeLedTimer = null;
+                    }, dur + 120);
+                };
                 const eng = state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks'
                     ? state.activeVisualizer : null;
                 if (eng && typeof eng.triggerAutoFadeFromShortcut === 'function') {
-                    try { eng.triggerAutoFadeFromShortcut(); return; } catch (_) {}
+                    try { eng.triggerAutoFadeFromShortcut(); } catch (_) {}
+                    scheduleFadeLedOff();
+                    return;
                 }
                 const x = this._getCrossfadeX();
                 const targetDeck = x < 0.5 ? 'b' : 'a';
                 const endVal = targetDeck === 'b' ? 1 : 0;
                 const startVal = x;
-                if (Math.abs(endVal - startVal) < 0.001) return;
+                if (Math.abs(endVal - startVal) < 0.001) {
+                    endFadeLed();
+                    return;
+                }
                 try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
                 if (targetDeck === 'b') {
                     try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
@@ -278,6 +312,8 @@
                     this._resumeDecksForCrossfade();
                     if (t >= 1) {
                         this._rvAutoFadeRaf = null;
+                        this._rvFadeActive = false;
+                        this._syncFadeKnobs();
                         return;
                     }
                     this._rvAutoFadeRaf = requestAnimationFrame(tick);
@@ -287,8 +323,22 @@
 
             _triggerAutoFade() {
                 const btn = document.getElementById('mix-autofade') || document.getElementById('dj-autofade');
+                this._rvFadeActive = true;
+                this._syncFadeKnobs();
                 if (btn) {
-                    try { btn.click(); return; } catch (_) {}
+                    try { btn.click(); } catch (_) {}
+                    const dur = this._readAutoFadeDurationMs();
+                    if (this._rvFadeLedTimer) {
+                        try { clearTimeout(this._rvFadeLedTimer); } catch (_) {}
+                    }
+                    this._rvFadeLedTimer = setTimeout(() => {
+                        if (!this._rvAutoFadeRaf) {
+                            this._rvFadeActive = false;
+                            this._syncFadeKnobs();
+                        }
+                        this._rvFadeLedTimer = null;
+                    }, dur + 120);
+                    return;
                 }
                 this._runLocalAutoFade();
             }
@@ -553,6 +603,35 @@
                 ctx.fill();
             }
 
+            _wireFadeButtonKnob(knobEl, { durationKnob = false } = {}) {
+                if (!knobEl) return;
+                knobEl.classList.add('radio-visual-knob--switch', 'radio-visual-knob--fade-btn');
+                knobEl.setAttribute('role', 'button');
+                knobEl.tabIndex = 0;
+                this._setKnobRotation(knobEl, -45);
+                const trigger = () => this._triggerAutoFade();
+                if (durationKnob) {
+                    knobEl.setAttribute('aria-label', 'Auto-fade; drag for duration, tap to cross-fade');
+                    this._wirePointerKnob(knobEl, {
+                        get: () => this._autoFadeDurationNorm(),
+                        set: (t) => this._setAutoFadeDurationNorm(t)
+                    }, { onTap: trigger });
+                } else {
+                    knobEl.setAttribute('aria-label', 'Cross-fade between decks');
+                    const onActivate = (ev) => {
+                        this._stopClick(ev);
+                        trigger();
+                    };
+                    knobEl.addEventListener('click', onActivate, { signal: this.abortCtrl.signal });
+                    knobEl.addEventListener('keydown', (ev) => {
+                        if (ev.key === 'Enter' || ev.key === ' ') {
+                            ev.preventDefault();
+                            trigger();
+                        }
+                    }, { signal: this.abortCtrl.signal });
+                }
+            }
+
             _wireDeckKnob(knobEl, deck) {
                 if (!knobEl) return;
                 knobEl.classList.add('radio-visual-knob--switch');
@@ -631,8 +710,6 @@
                         ? currentStationBIndex : -1;
                     if (idxB >= 0 && stations[idxB]) nameB = stations[idxB].name || nameB;
                 } catch (_) {}
-                if (this.els.stationNameA) this.els.stationNameA.textContent = nameA;
-                if (this.els.stationNameB) this.els.stationNameB.textContent = nameB;
                 if (this.els.stationDigital) {
                     this.els.stationDigital.textContent = `A: ${nameA}  |  B: ${nameB}`;
                 }
@@ -652,21 +729,7 @@
                 }
                 this._syncCrossfadeKnob();
                 this._syncDeckSwitches();
-                let meta = '';
-                try {
-                    if (typeof currentNowPlayingICY !== 'undefined' && currentNowPlayingICY) {
-                        meta = String(currentNowPlayingICY);
-                    } else if (stationBannerNowplayingEl && stationBannerNowplayingEl.textContent) {
-                        meta = stationBannerNowplayingEl.textContent;
-                    }
-                } catch (_) {}
-                if (this.els.digitalMeta) {
-                    this.els.digitalMeta.textContent = meta ? meta : (state.isPlaying ? 'STREAMING' : 'STANDBY');
-                }
-                const live = !!(state.isPlaying || (typeof audioEl !== 'undefined' && audioEl && !audioEl.paused && audioEl.src));
-                if (this.els.digitalStatus) {
-                    this.els.digitalStatus.textContent = live ? 'ON AIR · RECEIVING' : 'OFF AIR';
-                }
+                this._syncFadeKnobs();
                 this._lastStationIdx = (typeof currentStationIndex === 'number') ? currentStationIndex : -1;
             }
 
@@ -754,8 +817,6 @@
             _drawMeters() {
                 if (this.skin === 'analogue') {
                     this._drawBarMeter(this.els.vuCanvas, { bars: 18, warm: true });
-                } else {
-                    this._drawBarMeter(this.els.digitalEqCanvas, { bars: 24, warm: false });
                 }
             }
 
@@ -774,7 +835,6 @@
                 if (this.skin === 'analogue') {
                     fit(this.els.vuCanvas);
                 } else {
-                    fit(this.els.digitalEqCanvas);
                     fit(this.els.digitalSpectrumCanvas);
                 }
             }
@@ -940,12 +1000,7 @@
                 const stLabA = document.createElement('span');
                 stLabA.className = 'radio-visual-station-tag';
                 stLabA.textContent = 'A';
-                const stNameA = document.createElement('span');
-                stNameA.className = 'radio-visual-station-name';
-                stNameA.id = 'radio-visual-station-name-a';
-                stNameA.textContent = '—';
                 stPartA.appendChild(stLabA);
-                stPartA.appendChild(stNameA);
                 const stSep = document.createElement('span');
                 stSep.className = 'radio-visual-station-sep';
                 stSep.textContent = '·';
@@ -954,12 +1009,7 @@
                 const stLabB = document.createElement('span');
                 stLabB.className = 'radio-visual-station-tag';
                 stLabB.textContent = 'B';
-                const stNameB = document.createElement('span');
-                stNameB.className = 'radio-visual-station-name';
-                stNameB.id = 'radio-visual-station-name-b';
-                stNameB.textContent = '—';
                 stPartB.appendChild(stLabB);
-                stPartB.appendChild(stNameB);
                 stationsLine.appendChild(stPartA);
                 stationsLine.appendChild(stSep);
                 stationsLine.appendChild(stPartB);
@@ -1031,9 +1081,8 @@
                 deckAKnob.classList.add('radio-visual-knob--deck-a');
                 const deckBKnob = mkControlKnob('radio-visual-deck-b-knob', 'Deck B play / pause');
                 deckBKnob.classList.add('radio-visual-knob--deck-b');
-                const crossKnob = mkControlKnob('radio-visual-cross-knob', 'Crossfade between decks');
-                const autoFadeKnob = mkControlKnob('radio-visual-autofade-knob', 'Auto-fade duration; click to fade');
-                autoFadeKnob.setAttribute('role', 'slider');
+                const crossKnob = mkControlKnob('radio-visual-cross-knob', 'Cross-fade between decks');
+                const autoFadeKnob = mkControlKnob('radio-visual-autofade-knob', 'Auto-fade');
                 const autoMixKnob = mkControlKnob('radio-visual-automix-knob', 'Auto-mix max interval; click to toggle');
                 autoMixKnob.setAttribute('role', 'slider');
                 const autoFadeReadout = mkReadout(`${(this._readAutoFadeDurationMs() / 1000).toFixed(1)}s`);
@@ -1065,8 +1114,6 @@
                     return el;
                 };
                 const stD = mkLine('radio-visual-digital-line--title', 'radio-visual-station-d', '—');
-                const dStat = mkLine('radio-visual-digital-line--status', 'radio-visual-digital-status', 'STANDBY');
-                const dMeta = mkLine('radio-visual-digital-line--meta', 'radio-visual-digital-meta', '—');
                 const dClk = mkLine('radio-visual-digital-line--clock', 'radio-visual-digital-clock', '—');
                 const digBtns = document.createElement('div');
                 digBtns.className = 'radio-visual-btn-grid radio-visual-digital-feature-btns';
@@ -1083,8 +1130,6 @@
                 spectrumOverlay.className = 'radio-visual-digital-spectrum-overlay';
                 spectrumOverlay.setAttribute('aria-live', 'polite');
                 spectrumOverlay.appendChild(stD);
-                spectrumOverlay.appendChild(dStat);
-                spectrumOverlay.appendChild(dMeta);
                 spectrumOverlay.appendChild(dClk);
                 digitalCenterSpectrum.appendChild(spectrumOverlay);
                 const digitalCenterDeckB = document.createElement('div');
@@ -1170,16 +1215,9 @@
                 crossGroup.appendChild(crossLbl);
                 crossGroup.appendChild(crossDig);
                 digitalToolbar.appendChild(crossGroup);
-                const eqWrap = document.createElement('div');
-                eqWrap.className = 'radio-visual-digital-eq';
-                const eqCanvas = document.createElement('canvas');
-                eqCanvas.className = 'radio-visual-vu-canvas';
-                eqCanvas.id = 'radio-visual-digital-eq';
-                eqWrap.appendChild(eqCanvas);
                 dPanel.appendChild(digBtns);
                 dPanel.appendChild(digitalCenter);
                 dPanel.appendChild(digitalToolbar);
-                dPanel.appendChild(eqWrap);
                 stageD.appendChild(dPanel);
 
                 root.appendChild(stageA);
@@ -1190,8 +1228,6 @@
                     btnSkinDigital: btnD,
                     stageAnalog: stageA,
                     stageDigital: stageD,
-                    stationNameA: stNameA,
-                    stationNameB: stNameB,
                     stationDigital: stD,
                     ticks,
                     needle,
@@ -1200,7 +1236,6 @@
                     tunerGlowB: glowB,
                     tunerRail,
                     vuCanvas,
-                    digitalEqCanvas: eqCanvas,
                     volKnob,
                     deckAKnob,
                     deckBKnob,
@@ -1217,8 +1252,6 @@
                     digitalSpectrumCanvas,
                     digitalDeckBVideo,
                     volDigitalReadout,
-                    digitalStatus: dStat,
-                    digitalMeta: dMeta,
                     digitalClock: dClk,
                     analogBtns,
                     digitalBtns: digBtns
@@ -1293,15 +1326,8 @@
                 });
                 this._wireDeckKnob(deckAKnob, 'a');
                 this._wireDeckKnob(deckBKnob, 'b');
-                crossKnob.setAttribute('role', 'slider');
-                this._wirePointerKnob(crossKnob, {
-                    get: () => this._getCrossfadeX(),
-                    set: (t) => this._setCrossfadeX(t)
-                }, { onTap: () => this._triggerAutoFade() });
-                this._wirePointerKnob(autoFadeKnob, {
-                    get: () => this._autoFadeDurationNorm(),
-                    set: (t) => this._setAutoFadeDurationNorm(t)
-                }, { onTap: () => this._triggerAutoFade() });
+                this._wireFadeButtonKnob(crossKnob);
+                this._wireFadeButtonKnob(autoFadeKnob, { durationKnob: true });
                 this._wirePointerKnob(autoMixKnob, {
                     get: () => this._autoMixMaxNorm(),
                     set: (t) => this._setAutoMixMaxNorm(t)
@@ -1347,6 +1373,11 @@
                     try { cancelAnimationFrame(this._rvAutoFadeRaf); } catch (_) {}
                     this._rvAutoFadeRaf = null;
                 }
+                if (this._rvFadeLedTimer) {
+                    try { clearTimeout(this._rvFadeLedTimer); } catch (_) {}
+                    this._rvFadeLedTimer = null;
+                }
+                this._rvFadeActive = false;
                 try { if (this.animId) cancelAnimationFrame(this.animId); } catch (_) {}
                 this.animId = null;
                 if (this.clockTimerId) {
