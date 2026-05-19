@@ -551,25 +551,6 @@
                 core.addColorStop(1, 'rgba(0, 40, 60, 0.05)');
                 ctx.fillStyle = core;
                 ctx.fill();
-                if (this._vuBuf && this._vuBuf.length > 8) {
-                    ctx.beginPath();
-                    ctx.strokeStyle = 'rgba(160, 255, 245, 0.75)';
-                    ctx.lineWidth = 2;
-                    const waveW = w * 0.72;
-                    const waveH = h * 0.12;
-                    const waveY = cy + outerR * 0.35;
-                    const waveX0 = cx - waveW / 2;
-                    const stepW = waveW / 64;
-                    for (let i = 0; i < 64; i++) {
-                        const idx = Math.floor((i / 64) * (this._vuBuf.length / 2));
-                        const v = (this._vuBuf[idx] || 0) / 255;
-                        const x = waveX0 + i * stepW;
-                        const y = waveY - v * waveH;
-                        if (i === 0) ctx.moveTo(x, y);
-                        else ctx.lineTo(x, y);
-                    }
-                    ctx.stroke();
-                }
             }
 
             _wireDeckKnob(knobEl, deck) {
@@ -1018,7 +999,8 @@
                 tunerRail.appendChild(needle);
                 tunerRail.appendChild(needleB);
                 tunerShell.appendChild(tunerRail);
-                tunerShell.appendChild(vuWrap);                const knobs = document.createElement('div');
+                tunerShell.appendChild(vuWrap);
+                const knobs = document.createElement('div');
                 knobs.className = 'radio-visual-knobs-row radio-visual-knobs-row--all';
                 const mkControlKnob = (id, aria) => {
                     const k = document.createElement('div');
@@ -1053,13 +1035,13 @@
                 knobs.appendChild(this._mkKnobBlock('Auto-Fade', autoFadeKnob, autoFadeReadout));
                 knobs.appendChild(this._mkKnobBlock('Auto-Mix', autoMixKnob, autoMixReadout));
                 const analogBtns = document.createElement('div');
-                analogBtns.className = 'radio-visual-btn-grid';
+                analogBtns.className = 'radio-visual-btn-grid radio-visual-analog-actions';
                 analogBtns.id = 'radio-visual-analog-btns';
+                tunerShell.appendChild(analogBtns);
                 stageA.appendChild(onAir);
                 stageA.appendChild(stationsLine);
                 stageA.appendChild(knobs);
                 stageA.appendChild(tunerShell);
-                stageA.appendChild(analogBtns);
 
                 const stageD = document.createElement('section');
                 stageD.className = 'radio-visual-stage radio-visual-skin--digital';
@@ -1083,18 +1065,6 @@
                 dDisp.appendChild(dStat);
                 dDisp.appendChild(dMeta);
                 dDisp.appendChild(dClk);
-                const centerModeRow = document.createElement('div');
-                centerModeRow.className = 'radio-visual-digital-station-row';
-                const btnDigitalSpectrum = document.createElement('button');
-                btnDigitalSpectrum.type = 'button';
-                btnDigitalSpectrum.className = 'radio-visual-btn';
-                btnDigitalSpectrum.textContent = 'Spectrum';
-                const btnDigitalDeckB = document.createElement('button');
-                btnDigitalDeckB.type = 'button';
-                btnDigitalDeckB.className = 'radio-visual-btn';
-                btnDigitalDeckB.textContent = 'Deck B Player';
-                centerModeRow.appendChild(btnDigitalSpectrum);
-                centerModeRow.appendChild(btnDigitalDeckB);
                 const digitalCenter = document.createElement('div');
                 digitalCenter.className = 'radio-visual-digital-center';
                 const digitalCenterSpectrum = document.createElement('div');
@@ -1115,8 +1085,21 @@
                 digitalCenterDeckB.appendChild(digitalDeckBMount);
                 digitalCenter.appendChild(digitalCenterSpectrum);
                 digitalCenter.appendChild(digitalCenterDeckB);
-                const volRow = document.createElement('div');
-                volRow.className = 'radio-visual-digital-vol-step';
+                const digitalToolbar = document.createElement('div');
+                digitalToolbar.className = 'radio-visual-digital-toolbar';
+                digitalToolbar.id = 'radio-visual-digital-toolbar';
+                const btnDigitalSpectrum = document.createElement('button');
+                btnDigitalSpectrum.type = 'button';
+                btnDigitalSpectrum.className = 'radio-visual-btn';
+                btnDigitalSpectrum.textContent = 'Spectrum';
+                const btnDigitalDeckB = document.createElement('button');
+                btnDigitalDeckB.type = 'button';
+                btnDigitalDeckB.className = 'radio-visual-btn';
+                btnDigitalDeckB.textContent = 'Deck B';
+                digitalToolbar.appendChild(btnDigitalSpectrum);
+                digitalToolbar.appendChild(btnDigitalDeckB);
+                const volGroup = document.createElement('div');
+                volGroup.className = 'radio-visual-digital-toolbar-vol';
                 const volLbl = document.createElement('span');
                 volLbl.className = 'radio-visual-digital-vol-step-label';
                 volLbl.textContent = 'VOL';
@@ -1134,49 +1117,34 @@
                 volUp.className = 'radio-visual-btn radio-visual-digital-step-btn';
                 volUp.textContent = '+';
                 volUp.setAttribute('aria-label', 'Volume up');
-                volRow.appendChild(volLbl);
-                volRow.appendChild(volDown);
-                volRow.appendChild(volDigitalReadout);
-                volRow.appendChild(volUp);
-                const ctrlRow1 = document.createElement('div');
-                ctrlRow1.className = 'radio-visual-digital-station-row';
-                [['a', 'A Play'], ['b', 'B Play'], ['fade', 'Auto-Fade'], ['mix', 'Auto-Mix']].forEach(([act, lab]) => {
+                volGroup.appendChild(volLbl);
+                volGroup.appendChild(volDown);
+                volGroup.appendChild(volDigitalReadout);
+                volGroup.appendChild(volUp);
+                digitalToolbar.appendChild(volGroup);
+                [['a', 'A Play'], ['b', 'B Play'], ['fade', 'Fade'], ['mix', 'Mix']].forEach(([act, lab]) => {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
                     b.dataset.rvDigital = act;
                     b.textContent = lab;
-                    ctrlRow1.appendChild(b);
+                    digitalToolbar.appendChild(b);
                 });
-                const stRow = document.createElement('div');
-                stRow.className = 'radio-visual-digital-station-row';
-                stRow.setAttribute('aria-label', 'Deck A');
-                [['prev', 'A◀'], ['next', 'A▶'], ['rand', 'A Rand']].forEach(([act, lab]) => {
+                [['prev', 'A◀', 'a'], ['next', 'A▶', 'a'], ['rand', 'A Rand', 'a'],
+                 ['prev', 'B◀', 'b'], ['next', 'B▶', 'b'], ['rand', 'B Rand', 'b']].forEach(([act, lab, deck]) => {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
                     b.dataset.rvAction = act;
-                    b.dataset.rvDeck = 'a';
+                    b.dataset.rvDeck = deck;
                     b.textContent = lab;
-                    stRow.appendChild(b);
+                    digitalToolbar.appendChild(b);
                 });
-                const stRowB = document.createElement('div');
-                stRowB.className = 'radio-visual-digital-station-row';
-                stRowB.setAttribute('aria-label', 'Deck B');
-                [['prev', 'B◀'], ['next', 'B▶'], ['rand', 'B Rand']].forEach(([act, lab]) => {
-                    const b = document.createElement('button');
-                    b.type = 'button';
-                    b.className = 'radio-visual-btn';
-                    b.dataset.rvAction = act;
-                    b.dataset.rvDeck = 'b';
-                    b.textContent = lab;
-                    stRowB.appendChild(b);
-                });
-                const crossRow = document.createElement('div');
-                crossRow.className = 'radio-visual-digital-vol-row';
-                const crossLbl = document.createElement('label');
-                crossLbl.htmlFor = 'radio-visual-cross-digital';
-                crossLbl.textContent = 'XFADE';
+                const crossGroup = document.createElement('div');
+                crossGroup.className = 'radio-visual-digital-toolbar-xfade';
+                const crossLbl = document.createElement('span');
+                crossLbl.className = 'radio-visual-digital-xfade-label';
+                crossLbl.textContent = 'XF';
                 const crossDig = document.createElement('input');
                 crossDig.type = 'range';
                 crossDig.className = 'radio-visual-digital-vol';
@@ -1185,8 +1153,9 @@
                 crossDig.max = '1';
                 crossDig.step = '0.01';
                 crossDig.value = String(this._getCrossfadeX());
-                crossRow.appendChild(crossLbl);
-                crossRow.appendChild(crossDig);
+                crossGroup.appendChild(crossLbl);
+                crossGroup.appendChild(crossDig);
+                digitalToolbar.appendChild(crossGroup);
                 const eqWrap = document.createElement('div');
                 eqWrap.className = 'radio-visual-digital-eq';
                 const eqCanvas = document.createElement('canvas');
@@ -1197,13 +1166,8 @@
                 digBtns.className = 'radio-visual-btn-grid';
                 digBtns.id = 'radio-visual-digital-btns';
                 dPanel.appendChild(dDisp);
-                dPanel.appendChild(centerModeRow);
                 dPanel.appendChild(digitalCenter);
-                dPanel.appendChild(volRow);
-                dPanel.appendChild(ctrlRow1);
-                dPanel.appendChild(stRow);
-                dPanel.appendChild(stRowB);
-                dPanel.appendChild(crossRow);
+                dPanel.appendChild(digitalToolbar);
                 dPanel.appendChild(eqWrap);
                 dPanel.appendChild(digBtns);
                 stageD.appendChild(dPanel);
@@ -1280,7 +1244,8 @@
                     this._stopClick(ev);
                     this._setDigitalCenterMode('deckB');
                 }, sig);
-                ctrlRow1.querySelectorAll('[data-rv-digital]').forEach((b) => {
+                crossDig.addEventListener('input', () => this._setCrossfadeX(crossDig.value), sig);
+                digitalToolbar.querySelectorAll('[data-rv-digital]').forEach((b) => {
                     b.addEventListener('click', (ev) => {
                         this._stopClick(ev);
                         const act = b.dataset.rvDigital;
@@ -1291,25 +1256,20 @@
                         this._syncDeckSwitches();
                     }, sig);
                 });
-                crossDig.addEventListener('input', () => this._setCrossfadeX(crossDig.value), sig);
-                const bindDeckRow = (rowEl) => {
-                    rowEl.querySelectorAll('[data-rv-action]').forEach((b) => {
-                        b.addEventListener('click', (ev) => {
-                            this._stopClick(ev);
-                            const deck = b.dataset.rvDeck || 'a';
-                            const a = b.dataset.rvAction;
-                            if (deck === 'b') {
-                                if (a === 'prev') this._stationBPrev();
-                                else if (a === 'next') this._stationBNext();
-                                else if (a === 'rand') this._stationBRand();
-                            } else if (a === 'prev') this._stationPrev();
-                            else if (a === 'next') this._stationNext();
-                            else if (a === 'rand') this._stationRand();
-                        }, sig);
-                    });
-                };
-                bindDeckRow(stRow);
-                bindDeckRow(stRowB);
+                digitalToolbar.querySelectorAll('[data-rv-action]').forEach((b) => {
+                    b.addEventListener('click', (ev) => {
+                        this._stopClick(ev);
+                        const deck = b.dataset.rvDeck || 'a';
+                        const a = b.dataset.rvAction;
+                        if (deck === 'b') {
+                            if (a === 'prev') this._stationBPrev();
+                            else if (a === 'next') this._stationBNext();
+                            else if (a === 'rand') this._stationBRand();
+                        } else if (a === 'prev') this._stationPrev();
+                        else if (a === 'next') this._stationNext();
+                        else if (a === 'rand') this._stationRand();
+                    }, sig);
+                });
                 tunerRail.addEventListener('click', (ev) => {
                     this._stopClick(ev);
                     if (!Array.isArray(stations) || stations.length < 2) return;

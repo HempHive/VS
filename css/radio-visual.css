@@ -227,6 +227,20 @@
             height: clamp(48px, 8vh, 64px);
             margin-top: 4px;
         }
+        #radio-visual-root .radio-visual-analog-actions {
+            margin-top: clamp(10px, 2vh, 14px);
+            padding-top: clamp(8px, 1.5vh, 12px);
+            border-top: 1px solid rgba(90, 70, 48, 0.45);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: clamp(6px, 1.2vw, 10px);
+            width: 100%;
+            max-width: none;
+        }
+        @media (min-width: 640px) {
+            #radio-visual-root .radio-visual-analog-actions {
+                grid-template-columns: repeat(7, minmax(0, 1fr));
+            }
+        }
         #radio-visual-root .radio-visual-vu-canvas {
             width: 100%;
             height: 100%;
@@ -294,28 +308,27 @@
         #radio-visual-root .radio-visual-knob--switch::after {
             z-index: 2;
         }
-        #radio-visual-root .radio-visual-knob--switch::before {
+        #radio-visual-root .radio-visual-knob--deck-a.radio-visual-knob--switch::before,
+        #radio-visual-root .radio-visual-knob--deck-b.radio-visual-knob--switch::before {
             content: '';
             position: absolute;
             left: 50%;
-            top: 50%;
-            width: 38%;
-            height: 38%;
-            margin: -19% 0 0 -19%;
+            top: auto;
+            bottom: 12%;
+            width: 8px;
+            height: 8px;
+            margin: 0 0 0 -4px;
             border-radius: 50%;
-            background: #2e2820;
-            border: 2px solid rgba(0, 0, 0, 0.45);
-            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.55);
+            background: #3a2218;
+            border: 1px solid rgba(0, 0, 0, 0.5);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.55);
             pointer-events: none;
             transition: background 0.2s, box-shadow 0.2s;
         }
-        #radio-visual-root .radio-visual-knob--switch.is-on::before {
-            background: radial-gradient(circle at 40% 35%, #ffe8a0, #d07028);
-            box-shadow: 0 0 16px rgba(255, 170, 70, 0.7), inset 0 0 8px rgba(255, 240, 200, 0.35);
-        }
+        #radio-visual-root .radio-visual-knob--deck-a.is-on::before,
         #radio-visual-root .radio-visual-knob--deck-b.is-on::before {
-            background: radial-gradient(circle at 40% 35%, #d8f0ff, #3a8cc8);
-            box-shadow: 0 0 16px rgba(80, 170, 255, 0.75), inset 0 0 8px rgba(200, 235, 255, 0.35);
+            background: radial-gradient(circle at 45% 40%, #ff6a58, #c01810);
+            box-shadow: 0 0 10px rgba(255, 45, 35, 0.85), 0 0 4px rgba(255, 100, 80, 0.5);
         }
         #radio-visual-root .radio-visual-knob--switch:active {
             filter: brightness(1.08);
@@ -497,10 +510,78 @@
             font-size: 1.25rem;
             line-height: 1;
         }
-        #radio-visual-root .radio-visual-digital-station-row .radio-visual-btn.is-active {
+        #radio-visual-root .radio-visual-digital-station-row .radio-visual-btn.is-active,
+        #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn.is-active {
             color: #1a1208;
             background: linear-gradient(180deg, #7ef0e0, #1a9a88);
             border-color: #bff;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: stretch;
+            gap: 4px;
+            width: 100%;
+            margin: 8px 0 10px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn {
+            flex: 1 1 0;
+            min-width: 0;
+            padding: 8px 3px;
+            font-size: clamp(7px, 1.6vw, 10px);
+            letter-spacing: 0.04em;
+            border-color: rgba(0, 220, 255, 0.4);
+            background: linear-gradient(180deg, #123048, #081820);
+            color: #8ef;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-vol {
+            display: flex;
+            flex: 1.35 1 0;
+            min-width: 0;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 0 2px;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-vol-step-label {
+            flex-shrink: 0;
+            font-size: 9px;
+            margin: 0;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-vol-readout {
+            flex: 1 1 auto;
+            min-width: 2em;
+            font-size: clamp(9px, 2vw, 11px);
+            padding: 0 2px;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn {
+            flex: 0 0 auto;
+            min-width: 28px;
+            padding: 8px 6px;
+            font-size: 1rem;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-xfade {
+            display: flex;
+            flex: 1.1 1 0;
+            min-width: 0;
+            align-items: center;
+            gap: 4px;
+            padding: 0 4px;
+        }
+        #radio-visual-root .radio-visual-digital-xfade-label {
+            flex-shrink: 0;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            color: #5ec;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-xfade .radio-visual-digital-vol {
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 6px;
         }
         @media (max-width: 520px) {
             #radio-visual-root .radio-visual-btn-grid {
