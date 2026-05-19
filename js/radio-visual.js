@@ -1,7 +1,7 @@
 /* Extracted from app.js — radio-visual. Uses globals via globalThis (see app.js exposeVsGlobals). */
         class RadioVisualEngine {
             constructor() {
-                this.name = 'Radio Visual';
+                this.name = 'Radio';
                 this.resizeHandler = this.onResize.bind(this);
                 this.abortCtrl = null;
                 this.root = null;
@@ -142,12 +142,7 @@
 
             _syncCrossfadeKnob() {
                 const x = this._getCrossfadeX();
-                this._setKnobRotation(this.els.crossKnob, (x * 270) - 135);
                 if (this.els.crossDigital) this.els.crossDigital.value = String(x);
-                if (this.els.crossReadout) {
-                    const pct = Math.round(x * 100);
-                    this.els.crossReadout.textContent = pct <= 2 ? 'A' : (pct >= 98 ? 'B' : `${pct}%`);
-                }
             }
 
             _readAutoFadeDurationMs() {
@@ -318,6 +313,142 @@
                 }
             }
 
+            _deckAActive() {
+                try {
+                    const media = (typeof getDeckAMediaForPlaybackState === 'function')
+                        ? getDeckAMediaForPlaybackState()
+                        : audioEl;
+                    return !!(media && media.src && media.src !== 'about:blank' && !media.paused && !media.ended);
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            _deckHasSource(media) {
+                try {
+                    if (typeof deckHasSource === 'function') return deckHasSource(media);
+                } catch (_) {}
+                return !!(media && media.src && media.src !== 'about:blank');
+            }
+
+            async _toggleDeckA() {
+                try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                try {
+                    const eng = state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks'
+                        ? state.activeVisualizer : null;
+                    try {
+                        if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
+                    } catch (_) {}
+                    const media = (typeof getDeckAMediaForPlaybackState === 'function')
+                        ? getDeckAMediaForPlaybackState()
+                        : audioEl;
+                    if (!media || !this._deckHasSource(media)) {
+                        try {
+                            if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') {
+                                eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                            }
+                        } catch (_) {}
+                        if (typeof playRadio === 'function') playRadio();
+                        return;
+                    }
+                    if (media.paused) {
+                        try {
+                            if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') {
+                                eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                            }
+                        } catch (_) {}
+                        await media.play().catch(() => {
+                            try { if (typeof playRadio === 'function') playRadio(); } catch (_) {}
+                        });
+                    } else {
+                        try {
+                            if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') {
+                                eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                            }
+                        } catch (_) {}
+                        media.pause();
+                    }
+                } catch (_) {}
+            }
+
+            async _toggleDeckB() {
+                try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                try {
+                    const eng = state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks'
+                        ? state.activeVisualizer : null;
+                    try {
+                        if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
+                    } catch (_) {}
+                    if (!audioElB || !this._deckHasSource(audioElB) || audioElB.paused) {
+                        try {
+                            if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') {
+                                eng.clearSuppressEnsureCrossfadeDeckPlayback();
+                            }
+                        } catch (_) {}
+                        if (typeof playRadioB === 'function') playRadioB();
+                    } else {
+                        audioElB.pause();
+                    }
+                } catch (_) {}
+            }
+
+            _syncDeckSwitches() {
+                const aOn = this._deckAActive();
+                const bOn = this._deckBActive();
+                if (this.els.deckAKnob) {
+                    this.els.deckAKnob.classList.toggle('is-on', aOn);
+                    this.els.deckAKnob.setAttribute('aria-pressed', aOn ? 'true' : 'false');
+                }
+                if (this.els.deckBKnob) {
+                    this.els.deckBKnob.classList.toggle('is-on', bOn);
+                    this.els.deckBKnob.setAttribute('aria-pressed', bOn ? 'true' : 'false');
+                }
+            }
+
+            _wireDeckSwitch(knobEl, deck) {
+                if (!knobEl) return;
+                knobEl.classList.add('radio-visual-knob--switch');
+                knobEl.setAttribute('role', 'switch');
+                knobEl.tabIndex = 0;
+                const run = async () => {
+                    if (deck === 'a') await this._toggleDeckA();
+                    else await this._toggleDeckB();
+                    this._syncDeckSwitches();
+                    try { resetIdleTimer(); } catch (_) {}
+                };
+                knobEl.addEventListener('click', (ev) => {
+                    this._stopClick(ev);
+                    run();
+                }, { signal: this.abortCtrl.signal });
+                knobEl.addEventListener('keydown', (ev) => {
+                    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+                    ev.preventDefault();
+                    this._stopClick(ev);
+                    run();
+                }, { signal: this.abortCtrl.signal });
+            }
+
+            _wireClickKnob(knobEl, onClick) {
+                if (!knobEl) return;
+                knobEl.classList.add('radio-visual-knob--switch');
+                knobEl.setAttribute('role', 'button');
+                knobEl.tabIndex = 0;
+                const run = () => {
+                    try { onClick(); } catch (_) {}
+                    try { resetIdleTimer(); } catch (_) {}
+                };
+                knobEl.addEventListener('click', (ev) => {
+                    this._stopClick(ev);
+                    run();
+                }, { signal: this.abortCtrl.signal });
+                knobEl.addEventListener('keydown', (ev) => {
+                    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+                    ev.preventDefault();
+                    this._stopClick(ev);
+                    run();
+                }, { signal: this.abortCtrl.signal });
+            }
+
             _syncVolumeFromGlobal() {
                 const vs = document.getElementById('volume-slider');
                 const v = vs ? Number(vs.value) : 0.5;
@@ -371,12 +502,8 @@
                         ? currentStationBIndex : -1;
                     if (idxB >= 0 && stations[idxB]) nameB = stations[idxB].name || nameB;
                 } catch (_) {}
-                if (this.els.stationAnalog) {
-                    this.els.stationAnalog.textContent = `A · ${nameA}`;
-                }
-                if (this.els.stationBAnalog) {
-                    this.els.stationBAnalog.textContent = `B · ${nameB}`;
-                }
+                if (this.els.stationNameA) this.els.stationNameA.textContent = nameA;
+                if (this.els.stationNameB) this.els.stationNameB.textContent = nameB;
                 if (this.els.stationDigital) {
                     this.els.stationDigital.textContent = `A: ${nameA}  |  B: ${nameB}`;
                 }
@@ -395,8 +522,7 @@
                     this.els.tunerGlowB.classList.toggle('is-active', this._deckBActive());
                 }
                 this._syncCrossfadeKnob();
-                this._setKnobRotation(this.els.tuneKnob, (this._needlePercentA() / 100 * 270) - 135);
-                this._setKnobRotation(this.els.tuneBKnob, (this._needlePercentB() / 100 * 270) - 135);
+                this._syncDeckSwitches();
                 let meta = '';
                 try {
                     if (typeof currentNowPlayingICY !== 'undefined' && currentNowPlayingICY) {
@@ -629,7 +755,7 @@
                 root.id = 'radio-visual-root';
                 root.className = 'radio-visual-root';
                 root.setAttribute('role', 'application');
-                root.setAttribute('aria-label', 'Radio Visual');
+                root.setAttribute('aria-label', 'Radio');
                 container.appendChild(root);
                 this.root = root;
 
@@ -656,14 +782,37 @@
                 onAir.className = 'radio-visual-on-air';
                 onAir.id = 'radio-visual-on-air';
                 onAir.textContent = 'ON AIR';
-                const stA = document.createElement('h1');
-                stA.className = 'radio-visual-station-title';
-                stA.id = 'radio-visual-station-a';
-                stA.textContent = '—';
-                const stB = document.createElement('div');
-                stB.className = 'radio-visual-station-deck-b';
-                stB.id = 'radio-visual-station-b';
-                stB.textContent = '—';
+                const stationsLine = document.createElement('div');
+                stationsLine.className = 'radio-visual-stations-line';
+                stationsLine.id = 'radio-visual-stations-line';
+                const stPartA = document.createElement('span');
+                stPartA.className = 'radio-visual-station-part radio-visual-station-part--a';
+                const stLabA = document.createElement('span');
+                stLabA.className = 'radio-visual-station-tag';
+                stLabA.textContent = 'A';
+                const stNameA = document.createElement('span');
+                stNameA.className = 'radio-visual-station-name';
+                stNameA.id = 'radio-visual-station-name-a';
+                stNameA.textContent = '—';
+                stPartA.appendChild(stLabA);
+                stPartA.appendChild(stNameA);
+                const stSep = document.createElement('span');
+                stSep.className = 'radio-visual-station-sep';
+                stSep.textContent = '·';
+                const stPartB = document.createElement('span');
+                stPartB.className = 'radio-visual-station-part radio-visual-station-part--b';
+                const stLabB = document.createElement('span');
+                stLabB.className = 'radio-visual-station-tag';
+                stLabB.textContent = 'B';
+                const stNameB = document.createElement('span');
+                stNameB.className = 'radio-visual-station-name';
+                stNameB.id = 'radio-visual-station-name-b';
+                stNameB.textContent = '—';
+                stPartB.appendChild(stLabB);
+                stPartB.appendChild(stNameB);
+                stationsLine.appendChild(stPartA);
+                stationsLine.appendChild(stSep);
+                stationsLine.appendChild(stPartB);
                 const tunerShell = document.createElement('div');
                 tunerShell.className = 'radio-visual-tuner-shell';
                 const tunerRail = document.createElement('div');
@@ -710,16 +859,12 @@
                 tunerRail.appendChild(needle);
                 tunerRail.appendChild(needleB);
                 tunerShell.appendChild(tunerRail);
-                tunerShell.appendChild(vuWrap);
-                                const knobs = document.createElement('div');
-                knobs.className = 'radio-visual-knobs-row';
-                const knobs2 = document.createElement('div');
-                knobs2.className = 'radio-visual-knobs-row radio-visual-knobs-row--secondary';
+                tunerShell.appendChild(vuWrap);                const knobs = document.createElement('div');
+                knobs.className = 'radio-visual-knobs-row radio-visual-knobs-row--all';
                 const mkControlKnob = (id, aria) => {
                     const k = document.createElement('div');
                     k.className = 'radio-visual-knob';
                     k.id = id;
-                    k.setAttribute('role', 'slider');
                     k.setAttribute('aria-label', aria);
                     return k;
                 };
@@ -730,31 +875,31 @@
                     return r;
                 };
                 const volKnob = mkControlKnob('radio-visual-vol-knob', 'Volume');
-                const tuneKnob = mkControlKnob('radio-visual-tune-knob', 'Deck A station tuning');
-                const tuneBKnob = mkControlKnob('radio-visual-tune-b-knob', 'Deck B station tuning');
-                const crossKnob = mkControlKnob('radio-visual-cross-knob', 'Crossfade A to B');
-                const autoFadeKnob = mkControlKnob('radio-visual-autofade-knob', 'Auto-fade duration; tap to fade');
-                autoFadeKnob.classList.add('radio-visual-knob--action');
-                const autoMixKnob = mkControlKnob('radio-visual-automix-knob', 'Auto-mix max interval; tap to toggle');
-                autoMixKnob.classList.add('radio-visual-knob--action');
-                const crossReadout = mkReadout('A');
+                volKnob.setAttribute('role', 'slider');
+                const deckAKnob = mkControlKnob('radio-visual-deck-a-knob', 'Deck A play / pause');
+                deckAKnob.classList.add('radio-visual-knob--deck-a');
+                const deckBKnob = mkControlKnob('radio-visual-deck-b-knob', 'Deck B play / pause');
+                deckBKnob.classList.add('radio-visual-knob--deck-b');
+                const crossKnob = mkControlKnob('radio-visual-cross-knob', 'Crossfade between decks');
+                const autoFadeKnob = mkControlKnob('radio-visual-autofade-knob', 'Auto-fade duration; click to fade');
+                autoFadeKnob.setAttribute('role', 'slider');
+                const autoMixKnob = mkControlKnob('radio-visual-automix-knob', 'Auto-mix max interval; click to toggle');
+                autoMixKnob.setAttribute('role', 'slider');
                 const autoFadeReadout = mkReadout(`${(this._readAutoFadeDurationMs() / 1000).toFixed(1)}s`);
                 const autoMixReadout = mkReadout(`${this._readAutoMixMaxMin()}m max`);
                 knobs.appendChild(this._mkKnobBlock('Volume', volKnob));
-                knobs.appendChild(this._mkKnobBlock('Deck A', tuneKnob));
-                knobs.appendChild(this._mkKnobBlock('Deck B', tuneBKnob));
-                knobs.appendChild(this._mkKnobBlock('Crossfade', crossKnob, crossReadout));
-                knobs2.appendChild(this._mkKnobBlock('Auto-Fade', autoFadeKnob, autoFadeReadout));
-                knobs2.appendChild(this._mkKnobBlock('Auto-Mix', autoMixKnob, autoMixReadout));
+                knobs.appendChild(this._mkKnobBlock('Deck A', deckAKnob));
+                knobs.appendChild(this._mkKnobBlock('Deck B', deckBKnob));
+                knobs.appendChild(this._mkKnobBlock('Crossfade', crossKnob));
+                knobs.appendChild(this._mkKnobBlock('Auto-Fade', autoFadeKnob, autoFadeReadout));
+                knobs.appendChild(this._mkKnobBlock('Auto-Mix', autoMixKnob, autoMixReadout));
                 const analogBtns = document.createElement('div');
                 analogBtns.className = 'radio-visual-btn-grid';
                 analogBtns.id = 'radio-visual-analog-btns';
                 stageA.appendChild(onAir);
-                stageA.appendChild(stA);
-                stageA.appendChild(stB);
-                stageA.appendChild(tunerShell);
+                stageA.appendChild(stationsLine);
                 stageA.appendChild(knobs);
-                stageA.appendChild(knobs2);
+                stageA.appendChild(tunerShell);
                 stageA.appendChild(analogBtns);
 
                 const stageD = document.createElement('section');
@@ -859,8 +1004,8 @@
                     stageAnalog: stageA,
                     stageDigital: stageD,
                     onAir,
-                    stationAnalog: stA,
-                    stationBAnalog: stB,
+                    stationNameA: stNameA,
+                    stationNameB: stNameB,
                     stationDigital: stD,
                     ticks,
                     needle,
@@ -871,12 +1016,11 @@
                     vuCanvas,
                     digitalEqCanvas: eqCanvas,
                     volKnob,
-                    tuneKnob,
-                    tuneBKnob,
+                    deckAKnob,
+                    deckBKnob,
                     crossKnob,
                     autoFadeKnob,
                     autoMixKnob,
-                    crossReadout,
                     autoFadeReadout,
                     autoMixReadout,
                     volDigital: volDig,
@@ -894,7 +1038,7 @@
                 this._syncVolumeFromGlobal();
                 this._setAutoFadeDurationNorm(this._autoFadeDurationNorm());
                 this._setAutoMixMaxNorm(this._autoMixMaxNorm());
-                this._syncCrossfadeKnob();
+                this._syncDeckSwitches();
                 this._updateStationUi();
                 this._tickClock();
 
@@ -932,21 +1076,9 @@
                     get: () => Number(document.getElementById('volume-slider')?.value || 0.5),
                     set: (v) => this._applyVolume(v)
                 });
-                this._wirePointerKnob(tuneKnob, {
-                    get: () => this._needlePercentA() / 100,
-                    set: (t) => {
-                        if (!Array.isArray(stations) || !stations.length) return;
-                        if (typeof setStation === 'function') setStation(this._normToStationIndex(t));
-                    }
-                });
-                this._wirePointerKnob(tuneBKnob, {
-                    get: () => this._needlePercentB() / 100,
-                    set: (t) => this._setStationB(this._normToStationIndex(t))
-                });
-                this._wirePointerKnob(crossKnob, {
-                    get: () => this._getCrossfadeX(),
-                    set: (t) => this._setCrossfadeX(t)
-                });
+                this._wireDeckSwitch(deckAKnob, 'a');
+                this._wireDeckSwitch(deckBKnob, 'b');
+                this._wireClickKnob(crossKnob, () => this._triggerAutoFade());
                 this._wirePointerKnob(autoFadeKnob, {
                     get: () => this._autoFadeDurationNorm(),
                     set: (t) => this._setAutoFadeDurationNorm(t)
@@ -965,7 +1097,7 @@
                 this.onResize();
                 this.clockTimerId = setInterval(() => { try { this._tickClock(); } catch (_) {} }, 1000);
                 this.animateFrame();
-                document.getElementById('mode-sub').innerText = 'Radio Station Visual';
+                document.getElementById('mode-sub').innerText = 'Radio';
             }
 
             animateFrame() {

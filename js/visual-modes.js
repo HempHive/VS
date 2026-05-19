@@ -2417,7 +2417,10 @@
                         return !!(stage && stage.classList.contains('dj-deck-b-text-mode'));
                     } catch (_) { return false; }
                 })();
-                const onRadioVisual = !!(state.activeVisualizer && state.activeVisualizer.name === 'Radio Visual');
+                const onRadioVisual = !!(state.activeVisualizer && (
+                    state.activeVisualizer.name === 'Radio' ||
+                    state.activeVisualizer.name === 'Radio Visual'
+                ));
                 const showReturn = onDj && (deckBVisualActive || deckBTextActive);
                 // In DJ mode: show 🎧 when a Deck B view is active (visual layer / queue / media panel / TEXT-IN) as a quick "return to controls".
                 // On Radio Visual (and other non-DJ modes): always show 🎧 to open DJ Decks.

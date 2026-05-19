@@ -76,26 +76,54 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.55; }
         }
-        #radio-visual-root .radio-visual-station-title {
+        #radio-visual-root .radio-visual-stations-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.35em 0.75em;
+            width: 100%;
+            padding: 0 8px 4px;
             text-align: center;
-            font-size: clamp(1.1rem, 4.5vw, 2rem);
+            font-size: clamp(0.95rem, 3.8vw, 1.35rem);
             font-weight: 800;
             letter-spacing: 0.04em;
-            line-height: 1.15;
+            line-height: 1.2;
             text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
-            padding: 0 8px;
-            word-break: break-word;
         }
-        #radio-visual-root .radio-visual-station-deck-b {
-            text-align: center;
-            font-size: clamp(0.85rem, 3vw, 1.1rem);
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            color: rgba(140, 200, 255, 0.92);
-            text-shadow: 0 0 12px rgba(60, 140, 255, 0.45);
-            margin: -4px 0 4px;
-            padding: 0 8px;
-            word-break: break-word;
+        #radio-visual-root .radio-visual-station-part {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.3em;
+            max-width: min(46%, 420px);
+            min-width: 0;
+        }
+        #radio-visual-root .radio-visual-station-tag {
+            flex-shrink: 0;
+            font-size: 0.72em;
+            letter-spacing: 0.14em;
+            opacity: 0.75;
+        }
+        #radio-visual-root .radio-visual-station-part--a .radio-visual-station-tag {
+            color: rgba(255, 160, 120, 0.9);
+        }
+        #radio-visual-root .radio-visual-station-part--b .radio-visual-station-tag {
+            color: rgba(120, 190, 255, 0.95);
+        }
+        #radio-visual-root .radio-visual-station-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+        #radio-visual-root .radio-visual-station-part--b .radio-visual-station-name {
+            color: rgba(170, 215, 255, 0.96);
+            text-shadow: 0 0 10px rgba(60, 140, 255, 0.35);
+        }
+        #radio-visual-root .radio-visual-station-sep {
+            opacity: 0.45;
+            font-weight: 600;
+            user-select: none;
         }
         #radio-visual-root .radio-visual-tuner-shell {
             position: relative;
@@ -213,8 +241,21 @@
             flex-wrap: wrap;
             margin-top: 8px;
         }
-        #radio-visual-root .radio-visual-knobs-row--secondary {
-            margin-top: 4px;
+        #radio-visual-root .radio-visual-knobs-row--all {
+            flex-wrap: nowrap;
+            gap: clamp(8px, 2vw, 18px);
+            margin: 6px 0 10px;
+            padding: 0 4px 2px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+        #radio-visual-root .radio-visual-knobs-row--all .radio-visual-knob-block {
+            flex: 0 0 auto;
+        }
+        #radio-visual-root .radio-visual-knobs-row--all .radio-visual-knob {
+            width: clamp(48px, 11vw, 62px);
+            height: clamp(48px, 11vw, 62px);
         }
         #radio-visual-root .radio-visual-knob-block {
             display: flex;
@@ -247,20 +288,37 @@
             touch-action: none;
             cursor: grab;
         }
-        #radio-visual-root .radio-visual-knob--action {
-            border-color: #7a6a50;
-            box-shadow:
-                inset 0 4px 8px rgba(0, 0, 0, 0.6),
-                0 4px 12px rgba(0, 0, 0, 0.4),
-                0 0 0 1px rgba(255, 200, 120, 0.15);
+        #radio-visual-root .radio-visual-knob--switch {
+            cursor: pointer;
         }
-        #radio-visual-root .radio-visual-knob--action::before {
+        #radio-visual-root .radio-visual-knob--switch::after {
+            display: none;
+        }
+        #radio-visual-root .radio-visual-knob--switch::before {
             content: '';
             position: absolute;
-            inset: 18%;
+            left: 50%;
+            top: 50%;
+            width: 38%;
+            height: 38%;
+            margin: -19% 0 0 -19%;
             border-radius: 50%;
-            border: 1px dashed rgba(255, 210, 140, 0.25);
+            background: #2e2820;
+            border: 2px solid rgba(0, 0, 0, 0.45);
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.55);
             pointer-events: none;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        #radio-visual-root .radio-visual-knob--switch.is-on::before {
+            background: radial-gradient(circle at 40% 35%, #ffe8a0, #d07028);
+            box-shadow: 0 0 16px rgba(255, 170, 70, 0.7), inset 0 0 8px rgba(255, 240, 200, 0.35);
+        }
+        #radio-visual-root .radio-visual-knob--deck-b.is-on::before {
+            background: radial-gradient(circle at 40% 35%, #d8f0ff, #3a8cc8);
+            box-shadow: 0 0 16px rgba(80, 170, 255, 0.75), inset 0 0 8px rgba(200, 235, 255, 0.35);
+        }
+        #radio-visual-root .radio-visual-knob--switch:active {
+            filter: brightness(1.08);
         }
         #radio-visual-root .radio-visual-knob::after {
             content: '';
