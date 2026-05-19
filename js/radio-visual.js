@@ -519,8 +519,10 @@
                         levels.push(0.12 + 0.1 * Math.sin(t * 2.2 + i * 0.42));
                     }
                 }
-                const innerR = Math.min(w, h) * 0.14;
-                const outerR = Math.min(w, h) * 0.44;
+                const peak = Math.max(0.08, ...levels);
+                const norm = peak > 0 ? (1 / peak) : 1;
+                const innerR = Math.min(w, h) * 0.1;
+                const outerR = Math.min(w, h) * 0.48;
                 ctx.strokeStyle = 'rgba(0, 255, 220, 0.08)';
                 ctx.lineWidth = 1;
                 for (let ring = 1; ring <= 4; ring++) {
@@ -530,7 +532,9 @@
                 }
                 const n = levels.length;
                 for (let i = 0; i < n; i++) {
-                    const lv = Math.max(0.05, Math.min(1, levels[i] || 0));
+                    const raw = Math.max(0, (levels[i] || 0) * norm);
+                    const boosted = Math.min(1, raw * 1.85);
+                    const lv = Math.max(0.08, Math.pow(boosted, 0.62));
                     const a0 = (i / n) * Math.PI * 2 - Math.PI / 2;
                     const a1 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2;
                     const r1 = innerR + (outerR - innerR) * lv;
@@ -1048,8 +1052,6 @@
                 stageD.setAttribute('aria-label', 'Digital radio');
                 const dPanel = document.createElement('div');
                 dPanel.className = 'radio-visual-digital-panel';
-                const dDisp = document.createElement('div');
-                dDisp.className = 'radio-visual-digital-display';
                 const mkLine = (cls, id, txt) => {
                     const el = document.createElement('div');
                     el.className = 'radio-visual-digital-line' + (cls ? ' ' + cls : '');
@@ -1058,13 +1060,12 @@
                     return el;
                 };
                 const stD = mkLine('radio-visual-digital-line--title', 'radio-visual-station-d', '—');
-                const dStat = mkLine('', 'radio-visual-digital-status', 'STANDBY');
-                const dMeta = mkLine('', 'radio-visual-digital-meta', '—');
-                const dClk = mkLine('', 'radio-visual-digital-clock', '—');
-                dDisp.appendChild(stD);
-                dDisp.appendChild(dStat);
-                dDisp.appendChild(dMeta);
-                dDisp.appendChild(dClk);
+                const dStat = mkLine('radio-visual-digital-line--status', 'radio-visual-digital-status', 'STANDBY');
+                const dMeta = mkLine('radio-visual-digital-line--meta', 'radio-visual-digital-meta', '—');
+                const dClk = mkLine('radio-visual-digital-line--clock', 'radio-visual-digital-clock', '—');
+                const digBtns = document.createElement('div');
+                digBtns.className = 'radio-visual-btn-grid radio-visual-digital-feature-btns';
+                digBtns.id = 'radio-visual-digital-btns';
                 const digitalCenter = document.createElement('div');
                 digitalCenter.className = 'radio-visual-digital-center';
                 const digitalCenterSpectrum = document.createElement('div');
@@ -1073,6 +1074,14 @@
                 digitalSpectrumCanvas.className = 'radio-visual-digital-spectrum-canvas';
                 digitalSpectrumCanvas.id = 'radio-visual-digital-spectrum';
                 digitalCenterSpectrum.appendChild(digitalSpectrumCanvas);
+                const spectrumOverlay = document.createElement('div');
+                spectrumOverlay.className = 'radio-visual-digital-spectrum-overlay';
+                spectrumOverlay.setAttribute('aria-live', 'polite');
+                spectrumOverlay.appendChild(stD);
+                spectrumOverlay.appendChild(dStat);
+                spectrumOverlay.appendChild(dMeta);
+                spectrumOverlay.appendChild(dClk);
+                digitalCenterSpectrum.appendChild(spectrumOverlay);
                 const digitalCenterDeckB = document.createElement('div');
                 digitalCenterDeckB.className = 'radio-visual-digital-center-pane';
                 const digitalDeckBMount = document.createElement('div');
@@ -1162,14 +1171,10 @@
                 eqCanvas.className = 'radio-visual-vu-canvas';
                 eqCanvas.id = 'radio-visual-digital-eq';
                 eqWrap.appendChild(eqCanvas);
-                const digBtns = document.createElement('div');
-                digBtns.className = 'radio-visual-btn-grid';
-                digBtns.id = 'radio-visual-digital-btns';
-                dPanel.appendChild(dDisp);
+                dPanel.appendChild(digBtns);
                 dPanel.appendChild(digitalCenter);
                 dPanel.appendChild(digitalToolbar);
                 dPanel.appendChild(eqWrap);
-                dPanel.appendChild(digBtns);
                 stageD.appendChild(dPanel);
 
                 root.appendChild(stageA);

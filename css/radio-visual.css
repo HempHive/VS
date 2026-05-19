@@ -257,19 +257,34 @@
         }
         #radio-visual-root .radio-visual-knobs-row--all {
             flex-wrap: nowrap;
-            gap: clamp(8px, 2vw, 18px);
+            justify-content: stretch;
+            align-items: flex-end;
+            gap: clamp(4px, 1.2vw, 12px);
             margin: 6px 0 10px;
-            padding: 0 4px 2px;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
+            padding: 0 2px 2px;
+            width: 100%;
+            box-sizing: border-box;
         }
         #radio-visual-root .radio-visual-knobs-row--all .radio-visual-knob-block {
-            flex: 0 0 auto;
+            flex: 1 1 0;
+            min-width: 0;
+            max-width: none;
+        }
+        #radio-visual-root .radio-visual-knobs-row--all .radio-visual-knob-label,
+        #radio-visual-root .radio-visual-knobs-row--all .radio-visual-knob-readout {
+            font-size: clamp(7px, 1.5vw, 10px);
+            letter-spacing: 0.1em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
         #radio-visual-root .radio-visual-knobs-row--all .radio-visual-knob {
-            width: clamp(48px, 11vw, 62px);
-            height: clamp(48px, 11vw, 62px);
+            width: 100%;
+            max-width: min(72px, 14vw);
+            aspect-ratio: 1;
+            height: auto;
+            margin: 0 auto;
         }
         #radio-visual-root .radio-visual-knob-block {
             display: flex;
@@ -458,8 +473,71 @@
             align-items: center;
             justify-content: center;
         }
+        #radio-visual-root .radio-visual-digital-spectrum-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: clamp(10px, 2.5vw, 16px) clamp(12px, 3vw, 18px);
+            text-align: center;
+            box-sizing: border-box;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-overlay .radio-visual-digital-line {
+            margin: 0;
+            width: 100%;
+            text-shadow:
+                0 0 12px rgba(0, 0, 0, 0.9),
+                0 1px 3px rgba(0, 0, 0, 0.85);
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-overlay .radio-visual-digital-line--title {
+            font-size: clamp(0.85rem, 3.2vw, 1.2rem);
+            margin-bottom: 4px;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-overlay .radio-visual-digital-line--status {
+            font-size: clamp(9px, 2vw, 11px);
+            color: #6ef0dc;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-overlay .radio-visual-digital-line--meta {
+            font-size: clamp(9px, 2vw, 11px);
+            color: #5ec8b8;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-overlay .radio-visual-digital-line--clock {
+            font-size: clamp(10px, 2.2vw, 12px);
+            font-weight: 700;
+            color: #9ff;
+            margin-top: auto;
+        }
+        #radio-visual-root .radio-visual-digital-feature-btns {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: clamp(6px, 1.2vw, 10px);
+            max-width: none;
+            margin: 0 0 10px;
+        }
+        #radio-visual-root .radio-visual-digital-feature-btns .radio-visual-btn {
+            border-color: rgba(140, 70, 200, 0.55);
+            background: linear-gradient(180deg, #5a3488 0%, #2a1548 55%, #1a0c30 100%);
+            color: #e8d4ff;
+            box-shadow:
+                0 3px 0 #120820,
+                0 6px 16px rgba(40, 10, 80, 0.45),
+                inset 0 1px 0 rgba(200, 150, 255, 0.12);
+            font-size: clamp(9px, 2vw, 11px);
+            padding: 10px 6px;
+        }
+        #radio-visual-root .radio-visual-digital-feature-btns .radio-visual-btn:hover {
+            filter: brightness(1.15);
+            border-color: rgba(180, 100, 255, 0.65);
+        }
         #radio-visual-root .radio-visual-digital-center-pane.is-active {
             display: flex;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane .radio-visual-digital-spectrum-canvas {
+            position: absolute;
+            inset: 0;
         }
         #radio-visual-root .radio-visual-digital-spectrum-canvas {
             width: 100%;
@@ -517,29 +595,29 @@
             border-color: #bff;
         }
         #radio-visual-root .radio-visual-digital-toolbar {
-            display: flex;
-            flex-wrap: nowrap;
+            display: grid;
+            grid-template-columns: repeat(17, minmax(0, 1fr));
             align-items: stretch;
-            gap: 4px;
+            gap: 3px;
             width: 100%;
             margin: 8px 0 10px;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
         }
         #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn {
-            flex: 1 1 0;
             min-width: 0;
-            padding: 8px 3px;
-            font-size: clamp(7px, 1.6vw, 10px);
-            letter-spacing: 0.04em;
+            padding: 7px 2px;
+            font-size: clamp(6px, 1.35vw, 9px);
+            letter-spacing: 0.02em;
+            line-height: 1.15;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             border-color: rgba(0, 220, 255, 0.4);
             background: linear-gradient(180deg, #123048, #081820);
             color: #8ef;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol {
             display: flex;
-            flex: 1.35 1 0;
+            grid-column: span 3;
             min-width: 0;
             align-items: center;
             justify-content: center;
@@ -565,7 +643,7 @@
         }
         #radio-visual-root .radio-visual-digital-toolbar-xfade {
             display: flex;
-            flex: 1.1 1 0;
+            grid-column: span 2;
             min-width: 0;
             align-items: center;
             gap: 4px;
@@ -586,5 +664,17 @@
         @media (max-width: 520px) {
             #radio-visual-root .radio-visual-btn-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            #radio-visual-root .radio-visual-digital-feature-btns {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            #radio-visual-root .radio-visual-digital-toolbar {
+                grid-template-columns: repeat(8, minmax(0, 1fr));
+            }
+            #radio-visual-root .radio-visual-digital-toolbar-vol {
+                grid-column: span 4;
+            }
+            #radio-visual-root .radio-visual-digital-toolbar-xfade {
+                grid-column: span 4;
             }
         }
