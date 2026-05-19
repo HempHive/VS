@@ -519,10 +519,8 @@
                         levels.push(0.12 + 0.1 * Math.sin(t * 2.2 + i * 0.42));
                     }
                 }
-                const peak = Math.max(0.08, ...levels);
-                const norm = peak > 0 ? (1 / peak) : 1;
-                const innerR = Math.min(w, h) * 0.1;
-                const outerR = Math.min(w, h) * 0.48;
+                const innerR = Math.min(w, h) * 0.14;
+                const outerR = Math.min(w, h) * 0.44;
                 ctx.strokeStyle = 'rgba(0, 255, 220, 0.08)';
                 ctx.lineWidth = 1;
                 for (let ring = 1; ring <= 4; ring++) {
@@ -532,9 +530,7 @@
                 }
                 const n = levels.length;
                 for (let i = 0; i < n; i++) {
-                    const raw = Math.max(0, (levels[i] || 0) * norm);
-                    const boosted = Math.min(1, raw * 1.85);
-                    const lv = Math.max(0.08, Math.pow(boosted, 0.62));
+                    const lv = Math.min(1, Math.max(0.06, Math.pow((levels[i] || 0) * 3.1, 0.68)));
                     const a0 = (i / n) * Math.PI * 2 - Math.PI / 2;
                     const a1 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2;
                     const r1 = innerR + (outerR - innerR) * lv;
@@ -668,7 +664,6 @@
                     this.els.digitalMeta.textContent = meta ? meta : (state.isPlaying ? 'STREAMING' : 'STANDBY');
                 }
                 const live = !!(state.isPlaying || (typeof audioEl !== 'undefined' && audioEl && !audioEl.paused && audioEl.src));
-                if (this.els.onAir) this.els.onAir.classList.toggle('is-live', live);
                 if (this.els.digitalStatus) {
                     this.els.digitalStatus.textContent = live ? 'ON AIR · RECEIVING' : 'OFF AIR';
                 }
@@ -696,14 +691,13 @@
                 if (this.els.stageDigital) this.els.stageDigital.classList.toggle('is-active', next === 'digital');
                 if (this.els.btnSkinAnalog) this.els.btnSkinAnalog.classList.toggle('is-active', next === 'analogue');
                 if (this.els.btnSkinDigital) this.els.btnSkinDigital.classList.toggle('is-active', next === 'digital');
-                if (next === 'digital') {
-                    try { this.onResize(); } catch (_) {}
-                    if (this.digitalCenterMode === 'deckB') this._syncDigitalDeckBVideo();
+                try { this.onResize(); } catch (_) {}
+                if (next === 'digital' && this.digitalCenterMode === 'deckB') {
+                    this._syncDigitalDeckBVideo();
                 }
             }
 
-            _drawMeters() {
-                const canvas = this.els.vuCanvas;
+            _drawBarMeter(canvas, { bars = 18, warm = false } = {}) {
                 if (!canvas) return;
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return;
@@ -711,7 +705,6 @@
                 const h = canvas.height;
                 if (w < 4 || h < 4) return;
                 ctx.clearRect(0, 0, w, h);
-                const bars = this.skin === 'digital' ? 24 : 18;
                 const gap = 2;
                 const barW = Math.max(2, (w - gap * (bars + 1)) / bars);
                 let levels = [];
@@ -738,7 +731,6 @@
                         levels.push(0.15 + 0.12 * Math.sin(t + i * 0.55));
                     }
                 }
-                const warm = this.skin === 'analogue';
                 for (let i = 0; i < bars; i++) {
                     const lv = Math.max(0.04, Math.min(1, levels[i] || 0));
                     const bh = Math.max(3, lv * h * 0.92);
@@ -759,6 +751,14 @@
                 }
             }
 
+            _drawMeters() {
+                if (this.skin === 'analogue') {
+                    this._drawBarMeter(this.els.vuCanvas, { bars: 18, warm: true });
+                } else {
+                    this._drawBarMeter(this.els.digitalEqCanvas, { bars: 24, warm: false });
+                }
+            }
+
             _resizeCanvases() {
                 const fit = (canvas) => {
                     if (!canvas || !canvas.parentElement) return;
@@ -771,9 +771,12 @@
                         canvas.height = h;
                     }
                 };
-                fit(this.els.vuCanvas);
-                fit(this.els.digitalEqCanvas);
-                fit(this.els.digitalSpectrumCanvas);
+                if (this.skin === 'analogue') {
+                    fit(this.els.vuCanvas);
+                } else {
+                    fit(this.els.digitalEqCanvas);
+                    fit(this.els.digitalSpectrumCanvas);
+                }
             }
 
             _bindAction(btn, fn) {
@@ -826,7 +829,7 @@
                 });
             }
 
-            _mkKnobBlock(label, knob, readoutEl) {
+            _mkKnobBlock(label, knob, readoutEl, readoutOnKnob = false) {
                 const b = document.createElement('div');
                 b.className = 'radio-visual-knob-block';
                 const l = document.createElement('div');
@@ -834,7 +837,14 @@
                 l.textContent = label;
                 b.appendChild(l);
                 b.appendChild(knob);
-                if (readoutEl) b.appendChild(readoutEl);
+                if (readoutEl) {
+                    if (readoutOnKnob) {
+                        readoutEl.classList.add('radio-visual-knob-readout--on-knob');
+                        knob.appendChild(readoutEl);
+                    } else {
+                        b.appendChild(readoutEl);
+                    }
+                }
                 return b;
             }
 
@@ -922,10 +932,6 @@
                 const stageA = document.createElement('section');
                 stageA.className = 'radio-visual-stage radio-visual-skin--analogue is-active';
                 stageA.setAttribute('aria-label', 'Analogue radio');
-                const onAir = document.createElement('div');
-                onAir.className = 'radio-visual-on-air';
-                onAir.id = 'radio-visual-on-air';
-                onAir.textContent = 'ON AIR';
                 const stationsLine = document.createElement('div');
                 stationsLine.className = 'radio-visual-stations-line';
                 stationsLine.id = 'radio-visual-stations-line';
@@ -1036,13 +1042,12 @@
                 knobs.appendChild(this._mkKnobBlock('Deck A', deckAKnob));
                 knobs.appendChild(this._mkKnobBlock('Deck B', deckBKnob));
                 knobs.appendChild(this._mkKnobBlock('Crossfade', crossKnob));
-                knobs.appendChild(this._mkKnobBlock('Auto-Fade', autoFadeKnob, autoFadeReadout));
-                knobs.appendChild(this._mkKnobBlock('Auto-Mix', autoMixKnob, autoMixReadout));
+                knobs.appendChild(this._mkKnobBlock('Auto-Fade', autoFadeKnob, autoFadeReadout, true));
+                knobs.appendChild(this._mkKnobBlock('Auto-Mix', autoMixKnob, autoMixReadout, true));
                 const analogBtns = document.createElement('div');
                 analogBtns.className = 'radio-visual-btn-grid radio-visual-analog-actions';
                 analogBtns.id = 'radio-visual-analog-btns';
                 tunerShell.appendChild(analogBtns);
-                stageA.appendChild(onAir);
                 stageA.appendChild(stationsLine);
                 stageA.appendChild(knobs);
                 stageA.appendChild(tunerShell);
@@ -1185,7 +1190,6 @@
                     btnSkinDigital: btnD,
                     stageAnalog: stageA,
                     stageDigital: stageD,
-                    onAir,
                     stationNameA: stNameA,
                     stationNameB: stNameB,
                     stationDigital: stD,
