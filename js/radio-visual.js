@@ -144,10 +144,15 @@
 
             _syncCrossfadeKnob() {
                 const x = this._getCrossfadeX();
-                if (this.els.crossKnob && !this.els.crossKnob.classList.contains('radio-visual-knob--fade-btn')) {
+                if (this.els.crossKnob) {
                     this._setKnobRotation(this.els.crossKnob, (x * 270) - 135);
                 }
                 if (this.els.crossDigital) this.els.crossDigital.value = String(x);
+            }
+
+            _isRadioVisualActive() {
+                const vis = state && state.activeVisualizer;
+                return !!(vis && (vis === this || vis.name === 'Radio' || vis.name === 'Radio Visual'));
             }
 
             _syncFadeKnobs() {
@@ -279,10 +284,18 @@
                     return;
                 }
                 const x = this._getCrossfadeX();
-                const targetDeck = x < 0.5 ? 'b' : 'a';
+                let targetDeck = x < 0.5 ? 'b' : 'a';
+                if (this._rvAutoFadeRaf && this._rvFadeTargetDeck) {
+                    const destX = this._rvFadeTargetDeck === 'b' ? 1 : 0;
+                    if (Math.abs(x - destX) > 0.001) {
+                        targetDeck = this._rvFadeTargetDeck === 'a' ? 'b' : 'a';
+                    }
+                }
                 const endVal = targetDeck === 'b' ? 1 : 0;
                 const startVal = x;
+                this._rvFadeTargetDeck = targetDeck;
                 if (Math.abs(endVal - startVal) < 0.001) {
+                    this._rvFadeTargetDeck = null;
                     endFadeLed();
                     return;
                 }
@@ -312,6 +325,7 @@
                     this._resumeDecksForCrossfade();
                     if (t >= 1) {
                         this._rvAutoFadeRaf = null;
+                        this._rvFadeTargetDeck = null;
                         this._rvFadeActive = false;
                         this._syncFadeKnobs();
                         return;
@@ -322,9 +336,13 @@
             }
 
             _triggerAutoFade() {
-                const btn = document.getElementById('mix-autofade') || document.getElementById('dj-autofade');
                 this._rvFadeActive = true;
                 this._syncFadeKnobs();
+                if (this._isRadioVisualActive()) {
+                    this._runLocalAutoFade();
+                    return;
+                }
+                const btn = document.getElementById('mix-autofade') || document.getElementById('dj-autofade');
                 if (btn) {
                     try { btn.click(); } catch (_) {}
                     const dur = this._readAutoFadeDurationMs();
@@ -603,32 +621,31 @@
                 ctx.fill();
             }
 
+            _wireCrossfadeKnob(knobEl) {
+                if (!knobEl) return;
+                knobEl.classList.add('radio-visual-knob--switch', 'radio-visual-knob--fade-btn');
+                knobEl.setAttribute('role', 'slider');
+                knobEl.tabIndex = 0;
+                knobEl.setAttribute('aria-label', 'Crossfade between decks; drag to mix, tap to auto-fade');
+                this._wirePointerKnob(knobEl, {
+                    get: () => this._getCrossfadeX(),
+                    set: (t) => this._setCrossfadeX(t)
+                }, { onTap: () => this._triggerAutoFade() });
+                this._syncCrossfadeKnob();
+            }
+
             _wireFadeButtonKnob(knobEl, { durationKnob = false } = {}) {
                 if (!knobEl) return;
                 knobEl.classList.add('radio-visual-knob--switch', 'radio-visual-knob--fade-btn');
-                knobEl.setAttribute('role', 'button');
                 knobEl.tabIndex = 0;
-                this._setKnobRotation(knobEl, -45);
                 const trigger = () => this._triggerAutoFade();
                 if (durationKnob) {
+                    knobEl.setAttribute('role', 'slider');
                     knobEl.setAttribute('aria-label', 'Auto-fade; drag for duration, tap to cross-fade');
                     this._wirePointerKnob(knobEl, {
                         get: () => this._autoFadeDurationNorm(),
                         set: (t) => this._setAutoFadeDurationNorm(t)
                     }, { onTap: trigger });
-                } else {
-                    knobEl.setAttribute('aria-label', 'Cross-fade between decks');
-                    const onActivate = (ev) => {
-                        this._stopClick(ev);
-                        trigger();
-                    };
-                    knobEl.addEventListener('click', onActivate, { signal: this.abortCtrl.signal });
-                    knobEl.addEventListener('keydown', (ev) => {
-                        if (ev.key === 'Enter' || ev.key === ' ') {
-                            ev.preventDefault();
-                            trigger();
-                        }
-                    }, { signal: this.abortCtrl.signal });
                 }
             }
 
@@ -1326,7 +1343,7 @@
                 });
                 this._wireDeckKnob(deckAKnob, 'a');
                 this._wireDeckKnob(deckBKnob, 'b');
-                this._wireFadeButtonKnob(crossKnob);
+                this._wireCrossfadeKnob(crossKnob);
                 this._wireFadeButtonKnob(autoFadeKnob, { durationKnob: true });
                 this._wirePointerKnob(autoMixKnob, {
                     get: () => this._autoMixMaxNorm(),
@@ -1378,6 +1395,7 @@
                     this._rvFadeLedTimer = null;
                 }
                 this._rvFadeActive = false;
+                this._rvFadeTargetDeck = null;
                 try { if (this.animId) cancelAnimationFrame(this.animId); } catch (_) {}
                 this.animId = null;
                 if (this.clockTimerId) {
