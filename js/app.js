@@ -2420,6 +2420,7 @@ function randomGlowColor() {
                         }
                         
                         const vertFromDj = pDownTarget && typeof pDownTarget.closest === 'function' && pDownTarget.closest('#dj-visual-root');
+                        const vertFromRv = pDownTarget && typeof pDownTarget.closest === 'function' && pDownTarget.closest('#radio-visual-root');
 
                         if (dy > 0) { // SWIPE DOWN
                             if (kbdSheetOpen) {
@@ -2434,7 +2435,7 @@ function randomGlowColor() {
                                 return;
                             }
                             // Do not open Top Menu from vertical drags that started on DJ deck (e.g. TK filter pad)
-                            if (vertFromDj) return;
+                            if (vertFromDj || vertFromRv) return;
                             if (typeof openTopMenuPanel === 'function') openTopMenuPanel();
                             lockCanvasGestures();
                         } else { // SWIPE UP
@@ -2444,7 +2445,7 @@ function randomGlowColor() {
                                 lockCanvasGestures();
                                 return;
                             }
-                            if (!mixOpen && !vertFromDj) {
+                            if (!mixOpen && !vertFromDj && !vertFromRv) {
                                 toggleMixPanel();
                                 lockCanvasGestures();
                             }
@@ -2628,7 +2629,10 @@ function randomGlowColor() {
                 canvasEl.addEventListener('wheel', (e) => {
                     if (!state || !state.isPlaying) return;
                     try {
+                        if (document.getElementById('radio-visual-root')) return;
                         const t = e.target;
+                        if (t && t.closest && t.closest('#radio-visual-root')) return;
+                        if (t && t.closest && t.closest('#dj-visual-root')) return;
                         if (t && t.closest && t.closest('.dj-jog-wrap')) return;
                         if (t && t.closest && t.closest('.dj-deck-b-queue-panel')) return;
                         if (t && t.closest && t.closest('.dj-deck-b-media-panel')) return;
@@ -2701,6 +2705,8 @@ function randomGlowColor() {
                                 // DJ Decks visual manages its own station transport.
                                 // When it's active, prevent global "click screen => next/random station".
                                 if (document.getElementById('dj-visual-root')) return;
+                                if (document.getElementById('radio-visual-root')) return;
+                                if (e.target && e.target.closest && e.target.closest('#radio-visual-root')) return;
                                 if (typeof pickRandomStation === 'function') pickRandomStation();
                             } catch(_) {} 
                         }, delayMs);

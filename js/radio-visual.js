@@ -13,11 +13,23 @@
                 this._vuBuf = null;
                 this._tuningDrag = false;
                 this._volDrag = false;
+                this._rvAutoFadeRaf = null;
             }
+
+            static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
+            static get AUTOFADE_MIN_MS() { return 2000; }
+            static get AUTOFADE_MAX_MS() { return 15000; }
+            static get AUTOMIX_MAX_KEY() { return 'dj.automix.max.min.v1'; }
+            static get AUTOMIX_MIN_MIN() { return 1; }
+            static get AUTOMIX_MAX_MIN() { return 20; }
 
             _stopClick(ev) {
                 try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
                 try { window.__suppressNextClick = true; } catch (_) {}
+            }
+
+            _stopInteraction(ev) {
+                this._stopClick(ev);
             }
 
             _loadVisualByName(name) {
@@ -69,6 +81,243 @@
                 } catch (_) {}
             }
 
+            _stationBPrev() {
+                if (!Array.isArray(stations) || stations.length === 0) return;
+                const idx = (typeof currentStationBIndex === 'number' && currentStationBIndex >= 0)
+                    ? currentStationBIndex : 0;
+                this._setStationB((idx - 1 + stations.length) % stations.length);
+            }
+
+            _stationBNext() {
+                if (!Array.isArray(stations) || stations.length === 0) return;
+                const idx = (typeof currentStationBIndex === 'number' && currentStationBIndex >= 0)
+                    ? currentStationBIndex : 0;
+                this._setStationB((idx + 1) % stations.length);
+            }
+
+            _stationBRand() {
+                try {
+                    if (typeof pickRandomStationB === 'function') pickRandomStationB();
+                } catch (_) {}
+            }
+
+            _setStationB(index) {
+                if (!Array.isArray(stations) || !stations.length) return;
+                const idx = Math.max(0, Math.min(stations.length - 1, Number(index) || 0));
+                try { currentStationBIndex = idx; } catch (_) {}
+                try {
+                    if (typeof refreshMixStationB === 'function') refreshMixStationB();
+                } catch (_) {}
+                try {
+                    if (typeof playRadioB === 'function') playRadioB();
+                } catch (_) {}
+                this._updateStationUi();
+            }
+
+            _stationIndexToNorm(idx) {
+                if (!Array.isArray(stations) || stations.length <= 1) return 0.5;
+                const i = Math.max(0, Math.min(stations.length - 1, Number(idx) || 0));
+                return i / Math.max(1, stations.length - 1);
+            }
+
+            _normToStationIndex(t) {
+                if (!Array.isArray(stations) || !stations.length) return 0;
+                return Math.round(Math.max(0, Math.min(1, t)) * (stations.length - 1));
+            }
+
+            _getCrossfadeX() {
+                const dc = document.getElementById('dj-crossfader');
+                const mc = document.getElementById('mix-crossfader');
+                return Math.max(0, Math.min(1, Number((dc && dc.value) || (mc && mc.value) || 0)));
+            }
+
+            _setCrossfadeX(x) {
+                const v = Math.max(0, Math.min(1, Number(x) || 0));
+                try {
+                    if (typeof applyCrossfade === 'function') applyCrossfade(v);
+                } catch (_) {}
+                if (this.els.crossDigital) this.els.crossDigital.value = String(v);
+                this._syncCrossfadeKnob();
+            }
+
+            _syncCrossfadeKnob() {
+                const x = this._getCrossfadeX();
+                this._setKnobRotation(this.els.crossKnob, (x * 270) - 135);
+                if (this.els.crossDigital) this.els.crossDigital.value = String(x);
+                if (this.els.crossReadout) {
+                    const pct = Math.round(x * 100);
+                    this.els.crossReadout.textContent = pct <= 2 ? 'A' : (pct >= 98 ? 'B' : `${pct}%`);
+                }
+            }
+
+            _readAutoFadeDurationMs() {
+                let ms = 5000;
+                try {
+                    const stored = Number(localStorage.getItem(RadioVisualEngine.AUTOFADE_MS_KEY));
+                    if (Number.isFinite(stored)) ms = stored;
+                } catch (_) {}
+                return Math.max(
+                    RadioVisualEngine.AUTOFADE_MIN_MS,
+                    Math.min(RadioVisualEngine.AUTOFADE_MAX_MS, ms)
+                );
+            }
+
+            _writeAutoFadeDurationMs(ms) {
+                const clamped = Math.max(
+                    RadioVisualEngine.AUTOFADE_MIN_MS,
+                    Math.min(RadioVisualEngine.AUTOFADE_MAX_MS, Number(ms) || 5000)
+                );
+                try { localStorage.setItem(RadioVisualEngine.AUTOFADE_MS_KEY, String(clamped)); } catch (_) {}
+                if (this.els.autoFadeReadout) {
+                    this.els.autoFadeReadout.textContent = `${(clamped / 1000).toFixed(1)}s`;
+                }
+                return clamped;
+            }
+
+            _autoFadeDurationNorm() {
+                const ms = this._readAutoFadeDurationMs();
+                const span = RadioVisualEngine.AUTOFADE_MAX_MS - RadioVisualEngine.AUTOFADE_MIN_MS;
+                return span > 0 ? (ms - RadioVisualEngine.AUTOFADE_MIN_MS) / span : 0.5;
+            }
+
+            _setAutoFadeDurationNorm(t) {
+                const span = RadioVisualEngine.AUTOFADE_MAX_MS - RadioVisualEngine.AUTOFADE_MIN_MS;
+                const ms = RadioVisualEngine.AUTOFADE_MIN_MS + (Math.max(0, Math.min(1, t)) * span);
+                this._writeAutoFadeDurationMs(ms);
+                this._setKnobRotation(this.els.autoFadeKnob, (this._autoFadeDurationNorm() * 270) - 135);
+            }
+
+            _readAutoMixMaxMin() {
+                let mins = 20;
+                try {
+                    const stored = Number(localStorage.getItem(RadioVisualEngine.AUTOMIX_MAX_KEY));
+                    if (Number.isFinite(stored)) mins = stored;
+                } catch (_) {}
+                return Math.max(
+                    RadioVisualEngine.AUTOMIX_MIN_MIN,
+                    Math.min(RadioVisualEngine.AUTOMIX_MAX_MIN, Math.round(mins))
+                );
+            }
+
+            _writeAutoMixMaxMin(mins) {
+                const clamped = Math.max(
+                    RadioVisualEngine.AUTOMIX_MIN_MIN,
+                    Math.min(RadioVisualEngine.AUTOMIX_MAX_MIN, Math.round(Number(mins) || 20))
+                );
+                try { localStorage.setItem(RadioVisualEngine.AUTOMIX_MAX_KEY, String(clamped)); } catch (_) {}
+                if (this.els.autoMixReadout) {
+                    this.els.autoMixReadout.textContent = `${clamped}m max`;
+                }
+                return clamped;
+            }
+
+            _autoMixMaxNorm() {
+                const mins = this._readAutoMixMaxMin();
+                const span = RadioVisualEngine.AUTOMIX_MAX_MIN - RadioVisualEngine.AUTOMIX_MIN_MIN;
+                return span > 0 ? (mins - RadioVisualEngine.AUTOMIX_MIN_MIN) / span : 1;
+            }
+
+            _setAutoMixMaxNorm(t) {
+                const span = RadioVisualEngine.AUTOMIX_MAX_MIN - RadioVisualEngine.AUTOMIX_MIN_MIN;
+                const mins = RadioVisualEngine.AUTOMIX_MIN_MIN + (Math.max(0, Math.min(1, t)) * span);
+                this._writeAutoMixMaxMin(mins);
+                this._setKnobRotation(this.els.autoMixKnob, (this._autoMixMaxNorm() * 270) - 135);
+            }
+
+            _resumeDecksForCrossfade() {
+                try {
+                    const x = this._getCrossfadeX();
+                    const ga = 1 - x;
+                    const gb = x;
+                    const thresh = 0.03;
+                    if (ga > thresh && typeof audioEl !== 'undefined' && audioEl && audioEl.src && audioEl.paused) {
+                        audioEl.play().catch(() => {});
+                    }
+                    if (gb > thresh && typeof audioElB !== 'undefined' && audioElB && audioElB.src && audioElB.paused) {
+                        audioElB.play().catch(() => {});
+                    }
+                } catch (_) {}
+            }
+
+            _runLocalAutoFade() {
+                if (this._rvAutoFadeRaf) {
+                    try { cancelAnimationFrame(this._rvAutoFadeRaf); } catch (_) {}
+                    this._rvAutoFadeRaf = null;
+                }
+                const eng = state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks'
+                    ? state.activeVisualizer : null;
+                if (eng && typeof eng.triggerAutoFadeFromShortcut === 'function') {
+                    try { eng.triggerAutoFadeFromShortcut(); return; } catch (_) {}
+                }
+                const x = this._getCrossfadeX();
+                const targetDeck = x < 0.5 ? 'b' : 'a';
+                const endVal = targetDeck === 'b' ? 1 : 0;
+                const startVal = x;
+                if (Math.abs(endVal - startVal) < 0.001) return;
+                try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                if (targetDeck === 'b') {
+                    try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
+                } else {
+                    try {
+                        const m = (typeof getDeckAMediaForPlaybackState === 'function')
+                            ? getDeckAMediaForPlaybackState()
+                            : audioEl;
+                        if (!m || !m.src) {
+                            if (typeof playRadio === 'function') playRadio();
+                        } else if (m.paused) {
+                            m.play().catch(() => {});
+                        }
+                    } catch (_) {
+                        try { if (typeof playRadio === 'function') playRadio(); } catch (_) {}
+                    }
+                }
+                const durMs = this._readAutoFadeDurationMs();
+                const startTs = performance.now();
+                const tick = (ts) => {
+                    const t = Math.max(0, Math.min(1, (ts - startTs) / durMs));
+                    const eased = 1 - Math.pow(1 - t, 3);
+                    this._setCrossfadeX(startVal + ((endVal - startVal) * eased));
+                    this._resumeDecksForCrossfade();
+                    if (t >= 1) {
+                        this._rvAutoFadeRaf = null;
+                        return;
+                    }
+                    this._rvAutoFadeRaf = requestAnimationFrame(tick);
+                };
+                this._rvAutoFadeRaf = requestAnimationFrame(tick);
+            }
+
+            _triggerAutoFade() {
+                const btn = document.getElementById('mix-autofade') || document.getElementById('dj-autofade');
+                if (btn) {
+                    try { btn.click(); return; } catch (_) {}
+                }
+                this._runLocalAutoFade();
+            }
+
+            _toggleAutoMix() {
+                const btn = document.getElementById('mix-automix') || document.getElementById('dj-automix');
+                if (btn) {
+                    try { btn.click(); return; } catch (_) {}
+                }
+                try {
+                    const key = 'dj.automix.enabled.v1';
+                    const on = localStorage.getItem(key) === '1';
+                    const next = !on;
+                    localStorage.setItem(key, next ? '1' : '0');
+                    try { state.autoMixEnabled = next; } catch (_) {}
+                } catch (_) {}
+            }
+
+            _deckBActive() {
+                try {
+                    return !!(typeof audioElB !== 'undefined' && audioElB && audioElB.src &&
+                        audioElB.src !== 'about:blank' && !audioElB.paused && !audioElB.ended);
+                } catch (_) {
+                    return false;
+                }
+            }
+
             _syncVolumeFromGlobal() {
                 const vs = document.getElementById('volume-slider');
                 const v = vs ? Number(vs.value) : 0.5;
@@ -94,28 +343,60 @@
                 try { knobEl.style.setProperty('--radio-knob-deg', `${deg}deg`); } catch (_) {}
             }
 
-            _needlePercent() {
-                if (!Array.isArray(stations) || stations.length <= 1) return 50;
-                const idx = (typeof currentStationIndex === 'number' && currentStationIndex >= 0)
-                    ? currentStationIndex : 0;
-                return (idx / Math.max(1, stations.length - 1)) * 100;
+            _needlePercentA() {
+                return this._stationIndexToNorm(
+                    (typeof currentStationIndex === 'number' && currentStationIndex >= 0)
+                        ? currentStationIndex : 0
+                ) * 100;
+            }
+
+            _needlePercentB() {
+                return this._stationIndexToNorm(
+                    (typeof currentStationBIndex === 'number' && currentStationBIndex >= 0)
+                        ? currentStationBIndex : 0
+                ) * 100;
             }
 
             _updateStationUi() {
-                let name = '—';
+                let nameA = '—';
+                let nameB = '—';
                 try {
-                    const idx = (typeof currentStationIndex === 'number' && currentStationIndex >= 0)
+                    const idxA = (typeof currentStationIndex === 'number' && currentStationIndex >= 0)
                         ? currentStationIndex : -1;
-                    if (idx >= 0 && stations[idx]) name = stations[idx].name || name;
+                    if (idxA >= 0 && stations[idxA]) nameA = stations[idxA].name || nameA;
                     else if (stationBannerNameEl && stationBannerNameEl.textContent) {
-                        name = stationBannerNameEl.textContent;
+                        nameA = stationBannerNameEl.textContent;
                     }
+                    const idxB = (typeof currentStationBIndex === 'number' && currentStationBIndex >= 0)
+                        ? currentStationBIndex : -1;
+                    if (idxB >= 0 && stations[idxB]) nameB = stations[idxB].name || nameB;
                 } catch (_) {}
-                if (this.els.stationAnalog) this.els.stationAnalog.textContent = name;
-                if (this.els.stationDigital) this.els.stationDigital.textContent = name;
-                const pct = this._needlePercent();
-                if (this.els.needle) this.els.needle.style.left = `${pct}%`;
-                if (this.els.tunerGlow) this.els.tunerGlow.style.left = `${pct}%`;
+                if (this.els.stationAnalog) {
+                    this.els.stationAnalog.textContent = `A · ${nameA}`;
+                }
+                if (this.els.stationBAnalog) {
+                    this.els.stationBAnalog.textContent = `B · ${nameB}`;
+                }
+                if (this.els.stationDigital) {
+                    this.els.stationDigital.textContent = `A: ${nameA}  |  B: ${nameB}`;
+                }
+                const pctA = this._needlePercentA();
+                const pctB = this._needlePercentB();
+                if (this.els.needle) this.els.needle.style.left = `${pctA}%`;
+                if (this.els.tunerGlow) this.els.tunerGlow.style.left = `${pctA}%`;
+                if (this.els.needleB) {
+                    this.els.needleB.style.left = `${pctB}%`;
+                    const bOn = this._deckBActive();
+                    this.els.needleB.classList.toggle('is-active', bOn);
+                    this.els.needleB.classList.toggle('is-idle', !bOn);
+                }
+                if (this.els.tunerGlowB) {
+                    this.els.tunerGlowB.style.left = `${pctB}%`;
+                    this.els.tunerGlowB.classList.toggle('is-active', this._deckBActive());
+                }
+                this._syncCrossfadeKnob();
+                this._setKnobRotation(this.els.tuneKnob, (this._needlePercentA() / 100 * 270) - 135);
+                this._setKnobRotation(this.els.tuneBKnob, (this._needlePercentB() / 100 * 270) - 135);
                 let meta = '';
                 try {
                     if (typeof currentNowPlayingICY !== 'undefined' && currentNowPlayingICY) {
@@ -281,31 +562,56 @@
                 });
             }
 
-            _wirePointerKnob(knobEl, onValue) {
+            _mkKnobBlock(label, knob, readoutEl) {
+                const b = document.createElement('div');
+                b.className = 'radio-visual-knob-block';
+                const l = document.createElement('div');
+                l.className = 'radio-visual-knob-label';
+                l.textContent = label;
+                b.appendChild(l);
+                b.appendChild(knob);
+                if (readoutEl) b.appendChild(readoutEl);
+                return b;
+            }
+
+            _wirePointerKnob(knobEl, onValue, opts) {
                 if (!knobEl) return;
                 let active = false;
+                let moved = false;
                 let startY = 0;
                 let startVal = 0;
+                const tapSlop = 4;
                 const onDown = (ev) => {
                     this._stopClick(ev);
                     active = true;
+                    moved = false;
                     startY = ev.clientY;
                     startVal = onValue.get();
+                    if (opts && opts.onDragStart) {
+                        try { opts.onDragStart(); } catch (_) {}
+                    }
                     try { knobEl.setPointerCapture(ev.pointerId); } catch (_) {}
                 };
                 const onMove = (ev) => {
                     if (!active) return;
+                    if (Math.abs(ev.clientY - startY) > tapSlop) moved = true;
+                    if (!moved) return;
                     onValue.set(Math.max(0, Math.min(1, startVal + (startY - ev.clientY) * 0.004)));
                 };
                 const onUp = (ev) => {
                     if (!active) return;
                     active = false;
+                    this._stopClick(ev);
                     try { knobEl.releasePointerCapture(ev.pointerId); } catch (_) {}
+                    if (!moved && opts && opts.onTap) {
+                        try { opts.onTap(); } catch (_) {}
+                    }
                 };
                 knobEl.addEventListener('pointerdown', onDown, { signal: this.abortCtrl.signal });
                 knobEl.addEventListener('pointermove', onMove, { signal: this.abortCtrl.signal });
                 knobEl.addEventListener('pointerup', onUp, { signal: this.abortCtrl.signal });
                 knobEl.addEventListener('pointercancel', onUp, { signal: this.abortCtrl.signal });
+                knobEl.addEventListener('click', (ev) => this._stopClick(ev), { signal: this.abortCtrl.signal });
             }
 
             init() {
@@ -354,6 +660,10 @@
                 stA.className = 'radio-visual-station-title';
                 stA.id = 'radio-visual-station-a';
                 stA.textContent = '—';
+                const stB = document.createElement('div');
+                stB.className = 'radio-visual-station-deck-b';
+                stB.id = 'radio-visual-station-b';
+                stB.textContent = '—';
                 const tunerShell = document.createElement('div');
                 tunerShell.className = 'radio-visual-tuner-shell';
                 const tunerRail = document.createElement('div');
@@ -379,9 +689,15 @@
                 const glow = document.createElement('div');
                 glow.className = 'radio-visual-tuner-glow';
                 glow.id = 'radio-visual-tuner-glow';
+                const glowB = document.createElement('div');
+                glowB.className = 'radio-visual-tuner-glow radio-visual-tuner-glow--deck-b';
+                glowB.id = 'radio-visual-tuner-glow-b';
                 const needle = document.createElement('div');
-                needle.className = 'radio-visual-tuner-needle';
+                needle.className = 'radio-visual-tuner-needle radio-visual-tuner-needle--deck-a';
                 needle.id = 'radio-visual-needle';
+                const needleB = document.createElement('div');
+                needleB.className = 'radio-visual-tuner-needle radio-visual-tuner-needle--deck-b';
+                needleB.id = 'radio-visual-needle-b';
                 const vuWrap = document.createElement('div');
                 vuWrap.className = 'radio-visual-vu-wrap';
                 const vuCanvas = document.createElement('canvas');
@@ -390,40 +706,55 @@
                 vuWrap.appendChild(vuCanvas);
                 tunerRail.appendChild(ticks);
                 tunerRail.appendChild(glow);
+                tunerRail.appendChild(glowB);
                 tunerRail.appendChild(needle);
+                tunerRail.appendChild(needleB);
                 tunerShell.appendChild(tunerRail);
                 tunerShell.appendChild(vuWrap);
-                const knobs = document.createElement('div');
+                                const knobs = document.createElement('div');
                 knobs.className = 'radio-visual-knobs-row';
-                const volKnob = document.createElement('div');
-                volKnob.className = 'radio-visual-knob';
-                volKnob.id = 'radio-visual-vol-knob';
-                volKnob.setAttribute('role', 'slider');
-                volKnob.setAttribute('aria-label', 'Volume');
-                const tuneKnob = document.createElement('div');
-                tuneKnob.className = 'radio-visual-knob';
-                tuneKnob.id = 'radio-visual-tune-knob';
-                tuneKnob.setAttribute('role', 'slider');
-                tuneKnob.setAttribute('aria-label', 'Station tuning');
-                const mkKnob = (label, knob) => {
-                    const b = document.createElement('div');
-                    b.className = 'radio-visual-knob-block';
-                    const l = document.createElement('div');
-                    l.className = 'radio-visual-knob-label';
-                    l.textContent = label;
-                    b.appendChild(l);
-                    b.appendChild(knob);
-                    return b;
+                const knobs2 = document.createElement('div');
+                knobs2.className = 'radio-visual-knobs-row radio-visual-knobs-row--secondary';
+                const mkControlKnob = (id, aria) => {
+                    const k = document.createElement('div');
+                    k.className = 'radio-visual-knob';
+                    k.id = id;
+                    k.setAttribute('role', 'slider');
+                    k.setAttribute('aria-label', aria);
+                    return k;
                 };
-                knobs.appendChild(mkKnob('Volume', volKnob));
-                knobs.appendChild(mkKnob('Tuning', tuneKnob));
+                const mkReadout = (text) => {
+                    const r = document.createElement('div');
+                    r.className = 'radio-visual-knob-readout';
+                    r.textContent = text;
+                    return r;
+                };
+                const volKnob = mkControlKnob('radio-visual-vol-knob', 'Volume');
+                const tuneKnob = mkControlKnob('radio-visual-tune-knob', 'Deck A station tuning');
+                const tuneBKnob = mkControlKnob('radio-visual-tune-b-knob', 'Deck B station tuning');
+                const crossKnob = mkControlKnob('radio-visual-cross-knob', 'Crossfade A to B');
+                const autoFadeKnob = mkControlKnob('radio-visual-autofade-knob', 'Auto-fade duration; tap to fade');
+                autoFadeKnob.classList.add('radio-visual-knob--action');
+                const autoMixKnob = mkControlKnob('radio-visual-automix-knob', 'Auto-mix max interval; tap to toggle');
+                autoMixKnob.classList.add('radio-visual-knob--action');
+                const crossReadout = mkReadout('A');
+                const autoFadeReadout = mkReadout(`${(this._readAutoFadeDurationMs() / 1000).toFixed(1)}s`);
+                const autoMixReadout = mkReadout(`${this._readAutoMixMaxMin()}m max`);
+                knobs.appendChild(this._mkKnobBlock('Volume', volKnob));
+                knobs.appendChild(this._mkKnobBlock('Deck A', tuneKnob));
+                knobs.appendChild(this._mkKnobBlock('Deck B', tuneBKnob));
+                knobs.appendChild(this._mkKnobBlock('Crossfade', crossKnob, crossReadout));
+                knobs2.appendChild(this._mkKnobBlock('Auto-Fade', autoFadeKnob, autoFadeReadout));
+                knobs2.appendChild(this._mkKnobBlock('Auto-Mix', autoMixKnob, autoMixReadout));
                 const analogBtns = document.createElement('div');
                 analogBtns.className = 'radio-visual-btn-grid';
                 analogBtns.id = 'radio-visual-analog-btns';
                 stageA.appendChild(onAir);
                 stageA.appendChild(stA);
+                stageA.appendChild(stB);
                 stageA.appendChild(tunerShell);
                 stageA.appendChild(knobs);
+                stageA.appendChild(knobs2);
                 stageA.appendChild(analogBtns);
 
                 const stageD = document.createElement('section');
@@ -465,14 +796,43 @@
                 volRow.appendChild(volDig);
                 const stRow = document.createElement('div');
                 stRow.className = 'radio-visual-digital-station-row';
-                [['prev', 'Prev'], ['next', 'Next'], ['rand', 'Rand']].forEach(([act, lab]) => {
+                stRow.setAttribute('aria-label', 'Deck A');
+                [['prev', 'A◀'], ['next', 'A▶'], ['rand', 'A Rand']].forEach(([act, lab]) => {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
                     b.dataset.rvAction = act;
+                    b.dataset.rvDeck = 'a';
                     b.textContent = lab;
                     stRow.appendChild(b);
                 });
+                const stRowB = document.createElement('div');
+                stRowB.className = 'radio-visual-digital-station-row';
+                stRowB.setAttribute('aria-label', 'Deck B');
+                [['prev', 'B◀'], ['next', 'B▶'], ['rand', 'B Rand']].forEach(([act, lab]) => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'radio-visual-btn';
+                    b.dataset.rvAction = act;
+                    b.dataset.rvDeck = 'b';
+                    b.textContent = lab;
+                    stRowB.appendChild(b);
+                });
+                const crossRow = document.createElement('div');
+                crossRow.className = 'radio-visual-digital-vol-row';
+                const crossLbl = document.createElement('label');
+                crossLbl.htmlFor = 'radio-visual-cross-digital';
+                crossLbl.textContent = 'XFADE';
+                const crossDig = document.createElement('input');
+                crossDig.type = 'range';
+                crossDig.className = 'radio-visual-digital-vol';
+                crossDig.id = 'radio-visual-cross-digital';
+                crossDig.min = '0';
+                crossDig.max = '1';
+                crossDig.step = '0.01';
+                crossDig.value = String(this._getCrossfadeX());
+                crossRow.appendChild(crossLbl);
+                crossRow.appendChild(crossDig);
                 const eqWrap = document.createElement('div');
                 eqWrap.className = 'radio-visual-digital-eq';
                 const eqCanvas = document.createElement('canvas');
@@ -485,6 +845,8 @@
                 dPanel.appendChild(dDisp);
                 dPanel.appendChild(volRow);
                 dPanel.appendChild(stRow);
+                dPanel.appendChild(stRowB);
+                dPanel.appendChild(crossRow);
                 dPanel.appendChild(eqWrap);
                 dPanel.appendChild(digBtns);
                 stageD.appendChild(dPanel);
@@ -498,16 +860,27 @@
                     stageDigital: stageD,
                     onAir,
                     stationAnalog: stA,
+                    stationBAnalog: stB,
                     stationDigital: stD,
                     ticks,
                     needle,
+                    needleB,
                     tunerGlow: glow,
+                    tunerGlowB: glowB,
                     tunerRail,
                     vuCanvas,
                     digitalEqCanvas: eqCanvas,
                     volKnob,
                     tuneKnob,
+                    tuneBKnob,
+                    crossKnob,
+                    autoFadeKnob,
+                    autoMixKnob,
+                    crossReadout,
+                    autoFadeReadout,
+                    autoMixReadout,
                     volDigital: volDig,
+                    crossDigital: crossDig,
                     digitalStatus: dStat,
                     digitalMeta: dMeta,
                     digitalClock: dClk,
@@ -519,21 +892,34 @@
                 this._buildFeatureButtons(digBtns);
                 this._setSkin(this.skin);
                 this._syncVolumeFromGlobal();
+                this._setAutoFadeDurationNorm(this._autoFadeDurationNorm());
+                this._setAutoMixMaxNorm(this._autoMixMaxNorm());
+                this._syncCrossfadeKnob();
                 this._updateStationUi();
                 this._tickClock();
 
                 btnA.addEventListener('click', (ev) => { this._stopClick(ev); this._setSkin('analogue'); }, sig);
                 btnD.addEventListener('click', (ev) => { this._stopClick(ev); this._setSkin('digital'); }, sig);
                 volDig.addEventListener('input', () => this._applyVolume(volDig.value), sig);
-                stRow.querySelectorAll('[data-rv-action]').forEach((b) => {
-                    b.addEventListener('click', (ev) => {
-                        this._stopClick(ev);
-                        const a = b.dataset.rvAction;
-                        if (a === 'prev') this._stationPrev();
-                        else if (a === 'next') this._stationNext();
-                        else if (a === 'rand') this._stationRand();
-                    }, sig);
-                });
+                crossDig.addEventListener('input', () => this._setCrossfadeX(crossDig.value), sig);
+                const bindDeckRow = (rowEl) => {
+                    rowEl.querySelectorAll('[data-rv-action]').forEach((b) => {
+                        b.addEventListener('click', (ev) => {
+                            this._stopClick(ev);
+                            const deck = b.dataset.rvDeck || 'a';
+                            const a = b.dataset.rvAction;
+                            if (deck === 'b') {
+                                if (a === 'prev') this._stationBPrev();
+                                else if (a === 'next') this._stationBNext();
+                                else if (a === 'rand') this._stationBRand();
+                            } else if (a === 'prev') this._stationPrev();
+                            else if (a === 'next') this._stationNext();
+                            else if (a === 'rand') this._stationRand();
+                        }, sig);
+                    });
+                };
+                bindDeckRow(stRow);
+                bindDeckRow(stRowB);
                 tunerRail.addEventListener('click', (ev) => {
                     this._stopClick(ev);
                     if (!Array.isArray(stations) || stations.length < 2) return;
@@ -547,16 +933,33 @@
                     set: (v) => this._applyVolume(v)
                 });
                 this._wirePointerKnob(tuneKnob, {
-                    get: () => this._needlePercent() / 100,
+                    get: () => this._needlePercentA() / 100,
                     set: (t) => {
                         if (!Array.isArray(stations) || !stations.length) return;
-                        const idx = Math.round(Math.max(0, Math.min(1, t)) * (stations.length - 1));
-                        if (typeof setStation === 'function') setStation(idx);
+                        if (typeof setStation === 'function') setStation(this._normToStationIndex(t));
                     }
                 });
+                this._wirePointerKnob(tuneBKnob, {
+                    get: () => this._needlePercentB() / 100,
+                    set: (t) => this._setStationB(this._normToStationIndex(t))
+                });
+                this._wirePointerKnob(crossKnob, {
+                    get: () => this._getCrossfadeX(),
+                    set: (t) => this._setCrossfadeX(t)
+                });
+                this._wirePointerKnob(autoFadeKnob, {
+                    get: () => this._autoFadeDurationNorm(),
+                    set: (t) => this._setAutoFadeDurationNorm(t)
+                }, { onTap: () => this._triggerAutoFade() });
+                this._wirePointerKnob(autoMixKnob, {
+                    get: () => this._autoMixMaxNorm(),
+                    set: (t) => this._setAutoMixMaxNorm(t)
+                }, { onTap: () => this._toggleAutoMix() });
 
-                root.addEventListener('click', (ev) => ev.stopPropagation(), sig);
-                root.addEventListener('pointerdown', (ev) => ev.stopPropagation(), sig);
+                const stopRv = (ev) => this._stopInteraction(ev);
+                root.addEventListener('click', stopRv, sig);
+                root.addEventListener('pointerdown', stopRv, sig);
+                root.addEventListener('pointerup', stopRv, sig);
 
                 window.addEventListener('resize', this.resizeHandler, sig);
                 this.onResize();
@@ -578,6 +981,10 @@
             }
 
             destroy() {
+                if (this._rvAutoFadeRaf) {
+                    try { cancelAnimationFrame(this._rvAutoFadeRaf); } catch (_) {}
+                    this._rvAutoFadeRaf = null;
+                }
                 try { if (this.animId) cancelAnimationFrame(this.animId); } catch (_) {}
                 this.animId = null;
                 if (this.clockTimerId) {
