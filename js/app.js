@@ -3643,8 +3643,10 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                 e.preventDefault();
                 e.stopPropagation();
                 const loadDjDecksMode = () => {
-                    const m = (typeof globalThis.modes !== 'undefined' && globalThis.modes) || modes;
-                    const load = (typeof globalThis.loadMode === 'function') ? globalThis.loadMode : loadMode;
+                    const load = (typeof globalThis.loadMode === 'function')
+                        ? globalThis.loadMode
+                        : (typeof loadMode === 'function' ? loadMode : null);
+                    const m = globalThis.modes || modes;
                     if (!Array.isArray(m) || typeof load !== 'function') return;
                     const idx = m.findIndex((x) => x && x.name === 'DJ Decks');
                     if (idx >= 0) load(idx);

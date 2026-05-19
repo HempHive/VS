@@ -14,6 +14,8 @@
                 this._tuningDrag = false;
                 this._volDrag = false;
                 this._rvAutoFadeRaf = null;
+                this.digitalCenterMode = 'spectrum';
+                this._digitalVolStep = 0.05;
             }
 
             static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
@@ -142,6 +144,7 @@
 
             _syncCrossfadeKnob() {
                 const x = this._getCrossfadeX();
+                this._setKnobRotation(this.els.crossKnob, (x * 270) - 135);
                 if (this.els.crossDigital) this.els.crossDigital.value = String(x);
             }
 
@@ -398,63 +401,208 @@
                 if (this.els.deckAKnob) {
                     this.els.deckAKnob.classList.toggle('is-on', aOn);
                     this.els.deckAKnob.setAttribute('aria-pressed', aOn ? 'true' : 'false');
+                    this._setKnobRotation(this.els.deckAKnob, (this._needlePercentA() / 100 * 270) - 135);
                 }
                 if (this.els.deckBKnob) {
                     this.els.deckBKnob.classList.toggle('is-on', bOn);
                     this.els.deckBKnob.setAttribute('aria-pressed', bOn ? 'true' : 'false');
+                    this._setKnobRotation(this.els.deckBKnob, (this._needlePercentB() / 100 * 270) - 135);
                 }
             }
 
-            _wireDeckSwitch(knobEl, deck) {
-                if (!knobEl) return;
-                knobEl.classList.add('radio-visual-knob--switch');
-                knobEl.setAttribute('role', 'switch');
-                knobEl.tabIndex = 0;
-                const run = async () => {
-                    if (deck === 'a') await this._toggleDeckA();
-                    else await this._toggleDeckB();
-                    this._syncDeckSwitches();
-                    try { resetIdleTimer(); } catch (_) {}
-                };
-                knobEl.addEventListener('click', (ev) => {
-                    this._stopClick(ev);
-                    run();
-                }, { signal: this.abortCtrl.signal });
-                knobEl.addEventListener('keydown', (ev) => {
-                    if (ev.key !== 'Enter' && ev.key !== ' ') return;
-                    ev.preventDefault();
-                    this._stopClick(ev);
-                    run();
-                }, { signal: this.abortCtrl.signal });
+            _stepDigitalVolume(delta) {
+                const vs = document.getElementById('volume-slider');
+                const cur = vs ? Number(vs.value) : 0.5;
+                const step = Number(this._digitalVolStep) || 0.05;
+                this._applyVolume(cur + (Number(delta) || 0) * step);
+                this._syncDigitalVolumeUi();
             }
 
-            _wireClickKnob(knobEl, onClick) {
+            _syncDigitalVolumeUi() {
+                const vs = document.getElementById('volume-slider');
+                const v = vs ? Number(vs.value) : 0.5;
+                if (this.els.volDigitalReadout) {
+                    this.els.volDigitalReadout.textContent = `${Math.round(v * 100)}%`;
+                }
+            }
+
+            _setDigitalCenterMode(mode) {
+                const next = (mode === 'deckB') ? 'deckB' : 'spectrum';
+                this.digitalCenterMode = next;
+                try { localStorage.setItem('radioVisual.digitalCenter.v1', next); } catch (_) {}
+                if (this.els.digitalCenterSpectrum) {
+                    this.els.digitalCenterSpectrum.classList.toggle('is-active', next === 'spectrum');
+                }
+                if (this.els.digitalCenterDeckB) {
+                    this.els.digitalCenterDeckB.classList.toggle('is-active', next === 'deckB');
+                }
+                if (this.els.btnDigitalSpectrum) {
+                    this.els.btnDigitalSpectrum.classList.toggle('is-active', next === 'spectrum');
+                }
+                if (this.els.btnDigitalDeckB) {
+                    this.els.btnDigitalDeckB.classList.toggle('is-active', next === 'deckB');
+                }
+                if (next === 'deckB') this._syncDigitalDeckBVideo();
+            }
+
+            _tearDownDigitalDeckBPlayer() {
+                try {
+                    if (this.els.digitalDeckBVideo) {
+                        this.els.digitalDeckBVideo.pause();
+                        this.els.digitalDeckBVideo.removeAttribute('src');
+                    }
+                } catch (_) {}
+            }
+
+            _syncDigitalDeckBVideo() {
+                const vid = this.els.digitalDeckBVideo;
+                if (!vid || this.digitalCenterMode !== 'deckB') return;
+                try {
+                    let layer = null;
+                    if (typeof getDeckBVideoPlaybackSources === 'function') {
+                        const sources = getDeckBVideoPlaybackSources();
+                        if (sources && sources.length) layer = sources[0];
+                    }
+                    if (!layer && typeof deckVideoFeeds !== 'undefined' && deckVideoFeeds.b && deckVideoFeeds.b.url) {
+                        layer = { url: deckVideoFeeds.b.url, label: deckVideoFeeds.b.label || 'Deck B' };
+                    }
+                    if (layer && typeof applyDeckBVideoPayloadToElement === 'function') {
+                        applyDeckBVideoPayloadToElement(vid, layer, null);
+                        return;
+                    }
+                    if (layer && layer.url) {
+                        vid.src = layer.url;
+                        vid.play().catch(() => {});
+                    }
+                } catch (_) {}
+            }
+
+            _drawDigitalSpectrum() {
+                const canvas = this.els.digitalSpectrumCanvas;
+                if (!canvas || this.skin !== 'digital' || this.digitalCenterMode !== 'spectrum') return;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+                const w = canvas.width;
+                const h = canvas.height;
+                if (w < 8 || h < 8) return;
+                const cx = w * 0.5;
+                const cy = h * 0.52;
+                const t = performance.now() * 0.001;
+                ctx.clearRect(0, 0, w, h);
+                const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.55);
+                bg.addColorStop(0, '#0a1e28');
+                bg.addColorStop(0.55, '#061018');
+                bg.addColorStop(1, '#020608');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, w, h);
+                let levels = [];
+                try {
+                    if (state.analyserNode && state.audioCtx) {
+                        const fft = state.analyserNode.fftSize || 256;
+                        if (!this._vuBuf || this._vuBuf.length !== fft) {
+                            this._vuBuf = new Uint8Array(fft);
+                        }
+                        state.analyserNode.getByteFrequencyData(this._vuBuf);
+                        const bars = 72;
+                        const step = Math.floor(this._vuBuf.length / bars) || 1;
+                        for (let i = 0; i < bars; i++) {
+                            let sum = 0;
+                            const start = i * step;
+                            const end = Math.min(this._vuBuf.length, start + step);
+                            for (let j = start; j < end; j++) sum += this._vuBuf[j];
+                            levels.push(sum / Math.max(1, end - start) / 255);
+                        }
+                    }
+                } catch (_) {}
+                if (!levels.length) {
+                    for (let i = 0; i < 72; i++) {
+                        levels.push(0.12 + 0.1 * Math.sin(t * 2.2 + i * 0.42));
+                    }
+                }
+                const innerR = Math.min(w, h) * 0.14;
+                const outerR = Math.min(w, h) * 0.44;
+                ctx.strokeStyle = 'rgba(0, 255, 220, 0.08)';
+                ctx.lineWidth = 1;
+                for (let ring = 1; ring <= 4; ring++) {
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, innerR + ((outerR - innerR) * ring) / 4, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                const n = levels.length;
+                for (let i = 0; i < n; i++) {
+                    const lv = Math.max(0.05, Math.min(1, levels[i] || 0));
+                    const a0 = (i / n) * Math.PI * 2 - Math.PI / 2;
+                    const a1 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2;
+                    const r1 = innerR + (outerR - innerR) * lv;
+                    ctx.beginPath();
+                    ctx.moveTo(cx + Math.cos(a0) * innerR, cy + Math.sin(a0) * innerR);
+                    ctx.lineTo(cx + Math.cos(a0) * r1, cy + Math.sin(a0) * r1);
+                    ctx.lineTo(cx + Math.cos(a1) * r1, cy + Math.sin(a1) * r1);
+                    ctx.lineTo(cx + Math.cos(a1) * innerR, cy + Math.sin(a1) * innerR);
+                    ctx.closePath();
+                    const hue = 170 + (i / n) * 80;
+                    ctx.fillStyle = `hsla(${hue}, 90%, 58%, ${0.35 + lv * 0.55})`;
+                    ctx.fill();
+                }
+                ctx.beginPath();
+                ctx.arc(cx, cy, innerR * 0.92, 0, Math.PI * 2);
+                const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
+                core.addColorStop(0, 'rgba(0, 255, 220, 0.35)');
+                core.addColorStop(1, 'rgba(0, 40, 60, 0.05)');
+                ctx.fillStyle = core;
+                ctx.fill();
+                if (this._vuBuf && this._vuBuf.length > 8) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'rgba(160, 255, 245, 0.75)';
+                    ctx.lineWidth = 2;
+                    const waveW = w * 0.72;
+                    const waveH = h * 0.12;
+                    const waveY = cy + outerR * 0.35;
+                    const waveX0 = cx - waveW / 2;
+                    const stepW = waveW / 64;
+                    for (let i = 0; i < 64; i++) {
+                        const idx = Math.floor((i / 64) * (this._vuBuf.length / 2));
+                        const v = (this._vuBuf[idx] || 0) / 255;
+                        const x = waveX0 + i * stepW;
+                        const y = waveY - v * waveH;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            _wireDeckKnob(knobEl, deck) {
                 if (!knobEl) return;
                 knobEl.classList.add('radio-visual-knob--switch');
-                knobEl.setAttribute('role', 'button');
+                knobEl.classList.add(deck === 'a' ? 'radio-visual-knob--deck-a' : 'radio-visual-knob--deck-b');
+                knobEl.setAttribute('role', 'slider');
                 knobEl.tabIndex = 0;
-                const run = () => {
-                    try { onClick(); } catch (_) {}
-                    try { resetIdleTimer(); } catch (_) {}
-                };
-                knobEl.addEventListener('click', (ev) => {
-                    this._stopClick(ev);
-                    run();
-                }, { signal: this.abortCtrl.signal });
-                knobEl.addEventListener('keydown', (ev) => {
-                    if (ev.key !== 'Enter' && ev.key !== ' ') return;
-                    ev.preventDefault();
-                    this._stopClick(ev);
-                    run();
-                }, { signal: this.abortCtrl.signal });
+                this._wirePointerKnob(knobEl, {
+                    get: () => (deck === 'a' ? this._needlePercentA() : this._needlePercentB()) / 100,
+                    set: (t) => {
+                        const idx = this._normToStationIndex(t);
+                        if (deck === 'a') {
+                            if (typeof setStation === 'function') setStation(idx);
+                        } else {
+                            this._setStationB(idx);
+                        }
+                    }
+                }, {
+                    onTap: async () => {
+                        if (deck === 'a') await this._toggleDeckA();
+                        else await this._toggleDeckB();
+                        this._syncDeckSwitches();
+                    }
+                });
             }
 
             _syncVolumeFromGlobal() {
                 const vs = document.getElementById('volume-slider');
                 const v = vs ? Number(vs.value) : 0.5;
                 if (this.els.volAnalog) this.els.volAnalog.value = String(v);
-                if (this.els.volDigital) this.els.volDigital.value = String(v);
                 this._setKnobRotation(this.els.volKnob, (v * 270) - 135);
+                this._syncDigitalVolumeUi();
             }
 
             _applyVolume(val) {
@@ -465,8 +613,8 @@
                 const vs = document.getElementById('volume-slider');
                 if (vs) vs.value = String(v);
                 if (this.els.volAnalog) this.els.volAnalog.value = String(v);
-                if (this.els.volDigital) this.els.volDigital.value = String(v);
                 this._setKnobRotation(this.els.volKnob, (v * 270) - 135);
+                this._syncDigitalVolumeUi();
             }
 
             _setKnobRotation(knobEl, deg) {
@@ -563,6 +711,10 @@
                 if (this.els.stageDigital) this.els.stageDigital.classList.toggle('is-active', next === 'digital');
                 if (this.els.btnSkinAnalog) this.els.btnSkinAnalog.classList.toggle('is-active', next === 'analogue');
                 if (this.els.btnSkinDigital) this.els.btnSkinDigital.classList.toggle('is-active', next === 'digital');
+                if (next === 'digital') {
+                    try { this.onResize(); } catch (_) {}
+                    if (this.digitalCenterMode === 'deckB') this._syncDigitalDeckBVideo();
+                }
             }
 
             _drawMeters() {
@@ -636,6 +788,7 @@
                 };
                 fit(this.els.vuCanvas);
                 fit(this.els.digitalEqCanvas);
+                fit(this.els.digitalSpectrumCanvas);
             }
 
             _bindAction(btn, fn) {
@@ -749,6 +902,12 @@
                 try {
                     const stored = localStorage.getItem('radioVisual.skin.v1');
                     if (stored === 'digital' || stored === 'analogue') this.skin = stored;
+                } catch (_) {}
+                try {
+                    const centerStored = localStorage.getItem('radioVisual.digitalCenter.v1');
+                    if (centerStored === 'deckB' || centerStored === 'spectrum') {
+                        this.digitalCenterMode = centerStored;
+                    }
                 } catch (_) {}
 
                 const root = document.createElement('div');
@@ -924,21 +1083,71 @@
                 dDisp.appendChild(dStat);
                 dDisp.appendChild(dMeta);
                 dDisp.appendChild(dClk);
+                const centerModeRow = document.createElement('div');
+                centerModeRow.className = 'radio-visual-digital-station-row';
+                const btnDigitalSpectrum = document.createElement('button');
+                btnDigitalSpectrum.type = 'button';
+                btnDigitalSpectrum.className = 'radio-visual-btn';
+                btnDigitalSpectrum.textContent = 'Spectrum';
+                const btnDigitalDeckB = document.createElement('button');
+                btnDigitalDeckB.type = 'button';
+                btnDigitalDeckB.className = 'radio-visual-btn';
+                btnDigitalDeckB.textContent = 'Deck B Player';
+                centerModeRow.appendChild(btnDigitalSpectrum);
+                centerModeRow.appendChild(btnDigitalDeckB);
+                const digitalCenter = document.createElement('div');
+                digitalCenter.className = 'radio-visual-digital-center';
+                const digitalCenterSpectrum = document.createElement('div');
+                digitalCenterSpectrum.className = 'radio-visual-digital-center-pane is-active';
+                const digitalSpectrumCanvas = document.createElement('canvas');
+                digitalSpectrumCanvas.className = 'radio-visual-digital-spectrum-canvas';
+                digitalSpectrumCanvas.id = 'radio-visual-digital-spectrum';
+                digitalCenterSpectrum.appendChild(digitalSpectrumCanvas);
+                const digitalCenterDeckB = document.createElement('div');
+                digitalCenterDeckB.className = 'radio-visual-digital-center-pane';
+                const digitalDeckBMount = document.createElement('div');
+                digitalDeckBMount.className = 'radio-visual-digital-deck-b-mount';
+                const digitalDeckBVideo = document.createElement('video');
+                digitalDeckBVideo.className = 'radio-visual-digital-deck-b-video';
+                digitalDeckBVideo.playsInline = true;
+                digitalDeckBVideo.muted = true;
+                digitalDeckBMount.appendChild(digitalDeckBVideo);
+                digitalCenterDeckB.appendChild(digitalDeckBMount);
+                digitalCenter.appendChild(digitalCenterSpectrum);
+                digitalCenter.appendChild(digitalCenterDeckB);
                 const volRow = document.createElement('div');
-                volRow.className = 'radio-visual-digital-vol-row';
-                const volLbl = document.createElement('label');
-                volLbl.htmlFor = 'radio-visual-vol-digital';
+                volRow.className = 'radio-visual-digital-vol-step';
+                const volLbl = document.createElement('span');
+                volLbl.className = 'radio-visual-digital-vol-step-label';
                 volLbl.textContent = 'VOL';
-                const volDig = document.createElement('input');
-                volDig.type = 'range';
-                volDig.className = 'radio-visual-digital-vol';
-                volDig.id = 'radio-visual-vol-digital';
-                volDig.min = '0';
-                volDig.max = '1';
-                volDig.step = '0.01';
-                volDig.value = '0.5';
+                const volDown = document.createElement('button');
+                volDown.type = 'button';
+                volDown.className = 'radio-visual-btn radio-visual-digital-step-btn';
+                volDown.textContent = '−';
+                volDown.setAttribute('aria-label', 'Volume down');
+                const volDigitalReadout = document.createElement('span');
+                volDigitalReadout.className = 'radio-visual-digital-vol-readout';
+                volDigitalReadout.id = 'radio-visual-vol-readout';
+                volDigitalReadout.textContent = '50%';
+                const volUp = document.createElement('button');
+                volUp.type = 'button';
+                volUp.className = 'radio-visual-btn radio-visual-digital-step-btn';
+                volUp.textContent = '+';
+                volUp.setAttribute('aria-label', 'Volume up');
                 volRow.appendChild(volLbl);
-                volRow.appendChild(volDig);
+                volRow.appendChild(volDown);
+                volRow.appendChild(volDigitalReadout);
+                volRow.appendChild(volUp);
+                const ctrlRow1 = document.createElement('div');
+                ctrlRow1.className = 'radio-visual-digital-station-row';
+                [['a', 'A Play'], ['b', 'B Play'], ['fade', 'Auto-Fade'], ['mix', 'Auto-Mix']].forEach(([act, lab]) => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'radio-visual-btn';
+                    b.dataset.rvDigital = act;
+                    b.textContent = lab;
+                    ctrlRow1.appendChild(b);
+                });
                 const stRow = document.createElement('div');
                 stRow.className = 'radio-visual-digital-station-row';
                 stRow.setAttribute('aria-label', 'Deck A');
@@ -988,13 +1197,17 @@
                 digBtns.className = 'radio-visual-btn-grid';
                 digBtns.id = 'radio-visual-digital-btns';
                 dPanel.appendChild(dDisp);
+                dPanel.appendChild(centerModeRow);
+                dPanel.appendChild(digitalCenter);
                 dPanel.appendChild(volRow);
+                dPanel.appendChild(ctrlRow1);
                 dPanel.appendChild(stRow);
                 dPanel.appendChild(stRowB);
                 dPanel.appendChild(crossRow);
                 dPanel.appendChild(eqWrap);
                 dPanel.appendChild(digBtns);
                 stageD.appendChild(dPanel);
+
                 root.appendChild(stageA);
                 root.appendChild(stageD);
 
@@ -1023,8 +1236,14 @@
                     autoMixKnob,
                     autoFadeReadout,
                     autoMixReadout,
-                    volDigital: volDig,
                     crossDigital: crossDig,
+                    btnDigitalSpectrum,
+                    btnDigitalDeckB,
+                    digitalCenterSpectrum,
+                    digitalCenterDeckB,
+                    digitalSpectrumCanvas,
+                    digitalDeckBVideo,
+                    volDigitalReadout,
                     digitalStatus: dStat,
                     digitalMeta: dMeta,
                     digitalClock: dClk,
@@ -1038,13 +1257,40 @@
                 this._syncVolumeFromGlobal();
                 this._setAutoFadeDurationNorm(this._autoFadeDurationNorm());
                 this._setAutoMixMaxNorm(this._autoMixMaxNorm());
+                this._setDigitalCenterMode(this.digitalCenterMode);
                 this._syncDeckSwitches();
                 this._updateStationUi();
                 this._tickClock();
 
                 btnA.addEventListener('click', (ev) => { this._stopClick(ev); this._setSkin('analogue'); }, sig);
                 btnD.addEventListener('click', (ev) => { this._stopClick(ev); this._setSkin('digital'); }, sig);
-                volDig.addEventListener('input', () => this._applyVolume(volDig.value), sig);
+                volDown.addEventListener('click', (ev) => {
+                    this._stopClick(ev);
+                    this._stepDigitalVolume(-1);
+                }, sig);
+                volUp.addEventListener('click', (ev) => {
+                    this._stopClick(ev);
+                    this._stepDigitalVolume(1);
+                }, sig);
+                btnDigitalSpectrum.addEventListener('click', (ev) => {
+                    this._stopClick(ev);
+                    this._setDigitalCenterMode('spectrum');
+                }, sig);
+                btnDigitalDeckB.addEventListener('click', (ev) => {
+                    this._stopClick(ev);
+                    this._setDigitalCenterMode('deckB');
+                }, sig);
+                ctrlRow1.querySelectorAll('[data-rv-digital]').forEach((b) => {
+                    b.addEventListener('click', (ev) => {
+                        this._stopClick(ev);
+                        const act = b.dataset.rvDigital;
+                        if (act === 'a') this._toggleDeckA();
+                        else if (act === 'b') this._toggleDeckB();
+                        else if (act === 'fade') this._triggerAutoFade();
+                        else if (act === 'mix') this._toggleAutoMix();
+                        this._syncDeckSwitches();
+                    }, sig);
+                });
                 crossDig.addEventListener('input', () => this._setCrossfadeX(crossDig.value), sig);
                 const bindDeckRow = (rowEl) => {
                     rowEl.querySelectorAll('[data-rv-action]').forEach((b) => {
@@ -1076,9 +1322,13 @@
                     get: () => Number(document.getElementById('volume-slider')?.value || 0.5),
                     set: (v) => this._applyVolume(v)
                 });
-                this._wireDeckSwitch(deckAKnob, 'a');
-                this._wireDeckSwitch(deckBKnob, 'b');
-                this._wireClickKnob(crossKnob, () => this._triggerAutoFade());
+                this._wireDeckKnob(deckAKnob, 'a');
+                this._wireDeckKnob(deckBKnob, 'b');
+                crossKnob.setAttribute('role', 'slider');
+                this._wirePointerKnob(crossKnob, {
+                    get: () => this._getCrossfadeX(),
+                    set: (t) => this._setCrossfadeX(t)
+                }, { onTap: () => this._triggerAutoFade() });
                 this._wirePointerKnob(autoFadeKnob, {
                     get: () => this._autoFadeDurationNorm(),
                     set: (t) => this._setAutoFadeDurationNorm(t)
@@ -1105,6 +1355,16 @@
                 try {
                     this._updateStationUi();
                     this._drawMeters();
+                    if (this.skin === 'digital') {
+                        this._drawDigitalSpectrum();
+                        if (this.digitalCenterMode === 'deckB') {
+                            const now = performance.now();
+                            if (!this._deckBVideoSyncAt || (now - this._deckBVideoSyncAt) > 800) {
+                                this._deckBVideoSyncAt = now;
+                                this._syncDigitalDeckBVideo();
+                            }
+                        }
+                    }
                 } catch (_) {}
             }
 
@@ -1113,6 +1373,7 @@
             }
 
             destroy() {
+                try { this._tearDownDigitalDeckBPlayer(); } catch (_) {}
                 if (this._rvAutoFadeRaf) {
                     try { cancelAnimationFrame(this._rvAutoFadeRaf); } catch (_) {}
                     this._rvAutoFadeRaf = null;

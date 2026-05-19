@@ -2460,3 +2460,8 @@
             setBottomTextRandomColor();
             updateDjDecksShortcutVisibility();
         }
+
+        try { globalThis.modes = modes; } catch (_) {}
+        try { globalThis.loadMode = loadMode; } catch (_) {}
+        try { globalThis.updateDjDecksShortcutVisibility = updateDjDecksShortcutVisibility; } catch (_) {}
+        try { globalThis.updateSkipPresetButtonVisibility = updateSkipPresetButtonVisibility; } catch (_) {}
