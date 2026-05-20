@@ -20,7 +20,6 @@
                 this._volMuted = false;
                 this._volUnmuteNorm = 0.5;
                 this._digitalStageClickTimer = null;
-                this._digitalFeatureBtnsRevealed = false;
             }
 
             static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
@@ -1426,16 +1425,6 @@
                 } catch (_) {}
             }
 
-            _toggleDigitalFeatureBtnsFromStage() {
-                const row = this.els.digitalBtns;
-                if (!row) return;
-                this._digitalFeatureBtnsRevealed = !this._digitalFeatureBtnsRevealed;
-                row.classList.toggle('is-stage-revealed', this._digitalFeatureBtnsRevealed);
-                if (!this._digitalFeatureBtnsRevealed && this.digitalCenterMode === 'deckB') {
-                    this._setDigitalCenterMode('spectrum');
-                }
-            }
-
             _isDigitalStageUiTarget(el) {
                 if (!el || !el.closest) return false;
                 return !!el.closest(
@@ -1452,7 +1441,9 @@
                     clearTimeout(this._digitalStageClickTimer);
                     this._digitalStageClickTimer = setTimeout(() => {
                         this._digitalStageClickTimer = null;
-                        this._toggleDigitalFeatureBtnsFromStage();
+                        if (this.digitalCenterMode === 'deckB') {
+                            this._setDigitalCenterMode('spectrum');
+                        }
                     }, 280);
                 }, { signal: sig });
                 digitalCenterEl.addEventListener('dblclick', (ev) => {
@@ -1476,10 +1467,6 @@
                 if (this.els.stageDigital) this.els.stageDigital.classList.toggle('is-active', next === 'digital');
                 if (this.els.btnSkinAnalog) this.els.btnSkinAnalog.classList.toggle('is-active', next === 'analogue');
                 if (this.els.btnSkinDigital) this.els.btnSkinDigital.classList.toggle('is-active', next === 'digital');
-                if (next !== 'digital' && this.els.digitalBtns) {
-                    this._digitalFeatureBtnsRevealed = false;
-                    this.els.digitalBtns.classList.remove('is-stage-revealed');
-                }
                 try { this.onResize(); } catch (_) {}
                 if (next === 'digital' && this.digitalCenterMode === 'deckB') {
                     this._syncDigitalDeckBVideo();
@@ -1957,7 +1944,7 @@
                 digitalCenterDeckB.appendChild(digitalDeckBMount);
                 digitalCenter.appendChild(digitalCenterSpectrum);
                 digitalCenter.appendChild(digitalCenterDeckB);
-                digitalCenter.title = 'Tap: show or hide feature buttons (Mixer, Avatar…). Double-click: fullscreen. If Deck B view is open, a second tap returns to Spectrum.';
+                digitalCenter.title = 'Tap: return to Spectrum when Deck B view is open. Double-click: fullscreen.';
                 const digitalToolbar = document.createElement('div');
                 digitalToolbar.className = 'radio-visual-digital-toolbar';
                 digitalToolbar.id = 'radio-visual-digital-toolbar';

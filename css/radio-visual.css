@@ -707,11 +707,6 @@
             white-space: nowrap;
         }
         #radio-visual-root .radio-visual-digital-feature-btns {
-            display: none;
-            max-width: none;
-            margin: 0;
-        }
-        #radio-visual-root .radio-visual-digital-feature-btns.is-stage-revealed {
             display: grid;
             grid-template-columns: repeat(8, minmax(0, 1fr));
             gap: clamp(4px, 0.8vw, 8px);
