@@ -242,9 +242,19 @@
             _initDigitalSpectrumBg() {
                 try {
                     const raw = localStorage.getItem(RadioVisualEngine.DIGITAL_BG_GIF_ENABLED_KEY);
-                    if (raw === '0') this._digitalBgGifEnabled = false;
-                    else if (raw === '1') this._digitalBgGifEnabled = true;
-                } catch (_) {}
+                    if (raw === '0') {
+                        this._digitalBgGifEnabled = false;
+                    } else {
+                        this._digitalBgGifEnabled = true;
+                        if (raw !== '1') {
+                            try {
+                                localStorage.setItem(RadioVisualEngine.DIGITAL_BG_GIF_ENABLED_KEY, '1');
+                            } catch (_) {}
+                        }
+                    }
+                } catch (_) {
+                    this._digitalBgGifEnabled = true;
+                }
                 this._syncDigitalVisBgButton();
                 if (!this._isDigitalBgGifEnabled()) return;
                 this._refreshDigitalBgGifList().then(() => {
@@ -2658,6 +2668,14 @@
                 btnDigitalDeckB.type = 'button';
                 btnDigitalDeckB.className = 'radio-visual-btn';
                 btnDigitalDeckB.textContent = 'Deck B';
+                btnVis = document.createElement('button');
+                btnVis.type = 'button';
+                btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-vis-btn is-active';
+                btnVis.textContent = '🔆';
+                btnVis.title = 'Tap: next background · Hold: turn off background';
+                btnVis.setAttribute('aria-label', 'Digital background visual');
+                btnVis.setAttribute('aria-pressed', 'true');
+                digitalToolbar.appendChild(btnVis);
                 digitalToolbar.appendChild(btnDigitalSpectrum);
                 digitalToolbar.appendChild(btnDigitalDeckB);
                 const volGroup = document.createElement('div');
@@ -2679,17 +2697,10 @@
                 volUp.className = 'radio-visual-btn radio-visual-digital-step-btn';
                 volUp.textContent = '+';
                 volUp.setAttribute('aria-label', 'Volume up');
-                btnVis = document.createElement('button');
-                btnVis.type = 'button';
-                btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-vis-btn';
-                btnVis.textContent = '🔆';
-                btnVis.title = 'Tap: next background · Hold: turn off background';
-                btnVis.setAttribute('aria-label', 'Digital background visual');
                 volGroup.appendChild(volLbl);
                 volGroup.appendChild(volDown);
                 volGroup.appendChild(volDigitalReadout);
                 volGroup.appendChild(volUp);
-                volGroup.appendChild(btnVis);
                 digitalToolbar.appendChild(volGroup);
                 const mkRvDigitalBtn = (act, lab) => {
                     const b = document.createElement('button');
@@ -2711,13 +2722,11 @@
                 mkRvDigitalBtn('a', 'A Play');
                 mkRvStationBtn('prev', 'A◀', 'a');
                 mkRvStationBtn('next', 'A▶', 'a');
-                mkRvStationBtn('rand', 'A Rand', 'a');
                 mkRvDigitalBtn('fade', 'Fade');
                 mkRvDigitalBtn('mix', 'Mix');
                 mkRvDigitalBtn('b', 'B Play');
                 mkRvStationBtn('prev', 'B◀', 'b');
                 mkRvStationBtn('next', 'B▶', 'b');
-                mkRvStationBtn('rand', 'B Rand', 'b');
                 const btnXfadeStation = document.createElement('button');
                 btnXfadeStation.type = 'button';
                 btnXfadeStation.className = 'radio-visual-btn radio-visual-digital-xfade-station-btn';
