@@ -3757,6 +3757,12 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                 e.preventDefault();
                 e.stopPropagation();
                 try {
+                    if (typeof globalThis.toggleRadioVisualVariant === 'function') {
+                        if (globalThis.toggleRadioVisualVariant()) {
+                            resetIdleTimer();
+                            return;
+                        }
+                    }
                     if (typeof globalThis.loadRadioVisualMode === 'function') {
                         globalThis.loadRadioVisualMode();
                     } else if (typeof loadRadioVisualMode === 'function') {
@@ -5281,7 +5287,12 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         function isRadioVisualModeActive() {
             try {
                 const vis = state.activeVisualizer;
-                return !!(vis && (vis.name === 'Radio' || vis.name === 'Radio Visual'));
+                if (!vis || !vis.name) return false;
+                if (typeof globalThis.isRadioVisualModeName === 'function') {
+                    return globalThis.isRadioVisualModeName(vis.name);
+                }
+                return vis.name === 'Analogue radio' || vis.name === 'Digital Radio'
+                    || vis.name === 'Radio' || vis.name === 'Radio Visual';
             } catch (_) {
                 return false;
             }
@@ -5331,8 +5342,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 if (isRadioVisualModeActive()) {
                     const titleEl = document.getElementById('mode-title');
                     const vis = state.activeVisualizer;
-                    const visName = (vis && vis.name === 'Radio') ? 'Radio Visual' : ((vis && vis.name) || 'Radio Visual');
-                    if (titleEl) titleEl.textContent = visName;
+                    if (titleEl && vis && vis.name) titleEl.textContent = vis.name;
                 }
             } catch (_) {}
         }

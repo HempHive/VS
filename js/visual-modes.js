@@ -2347,7 +2347,8 @@
             new ThreeEngine("Audio Bars (Vertical Mirror)", sceneBarsVerticalMirror),
             new ThreeEngine("Audio Bars", sceneBars),
             new DjDecksEngine(),
-            new RadioVisualEngine(),
+            new RadioVisualEngine({ name: 'Analogue radio', skin: 'analogue', skinLocked: true }),
+            new RadioVisualEngine({ name: 'Digital Radio', skin: 'digital', skinLocked: true }),
             new ThreeEngine("Audio Bars (Circle)", sceneBarsCircle),
             new ThreeEngine("Audio Bars 3D", sceneBars3D),
             new ThreeEngine("Audio Bars: Vortex", sceneBarsVortex),
@@ -2393,9 +2394,41 @@
             } catch (_) {}
         }
 
+        function isRadioVisualModeName(name) {
+            try {
+                if (typeof RadioVisualEngine !== 'undefined' && RadioVisualEngine.isRadioModeName) {
+                    return RadioVisualEngine.isRadioModeName(name);
+                }
+            } catch (_) {}
+            return name === 'Analogue radio' || name === 'Digital Radio'
+                || name === 'Radio' || name === 'Radio Visual';
+        }
+
+        function findAnalogueRadioModeIndex() {
+            try {
+                if (!Array.isArray(modes)) return -1;
+                return modes.findIndex((m) => m && m.name === 'Analogue radio');
+            } catch (_) {
+                return -1;
+            }
+        }
+
+        function findDigitalRadioModeIndex() {
+            try {
+                if (!Array.isArray(modes)) return -1;
+                return modes.findIndex((m) => m && m.name === 'Digital Radio');
+            } catch (_) {
+                return -1;
+            }
+        }
+
         function findRadioVisualModeIndex() {
             try {
                 if (!Array.isArray(modes)) return -1;
+                let idx = findAnalogueRadioModeIndex();
+                if (idx >= 0) return idx;
+                idx = findDigitalRadioModeIndex();
+                if (idx >= 0) return idx;
                 return modes.findIndex((m) => m && (m.name === 'Radio' || m.name === 'Radio Visual'));
             } catch (_) {
                 return -1;
@@ -2403,8 +2436,29 @@
         }
 
         function loadRadioVisualMode() {
-            const idx = findRadioVisualModeIndex();
+            let variant = 'analogue';
+            try {
+                const stored = localStorage.getItem('radioVisual.lastVariant.v1');
+                if (stored === 'digital' || stored === 'analogue') variant = stored;
+            } catch (_) {}
+            const idx = variant === 'digital' ? findDigitalRadioModeIndex() : findAnalogueRadioModeIndex();
             if (idx >= 0) loadMode(idx);
+        }
+
+        function toggleRadioVisualVariant() {
+            try {
+                const vis = state.activeVisualizer;
+                if (!vis || !vis.name) return false;
+                if (vis.name === 'Analogue radio') {
+                    const idx = findDigitalRadioModeIndex();
+                    if (idx >= 0) { loadMode(idx); return true; }
+                }
+                if (vis.name === 'Digital Radio') {
+                    const idx = findAnalogueRadioModeIndex();
+                    if (idx >= 0) { loadMode(idx); return true; }
+                }
+            } catch (_) {}
+            return false;
         }
 
         function shouldShowReturnRadioButton() {
@@ -2412,7 +2466,7 @@
                 const visName = state.activeVisualizer && state.activeVisualizer.name;
                 if (visName === 'DJ Decks') return true;
                 if (!globalThis.__vizLaunchedFromRadioVisual) return false;
-                if (!visName || visName === 'Radio' || visName === 'Radio Visual') return false;
+                if (!visName || isRadioVisualModeName(visName)) return false;
                 return true;
             } catch (_) {
                 return false;
@@ -2443,10 +2497,11 @@
                             return !!(stage && stage.classList.contains('dj-deck-b-text-mode'));
                         } catch (_) { return false; }
                     })();
-                    const onRadioVisual = !!(state.activeVisualizer && (
-                        state.activeVisualizer.name === 'Radio' ||
-                        state.activeVisualizer.name === 'Radio Visual'
-                    ));
+                    const visName = state.activeVisualizer && state.activeVisualizer.name;
+                    const onAnalogueRadio = visName === 'Analogue radio';
+                    const onDigitalRadio = visName === 'Digital Radio';
+                    const onRadioVisual = onAnalogueRadio || onDigitalRadio
+                        || !!(state.activeVisualizer && isRadioVisualModeName(visName));
                     const showReturn = onDj && (deckBVisualActive || deckBTextActive);
                     btn.classList.toggle('display-none', onDj && !showReturn && !onRadioVisual);
                     btn.title = showReturn
@@ -2455,9 +2510,22 @@
                 }
                 const btnRadio = document.getElementById('btn-return-radio');
                 if (btnRadio) {
-                    const show = shouldShowReturnRadioButton();
-                    btnRadio.classList.toggle('display-none', !show);
-                    btnRadio.title = 'Return to Radio Visual';
+                    const visName = state.activeVisualizer && state.activeVisualizer.name;
+                    const onAnalogueRadio = visName === 'Analogue radio';
+                    const onDigitalRadio = visName === 'Digital Radio';
+                    const showToggle = onAnalogueRadio || onDigitalRadio;
+                    const showReturn = shouldShowReturnRadioButton();
+                    btnRadio.classList.toggle('display-none', !showToggle && !showReturn);
+                    if (onAnalogueRadio) {
+                        btnRadio.title = 'Switch to Digital Radio';
+                        btnRadio.setAttribute('aria-label', 'Switch to Digital Radio');
+                    } else if (onDigitalRadio) {
+                        btnRadio.title = 'Switch to Analogue radio';
+                        btnRadio.setAttribute('aria-label', 'Switch to Analogue radio');
+                    } else {
+                        btnRadio.title = 'Return to Radio Visual';
+                        btnRadio.setAttribute('aria-label', 'Return to Radio Visual');
+                    }
                 }
             } catch (_) {}
         }
@@ -2471,8 +2539,15 @@
             state.activeVisualizer = modes[idx];
             try {
                 const n = state.activeVisualizer && state.activeVisualizer.name;
-                if (n === 'Radio' || n === 'Radio Visual') {
+                if (isRadioVisualModeName(n)) {
                     globalThis.__vizLaunchedFromRadioVisual = false;
+                    try {
+                        if (n === 'Analogue radio') {
+                            localStorage.setItem('radioVisual.lastVariant.v1', 'analogue');
+                        } else if (n === 'Digital Radio') {
+                            localStorage.setItem('radioVisual.lastVariant.v1', 'digital');
+                        }
+                    } catch (_) {}
                 }
             } catch (_) {}
             // Persist last selected visualizer
@@ -2486,8 +2561,7 @@
             // UI Updates
             document.getElementById('mode-title').innerText = state.activeVisualizer.name;
             const isRadioVis = !!(state.activeVisualizer && (
-                state.activeVisualizer.name === 'Radio' ||
-                state.activeVisualizer.name === 'Radio Visual'
+                isRadioVisualModeName(state.activeVisualizer.name)
             ));
             try { globalThis.updateModeSubStationLine?.(); } catch (_) {}
             
@@ -2503,5 +2577,7 @@
         try { globalThis.modes = modes; } catch (_) {}
         try { globalThis.loadMode = loadMode; } catch (_) {}
         try { globalThis.loadRadioVisualMode = loadRadioVisualMode; } catch (_) {}
+        try { globalThis.toggleRadioVisualVariant = toggleRadioVisualVariant; } catch (_) {}
+        try { globalThis.isRadioVisualModeName = isRadioVisualModeName; } catch (_) {}
         try { globalThis.updateDjDecksShortcutVisibility = updateDjDecksShortcutVisibility; } catch (_) {}
         try { globalThis.updateSkipPresetButtonVisibility = updateSkipPresetButtonVisibility; } catch (_) {}

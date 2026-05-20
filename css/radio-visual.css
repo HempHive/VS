@@ -510,11 +510,17 @@
             align-items: stretch;
             justify-content: stretch;
         }
-        #radio-visual-root:has(.radio-visual-skin--digital.is-active) {
+        #radio-visual-root:has(.radio-visual-skin--digital.is-active),
+        #radio-visual-root.radio-visual-root--digital-only,
+        #radio-visual-root.radio-visual-root--digital-active {
             background:
                 radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255, 220, 90, 0.2), transparent 55%),
                 radial-gradient(ellipse 90% 70% at 50% 100%, rgba(20, 40, 80, 0.35), transparent 60%),
                 linear-gradient(165deg, #0c0a08 0%, #1a1410 38%, #0a0e14 100%);
+        }
+        #radio-visual-root.radio-visual-root--analogue-only .radio-visual-stage,
+        #radio-visual-root.radio-visual-root--digital-only .radio-visual-stage {
+            display: flex;
         }
         #radio-visual-root .radio-visual-digital-spectrum-bg {
             position: absolute;
