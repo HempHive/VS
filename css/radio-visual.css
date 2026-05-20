@@ -519,9 +519,25 @@
                 radial-gradient(ellipse 90% 70% at 50% 100%, rgba(20, 40, 80, 0.35), transparent 60%),
                 linear-gradient(165deg, #0c0a08 0%, #1a1410 38%, #0a0e14 100%);
         }
+        #radio-visual-root .radio-visual-digital-spectrum-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0;
+            background-color: transparent;
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: cover;
+            transition: opacity 0.35s ease-in-out;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-bg.is-visible {
+            opacity: 1;
+        }
         #radio-visual-root .radio-visual-digital-spectrum-row {
             position: absolute;
             inset: 0;
+            z-index: 1;
             display: flex;
             flex-direction: row;
             align-items: stretch;

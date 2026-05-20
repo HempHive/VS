@@ -1843,11 +1843,6 @@ function randomGlowColor() {
             if (vs && state.isPlaying) { vs.style.opacity = '1'; vs.style.pointerEvents = 'auto'; }
             // Show top bar on interaction
             if (topBar && state.isPlaying) { topBar.style.opacity = '1'; topBar.style.pointerEvents = 'auto'; }
-            if (stationBanner && !isRadioVisualModeActive()) {
-                if (stationBannerTimer) { clearTimeout(stationBannerTimer); stationBannerTimer = null; }
-                stationBanner.style.opacity = '1';
-                stationBanner.style.pointerEvents = 'auto';
-            }
 			if(radioPanel && !radioPanel.classList.contains('display-none')) {
 				radioPanel.style.opacity = '1';
 				radioPanel.style.pointerEvents = 'auto';
@@ -1888,10 +1883,6 @@ function randomGlowColor() {
                     }
                     // Hide top bar on idle
                     if (topBar) { topBar.style.opacity = '0'; topBar.style.pointerEvents = 'none'; }
-                    if(!stationBanner.classList.contains('display-none')) {
-                        stationBanner.style.opacity = '0';
-                        stationBanner.style.pointerEvents = 'none';
-                    }
                     if (uiLockToggle) {
                         uiLockToggle.style.opacity = '0';
                         uiLockToggle.style.pointerEvents = 'none';
@@ -2962,6 +2953,10 @@ function exposeAppBindingsToGlobal() {
     try { g.deriveTitleFromUrl = deriveTitleFromUrl; } catch (_) {}
     try { g.clearNowPlayingICYBanner = clearNowPlayingICYBanner; } catch (_) {}
     try { g.showStationBanner = showStationBanner; } catch (_) {}
+    try { g.updateModeSubStationLine = updateModeSubStationLine; } catch (_) {}
+    try { g.getCrossfaderAudibleDeckKey = getCrossfaderAudibleDeckKey; } catch (_) {}
+    try { g.getDeckStationDisplayName = getDeckStationDisplayName; } catch (_) {}
+    try { g.hideStationBannerPermanently = hideStationBannerPermanently; } catch (_) {}
     try { g.diffs = diffs; } catch (_) {}
     try { g.djM = djM; } catch (_) {}
     try { g.dk = dk; } catch (_) {}
@@ -3964,6 +3959,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                     mixStationB.value = String(idx);
                     if (typeof playRadioB === 'function') playRadioB();
                     if (typeof resetIdleTimer === 'function') resetIdleTimer();
+                    try { updateModeSubStationLine(); } catch (_) {}
                 } catch (_) {}
             });
         }
@@ -4019,6 +4015,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                     state.activeVisualizer.refreshDeckBVideoSource();
                 }
             } catch (_) {}
+            try { updateModeSubStationLine(); } catch (_) {}
         }
         if (mixCross) {
             mixCross.addEventListener('input', () => applyCrossfade(mixCross.value));
@@ -5290,34 +5287,70 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             }
         }
 
-        function showStationBanner(text) {
-            if (isRadioVisualModeActive()) {
-                try {
-                    const rv = state.activeVisualizer;
-                    if (rv && typeof rv._updateHudModeLines === 'function') rv._updateHudModeLines();
-                } catch (_) {}
-                if (stationBanner) {
-                    stationBanner.style.opacity = '0';
-                    stationBanner.style.pointerEvents = 'none';
+        /** Deck currently heard (crossfader ≥ 0.5 → B, else A). */
+        function getCrossfaderAudibleDeckKey() {
+            return getDjCrossfade01() >= 0.5 ? 'b' : 'a';
+        }
+
+        function getDeckStationDisplayName(deck) {
+            const dk = deck === 'b' ? 'b' : 'a';
+            try {
+                if (state && state.deckSourceMode && state.deckSourceMode[dk] === 'local') {
+                    const raw = (state.deckLocalDisplayName && state.deckLocalDisplayName[dk]) || '';
+                    if (raw && String(raw).trim()) return String(raw).trim();
+                    const el = dk === 'b' ? audioElB : audioEl;
+                    const src = (el && String(el.currentSrc || el.src || '')) || '';
+                    if (src && typeof deriveTitleFromUrl === 'function') return deriveTitleFromUrl(src);
+                    return 'Local track';
                 }
-                return;
-            }
-            const nm = text || '';
-            if (stationBannerNameEl) stationBannerNameEl.textContent = nm;
-            else stationBanner.textContent = nm;
-            clearNowPlayingICYBanner();
-            if (!nm) return;
-            stationBanner.classList.remove('display-none');
-            stationBanner.style.opacity = '1';
-            stationBanner.style.pointerEvents = 'auto';
+                if (!Array.isArray(stations) || !stations.length) return '—';
+                if (dk === 'b') {
+                    let idx = (typeof currentStationBIndex === 'number' && currentStationBIndex >= 0)
+                        ? currentStationBIndex : -1;
+                    if (typeof mixStationB !== 'undefined' && mixStationB && mixStationB.value !== '') {
+                        const pv = parseInt(mixStationB.value, 10);
+                        if (!isNaN(pv)) idx = pv;
+                    }
+                    if (idx >= 0 && stations[idx]) return stations[idx].name || '—';
+                } else {
+                    const idx = (typeof currentStationIndex === 'number' && currentStationIndex >= 0)
+                        ? currentStationIndex : -1;
+                    if (idx >= 0 && stations[idx]) return stations[idx].name || '—';
+                }
+            } catch (_) {}
+            return '—';
+        }
+
+        /** Bottom HUD secondary line: audible deck station (all visual modes). */
+        function updateModeSubStationLine() {
+            try {
+                const subEl = document.getElementById('mode-sub');
+                if (subEl) {
+                    subEl.textContent = getDeckStationDisplayName(getCrossfaderAudibleDeckKey());
+                }
+                if (isRadioVisualModeActive()) {
+                    const titleEl = document.getElementById('mode-title');
+                    const vis = state.activeVisualizer;
+                    const visName = (vis && vis.name === 'Radio') ? 'Radio Visual' : ((vis && vis.name) || 'Radio Visual');
+                    if (titleEl) titleEl.textContent = visName;
+                }
+            } catch (_) {}
+        }
+
+        function hideStationBannerPermanently() {
+            if (!stationBanner) return;
+            stationBanner.classList.add('display-none');
+            stationBanner.style.opacity = '0';
+            stationBanner.style.pointerEvents = 'none';
             if (stationBannerTimer) {
                 clearTimeout(stationBannerTimer);
                 stationBannerTimer = null;
             }
-            stationBannerTimer = setTimeout(() => {
-                stationBanner.style.opacity = '0';
-                stationBanner.style.pointerEvents = 'none';
-            }, 3000);
+        }
+
+        function showStationBanner(text) {
+            hideStationBannerPermanently();
+            updateModeSubStationLine();
         }
 
         function deriveTitleFromUrl(url) {
@@ -6492,4 +6525,5 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         }
     });
 
+try { hideStationBannerPermanently(); } catch (_) {}
 exposeAppBindingsToGlobal();

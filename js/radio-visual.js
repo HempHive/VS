@@ -53,6 +53,32 @@
                 return false;
             }
 
+            _loadDigitalSpectrumBg(bgEl) {
+                if (!bgEl) return;
+                const url = 'assets/gifs/dig.gif';
+                const show = () => {
+                    try {
+                        bgEl.style.backgroundImage = `url('${url}')`;
+                        bgEl.classList.add('is-visible');
+                    } catch (_) {}
+                };
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const d = img.decode && img.decode();
+                        if (d && typeof d.then === 'function') {
+                            d.then(show).catch(() => {});
+                            return;
+                        }
+                    } catch (_) {}
+                    show();
+                };
+                img.onerror = () => {
+                    try { bgEl.remove(); } catch (_) {}
+                };
+                img.src = url;
+            }
+
             _loadVisualByName(name) {
                 try {
                     if (!Array.isArray(modes) || typeof loadMode !== 'function') return;
@@ -421,6 +447,10 @@
             _updateHudModeLines() {
                 if (!this._isRadioVisualActive()) return;
                 try {
+                    if (typeof globalThis.updateModeSubStationLine === 'function') {
+                        globalThis.updateModeSubStationLine();
+                        return;
+                    }
                     const titleEl = document.getElementById('mode-title');
                     const subEl = document.getElementById('mode-sub');
                     const visName = (this.name === 'Radio') ? 'Radio Visual' : (this.name || 'Radio');
@@ -1874,6 +1904,9 @@
                 digitalCenter.className = 'radio-visual-digital-center';
                 const digitalCenterSpectrum = document.createElement('div');
                 digitalCenterSpectrum.className = 'radio-visual-digital-center-pane is-active';
+                const spectrumBg = document.createElement('div');
+                spectrumBg.className = 'radio-visual-digital-spectrum-bg';
+                spectrumBg.setAttribute('aria-hidden', 'true');
                 const spectrumRow = document.createElement('div');
                 spectrumRow.className = 'radio-visual-digital-spectrum-row';
                 const spectrumSideL = document.createElement('div');
@@ -1928,7 +1961,9 @@
                 spectrumRow.appendChild(spectrumSideL);
                 spectrumRow.appendChild(dashStack);
                 spectrumRow.appendChild(spectrumSideR);
+                digitalCenterSpectrum.appendChild(spectrumBg);
                 digitalCenterSpectrum.appendChild(spectrumRow);
+                this._loadDigitalSpectrumBg(spectrumBg);
                 const digitalCenterDeckB = document.createElement('div');
                 digitalCenterDeckB.className = 'radio-visual-digital-center-pane';
                 const digitalDeckBMount = document.createElement('div');

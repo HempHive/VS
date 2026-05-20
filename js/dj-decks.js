@@ -5801,7 +5801,7 @@
                 this.updateStationTitles();
                 if (typeof applyCrossfade === 'function' && djCross) applyCrossfade(djCross.value);
 
-                document.getElementById('mode-sub').innerText = 'Dual decks • Mixer-linked FX';
+                try { globalThis.updateModeSubStationLine?.(); } catch (_) {}
 
                 this.syncDeckBVisualButtons();
                 this.syncDeckMosaicScale();

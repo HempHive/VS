@@ -1373,8 +1373,9 @@
             appearance: slider-vertical;
             width: 26px; height: 220px;
         }
-        /* Station Banner (Top-left) */
+        /* Station Banner (Top-left) — retired; station name lives in #mode-sub */
         #station-banner {
+            display: none !important;
             position: absolute; top: 14px; left: 14px;
             z-index: 80;
             padding: 8px 12px;

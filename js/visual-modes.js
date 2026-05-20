@@ -40,7 +40,7 @@
                 const key = this.presetKeys[idx];
                 this.visualizer.loadPreset(this.presets[key], 2.7); 
                 if (state.activeVisualizer === this) {
-                document.getElementById('mode-sub').innerText = key;
+                    try { globalThis.updateModeSubStationLine?.(); } catch (_) {}
                 }
 				// Change bottom HUD color on each preset load
 				try { setBottomTextRandomColor(); } catch(e) {}
@@ -79,7 +79,7 @@
                 try {
                     const preset = JSON.parse(jsonTxt);
                     this.visualizer.loadPreset(preset, 1.0);
-                    document.getElementById('mode-sub').innerText = "CUSTOM PRESET";
+                    try { globalThis.updateModeSubStationLine?.(); } catch (_) {}
                     if(this.cycleTimeout) clearTimeout(this.cycleTimeout);
 					try { setBottomTextRandomColor(); } catch(e) {}
                 } catch(e) { alert("Invalid JSON"); }
@@ -151,7 +151,7 @@
                 const transition = Number(visualSettings.transitionSec) || this.transitionSec || 2.7;
                 this.visualizer.loadPreset(this.presets[key], transition);
                 if (state.activeVisualizer === this) {
-                    document.getElementById('mode-sub').innerText = key;
+                    try { globalThis.updateModeSubStationLine?.(); } catch (_) {}
                 }
 				// Change bottom HUD color on each preset load
 				try { setBottomTextRandomColor(); } catch(e) {}
@@ -161,7 +161,7 @@
                 try {
                     const preset = JSON.parse(jsonTxt);
                     this.visualizer.loadPreset(preset, Number(visualSettings.transitionSec) || 1.0);
-                    document.getElementById('mode-sub').innerText = "CUSTOM PRESET";
+                    try { globalThis.updateModeSubStationLine?.(); } catch (_) {}
                     if(this.cycleTimeout) clearTimeout(this.cycleTimeout);
 					try { setBottomTextRandomColor(); } catch(e) {}
                 } catch(e) { alert("Invalid JSON"); }
@@ -306,7 +306,7 @@
                 const transition = Number(visualSettings.transitionSec) || this.transitionSec || 2.7;
                 this.visualizer.loadPreset(this.presets[key], transition);
                 if (state.activeVisualizer === this) {
-                    document.getElementById('mode-sub').innerText = key;
+                    try { globalThis.updateModeSubStationLine?.(); } catch (_) {}
                 }
                 try { setBottomTextRandomColor(); } catch (e) {}
             }
@@ -2281,7 +2281,7 @@
                 const transition = Number(visualSettings.transitionSec) || this.transitionSec || 2.7;
                 this.visualizer.loadPreset(this.presets[key], transition);
                 if (state.activeVisualizer === this) {
-                    document.getElementById('mode-sub').innerText = key;
+                    try { globalThis.updateModeSubStationLine?.(); } catch (_) {}
                 }
                 try { setBottomTextRandomColor(); } catch(e) {}
             }
@@ -2489,9 +2489,7 @@
                 state.activeVisualizer.name === 'Radio' ||
                 state.activeVisualizer.name === 'Radio Visual'
             ));
-            if (!isRadioVis && !(state.activeVisualizer && state.activeVisualizer.loadPreset)) {
-                document.getElementById('mode-sub').innerText = "3D Interactive";
-            }
+            try { globalThis.updateModeSubStationLine?.(); } catch (_) {}
             
             updateSkipPresetButtonVisibility();
 
