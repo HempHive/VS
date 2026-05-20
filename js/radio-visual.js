@@ -25,8 +25,8 @@
                 this._digitalStageClickTimer = null;
                 this._digitalBgGifIdx = 0;
                 this._digitalBgGifEnabled = true;
-                /** Smoothed ring radii (0–1) for flowing spectrum ribbon. */
-                this._spectrumRingSmooth = null;
+                /** Smoothed ring radii per band: low (base), mid, high (top). */
+                this._spectrumRingSmooth = { low: null, mid: null, high: null };
                 this._digitalBgGifFilesList = null;
                 this._digitalBgGifManifestPromise = null;
             }
@@ -1187,10 +1187,44 @@
                 } catch (_) {}
             }
 
-            _computeDigitalSpectrumRadiiAndEq() {
-                const t = performance.now() * 0.001;
-                let levels = [];
-                let fromAnalyser = false;
+            /** Blend first/last bins so the closed ribbon has no cliff at the seam. */
+            _blendSpectrumCircularEnds(values, width = 7) {
+                const n = values.length;
+                if (n < 4) return values;
+                const w = Math.min(width, Math.floor(n / 4));
+                const out = values.slice();
+                let acc = 0;
+                for (let k = 0; k < w; k++) acc += out[k] + out[n - 1 - k];
+                const seam = acc / (2 * w);
+                out[0] = seam;
+                out[n - 1] = seam;
+                for (let k = 1; k < w; k++) {
+                    const blend = 1 - (k / w) * (k / w);
+                    out[k] = out[k] * (1 - blend) + seam * blend;
+                    out[n - 1 - k] = out[n - 1 - k] * (1 - blend) + seam * blend;
+                }
+                return out;
+            }
+
+            _unifySpectrumRibbonSeam(radii) {
+                return this._blendSpectrumCircularEnds(radii, 8);
+            }
+
+            static get SPECTRUM_ANGULAR_BINS() { return 72; }
+
+            static get SPECTRUM_FLOWER_LAYERS() {
+                return [
+                    { key: 'low', layerIndex: 0, phaseBins: 0, hueOff: -42, alpha: 0.5, maxRing: 0.62 },
+                    { key: 'mid', layerIndex: 1, phaseBins: 2.5, hueOff: 58, alpha: 0.58, maxRing: 0.64 },
+                    { key: 'high', layerIndex: 2, phaseBins: 5, hueOff: 128, alpha: 0.72, maxRing: 0.66 }
+                ];
+            }
+
+            _sampleDigitalSpectrumBandLevels(t) {
+                const n = RadioVisualEngine.SPECTRUM_ANGULAR_BINS;
+                const bands = 3;
+                const out = { low: [], mid: [], high: [], fromAnalyser: false };
+                const keys = ['low', 'mid', 'high'];
                 try {
                     if (state.analyserNode && state.audioCtx) {
                         const fft = state.analyserNode.fftSize || 256;
@@ -1198,23 +1232,41 @@
                             this._vuBuf = new Uint8Array(fft);
                         }
                         state.analyserNode.getByteFrequencyData(this._vuBuf);
-                        const bars = 72;
-                        const step = Math.floor(this._vuBuf.length / bars) || 1;
-                        for (let i = 0; i < bars; i++) {
-                            let sum = 0;
-                            const start = i * step;
-                            const end = Math.min(this._vuBuf.length, start + step);
-                            for (let j = start; j < end; j++) sum += this._vuBuf[j];
-                            levels.push(sum / Math.max(1, end - start) / 255);
+                        for (let b = 0; b < bands; b++) {
+                            const start = Math.floor(b * this._vuBuf.length / bands);
+                            const end = Math.floor((b + 1) * this._vuBuf.length / bands);
+                            const span = Math.max(1, end - start);
+                            const levels = [];
+                            for (let i = 0; i < n; i++) {
+                                const f = start + (i / Math.max(1, n - 1)) * span;
+                                const i0 = Math.floor(f);
+                                const i1 = Math.min(this._vuBuf.length - 1, i0 + 1);
+                                const tt = f - i0;
+                                const v = (this._vuBuf[i0] || 0) * (1 - tt) + (this._vuBuf[i1] || 0) * tt;
+                                levels.push(v / 255);
+                            }
+                            out[keys[b]] = levels;
                         }
-                        fromAnalyser = true;
+                        out.fromAnalyser = true;
+                        return out;
                     }
                 } catch (_) {}
-                if (!levels.length) {
-                    for (let i = 0; i < 72; i++) {
-                        levels.push(0.12 + 0.1 * Math.sin(t * 2.2 + i * 0.42));
+                const phase = { low: 0, mid: 1.15, high: 2.35 };
+                for (let b = 0; b < bands; b++) {
+                    const levels = [];
+                    const ph = phase[keys[b]];
+                    for (let i = 0; i < n; i++) {
+                        levels.push(
+                            0.1 + 0.09 * Math.sin(t * (2.1 + b * 0.35) + i * 0.42 + ph)
+                            + 0.04 * Math.sin(t * 4.2 + i * 0.17 + ph * 2)
+                        );
                     }
+                    out[keys[b]] = levels;
                 }
+                return out;
+            }
+
+            _smoothSpectrumBandLevels(levels, fromAnalyser) {
                 const n = levels.length;
                 let lo = 0;
                 let hi = n - 1;
@@ -1244,6 +1296,7 @@
                     const v = (levels[i0] || 0) * (1 - tt) + (levels[i1] || 0) * tt;
                     band.push(v);
                 }
+                const bandSeam = this._blendSpectrumCircularEnds(band, 6);
                 const smooth = [];
                 for (let i = 0; i < n; i++) {
                     const im1 = (i - 1 + n) % n;
@@ -1251,38 +1304,67 @@
                     const ip1 = (i + 1) % n;
                     const ip2 = (i + 2) % n;
                     smooth.push(
-                        (band[im2] + 2 * band[im1] + 3 * band[i] + 2 * band[ip1] + band[ip2]) / 9
+                        (bandSeam[im2] + 2 * bandSeam[im1] + 3 * bandSeam[i] + 2 * bandSeam[ip1] + bandSeam[ip2]) / 9
                     );
                 }
+                return smooth;
+            }
+
+            _radiiFromSpectrumSmooth(smooth, t, bandKey, layerOpts) {
+                const n = smooth.length;
                 const sorted = smooth.slice().sort((a, b) => a - b);
-                const p85 = sorted[Math.min(n - 1, Math.floor(n * 0.85))] || 0.001;
-                const norm = 1 / Math.max(0.06, p85);
-                const gain = 0.58;
-                const gamma = 1.42;
-                const maxRing = 0.48;
-                const floor = 0.05;
-                const targetL = [];
+                const p78 = sorted[Math.min(n - 1, Math.floor(n * 0.78))] || 0.001;
+                const norm = 1 / Math.max(0.05, p78);
+                const gain = 0.76;
+                const gamma = 1.26;
+                const maxRing = layerOpts.maxRing ?? 0.64;
+                const floor = 0.04;
+                const target = [];
                 for (let i = 0; i < n; i++) {
                     const raw = Math.min(1, (smooth[i] || 0) * norm * gain);
                     let shaped = Math.pow(raw, gamma);
-                    shaped += 0.006 * Math.sin(t * 1.85 + i * 0.11);
-                    targetL.push(Math.min(maxRing, Math.max(floor, shaped)));
+                    shaped += 0.005 * Math.sin(t * 1.85 + i * 0.11 + layerOpts.layerIndex * 0.9);
+                    target.push(Math.min(maxRing, Math.max(floor, shaped)));
                 }
-                if (!this._spectrumRingSmooth || this._spectrumRingSmooth.length !== n) {
-                    this._spectrumRingSmooth = targetL.slice();
+                if (!this._spectrumRingSmooth[bandKey] || this._spectrumRingSmooth[bandKey].length !== n) {
+                    this._spectrumRingSmooth[bandKey] = target.slice();
                 }
-                const radiiL = [];
-                const attack = 0.14;
-                const release = 0.06;
+                const radii = [];
+                const attack = 0.28;
+                const release = 0.12;
+                const smoothState = this._spectrumRingSmooth[bandKey];
                 for (let i = 0; i < n; i++) {
-                    const tgt = targetL[i];
-                    const prev = this._spectrumRingSmooth[i] ?? floor;
+                    const tgt = target[i];
+                    const prev = smoothState[i] ?? floor;
                     const k = tgt > prev ? attack : release;
                     const next = prev + (tgt - prev) * k;
-                    this._spectrumRingSmooth[i] = next;
-                    radiiL.push(next);
+                    smoothState[i] = next;
+                    radii.push(next);
                 }
-                const radiiR = radiiL.map((_, i) => radiiL[(n - 1 - i) % n]);
+                return this._unifySpectrumRibbonSeam(radii);
+            }
+
+            _mirrorSpectrumRadii(radii) {
+                const n = radii.length;
+                return radii.map((_, i) => radii[(n - 1 - i) % n]);
+            }
+
+            _computeDigitalSpectrumRadiiAndEq() {
+                const t = performance.now() * 0.001;
+                const sampled = this._sampleDigitalSpectrumBandLevels(t);
+                const n = RadioVisualEngine.SPECTRUM_ANGULAR_BINS;
+                const layersL = [];
+                const layersR = [];
+                const smoothMix = [];
+                for (const layer of RadioVisualEngine.SPECTRUM_FLOWER_LAYERS) {
+                    const levels = sampled[layer.key] || [];
+                    const smooth = this._smoothSpectrumBandLevels(levels, sampled.fromAnalyser);
+                    const radii = this._radiiFromSpectrumSmooth(smooth, t, layer.key, layer);
+                    layersL.push({ ...layer, radii });
+                    layersR.push({ ...layer, radii: this._mirrorSpectrumRadii(radii) });
+                    for (let i = 0; i < n; i++) smoothMix[i] = (smoothMix[i] || 0) + (smooth[i] || 0);
+                }
+                for (let i = 0; i < n; i++) smoothMix[i] /= 3;
                 const eqBars = 32;
                 const eqHeights = [];
                 for (let b = 0; b < eqBars; b++) {
@@ -1290,10 +1372,10 @@
                     const idx = u * (n - 1);
                     const i0 = Math.floor(idx);
                     const tt = idx - i0;
-                    const sm = smooth[i0] * (1 - tt) + smooth[Math.min(n - 1, i0 + 1)] * tt;
+                    const sm = smoothMix[i0] * (1 - tt) + smoothMix[Math.min(n - 1, i0 + 1)] * tt;
                     eqHeights.push(Math.min(0.9, Math.max(0.04, Math.pow(sm * 2.05, 0.72))));
                 }
-                return { n, radiiL, radiiR, eqHeights, t };
+                return { n, layersL, layersR, eqHeights, t };
             }
 
             _donutHueForStationIndex(idx) {
@@ -1323,8 +1405,49 @@
                 }
             }
 
-            _drawDigitalSpectrumRing(canvas, radii, n, coreHue = 175) {
-                if (!canvas) return;
+            _spectrumAngle(ii, n, phaseBins = 0) {
+                const phase = (phaseBins / n) * Math.PI * 2;
+                return ((ii + 0.5) / n) * Math.PI * 2 - Math.PI / 2 + phase;
+            }
+
+            _fillDigitalSpectrumPetal(ctx, cx, cy, innerR, outerR, radii, n, layer, coreHue) {
+                const li = layer.layerIndex;
+                const layerCount = 3;
+                const span = (outerR - innerR) / layerCount;
+                const zoneInner = innerR + li * span;
+                const zoneOuter = innerR + (li + 1) * span;
+                const petalFloor = 0.1;
+                const hue = (((Number(coreHue) || 0) + layer.hueOff) % 360 + 360) % 360;
+                ctx.beginPath();
+                for (let i = 0; i <= n; i++) {
+                    const ii = i % n;
+                    const a = this._spectrumAngle(ii, n, layer.phaseBins);
+                    const norm = Math.min(1, Math.max(petalFloor, radii[ii] / (layer.maxRing || 0.64)));
+                    const r = zoneInner + (zoneOuter - zoneInner) * norm;
+                    const x = cx + Math.cos(a) * r;
+                    const y = cy + Math.sin(a) * r;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                const innerPad = zoneInner + span * 0.06;
+                for (let i = n - 1; i >= 0; i--) {
+                    const a = this._spectrumAngle(i, n, layer.phaseBins);
+                    ctx.lineTo(cx + Math.cos(a) * innerPad, cy + Math.sin(a) * innerPad);
+                }
+                ctx.closePath();
+                const petal = ctx.createRadialGradient(cx, cy, zoneInner, cx, cy, zoneOuter);
+                petal.addColorStop(0, `hsla(${hue}, 88%, 58%, ${layer.alpha * 0.55})`);
+                petal.addColorStop(0.55, `hsla(${(hue + 18) % 360}, 92%, 52%, ${layer.alpha})`);
+                petal.addColorStop(1, `hsla(${(hue + 36) % 360}, 85%, 42%, ${layer.alpha * 0.85})`);
+                ctx.fillStyle = petal;
+                ctx.fill();
+                ctx.strokeStyle = `hsla(${hue}, 90%, 70%, ${layer.alpha * 0.35})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            _drawDigitalSpectrumFlower(canvas, layers, n, coreHue = 175) {
+                if (!canvas || !layers || !layers.length) return;
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return;
                 const w = canvas.width;
@@ -1335,57 +1458,28 @@
                 ctx.clearRect(0, 0, w, h);
                 const innerR = Math.min(w, h) * 0.14;
                 const outerR = Math.min(w, h) * 0.44;
-                const coreR = innerR * 1.12;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+                const coreR = innerR * 1.08;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
                 ctx.lineWidth = 1;
-                for (let ring = 1; ring <= 4; ring++) {
+                for (let ring = 1; ring <= 3; ring++) {
                     ctx.beginPath();
-                    ctx.arc(cx, cy, innerR + ((outerR - innerR) * ring) / 4, 0, Math.PI * 2);
+                    ctx.arc(cx, cy, innerR + ((outerR - innerR) * ring) / 3, 0, Math.PI * 2);
                     ctx.stroke();
                 }
                 ctx.lineJoin = 'round';
                 ctx.lineCap = 'round';
-                ctx.beginPath();
-                const innerEdge = innerR * 0.98;
-                for (let i = 0; i <= n; i++) {
-                    const ii = i % n;
-                    const a = ((ii + 0.5) / n) * Math.PI * 2 - Math.PI / 2;
-                    const r = innerR + (outerR - innerR) * radii[ii];
-                    const x = cx + Math.cos(a) * r;
-                    const y = cy + Math.sin(a) * r;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
+                const ordered = layers.slice().sort((a, b) => a.layerIndex - b.layerIndex);
+                for (const layer of ordered) {
+                    if (!layer.radii || !layer.radii.length) continue;
+                    this._fillDigitalSpectrumPetal(ctx, cx, cy, innerR, outerR, layer.radii, n, layer, coreHue);
                 }
-                for (let i = n - 1; i >= 0; i--) {
-                    const a = ((i + 0.5) / n) * Math.PI * 2 - Math.PI / 2;
-                    ctx.lineTo(cx + Math.cos(a) * innerEdge, cy + Math.sin(a) * innerEdge);
-                }
-                ctx.closePath();
-                let rim;
-                if (typeof ctx.createConicGradient === 'function') {
-                    rim = ctx.createConicGradient(-Math.PI / 2, cx, cy);
-                    const steps = 24;
-                    for (let k = 0; k <= steps; k++) {
-                        const u = k / steps;
-                        const hue = (u * 360) % 360;
-                        rim.addColorStop(u, `hsla(${hue}, 92%, 56%, 0.78)`);
-                    }
-                } else {
-                    rim = ctx.createRadialGradient(cx, cy, innerR * 0.9, cx, cy, outerR * 1.02);
-                    rim.addColorStop(0, 'rgba(255, 80, 180, 0.28)');
-                    rim.addColorStop(0.35, 'rgba(120, 200, 255, 0.4)');
-                    rim.addColorStop(0.65, 'rgba(80, 255, 160, 0.38)');
-                    rim.addColorStop(1, 'rgba(255, 200, 80, 0.32)');
-                }
-                ctx.fillStyle = rim;
-                ctx.fill();
                 const hue = ((Number(coreHue) || 0) % 360 + 360) % 360;
                 ctx.beginPath();
                 ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
                 const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-                core.addColorStop(0, `hsla(${hue}, 88%, 62%, 0.84)`);
-                core.addColorStop(0.45, `hsla(${hue}, 76%, 40%, 0.72)`);
-                core.addColorStop(1, `hsla(${(hue + 28) % 360}, 68%, 24%, 0.56)`);
+                core.addColorStop(0, `hsla(${hue}, 88%, 62%, 0.88)`);
+                core.addColorStop(0.45, `hsla(${hue}, 76%, 40%, 0.78)`);
+                core.addColorStop(1, `hsla(${(hue + 28) % 360}, 68%, 24%, 0.62)`);
                 ctx.fillStyle = core;
                 ctx.fill();
             }
@@ -1529,8 +1623,8 @@
                 if (!cL || !cR) return;
                 const pack = this._computeDigitalSpectrumRadiiAndEq();
                 this._syncDonutCoreHues();
-                this._drawDigitalSpectrumRing(cL, pack.radiiL, pack.n, this._donutCoreHueA);
-                this._drawDigitalSpectrumRing(cR, pack.radiiR, pack.n, this._donutCoreHueB);
+                this._drawDigitalSpectrumFlower(cL, pack.layersL, pack.n, this._donutCoreHueA);
+                this._drawDigitalSpectrumFlower(cR, pack.layersR, pack.n, this._donutCoreHueB);
                 this._drawDigitalCarDash(pack.eqHeights, pack.t);
             }
 
@@ -2511,7 +2605,7 @@
                 this._rvFadeTargetDeck = null;
                 try { if (this._digitalStageClickTimer) clearTimeout(this._digitalStageClickTimer); } catch (_) {}
                 this._digitalStageClickTimer = null;
-                this._spectrumRingSmooth = null;
+                this._spectrumRingSmooth = { low: null, mid: null, high: null };
                 try { if (this.animId) cancelAnimationFrame(this.animId); } catch (_) {}
                 this.animId = null;
                 if (this.clockTimerId) {
