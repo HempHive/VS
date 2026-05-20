@@ -361,26 +361,23 @@
             box-shadow: 0 0 10px rgba(255, 45, 35, 0.85), 0 0 4px rgba(255, 100, 80, 0.5);
         }
         #radio-visual-root .radio-visual-knob--autofade-change.radio-visual-knob--switch::before {
-            width: 11px;
-            height: 11px;
-            margin-left: -5.5px;
-            border-radius: 2px;
-            background: rgba(20, 28, 36, 0.9);
-            border: 1px solid rgba(120, 200, 220, 0.45);
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+            width: 10px;
+            height: 10px;
+            margin-left: -5px;
+            border-radius: 50%;
+            background: #2a2218;
+            border: 1px solid rgba(0, 0, 0, 0.55);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.55);
         }
         #radio-visual-root .radio-visual-knob--autofade-change.is-on::before {
-            content: '✓';
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 9px;
-            font-weight: 800;
-            line-height: 1;
-            color: #9ff;
-            background: linear-gradient(180deg, rgba(0, 80, 70, 0.95), rgba(0, 45, 55, 0.95));
-            border-color: rgba(0, 255, 200, 0.55);
-            box-shadow: 0 0 8px rgba(0, 255, 200, 0.35);
+            content: '';
+            display: block;
+            background: radial-gradient(circle at 42% 38%, #8fff70, #28a818 55%, #145008);
+            border-color: rgba(120, 255, 100, 0.55);
+            box-shadow:
+                0 0 10px rgba(60, 255, 80, 0.9),
+                0 0 4px rgba(120, 255, 100, 0.55),
+                inset 0 0 2px rgba(255, 255, 255, 0.35);
         }
         #radio-visual-root .radio-visual-knob--switch:active {
             filter: brightness(1.08);
@@ -525,14 +522,30 @@
             z-index: 0;
             pointer-events: none;
             opacity: 0;
-            background-color: transparent;
-            background-repeat: no-repeat;
-            background-position: center center;
-            background-size: cover;
+            overflow: hidden;
             transition: opacity 0.35s ease-in-out;
         }
         #radio-visual-root .radio-visual-digital-spectrum-bg.is-visible {
             opacity: 1;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-bg-img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center center;
+        }
+        #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-spectrum-bg.is-visible) {
+            background: rgba(0, 12, 20, 0.35);
+        }
+        #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-spectrum-bg.is-visible) .radio-visual-digital-spectrum-side {
+            background: rgba(0, 8, 14, 0.22);
+        }
+        #radio-visual-root .radio-visual-digital-toolbar .radio-visual-digital-xfade-station-btn.is-active {
+            color: #1a1208;
+            background: linear-gradient(180deg, #9fff70, #3a9a28);
+            border-color: rgba(160, 255, 120, 0.75);
+            box-shadow: 0 0 14px rgba(80, 255, 60, 0.45);
         }
         #radio-visual-root .radio-visual-digital-spectrum-row {
             position: absolute;
@@ -803,7 +816,7 @@
         }
         #radio-visual-root .radio-visual-digital-toolbar {
             display: grid;
-            grid-template-columns: repeat(15, minmax(0, 1fr));
+            grid-template-columns: repeat(16, minmax(0, 1fr));
             align-items: stretch;
             gap: 3px;
             width: 100%;

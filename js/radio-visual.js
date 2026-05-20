@@ -56,22 +56,15 @@
             _loadDigitalSpectrumBg(bgEl) {
                 if (!bgEl) return;
                 const url = 'assets/gifs/dig.gif';
-                const show = () => {
-                    try {
-                        bgEl.style.backgroundImage = `url('${url}')`;
-                        bgEl.classList.add('is-visible');
-                    } catch (_) {}
-                };
-                const img = new Image();
+                const img = document.createElement('img');
+                img.className = 'radio-visual-digital-spectrum-bg-img';
+                img.alt = '';
+                img.decoding = 'async';
                 img.onload = () => {
                     try {
-                        const d = img.decode && img.decode();
-                        if (d && typeof d.then === 'function') {
-                            d.then(show).catch(() => {});
-                            return;
-                        }
+                        bgEl.appendChild(img);
+                        bgEl.classList.add('is-visible');
                     } catch (_) {}
-                    show();
                 };
                 img.onerror = () => {
                     try { bgEl.remove(); } catch (_) {}
@@ -747,10 +740,15 @@
             }
 
             _syncAutoFadeChangeStationKnob() {
-                if (!this.els.autoFadeKnob) return;
                 const on = this._isAutoFadeChangeStationEnabled();
-                this.els.autoFadeKnob.classList.toggle('is-on', on);
-                this.els.autoFadeKnob.setAttribute('aria-pressed', on ? 'true' : 'false');
+                if (this.els.autoFadeKnob) {
+                    this.els.autoFadeKnob.classList.toggle('is-on', on);
+                    this.els.autoFadeKnob.setAttribute('aria-pressed', on ? 'true' : 'false');
+                }
+                if (this.els.btnXfadeStation) {
+                    this.els.btnXfadeStation.classList.toggle('is-active', on);
+                    this.els.btnXfadeStation.setAttribute('aria-pressed', on ? 'true' : 'false');
+                }
             }
 
             _deckBActive() {
@@ -1410,9 +1408,6 @@
                     const idxA = (typeof currentStationIndex === 'number' && currentStationIndex >= 0)
                         ? currentStationIndex : -1;
                     if (idxA >= 0 && stations[idxA]) nameA = stations[idxA].name || nameA;
-                    else if (stationBannerNameEl && stationBannerNameEl.textContent) {
-                        nameA = stationBannerNameEl.textContent;
-                    }
                     const idxB = (typeof currentStationBIndex === 'number' && currentStationBIndex >= 0)
                         ? currentStationBIndex : -1;
                     if (idxB >= 0 && stations[idxB]) nameB = stations[idxB].name || nameB;
@@ -2044,6 +2039,14 @@
                 mkRvStationBtn('prev', 'B◀', 'b');
                 mkRvStationBtn('next', 'B▶', 'b');
                 mkRvStationBtn('rand', 'B Rand', 'b');
+                const btnXfadeStation = document.createElement('button');
+                btnXfadeStation.type = 'button';
+                btnXfadeStation.className = 'radio-visual-btn radio-visual-digital-xfade-station-btn';
+                btnXfadeStation.dataset.rvDigital = 'xfade-station';
+                btnXfadeStation.textContent = '🔀';
+                btnXfadeStation.title = 'Change station when auto-fading (toggle)';
+                btnXfadeStation.setAttribute('aria-label', 'Change station when auto-fading');
+                digitalToolbar.appendChild(btnXfadeStation);
                 dPanel.appendChild(digitalCenter);
                 dPanel.appendChild(digitalToolbar);
                 dPanel.appendChild(digBtns);
@@ -2079,6 +2082,7 @@
                     crossDigital: crossDig,
                     btnDigitalSpectrum,
                     btnDigitalDeckB,
+                    btnXfadeStation,
                     digitalCenterSpectrum,
                     digitalCenterDeckB,
                     digitalSpectrumCanvasL,
@@ -2101,6 +2105,7 @@
                 this._setAutoMixMaxNorm(this._autoMixMaxNorm());
                 this._setDigitalCenterMode(this.digitalCenterMode);
                 this._syncDeckSwitches();
+                this._syncAutoFadeChangeStationKnob();
                 this._updateStationUi();
                 this._tickClock();
 
@@ -2131,6 +2136,7 @@
                         else if (act === 'b') this._toggleDeckB();
                         else if (act === 'fade') this._triggerAutoFade();
                         else if (act === 'mix') this._toggleAutoMix();
+                        else if (act === 'xfade-station') this._toggleAutoFadeChangeStation();
                         this._syncDeckSwitches();
                     }, sig);
                 });
@@ -2179,13 +2185,6 @@
                 this.clockTimerId = setInterval(() => { try { this._tickClock(); } catch (_) {} }, 1000);
                 this.animateFrame();
                 this._updateHudModeLines();
-                try {
-                    const banner = document.getElementById('station-banner');
-                    if (banner) {
-                        banner.style.opacity = '0';
-                        banner.style.pointerEvents = 'none';
-                    }
-                } catch (_) {}
             }
 
             animateFrame() {

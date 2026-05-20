@@ -1962,8 +1962,9 @@ function stopAllAndShowStart() {
     // Hide player UI and other overlays, show start overlay
     document.getElementById('ui-layer').classList.add('hidden');
     if (typeof hideRadioPanel === 'function') { try { hideRadioPanel(); } catch(e) {} }
-    const sb = document.getElementById('station-banner');
-    if (sb) { sb.classList.add('display-none'); }
+    try {
+        if (typeof hideStationBannerPermanently === 'function') hideStationBannerPermanently();
+    } catch (_) {}
     try { stopNowPlayingPoll(); } catch (e) {}
     try { clearNowPlayingICYBanner(); } catch (e) {}
     if (typeof hideWebm === 'function' && typeof webmOn !== 'undefined' && webmOn) {

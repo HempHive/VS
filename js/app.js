@@ -5338,14 +5338,12 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         }
 
         function hideStationBannerPermanently() {
-            if (!stationBanner) return;
-            stationBanner.classList.add('display-none');
-            stationBanner.style.opacity = '0';
-            stationBanner.style.pointerEvents = 'none';
             if (stationBannerTimer) {
                 clearTimeout(stationBannerTimer);
                 stationBannerTimer = null;
             }
+            if (!stationBanner) return;
+            try { stationBanner.remove(); } catch (_) {}
         }
 
         function showStationBanner(text) {
@@ -5388,37 +5386,6 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                         radioQuickBtn.style.pointerEvents = 'none';
                     }
                 }, 10000);
-            });
-        }
-        // Station banner now triggers random station
-        stationBanner.title = "Click: random station (not on Shazam)";
-        stationBanner.addEventListener('click', (e) => {
-            if (e.target.closest && e.target.closest('#btn-banner-shazam')) return;
-            e.stopPropagation();
-            if (uiLocked) return;
-            pickRandomStation();
-        });
-        if (btnBannerShazam) {
-            btnBannerShazam.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                let q = (currentNowPlayingICY || '').trim();
-                if (!q && stationBannerNowplayingEl) q = (stationBannerNowplayingEl.textContent || '').trim();
-                if (!q) return;
-                /* Shazam’s old ?search?q= URL no longer loads a working results page in browsers; Apple Music search uses the same catalog and opens reliably. */
-                const appleMusicSearch = 'https://music.apple.com/search?term=' + encodeURIComponent(q);
-                const googleShazamFallback =
-                    'https://www.google.com/search?q=' + encodeURIComponent(q + ' song Shazam');
-                try {
-                    const w = window.open(appleMusicSearch, '_blank', 'noopener,noreferrer');
-                    if (!w || (typeof w.closed === 'boolean' && w.closed)) {
-                        window.open(googleShazamFallback, '_blank', 'noopener,noreferrer');
-                    }
-                } catch (_) {
-                    try {
-                        window.open(googleShazamFallback, '_blank', 'noopener,noreferrer');
-                    } catch (_2) {}
-                }
             });
         }
         document.addEventListener('click', (e) => {
@@ -6492,10 +6459,6 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             if(modeShuffleTimer) { clearTimeout(modeShuffleTimer); modeShuffleTimer = null; }
             if(modeShuffleOn) {
                 scheduleModeShuffle();
-                stationBanner.classList.add('shuffle-on');
-            }
-            if(!modeShuffleOn) {
-                stationBanner.classList.remove('shuffle-on');
             }
         }
         function scheduleModeShuffle() {
