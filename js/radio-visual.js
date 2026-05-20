@@ -853,24 +853,8 @@
                 } catch (_) {}
             }
 
-            _drawDigitalSpectrum() {
-                const canvas = this.els.digitalSpectrumCanvas;
-                if (!canvas || this.skin !== 'digital' || this.digitalCenterMode !== 'spectrum') return;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) return;
-                const w = canvas.width;
-                const h = canvas.height;
-                if (w < 8 || h < 8) return;
-                const cx = w * 0.5;
-                const cy = h * 0.52;
+            _computeDigitalSpectrumRadiiAndEq() {
                 const t = performance.now() * 0.001;
-                ctx.clearRect(0, 0, w, h);
-                const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.55);
-                bg.addColorStop(0, '#0a1e28');
-                bg.addColorStop(0.55, '#061018');
-                bg.addColorStop(1, '#020608');
-                ctx.fillStyle = bg;
-                ctx.fillRect(0, 0, w, h);
                 let levels = [];
                 let fromAnalyser = false;
                 try {
@@ -932,12 +916,42 @@
                     const ip = (i + 1) % n;
                     smooth.push((band[im] + 2 * band[i] + band[ip]) * 0.25);
                 }
-                const radii = [];
+                const radiiL = [];
                 for (let i = 0; i < n; i++) {
                     const raw = smooth[i] || 0;
                     const lv = Math.min(0.86, Math.max(0.04, Math.pow(raw * 2.15, 0.68)));
-                    radii.push(lv);
+                    radiiL.push(lv);
                 }
+                const radiiR = radiiL.map((_, i) => radiiL[(n - 1 - i) % n]);
+                const eqBars = 32;
+                const eqHeights = [];
+                for (let b = 0; b < eqBars; b++) {
+                    const u = (b + 0.5) / eqBars;
+                    const idx = u * (n - 1);
+                    const i0 = Math.floor(idx);
+                    const tt = idx - i0;
+                    const sm = smooth[i0] * (1 - tt) + smooth[Math.min(n - 1, i0 + 1)] * tt;
+                    eqHeights.push(Math.min(1, Math.max(0.04, Math.pow(sm * 2.4, 0.72))));
+                }
+                return { n, radiiL, radiiR, eqHeights, t };
+            }
+
+            _drawDigitalSpectrumRing(canvas, radii, n) {
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+                const w = canvas.width;
+                const h = canvas.height;
+                if (w < 8 || h < 8) return;
+                const cx = w * 0.5;
+                const cy = h * 0.52;
+                ctx.clearRect(0, 0, w, h);
+                const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.55);
+                bg.addColorStop(0, '#0a1e28');
+                bg.addColorStop(0.55, '#061018');
+                bg.addColorStop(1, '#020608');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, w, h);
                 const innerR = Math.min(w, h) * 0.14;
                 const outerR = Math.min(w, h) * 0.44;
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
@@ -990,6 +1004,145 @@
                 core.addColorStop(1, 'rgba(0, 40, 60, 0.05)');
                 ctx.fillStyle = core;
                 ctx.fill();
+            }
+
+            _drawDigitalCarDash(eqHeights, t) {
+                const canvas = this.els.digitalCarDashCanvas;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+                const w = canvas.width;
+                const h = canvas.height;
+                if (w < 16 || h < 24) return;
+                const roundRectPath = (x0, y0, rw, rh, rad) => {
+                    const rr = Math.min(rad, rw * 0.5, rh * 0.5);
+                    ctx.beginPath();
+                    ctx.moveTo(x0 + rr, y0);
+                    ctx.lineTo(x0 + rw - rr, y0);
+                    ctx.quadraticCurveTo(x0 + rw, y0, x0 + rw, y0 + rr);
+                    ctx.lineTo(x0 + rw, y0 + rh - rr);
+                    ctx.quadraticCurveTo(x0 + rw, y0 + rh, x0 + rw - rr, y0 + rh);
+                    ctx.lineTo(x0 + rr, y0 + rh);
+                    ctx.quadraticCurveTo(x0, y0 + rh, x0, y0 + rh - rr);
+                    ctx.lineTo(x0, y0 + rr);
+                    ctx.quadraticCurveTo(x0, y0, x0 + rr, y0);
+                    ctx.closePath();
+                };
+                ctx.clearRect(0, 0, w, h);
+                const m = Math.max(2, Math.min(w, h) * 0.04);
+                const bw = w - m * 2;
+                const bh = h - m * 2;
+                const bx = m;
+                const by = m;
+                const bezelR = Math.min(14, bh * 0.12);
+                const chassis = ctx.createLinearGradient(bx, by, bx + bw, by + bh);
+                chassis.addColorStop(0, '#1c1a22');
+                chassis.addColorStop(0.45, '#0a090e');
+                chassis.addColorStop(1, '#252230');
+                ctx.fillStyle = chassis;
+                roundRectPath(bx, by, bw, bh, bezelR);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(200, 200, 220, 0.22)';
+                ctx.lineWidth = Math.max(1, w / 200);
+                ctx.stroke();
+                const inset = Math.max(3, m * 0.55);
+                const ix = bx + inset;
+                const iy = by + inset;
+                const iw = bw - inset * 2;
+                const ih = bh - inset * 2;
+                const ir = bezelR * 0.65;
+                const recess = ctx.createLinearGradient(ix, iy, ix, iy + ih);
+                recess.addColorStop(0, '#08070a');
+                recess.addColorStop(1, '#121018');
+                ctx.fillStyle = recess;
+                roundRectPath(ix, iy, iw, ih, ir);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
+                ctx.lineWidth = Math.max(1, w / 240);
+                ctx.stroke();
+                const lcdH = ih * 0.34;
+                const lcdY = iy + ih * 0.06;
+                const lcdPad = iw * 0.06;
+                const lcdGrad = ctx.createLinearGradient(ix + lcdPad, lcdY, ix + iw - lcdPad, lcdY + lcdH);
+                lcdGrad.addColorStop(0, '#061a14');
+                lcdGrad.addColorStop(0.5, '#0a2818');
+                lcdGrad.addColorStop(1, '#051210');
+                ctx.fillStyle = lcdGrad;
+                roundRectPath(ix + lcdPad, lcdY, iw - lcdPad * 2, lcdH, ir * 0.5);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0, 255, 160, 0.12)';
+                ctx.stroke();
+                ctx.save();
+                ctx.beginPath();
+                roundRectPath(ix + lcdPad, lcdY, iw - lcdPad * 2, lcdH, ir * 0.5);
+                ctx.clip();
+                for (let gx = 0; gx < iw; gx += 3) {
+                    const a = 0.04 + 0.03 * Math.sin(t * 1.2 + gx * 0.08);
+                    ctx.fillStyle = `rgba(0, 255, 180, ${a})`;
+                    ctx.fillRect(ix + lcdPad + gx, lcdY, 2, lcdH);
+                }
+                ctx.restore();
+                ctx.font = `700 ${Math.max(8, Math.min(w, h) * 0.075)}px ui-monospace, Menlo, Consolas, monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'rgba(0, 255, 200, 0.55)';
+                ctx.shadowColor = 'rgba(0, 255, 200, 0.35)';
+                ctx.shadowBlur = 6;
+                ctx.fillText('DIGITAL TUNER', ix + iw * 0.5, lcdY + lcdH * 0.38);
+                ctx.shadowBlur = 0;
+                ctx.font = `600 ${Math.max(7, Math.min(w, h) * 0.055)}px ui-monospace, Menlo, Consolas, monospace`;
+                ctx.fillStyle = 'rgba(120, 255, 200, 0.35)';
+                ctx.fillText('STEREO · EQ', ix + iw * 0.5, lcdY + lcdH * 0.72);
+                const eqTop = lcdY + lcdH + ih * 0.07;
+                const eqH = Math.max(ih * 0.38, h * 0.22);
+                const eqW = iw - lcdPad * 2;
+                const eqX = ix + lcdPad;
+                const eqR = ir * 0.45;
+                const eqBg = ctx.createLinearGradient(eqX, eqTop, eqX, eqTop + eqH);
+                eqBg.addColorStop(0, '#040508');
+                eqBg.addColorStop(1, '#0a1018');
+                ctx.fillStyle = eqBg;
+                roundRectPath(eqX, eqTop, eqW, eqH, eqR);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0, 200, 255, 0.15)';
+                ctx.stroke();
+                const nb = eqHeights.length;
+                const gap = Math.max(1, eqW * 0.012);
+                const barW = (eqW - gap * (nb + 1)) / nb;
+                const baseY = eqTop + eqH - gap * 2;
+                const maxBar = eqH - gap * 3;
+                for (let i = 0; i < nb; i++) {
+                    const x = eqX + gap + i * (barW + gap);
+                    const ht = maxBar * eqHeights[i];
+                    const y = baseY - ht;
+                    const hue = (i / nb) * 280;
+                    const barG = ctx.createLinearGradient(x, y, x, baseY);
+                    barG.addColorStop(0, `hsla(${hue}, 95%, 62%, 0.95)`);
+                    barG.addColorStop(0.55, `hsla(${hue + 40}, 88%, 48%, 0.88)`);
+                    barG.addColorStop(1, `hsla(${hue + 80}, 75%, 28%, 0.75)`);
+                    ctx.fillStyle = barG;
+                    const bw2 = Math.max(1, barW);
+                    ctx.fillRect(x, y, bw2, ht);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+                    ctx.fillRect(x, y, bw2, Math.max(1, ht * 0.08));
+                }
+                ctx.strokeStyle = 'rgba(0, 255, 220, 0.2)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(eqX + gap, baseY + 1);
+                ctx.lineTo(eqX + eqW - gap, baseY + 1);
+                ctx.stroke();
+            }
+
+            _drawDigitalSpectrum() {
+                if (this.skin !== 'digital' || this.digitalCenterMode !== 'spectrum') return;
+                const cL = this.els.digitalSpectrumCanvasL;
+                const cR = this.els.digitalSpectrumCanvasR;
+                if (!cL || !cR) return;
+                const pack = this._computeDigitalSpectrumRadiiAndEq();
+                this._drawDigitalSpectrumRing(cL, pack.radiiL, pack.n);
+                this._drawDigitalSpectrumRing(cR, pack.radiiR, pack.n);
+                this._drawDigitalCarDash(pack.eqHeights, pack.t);
             }
 
             _wireCrossfadeKnob(knobEl) {
@@ -1260,7 +1413,9 @@
                 if (this.skin === 'analogue') {
                     fit(this.els.vuCanvas);
                 } else {
-                    fit(this.els.digitalSpectrumCanvas);
+                    fit(this.els.digitalSpectrumCanvasL);
+                    fit(this.els.digitalSpectrumCanvasR);
+                    fit(this.els.digitalCarDashCanvas);
                 }
             }
 
@@ -1556,11 +1711,6 @@
                 const stNameA = mkLine('radio-visual-digital-line--station-a', 'radio-visual-station-name-a', '—');
                 const dClk = mkLine('radio-visual-digital-line--clock', 'radio-visual-digital-clock', '—');
                 const stNameB = mkLine('radio-visual-digital-line--station-b', 'radio-visual-station-name-b', '—');
-                const overlayRow = document.createElement('div');
-                overlayRow.className = 'radio-visual-digital-spectrum-overlay-row';
-                overlayRow.appendChild(stNameA);
-                overlayRow.appendChild(dClk);
-                overlayRow.appendChild(stNameB);
                 const digBtns = document.createElement('div');
                 digBtns.className = 'radio-visual-btn-grid radio-visual-digital-feature-btns';
                 digBtns.id = 'radio-visual-digital-btns';
@@ -1568,15 +1718,40 @@
                 digitalCenter.className = 'radio-visual-digital-center';
                 const digitalCenterSpectrum = document.createElement('div');
                 digitalCenterSpectrum.className = 'radio-visual-digital-center-pane is-active';
-                const digitalSpectrumCanvas = document.createElement('canvas');
-                digitalSpectrumCanvas.className = 'radio-visual-digital-spectrum-canvas';
-                digitalSpectrumCanvas.id = 'radio-visual-digital-spectrum';
-                digitalCenterSpectrum.appendChild(digitalSpectrumCanvas);
-                const spectrumOverlay = document.createElement('div');
-                spectrumOverlay.className = 'radio-visual-digital-spectrum-overlay';
-                spectrumOverlay.setAttribute('aria-live', 'polite');
-                spectrumOverlay.appendChild(overlayRow);
-                digitalCenterSpectrum.appendChild(spectrumOverlay);
+                const spectrumRow = document.createElement('div');
+                spectrumRow.className = 'radio-visual-digital-spectrum-row';
+                const spectrumSideL = document.createElement('div');
+                spectrumSideL.className = 'radio-visual-digital-spectrum-side radio-visual-digital-spectrum-side--left';
+                const digitalSpectrumCanvasL = document.createElement('canvas');
+                digitalSpectrumCanvasL.className = 'radio-visual-digital-spectrum-canvas';
+                digitalSpectrumCanvasL.id = 'radio-visual-digital-spectrum-l';
+                spectrumSideL.appendChild(digitalSpectrumCanvasL);
+                const dashStack = document.createElement('div');
+                dashStack.className = 'radio-visual-digital-dash-stack';
+                const centerInfo = document.createElement('div');
+                centerInfo.className = 'radio-visual-digital-center-info';
+                centerInfo.setAttribute('aria-live', 'polite');
+                centerInfo.appendChild(stNameA);
+                centerInfo.appendChild(stNameB);
+                centerInfo.appendChild(dClk);
+                const carDisplay = document.createElement('div');
+                carDisplay.className = 'radio-visual-digital-car-display';
+                const digitalCarDashCanvas = document.createElement('canvas');
+                digitalCarDashCanvas.className = 'radio-visual-digital-car-dash-canvas';
+                digitalCarDashCanvas.id = 'radio-visual-digital-car-dash';
+                carDisplay.appendChild(digitalCarDashCanvas);
+                dashStack.appendChild(centerInfo);
+                dashStack.appendChild(carDisplay);
+                const spectrumSideR = document.createElement('div');
+                spectrumSideR.className = 'radio-visual-digital-spectrum-side radio-visual-digital-spectrum-side--right';
+                const digitalSpectrumCanvasR = document.createElement('canvas');
+                digitalSpectrumCanvasR.className = 'radio-visual-digital-spectrum-canvas';
+                digitalSpectrumCanvasR.id = 'radio-visual-digital-spectrum-r';
+                spectrumSideR.appendChild(digitalSpectrumCanvasR);
+                spectrumRow.appendChild(spectrumSideL);
+                spectrumRow.appendChild(dashStack);
+                spectrumRow.appendChild(spectrumSideR);
+                digitalCenterSpectrum.appendChild(spectrumRow);
                 const digitalCenterDeckB = document.createElement('div');
                 digitalCenterDeckB.className = 'radio-visual-digital-center-pane';
                 const digitalDeckBMount = document.createElement('div');
@@ -1700,7 +1875,9 @@
                     btnDigitalDeckB,
                     digitalCenterSpectrum,
                     digitalCenterDeckB,
-                    digitalSpectrumCanvas,
+                    digitalSpectrumCanvasL,
+                    digitalSpectrumCanvasR,
+                    digitalCarDashCanvas,
                     digitalDeckBVideo,
                     volDigitalReadout,
                     digitalClock: dClk,

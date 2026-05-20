@@ -475,7 +475,7 @@
         #radio-visual-root .radio-visual-digital-center {
             position: relative;
             width: 100%;
-            min-height: clamp(160px, 28vh, 280px);
+            min-height: clamp(200px, 34vh, 320px);
             margin: 10px 0 14px;
             border-radius: 12px;
             overflow: hidden;
@@ -487,8 +487,8 @@
             position: absolute;
             inset: 0;
             display: none;
-            align-items: center;
-            justify-content: center;
+            align-items: stretch;
+            justify-content: stretch;
         }
         #radio-visual-root:has(.radio-visual-skin--digital.is-active) {
             background:
@@ -496,64 +496,99 @@
                 radial-gradient(ellipse 90% 70% at 50% 100%, rgba(20, 40, 80, 0.35), transparent 60%),
                 linear-gradient(165deg, #0c0a08 0%, #1a1410 38%, #0a0e14 100%);
         }
-        #radio-visual-root .radio-visual-digital-spectrum-overlay {
+        #radio-visual-root .radio-visual-digital-spectrum-row {
             position: absolute;
             inset: 0;
-            z-index: 3;
-            pointer-events: none;
             display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
+            flex-direction: row;
             align-items: stretch;
-            padding: clamp(10px, 2.5vw, 16px) clamp(10px, 2.5vw, 14px);
+            gap: clamp(6px, 1.2vw, 12px);
+            padding: clamp(8px, 1.4vw, 14px);
             box-sizing: border-box;
         }
-        #radio-visual-root .radio-visual-digital-spectrum-overlay-row {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-            align-items: end;
-            gap: clamp(8px, 2vw, 14px);
-            width: 100%;
+        #radio-visual-root .radio-visual-digital-spectrum-side {
+            flex: 1 1 0;
+            min-width: 0;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(0, 8, 14, 0.5);
         }
-        #radio-visual-root .radio-visual-digital-spectrum-overlay .radio-visual-digital-line {
+        #radio-visual-root .radio-visual-digital-dash-stack {
+            flex: 0 0 clamp(150px, 30vw, 280px);
+            min-width: 130px;
+            max-width: min(92vw, 300px);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
+            gap: clamp(6px, 1.2vw, 10px);
+            z-index: 4;
+        }
+        #radio-visual-root .radio-visual-digital-center-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 2px;
+            padding: 2px 6px 0;
+            pointer-events: none;
+            flex-shrink: 0;
+        }
+        #radio-visual-root .radio-visual-digital-center-info .radio-visual-digital-line {
             margin: 0;
             width: 100%;
+            max-width: 100%;
             text-shadow:
                 0 0 12px rgba(0, 0, 0, 0.9),
                 0 1px 3px rgba(0, 0, 0, 0.85);
         }
-        #radio-visual-root .radio-visual-digital-line--station-a,
-        #radio-visual-root .radio-visual-digital-line--station-b {
-            font-size: clamp(0.75rem, 2.6vw, 1.05rem);
+        #radio-visual-root .radio-visual-digital-center-info .radio-visual-digital-line--station-a,
+        #radio-visual-root .radio-visual-digital-center-info .radio-visual-digital-line--station-b {
+            text-align: center;
+            font-size: clamp(0.72rem, 2.4vw, 0.98rem);
             font-weight: 700;
-            color: #9ff;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             min-width: 0;
         }
-        #radio-visual-root .radio-visual-digital-line--station-a {
-            text-align: left;
+        #radio-visual-root .radio-visual-digital-center-info .radio-visual-digital-line--station-a {
             color: rgba(170, 230, 255, 0.95);
         }
-        #radio-visual-root .radio-visual-digital-line--station-b {
-            text-align: right;
+        #radio-visual-root .radio-visual-digital-center-info .radio-visual-digital-line--station-b {
             color: rgba(150, 210, 255, 0.92);
         }
-        #radio-visual-root .radio-visual-digital-spectrum-overlay .radio-visual-digital-line--status {
-            font-size: clamp(9px, 2vw, 11px);
-            color: #6ef0dc;
-        }
-        #radio-visual-root .radio-visual-digital-spectrum-overlay .radio-visual-digital-line--meta {
-            font-size: clamp(9px, 2vw, 11px);
-            color: #5ec8b8;
-        }
-        #radio-visual-root .radio-visual-digital-spectrum-overlay .radio-visual-digital-line--clock {
+        #radio-visual-root .radio-visual-digital-center-info .radio-visual-digital-line--clock {
             font-size: clamp(10px, 2.2vw, 12px);
             font-weight: 700;
             color: #9ff;
             text-align: center;
             white-space: nowrap;
+        }
+        #radio-visual-root .radio-visual-digital-car-display {
+            flex: 1 1 auto;
+            min-height: clamp(88px, 22vw, 130px);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 40%),
+                linear-gradient(165deg, #2a2835 0%, #0c0a10 45%, #1a1824 100%);
+            border: 1px solid rgba(120, 120, 140, 0.35);
+            box-shadow:
+                0 4px 14px rgba(0, 0, 0, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12),
+                inset 0 -2px 8px rgba(0, 0, 0, 0.5);
+        }
+        #radio-visual-root .radio-visual-digital-car-dash-canvas {
+            flex: 1 1 auto;
+            width: 100%;
+            min-height: 72px;
+            display: block;
         }
         #radio-visual-root .radio-visual-digital-deck-b-mount {
             position: relative;
@@ -651,9 +686,11 @@
         #radio-visual-root .radio-visual-digital-center-pane.is-active {
             display: flex;
         }
-        #radio-visual-root .radio-visual-digital-center-pane .radio-visual-digital-spectrum-canvas {
+        #radio-visual-root .radio-visual-digital-spectrum-side .radio-visual-digital-spectrum-canvas {
             position: absolute;
             inset: 0;
+            width: 100%;
+            height: 100%;
         }
         #radio-visual-root .radio-visual-digital-spectrum-canvas {
             width: 100%;
