@@ -25,6 +25,8 @@
                 this._digitalStageClickTimer = null;
                 this._digitalBgGifIdx = 0;
                 this._digitalBgGifEnabled = true;
+                /** Smoothed ring radii (0–1) for flowing spectrum ribbon. */
+                this._spectrumRingSmooth = null;
             }
 
             static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
@@ -1177,22 +1179,41 @@
                 }
                 const smooth = [];
                 for (let i = 0; i < n; i++) {
-                    const im = (i - 1 + n) % n;
-                    const ip = (i + 1) % n;
-                    smooth.push((band[im] + 2 * band[i] + band[ip]) * 0.25);
+                    const im1 = (i - 1 + n) % n;
+                    const im2 = (i - 2 + n) % n;
+                    const ip1 = (i + 1) % n;
+                    const ip2 = (i + 2) % n;
+                    smooth.push(
+                        (band[im2] + 2 * band[im1] + 3 * band[i] + 2 * band[ip1] + band[ip2]) / 9
+                    );
                 }
-                const bandMax = smooth.reduce((mx, v) => Math.max(mx, v || 0), 0);
-                const peakBreath = bandMax > 0.32 ? 0.016 * Math.sin(t * 2.35) : 0;
-                const maxRing = 0.73;
-                const radiiL = [];
+                const sorted = smooth.slice().sort((a, b) => a - b);
+                const p85 = sorted[Math.min(n - 1, Math.floor(n * 0.85))] || 0.001;
+                const norm = 1 / Math.max(0.06, p85);
+                const gain = 0.58;
+                const gamma = 1.42;
+                const maxRing = 0.48;
+                const floor = 0.05;
+                const targetL = [];
                 for (let i = 0; i < n; i++) {
-                    const raw = smooth[i] || 0;
-                    let shaped = Math.pow(raw * 1.62, 0.71);
-                    if (raw > 0.4) {
-                        shaped += 0.018 * Math.sin(t * 2.55 + i * 0.15) + peakBreath * (raw / (bandMax + 0.02));
-                    }
-                    const lv = Math.min(maxRing, Math.max(0.04, shaped));
-                    radiiL.push(lv);
+                    const raw = Math.min(1, (smooth[i] || 0) * norm * gain);
+                    let shaped = Math.pow(raw, gamma);
+                    shaped += 0.006 * Math.sin(t * 1.85 + i * 0.11);
+                    targetL.push(Math.min(maxRing, Math.max(floor, shaped)));
+                }
+                if (!this._spectrumRingSmooth || this._spectrumRingSmooth.length !== n) {
+                    this._spectrumRingSmooth = targetL.slice();
+                }
+                const radiiL = [];
+                const attack = 0.14;
+                const release = 0.06;
+                for (let i = 0; i < n; i++) {
+                    const tgt = targetL[i];
+                    const prev = this._spectrumRingSmooth[i] ?? floor;
+                    const k = tgt > prev ? attack : release;
+                    const next = prev + (tgt - prev) * k;
+                    this._spectrumRingSmooth[i] = next;
+                    radiiL.push(next);
                 }
                 const radiiR = radiiL.map((_, i) => radiiL[(n - 1 - i) % n]);
                 const eqBars = 32;
@@ -2423,6 +2444,7 @@
                 this._rvFadeTargetDeck = null;
                 try { if (this._digitalStageClickTimer) clearTimeout(this._digitalStageClickTimer); } catch (_) {}
                 this._digitalStageClickTimer = null;
+                this._spectrumRingSmooth = null;
                 try { if (this.animId) cancelAnimationFrame(this.animId); } catch (_) {}
                 this.animId = null;
                 if (this.clockTimerId) {
