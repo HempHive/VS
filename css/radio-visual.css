@@ -482,6 +482,7 @@
             border: 2px solid rgba(0, 220, 255, 0.28);
             background: rgba(0, 12, 20, 0.85);
             box-shadow: inset 0 0 40px rgba(0, 180, 255, 0.08);
+            cursor: pointer;
         }
         #radio-visual-root .radio-visual-digital-center-pane {
             position: absolute;
@@ -587,8 +588,35 @@
         #radio-visual-root .radio-visual-digital-car-dash-canvas {
             flex: 1 1 auto;
             width: 100%;
-            min-height: 72px;
+            min-height: 56px;
             display: block;
+        }
+        #radio-visual-root .radio-visual-digital-dash-xfade {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: stretch;
+            gap: clamp(6px, 1.5vw, 10px);
+            padding: 6px 10px 8px;
+            flex-shrink: 0;
+            border-top: 1px solid rgba(0, 200, 255, 0.14);
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(12, 14, 22, 0.55) 100%);
+        }
+        #radio-visual-root .radio-visual-digital-dash-xfade-end {
+            flex: 0 0 auto;
+            min-width: 1.1em;
+            text-align: center;
+            font-size: clamp(11px, 2.6vw, 14px);
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            color: rgba(160, 230, 255, 0.95);
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.75);
+        }
+        #radio-visual-root .radio-visual-digital-dash-xfade-range {
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 8px;
+            accent-color: #0ec;
         }
         #radio-visual-root .radio-visual-digital-deck-b-mount {
             position: relative;
@@ -657,6 +685,11 @@
             white-space: nowrap;
         }
         #radio-visual-root .radio-visual-digital-feature-btns {
+            display: none;
+            max-width: none;
+            margin: 0;
+        }
+        #radio-visual-root .radio-visual-digital-feature-btns.is-stage-revealed {
             display: grid;
             grid-template-columns: repeat(8, minmax(0, 1fr));
             gap: clamp(4px, 0.8vw, 8px);
@@ -734,7 +767,7 @@
         }
         #radio-visual-root .radio-visual-digital-toolbar {
             display: grid;
-            grid-template-columns: repeat(17, minmax(0, 1fr));
+            grid-template-columns: repeat(15, minmax(0, 1fr));
             align-items: stretch;
             gap: 3px;
             width: 100%;
@@ -779,26 +812,6 @@
             padding: 8px 6px;
             font-size: 1rem;
         }
-        #radio-visual-root .radio-visual-digital-toolbar-xfade {
-            display: flex;
-            grid-column: span 2;
-            min-width: 0;
-            align-items: center;
-            gap: 4px;
-            padding: 0 4px;
-        }
-        #radio-visual-root .radio-visual-digital-xfade-label {
-            flex-shrink: 0;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 0.12em;
-            color: #5ec;
-        }
-        #radio-visual-root .radio-visual-digital-toolbar-xfade .radio-visual-digital-vol {
-            flex: 1 1 auto;
-            min-width: 0;
-            height: 6px;
-        }
         @media (max-width: 520px) {
             #radio-visual-root .radio-visual-btn-grid:not(.radio-visual-analog-actions) {
                 grid-template-columns: repeat(2, 1fr);
@@ -807,9 +820,6 @@
                 grid-template-columns: repeat(8, minmax(0, 1fr));
             }
             #radio-visual-root .radio-visual-digital-toolbar-vol {
-                grid-column: span 4;
-            }
-            #radio-visual-root .radio-visual-digital-toolbar-xfade {
                 grid-column: span 4;
             }
         }

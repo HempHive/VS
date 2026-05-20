@@ -3372,7 +3372,15 @@ function exposeAppBindingsToGlobal() {
     try { g.toggleDeckBVizMountFullscreen = toggleDeckBVizMountFullscreen; } catch (_) {}
     try { g.toggleFullscreen = toggleFullscreen; } catch (_) {}
     try { g.toggleKeyboardShortcutsPanel = toggleKeyboardShortcutsPanel; } catch (_) {}
+    try { g.toggleMixPanel = toggleMixPanel; } catch (_) {}
     try { g.toggleOptionsPanel = toggleOptionsPanel; } catch (_) {}
+    try { g.toggleRadioPanel = toggleRadioPanel; } catch (_) {}
+    try { g.toggleTopMenuPanel = toggleTopMenuPanel; } catch (_) {}
+    try { g.toggleTextInPanel = toggleTextInPanel; } catch (_) {}
+    try { g.openTextInForTarget = openTextInForTarget; } catch (_) {}
+    try { g.showWebm = showWebm; } catch (_) {}
+    try { g.hideWebm = hideWebm; } catch (_) {}
+    try { g.loadWebmList = loadWebmList; } catch (_) {}
     try { g.top = top; } catch (_) {}
     try { g.topBar = topBar; } catch (_) {}
     try { g.topEl = topEl; } catch (_) {}

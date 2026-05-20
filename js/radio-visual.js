@@ -19,6 +19,8 @@
                 this._digitalVolStep = 0.05;
                 this._volMuted = false;
                 this._volUnmuteNorm = 0.5;
+                this._digitalStageClickTimer = null;
+                this._digitalFeatureBtnsRevealed = false;
             }
 
             static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
@@ -916,10 +918,17 @@
                     const ip = (i + 1) % n;
                     smooth.push((band[im] + 2 * band[i] + band[ip]) * 0.25);
                 }
+                const bandMax = smooth.reduce((mx, v) => Math.max(mx, v || 0), 0);
+                const peakBreath = bandMax > 0.32 ? 0.016 * Math.sin(t * 2.35) : 0;
+                const maxRing = 0.73;
                 const radiiL = [];
                 for (let i = 0; i < n; i++) {
                     const raw = smooth[i] || 0;
-                    const lv = Math.min(0.86, Math.max(0.04, Math.pow(raw * 2.15, 0.68)));
+                    let shaped = Math.pow(raw * 1.62, 0.71);
+                    if (raw > 0.4) {
+                        shaped += 0.018 * Math.sin(t * 2.55 + i * 0.15) + peakBreath * (raw / (bandMax + 0.02));
+                    }
+                    const lv = Math.min(maxRing, Math.max(0.04, shaped));
                     radiiL.push(lv);
                 }
                 const radiiR = radiiL.map((_, i) => radiiL[(n - 1 - i) % n]);
@@ -931,7 +940,7 @@
                     const i0 = Math.floor(idx);
                     const tt = idx - i0;
                     const sm = smooth[i0] * (1 - tt) + smooth[Math.min(n - 1, i0 + 1)] * tt;
-                    eqHeights.push(Math.min(1, Math.max(0.04, Math.pow(sm * 2.4, 0.72))));
+                    eqHeights.push(Math.min(0.9, Math.max(0.04, Math.pow(sm * 2.05, 0.72))));
                 }
                 return { n, radiiL, radiiR, eqHeights, t };
             }
@@ -1324,6 +1333,48 @@
                 } catch (_) {}
             }
 
+            _toggleDigitalFeatureBtnsFromStage() {
+                const row = this.els.digitalBtns;
+                if (!row) return;
+                this._digitalFeatureBtnsRevealed = !this._digitalFeatureBtnsRevealed;
+                row.classList.toggle('is-stage-revealed', this._digitalFeatureBtnsRevealed);
+                if (!this._digitalFeatureBtnsRevealed && this.digitalCenterMode === 'deckB') {
+                    this._setDigitalCenterMode('spectrum');
+                }
+            }
+
+            _isDigitalStageUiTarget(el) {
+                if (!el || !el.closest) return false;
+                return !!el.closest(
+                    'button, a, input, textarea, select, label, [role="slider"], video[controls]'
+                );
+            }
+
+            _bindDigitalStageInteractions(digitalCenterEl) {
+                if (!digitalCenterEl || !this.abortCtrl) return;
+                const sig = this.abortCtrl.signal;
+                digitalCenterEl.addEventListener('click', (ev) => {
+                    if (this.skin !== 'digital') return;
+                    if (this._isDigitalStageUiTarget(ev.target)) return;
+                    clearTimeout(this._digitalStageClickTimer);
+                    this._digitalStageClickTimer = setTimeout(() => {
+                        this._digitalStageClickTimer = null;
+                        this._toggleDigitalFeatureBtnsFromStage();
+                    }, 280);
+                }, { signal: sig });
+                digitalCenterEl.addEventListener('dblclick', (ev) => {
+                    if (this.skin !== 'digital') return;
+                    if (this._isDigitalStageUiTarget(ev.target)) return;
+                    try { ev.preventDefault(); } catch (_) {}
+                    clearTimeout(this._digitalStageClickTimer);
+                    this._digitalStageClickTimer = null;
+                    try {
+                        const fs = globalThis.toggleFullscreen;
+                        if (typeof fs === 'function') fs();
+                    } catch (_) {}
+                }, { signal: sig });
+            }
+
             _setSkin(skin) {
                 const next = (skin === 'digital') ? 'digital' : 'analogue';
                 this.skin = next;
@@ -1332,6 +1383,10 @@
                 if (this.els.stageDigital) this.els.stageDigital.classList.toggle('is-active', next === 'digital');
                 if (this.els.btnSkinAnalog) this.els.btnSkinAnalog.classList.toggle('is-active', next === 'analogue');
                 if (this.els.btnSkinDigital) this.els.btnSkinDigital.classList.toggle('is-active', next === 'digital');
+                if (next !== 'digital' && this.els.digitalBtns) {
+                    this._digitalFeatureBtnsRevealed = false;
+                    this.els.digitalBtns.classList.remove('is-stage-revealed');
+                }
                 try { this.onResize(); } catch (_) {}
                 if (next === 'digital' && this.digitalCenterMode === 'deckB') {
                     this._syncDigitalDeckBVideo();
@@ -1431,22 +1486,30 @@
 
             _buildFeatureButtons(gridEl, { deckBInPanel = false } = {}) {
                 if (!gridEl) return;
+                const g = globalThis;
                 const items = [
-                    { label: 'Mixer', fn: () => { try { if (typeof toggleMixPanel === 'function') toggleMixPanel(); } catch (_) {} } },
+                    { label: 'Mixer', fn: () => { try { g.toggleMixPanel?.(); } catch (_) {} } },
                     { label: 'Avatar', fn: () => {
                         try {
-                            if (typeof uiLocked !== 'undefined' && uiLocked) return;
-                            if (typeof webmOn !== 'undefined' && webmOn && typeof hideWebm === 'function') hideWebm();
-                            else if (typeof showWebm === 'function') {
-                                if (!webmList.length && typeof loadWebmList === 'function') loadWebmList().finally(() => { if (webmList.length) showWebm(); });
-                                else showWebm();
+                            if (g.uiLocked) return;
+                            if (g.webmOn && typeof g.hideWebm === 'function') g.hideWebm();
+                            else if (typeof g.showWebm === 'function') {
+                                if (!g.webmList?.length && typeof g.loadWebmList === 'function') {
+                                    g.loadWebmList().finally(() => {
+                                        try {
+                                            if (g.webmList?.length) g.showWebm();
+                                        } catch (_) {}
+                                    });
+                                } else if (g.webmList?.length) {
+                                    g.showWebm();
+                                }
                             }
                         } catch (_) {}
                     }},
                     { label: 'Text-In', fn: () => {
                         try {
-                            if (typeof openTextInForTarget === 'function') openTextInForTarget('global');
-                            else if (typeof toggleTextInPanel === 'function') toggleTextInPanel();
+                            if (typeof g.openTextInForTarget === 'function') g.openTextInForTarget('global');
+                            else if (typeof g.toggleTextInPanel === 'function') g.toggleTextInPanel();
                         } catch (_) {}
                     }},
                     { label: 'Video', fn: () => {
@@ -1489,8 +1552,9 @@
                     }},
                     { label: 'Stations', fn: () => {
                         try {
-                            if (typeof uiLocked !== 'undefined' && uiLocked) return;
-                            if (typeof toggleTopMenuPanel === 'function') toggleTopMenuPanel();
+                            if (g.uiLocked) return;
+                            if (typeof g.toggleRadioPanel === 'function') g.toggleRadioPanel();
+                            else if (typeof g.toggleTopMenuPanel === 'function') g.toggleTopMenuPanel();
                         } catch (_) {}
                     } }
                 ];
@@ -1739,7 +1803,28 @@
                 const digitalCarDashCanvas = document.createElement('canvas');
                 digitalCarDashCanvas.className = 'radio-visual-digital-car-dash-canvas';
                 digitalCarDashCanvas.id = 'radio-visual-digital-car-dash';
+                const dashXfade = document.createElement('div');
+                dashXfade.className = 'radio-visual-digital-dash-xfade';
+                const xfLblA = document.createElement('span');
+                xfLblA.className = 'radio-visual-digital-dash-xfade-end';
+                xfLblA.textContent = 'A';
+                const crossDig = document.createElement('input');
+                crossDig.type = 'range';
+                crossDig.className = 'radio-visual-digital-vol radio-visual-digital-dash-xfade-range';
+                crossDig.id = 'radio-visual-cross-digital';
+                crossDig.min = '0';
+                crossDig.max = '1';
+                crossDig.step = '0.01';
+                crossDig.value = String(this._getCrossfadeX());
+                crossDig.setAttribute('aria-label', 'Crossfade between deck A and deck B');
+                const xfLblB = document.createElement('span');
+                xfLblB.className = 'radio-visual-digital-dash-xfade-end';
+                xfLblB.textContent = 'B';
+                dashXfade.appendChild(xfLblA);
+                dashXfade.appendChild(crossDig);
+                dashXfade.appendChild(xfLblB);
                 carDisplay.appendChild(digitalCarDashCanvas);
+                carDisplay.appendChild(dashXfade);
                 dashStack.appendChild(centerInfo);
                 dashStack.appendChild(carDisplay);
                 const spectrumSideR = document.createElement('div');
@@ -1767,6 +1852,7 @@
                 digitalCenterDeckB.appendChild(digitalDeckBMount);
                 digitalCenter.appendChild(digitalCenterSpectrum);
                 digitalCenter.appendChild(digitalCenterDeckB);
+                digitalCenter.title = 'Tap: show or hide feature buttons (Mixer, Avatar…). Double-click: fullscreen. If Deck B view is open, a second tap returns to Spectrum.';
                 const digitalToolbar = document.createElement('div');
                 digitalToolbar.className = 'radio-visual-digital-toolbar';
                 digitalToolbar.id = 'radio-visual-digital-toolbar';
@@ -1804,16 +1890,15 @@
                 volGroup.appendChild(volDigitalReadout);
                 volGroup.appendChild(volUp);
                 digitalToolbar.appendChild(volGroup);
-                [['a', 'A Play'], ['b', 'B Play'], ['fade', 'Fade'], ['mix', 'Mix']].forEach(([act, lab]) => {
+                const mkRvDigitalBtn = (act, lab) => {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
                     b.dataset.rvDigital = act;
                     b.textContent = lab;
                     digitalToolbar.appendChild(b);
-                });
-                [['prev', 'A◀', 'a'], ['next', 'A▶', 'a'], ['rand', 'A Rand', 'a'],
-                 ['prev', 'B◀', 'b'], ['next', 'B▶', 'b'], ['rand', 'B Rand', 'b']].forEach(([act, lab, deck]) => {
+                };
+                const mkRvStationBtn = (act, lab, deck) => {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
@@ -1821,23 +1906,17 @@
                     b.dataset.rvDeck = deck;
                     b.textContent = lab;
                     digitalToolbar.appendChild(b);
-                });
-                const crossGroup = document.createElement('div');
-                crossGroup.className = 'radio-visual-digital-toolbar-xfade';
-                const crossLbl = document.createElement('span');
-                crossLbl.className = 'radio-visual-digital-xfade-label';
-                crossLbl.textContent = 'XF';
-                const crossDig = document.createElement('input');
-                crossDig.type = 'range';
-                crossDig.className = 'radio-visual-digital-vol';
-                crossDig.id = 'radio-visual-cross-digital';
-                crossDig.min = '0';
-                crossDig.max = '1';
-                crossDig.step = '0.01';
-                crossDig.value = String(this._getCrossfadeX());
-                crossGroup.appendChild(crossLbl);
-                crossGroup.appendChild(crossDig);
-                digitalToolbar.appendChild(crossGroup);
+                };
+                mkRvDigitalBtn('a', 'A Play');
+                mkRvStationBtn('prev', 'A◀', 'a');
+                mkRvStationBtn('next', 'A▶', 'a');
+                mkRvStationBtn('rand', 'A Rand', 'a');
+                mkRvDigitalBtn('fade', 'Fade');
+                mkRvDigitalBtn('mix', 'Mix');
+                mkRvDigitalBtn('b', 'B Play');
+                mkRvStationBtn('prev', 'B◀', 'b');
+                mkRvStationBtn('next', 'B▶', 'b');
+                mkRvStationBtn('rand', 'B Rand', 'b');
                 dPanel.appendChild(digBtns);
                 dPanel.appendChild(digitalCenter);
                 dPanel.appendChild(digitalToolbar);
@@ -1881,12 +1960,14 @@
                     digitalDeckBVideo,
                     volDigitalReadout,
                     digitalClock: dClk,
+                    digitalCenter,
                     analogBtns,
                     digitalBtns: digBtns
                 };
 
                 this._buildFeatureButtons(analogBtns);
                 this._buildFeatureButtons(digBtns, { deckBInPanel: true });
+                this._bindDigitalStageInteractions(digitalCenter);
                 this._setSkin(this.skin);
                 this._syncVolumeFromGlobal();
                 this._setAutoFadeDurationNorm(this._autoFadeDurationNorm());
@@ -2013,6 +2094,8 @@
                 }
                 this._rvFadeActive = false;
                 this._rvFadeTargetDeck = null;
+                try { if (this._digitalStageClickTimer) clearTimeout(this._digitalStageClickTimer); } catch (_) {}
+                this._digitalStageClickTimer = null;
                 try { if (this.animId) cancelAnimationFrame(this.animId); } catch (_) {}
                 this.animId = null;
                 if (this.clockTimerId) {
