@@ -673,6 +673,78 @@
                 return '—';
             }
 
+            _audibleDeckStationName() {
+                try {
+                    const dk = this._crossfaderAudibleDeckKey();
+                    if (typeof globalThis.getDeckStationDisplayName === 'function') {
+                        return String(globalThis.getDeckStationDisplayName(dk) || '').trim();
+                    }
+                    return String(this._stationNameForDeck(dk) || '').trim();
+                } catch (_) {}
+                return '';
+            }
+
+            _isAudiblePlaybackActive() {
+                try {
+                    if (!state || !state.isPlaying) return false;
+                    const dk = this._crossfaderAudibleDeckKey();
+                    const el = dk === 'b'
+                        ? (typeof audioElB !== 'undefined' ? audioElB : null)
+                        : (typeof audioEl !== 'undefined' ? audioEl : null);
+                    if (el) {
+                        if (!el.paused && el.readyState >= 2) return true;
+                        if (el.currentTime > 0 && !el.ended) return true;
+                    }
+                    if (state.analyserNode && state.audioCtx && this._vuBuf) {
+                        state.analyserNode.getByteFrequencyData(this._vuBuf);
+                        let sum = 0;
+                        for (let i = 0; i < this._vuBuf.length; i++) sum += this._vuBuf[i];
+                        if (sum / this._vuBuf.length > 8) return true;
+                    }
+                    return !!state.isPlaying;
+                } catch (_) {}
+                return false;
+            }
+
+            _digitalLcdPrimaryLine() {
+                if (!this._isAudiblePlaybackActive()) return 'DIGITAL TUNER';
+                const name = this._audibleDeckStationName();
+                if (!name || name === '—') return 'DIGITAL TUNER';
+                return name;
+            }
+
+            _highSpectrumTrebleLevel() {
+                try {
+                    if (!state.analyserNode || !state.audioCtx) return 0;
+                    const fft = state.analyserNode.fftSize || 256;
+                    if (!this._vuBuf || this._vuBuf.length !== fft) {
+                        this._vuBuf = new Uint8Array(fft);
+                    }
+                    state.analyserNode.getByteFrequencyData(this._vuBuf);
+                    const start = Math.floor(this._vuBuf.length * 0.62);
+                    let sum = 0;
+                    let peak = 0;
+                    for (let i = start; i < this._vuBuf.length; i++) {
+                        const v = this._vuBuf[i] || 0;
+                        sum += v;
+                        if (v > peak) peak = v;
+                    }
+                    const n = Math.max(1, this._vuBuf.length - start);
+                    return Math.max(peak / 255, (sum / n) / 255);
+                } catch (_) {}
+                return 0;
+            }
+
+            _isHighSpectrumRibbonMode() {
+                if (!this._isAudiblePlaybackActive()) return false;
+                return this._highSpectrumTrebleLevel() > 0.045;
+            }
+
+            _fullHighSpectrumRadii(n, maxRing) {
+                const fill = maxRing ?? 0.66;
+                return new Array(n).fill(fill);
+            }
+
             _updateHudModeLines() {
                 if (!this._isRadioVisualActive()) return;
                 try {
@@ -1404,10 +1476,14 @@
                 const layersL = [];
                 const layersR = [];
                 const smoothMix = [];
+                const highRibbon = this._isHighSpectrumRibbonMode();
                 for (const layer of RadioVisualEngine.SPECTRUM_FLOWER_LAYERS) {
                     const levels = sampled[layer.key] || [];
                     const smooth = this._smoothSpectrumBandLevels(levels, sampled.fromAnalyser);
-                    const radii = this._radiiFromSpectrumSmooth(smooth, t, layer.key, layer);
+                    let radii = this._radiiFromSpectrumSmooth(smooth, t, layer.key, layer);
+                    if (layer.key === 'high' && !highRibbon) {
+                        radii = this._fullHighSpectrumRadii(n, layer.maxRing);
+                    }
                     layersL.push({ ...layer, radii });
                     layersR.push({ ...layer, radii: this._mirrorSpectrumRadii(radii) });
                     for (let i = 0; i < n; i++) smoothMix[i] = (smoothMix[i] || 0) + (smooth[i] || 0);
@@ -1548,7 +1624,27 @@
                 ctx.fill();
             }
 
-            _drawDigitalCarDash(eqHeights, t) {
+            _fitCanvasLcdText(ctx, text, centerX, y, maxWidth, basePx) {
+                const weight = 700;
+                const family = 'ui-monospace, Menlo, Consolas, monospace';
+                let fontPx = basePx;
+                let line = String(text || 'DIGITAL TUNER');
+                for (let pass = 0; pass < 8; pass++) {
+                    ctx.font = `${weight} ${fontPx}px ${family}`;
+                    if (ctx.measureText(line).width <= maxWidth) break;
+                    fontPx = Math.max(6, fontPx * 0.88);
+                }
+                while (line.length > 4) {
+                    ctx.font = `${weight} ${fontPx}px ${family}`;
+                    if (ctx.measureText(line).width <= maxWidth) break;
+                    line = line.slice(0, -2) + '…';
+                }
+                ctx.font = `${weight} ${fontPx}px ${family}`;
+                ctx.fillText(line, centerX, y);
+                return line;
+            }
+
+            _drawDigitalCarDash(eqHeights, t, lcdPrimaryLine) {
                 const canvas = this.els.digitalCarDashCanvas;
                 if (!canvas) return;
                 const ctx = canvas.getContext('2d');
@@ -1628,13 +1724,21 @@
                     ctx.fillRect(ix + lcdPad + gx, lcdY, 2, lcdH);
                 }
                 ctx.restore();
-                ctx.font = `700 ${Math.max(8, Math.min(w, h) * 0.075)}px ui-monospace, Menlo, Consolas, monospace`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = 'rgba(0, 255, 200, 0.55)';
                 ctx.shadowColor = 'rgba(0, 255, 200, 0.35)';
                 ctx.shadowBlur = 6;
-                ctx.fillText('DIGITAL TUNER', ix + iw * 0.5, lcdY + lcdH * 0.38);
+                const lcdLine = lcdPrimaryLine || 'DIGITAL TUNER';
+                const lcdBasePx = Math.max(8, Math.min(w, h) * 0.075);
+                this._fitCanvasLcdText(
+                    ctx,
+                    lcdLine,
+                    ix + iw * 0.5,
+                    lcdY + lcdH * 0.38,
+                    iw - lcdPad * 2,
+                    lcdBasePx
+                );
                 ctx.shadowBlur = 0;
                 ctx.font = `600 ${Math.max(7, Math.min(w, h) * 0.055)}px ui-monospace, Menlo, Consolas, monospace`;
                 ctx.fillStyle = 'rgba(120, 255, 200, 0.35)';
@@ -1689,7 +1793,7 @@
                 this._syncDonutCoreHues();
                 this._drawDigitalSpectrumFlower(cL, pack.layersL, pack.n, this._donutCoreHueA);
                 this._drawDigitalSpectrumFlower(cR, pack.layersR, pack.n, this._donutCoreHueB);
-                this._drawDigitalCarDash(pack.eqHeights, pack.t);
+                this._drawDigitalCarDash(pack.eqHeights, pack.t, this._digitalLcdPrimaryLine());
             }
 
             _wireCrossfadeKnob(knobEl) {
@@ -1841,8 +1945,6 @@
                         ? currentStationBIndex : -1;
                     if (idxB >= 0 && stations[idxB]) nameB = stations[idxB].name || nameB;
                 } catch (_) {}
-                if (this.els.stationDigitalA) this.els.stationDigitalA.textContent = nameA;
-                if (this.els.stationDigitalB) this.els.stationDigitalB.textContent = nameB;
                 const pctA = this._needlePercentA();
                 const pctB = this._needlePercentB();
                 if (this.els.needle) this.els.needle.style.left = `${pctA}%`;
@@ -2261,8 +2363,6 @@
                 let needle = null;
                 let needleB = null;
                 let vuCanvas = null;
-                let stNameA = null;
-                let stNameB = null;
                 let dClk = null;
                 let digBtns = null;
                 let digitalCenter = null;
@@ -2392,9 +2492,7 @@
                     el.textContent = txt;
                     return el;
                 };
-                stNameA = mkLine('radio-visual-digital-line--station-a', 'radio-visual-station-name-a', '—');
                 dClk = mkLine('radio-visual-digital-line--clock', 'radio-visual-digital-clock', '—');
-                stNameB = mkLine('radio-visual-digital-line--station-b', 'radio-visual-station-name-b', '—');
                 digBtns = document.createElement('div');
                 digBtns.className = 'radio-visual-btn-grid radio-visual-digital-feature-btns';
                 digBtns.id = 'radio-visual-digital-btns';
@@ -2418,8 +2516,6 @@
                 const centerInfo = document.createElement('div');
                 centerInfo.className = 'radio-visual-digital-center-info';
                 centerInfo.setAttribute('aria-live', 'polite');
-                centerInfo.appendChild(stNameA);
-                centerInfo.appendChild(stNameB);
                 centerInfo.appendChild(dClk);
                 const carDisplay = document.createElement('div');
                 carDisplay.className = 'radio-visual-digital-car-display';
@@ -2570,8 +2666,6 @@
                     btnSkinDigital: btnD,
                     stageAnalog: stageA,
                     stageDigital: stageD,
-                    stationDigitalA: stNameA,
-                    stationDigitalB: stNameB,
                     digitalDeckBMount,
                     digitalDeckBContent,
                     ticks,
