@@ -42,6 +42,8 @@
                 this._spectrumRingSmooth = { low: null, mid: null, high: null };
                 this._digitalBgGifFilesList = null;
                 this._digitalBgGifManifestPromise = null;
+                this._outerHuePhase = 0;
+                this._outerHueLastT = 0;
             }
 
             static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
@@ -684,25 +686,68 @@
                 return '';
             }
 
-            _isAudiblePlaybackActive() {
+            _audibleDeckElement() {
                 try {
-                    if (!state || !state.isPlaying) return false;
                     const dk = this._crossfaderAudibleDeckKey();
-                    const el = dk === 'b'
+                    return dk === 'b'
                         ? (typeof audioElB !== 'undefined' ? audioElB : null)
                         : (typeof audioEl !== 'undefined' ? audioEl : null);
-                    if (el) {
-                        if (!el.paused && el.readyState >= 2) return true;
-                        if (el.currentTime > 0 && !el.ended) return true;
-                    }
-                    if (state.analyserNode && state.audioCtx && this._vuBuf) {
-                        state.analyserNode.getByteFrequencyData(this._vuBuf);
-                        let sum = 0;
-                        for (let i = 0; i < this._vuBuf.length; i++) sum += this._vuBuf[i];
-                        if (sum / this._vuBuf.length > 8) return true;
-                    }
-                    return !!state.isPlaying;
                 } catch (_) {}
+                return null;
+            }
+
+            _audibleElementIsPlaying(el) {
+                if (!el) return false;
+                try {
+                    if (!el.paused && el.readyState >= 2) return true;
+                    if (el.currentTime > 0 && !el.ended) return true;
+                } catch (_) {}
+                return false;
+            }
+
+            _analyserMeanLevel() {
+                try {
+                    if (!state.analyserNode || !state.audioCtx) return 0;
+                    const fft = state.analyserNode.fftSize || 256;
+                    const binCount = state.analyserNode.frequencyBinCount || Math.floor(fft / 2);
+                    if (!this._vuBuf || this._vuBuf.length < binCount) {
+                        this._vuBuf = new Uint8Array(binCount);
+                    }
+                    state.analyserNode.getByteFrequencyData(this._vuBuf);
+                    let sum = 0;
+                    for (let i = 0; i < binCount; i++) sum += this._vuBuf[i] || 0;
+                    return sum / Math.max(1, binCount);
+                } catch (_) {}
+                return 0;
+            }
+
+            _isSpectrumAudioActive() {
+                try {
+                    if (this._audibleElementIsPlaying(this._audibleDeckElement())) return true;
+                    if (this._analyserMeanLevel() > 5) return true;
+                    if (state && state.isPlaying && this._analyserMeanLevel() > 2) return true;
+                } catch (_) {}
+                return false;
+            }
+
+            _isAudiblePlaybackActive() {
+                return this._isSpectrumAudioActive();
+            }
+
+            _highBandEnergy(highLevels) {
+                if (!highLevels || !highLevels.length) return 0;
+                let peak = 0;
+                for (let i = 0; i < highLevels.length; i++) {
+                    peak = Math.max(peak, highLevels[i] || 0);
+                }
+                return peak;
+            }
+
+            _isHighSpectrumRibbonMode(sampled) {
+                if (this._isSpectrumAudioActive()) return true;
+                if (sampled && sampled.fromAnalyser && this._highBandEnergy(sampled.high) > 0.018) {
+                    return true;
+                }
                 return false;
             }
 
@@ -711,10 +756,6 @@
                 const name = this._audibleDeckStationName();
                 if (!name || name === '—') return 'DIGITAL TUNER';
                 return name;
-            }
-
-            _isHighSpectrumRibbonMode() {
-                return this._isAudiblePlaybackActive();
             }
 
             _fullBandRadii(n, maxRing) {
@@ -1268,11 +1309,50 @@
                 return out;
             }
 
-            _unifySpectrumRibbonSeam(radii) {
+            _unifySpectrumRibbonSeam(radii, bandKey) {
+                if (bandKey === 'high') return radii;
                 return this._blendSpectrumCircularEnds(radii, 8);
             }
 
+            _bassLevelFromSmooth(smooth) {
+                if (!smooth || !smooth.length) return 0;
+                let sum = 0;
+                let peak = 0;
+                for (let i = 0; i < smooth.length; i++) {
+                    const v = smooth[i] || 0;
+                    sum += v;
+                    if (v > peak) peak = v;
+                }
+                return Math.min(1, Math.max(peak, (sum / smooth.length) * 2.2));
+            }
+
+            _paletteHueAt(phase) {
+                const palette = RadioVisualEngine.SPECTRUM_OUTER_HUE_PALETTE;
+                const n = palette.length;
+                if (n < 2) return palette[0] || 0;
+                const p = ((phase % n) + n) % n;
+                const i0 = Math.floor(p);
+                const i1 = (i0 + 1) % n;
+                const frac = p - i0;
+                const h0 = palette[i0];
+                const h1 = palette[i1];
+                let delta = h1 - h0;
+                if (delta > 180) delta -= 360;
+                if (delta < -180) delta += 360;
+                return (h0 + delta * frac + 360) % 360;
+            }
+
+            _advanceOuterHuePhase(t, bassLevel) {
+                const dt = this._outerHueLastT ? Math.min(0.12, Math.max(0, t - this._outerHueLastT)) : 0.016;
+                this._outerHueLastT = t;
+                this._outerHuePhase = (this._outerHuePhase || 0) + dt * (0.04 + bassLevel * 3.2);
+            }
+
             static get SPECTRUM_ANGULAR_BINS() { return 72; }
+
+            static get SPECTRUM_OUTER_HUE_PALETTE() {
+                return [18, 35, 55, 95, 140, 185, 220, 265, 310, 350];
+            }
 
             /** Radial order: 0 = inner (high), 1 = mid, 2 = outer (low). */
             static get SPECTRUM_FLOWER_LAYERS() {
@@ -1318,39 +1398,45 @@
                 return (((Number(coreHue) || 0) + (layer.hueOff || 0)) % 360 + 360) % 360;
             }
 
+            _sampleBandFromFftRange(buf, start, end, n) {
+                const levels = [];
+                const span = Math.max(1, end - start);
+                for (let i = 0; i < n; i++) {
+                    const f = start + (i / Math.max(1, n - 1)) * span;
+                    const i0 = Math.floor(f);
+                    const i1 = Math.min(buf.length - 1, i0 + 1);
+                    const tt = f - i0;
+                    const v = (buf[i0] || 0) * (1 - tt) + (buf[i1] || 0) * tt;
+                    levels.push(v / 255);
+                }
+                return levels;
+            }
+
             _sampleDigitalSpectrumBandLevels(t) {
                 const n = RadioVisualEngine.SPECTRUM_ANGULAR_BINS;
-                const bands = 3;
                 const out = { low: [], mid: [], high: [], fromAnalyser: false };
-                const keys = ['low', 'mid', 'high'];
                 try {
                     if (state.analyserNode && state.audioCtx) {
                         const fft = state.analyserNode.fftSize || 256;
-                        if (!this._vuBuf || this._vuBuf.length !== fft) {
-                            this._vuBuf = new Uint8Array(fft);
+                        const binCount = state.analyserNode.frequencyBinCount || Math.floor(fft / 2);
+                        if (!this._vuBuf || this._vuBuf.length < binCount) {
+                            this._vuBuf = new Uint8Array(binCount);
                         }
                         state.analyserNode.getByteFrequencyData(this._vuBuf);
-                        for (let b = 0; b < bands; b++) {
-                            const start = Math.floor(b * this._vuBuf.length / bands);
-                            const end = Math.floor((b + 1) * this._vuBuf.length / bands);
-                            const span = Math.max(1, end - start);
-                            const levels = [];
-                            for (let i = 0; i < n; i++) {
-                                const f = start + (i / Math.max(1, n - 1)) * span;
-                                const i0 = Math.floor(f);
-                                const i1 = Math.min(this._vuBuf.length - 1, i0 + 1);
-                                const tt = f - i0;
-                                const v = (this._vuBuf[i0] || 0) * (1 - tt) + (this._vuBuf[i1] || 0) * tt;
-                                levels.push(v / 255);
-                            }
-                            out[keys[b]] = levels;
-                        }
+                        const len = this._vuBuf.length;
+                        const lowEnd = Math.floor(len * 0.33);
+                        const midEnd = Math.floor(len * 0.66);
+                        const highStart = Math.floor(len * 0.82);
+                        out.low = this._sampleBandFromFftRange(this._vuBuf, 0, lowEnd, n);
+                        out.mid = this._sampleBandFromFftRange(this._vuBuf, lowEnd, midEnd, n);
+                        out.high = this._sampleBandFromFftRange(this._vuBuf, highStart, len, n);
                         out.fromAnalyser = true;
                         return out;
                     }
                 } catch (_) {}
+                const keys = ['low', 'mid', 'high'];
                 const phase = { low: 0, mid: 1.15, high: 2.35 };
-                for (let b = 0; b < bands; b++) {
+                for (let b = 0; b < 3; b++) {
                     const levels = [];
                     const ph = phase[keys[b]];
                     for (let i = 0; i < n; i++) {
@@ -1416,17 +1502,22 @@
                 if (bandKey === 'high') {
                     let mn = Infinity;
                     let mx = 0;
+                    let mean = 0;
                     for (let i = 0; i < n; i++) {
                         const v = smooth[i] || 0;
+                        mean += v;
                         if (v < mn) mn = v;
                         if (v > mx) mx = v;
                     }
-                    const span = Math.max(0.012, mx - mn);
-                    const innerMax = maxRing * 0.92;
-                    const innerMin = floor + maxRing * 0.08;
+                    mean /= Math.max(1, n);
+                    const span = Math.max(0.008, mx - mn);
+                    const innerMax = maxRing * 0.95;
+                    const innerMin = maxRing * 0.08;
+                    const boost = span * 1.35;
                     for (let i = 0; i < n; i++) {
                         let raw = ((smooth[i] || 0) - mn) / span;
-                        raw = Math.pow(Math.min(1, Math.max(0, raw)), 1.12);
+                        raw += Math.min(0.45, Math.abs((smooth[i] || 0) - mean) / span * boost);
+                        raw = Math.pow(Math.min(1, Math.max(0, raw)), 0.92);
                         const shaped = innerMin + (innerMax - innerMin) * raw;
                         target.push(shaped);
                     }
@@ -1458,7 +1549,7 @@
                     smoothState[i] = next;
                     radii.push(next);
                 }
-                return this._unifySpectrumRibbonSeam(radii);
+                return this._unifySpectrumRibbonSeam(radii, bandKey);
             }
 
             _mirrorSpectrumRadii(radii) {
@@ -1473,10 +1564,12 @@
                 const layersL = [];
                 const layersR = [];
                 const smoothMix = [];
-                const highRibbon = this._isHighSpectrumRibbonMode();
+                const highRibbon = this._isHighSpectrumRibbonMode(sampled);
+                let lowSmoothForHue = null;
                 for (const layer of RadioVisualEngine.SPECTRUM_FLOWER_LAYERS) {
                     const levels = sampled[layer.key] || [];
                     const smooth = this._smoothSpectrumBandLevels(levels, sampled.fromAnalyser);
+                    if (layer.key === 'low') lowSmoothForHue = smooth;
                     let radii;
                     if (layer.key === 'high' && !highRibbon) {
                         radii = this._fullBandRadii(n, layer.maxRing);
@@ -1488,8 +1581,19 @@
                     } else {
                         radii = this._radiiFromSpectrumSmooth(smooth, t, layer.key, layer);
                     }
-                    layersL.push({ ...layer, radii });
-                    layersR.push({ ...layer, radii: this._mirrorSpectrumRadii(radii) });
+                    const bassLevel = layer.key === 'low' ? this._bassLevelFromSmooth(smooth) : 0;
+                    layersL.push({
+                        ...layer,
+                        radii,
+                        ribbonActive: layer.key === 'high' ? highRibbon : true,
+                        bassLevel
+                    });
+                    layersR.push({
+                        ...layer,
+                        radii: this._mirrorSpectrumRadii(radii),
+                        ribbonActive: layer.key === 'high' ? highRibbon : true,
+                        bassLevel
+                    });
                     for (let i = 0; i < n; i++) smoothMix[i] = (smoothMix[i] || 0) + (smooth[i] || 0);
                 }
                 for (let i = 0; i < n; i++) smoothMix[i] /= 3;
@@ -1502,6 +1606,9 @@
                     const tt = idx - i0;
                     const sm = smoothMix[i0] * (1 - tt) + smoothMix[Math.min(n - 1, i0 + 1)] * tt;
                     eqHeights.push(Math.min(0.9, Math.max(0.04, Math.pow(sm * 2.05, 0.72))));
+                }
+                if (lowSmoothForHue) {
+                    this._advanceOuterHuePhase(t, this._bassLevelFromSmooth(lowSmoothForHue));
                 }
                 return { n, layersL, layersR, eqHeights, t };
             }
@@ -1538,13 +1645,22 @@
                 return ((ii + 0.5) / n) * Math.PI * 2 - Math.PI / 2 + phase;
             }
 
-            _fillDigitalSpectrumPetal(ctx, cx, cy, innerR, outerR, radii, n, layer, coreHue) {
+            _fillDigitalSpectrumPetal(ctx, cx, cy, innerR, outerR, radii, n, layer, coreHue, t) {
                 const li = layer.layerIndex;
                 const layerCount = 3;
                 const span = (outerR - innerR) / layerCount;
                 const zoneInner = innerR + li * span;
                 const zoneOuter = innerR + (li + 1) * span;
                 const petalFloor = layer.key === 'high' ? 0.04 : 0.1;
+                const maxRing = layer.maxRing || 0.64;
+                let rMin = Infinity;
+                let rMax = -Infinity;
+                for (let i = 0; i < n; i++) {
+                    const rv = radii[i] ?? 0;
+                    if (rv < rMin) rMin = rv;
+                    if (rv > rMax) rMax = rv;
+                }
+                const rSpan = rMax - rMin;
                 const hue = this._spectrumPetalBaseHue(layer, coreHue);
                 const sat = layer.sat ?? 88;
                 const lit = layer.light ?? 54;
@@ -1553,7 +1669,16 @@
                 for (let i = 0; i <= n; i++) {
                     const ii = i % n;
                     const a = this._spectrumAngle(ii, n, layer.phaseBins);
-                    const norm = Math.min(1, Math.max(petalFloor, radii[ii] / (layer.maxRing || 0.64)));
+                    let norm;
+                    if (layer.key === 'high') {
+                        if (!layer.ribbonActive || rSpan < maxRing * 0.03) {
+                            norm = 1;
+                        } else {
+                            norm = petalFloor + (1 - petalFloor) * ((radii[ii] - rMin) / rSpan);
+                        }
+                    } else {
+                        norm = Math.min(1, Math.max(petalFloor, radii[ii] / maxRing));
+                    }
                     const r = zoneInner + (zoneOuter - zoneInner) * norm;
                     const x = cx + Math.cos(a) * r;
                     const y = cy + Math.sin(a) * r;
@@ -1566,13 +1691,22 @@
                     ctx.lineTo(cx + Math.cos(a) * innerPad, cy + Math.sin(a) * innerPad);
                 }
                 ctx.closePath();
-                const useConic = li < 2 && typeof ctx.createConicGradient === 'function';
+                const canConic = typeof ctx.createConicGradient === 'function';
+                const useOuterPalette = layer.key === 'low' && canConic;
+                const useConic = (layer.key === 'high' || layer.key === 'mid' || useOuterPalette) && canConic;
                 if (useConic) {
                     const rim = ctx.createConicGradient(-Math.PI / 2, cx, cy);
-                    const steps = 16;
+                    const steps = useOuterPalette ? 20 : 16;
+                    const bass = layer.bassLevel ?? 0;
+                    const phaseBase = this._outerHuePhase || 0;
                     for (let k = 0; k <= steps; k++) {
                         const u = k / steps;
-                        const h = (hue + u * drift) % 360;
+                        let h;
+                        if (useOuterPalette) {
+                            h = this._paletteHueAt(phaseBase + u * 1.1 + bass * 0.35);
+                        } else {
+                            h = (hue + u * drift) % 360;
+                        }
                         const a0 = layer.alpha * (0.5 + 0.5 * u);
                         rim.addColorStop(u, `hsla(${h}, ${sat}%, ${lit}%, ${a0})`);
                     }
@@ -1590,7 +1724,7 @@
                 ctx.stroke();
             }
 
-            _drawDigitalSpectrumFlower(canvas, layers, n, coreHue = 175) {
+            _drawDigitalSpectrumFlower(canvas, layers, n, coreHue = 175, drawT) {
                 if (!canvas || !layers || !layers.length) return;
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return;
@@ -1613,9 +1747,10 @@
                 ctx.lineJoin = 'round';
                 ctx.lineCap = 'round';
                 const ordered = layers.slice().sort((a, b) => a.layerIndex - b.layerIndex);
+                const tDraw = typeof drawT === 'number' ? drawT : performance.now() * 0.001;
                 for (const layer of ordered) {
                     if (!layer.radii || !layer.radii.length) continue;
-                    this._fillDigitalSpectrumPetal(ctx, cx, cy, innerR, outerR, layer.radii, n, layer, coreHue);
+                    this._fillDigitalSpectrumPetal(ctx, cx, cy, innerR, outerR, layer.radii, n, layer, coreHue, tDraw);
                 }
                 const hue = ((Number(coreHue) || 0) % 360 + 360) % 360;
                 ctx.beginPath();
@@ -1795,8 +1930,8 @@
                 if (!cL || !cR) return;
                 const pack = this._computeDigitalSpectrumRadiiAndEq();
                 this._syncDonutCoreHues();
-                this._drawDigitalSpectrumFlower(cL, pack.layersL, pack.n, this._donutCoreHueA);
-                this._drawDigitalSpectrumFlower(cR, pack.layersR, pack.n, this._donutCoreHueB);
+                this._drawDigitalSpectrumFlower(cL, pack.layersL, pack.n, this._donutCoreHueA, pack.t);
+                this._drawDigitalSpectrumFlower(cR, pack.layersR, pack.n, this._donutCoreHueB, pack.t);
                 this._drawDigitalCarDash(pack.eqHeights, pack.t, this._digitalLcdPrimaryLine());
             }
 
