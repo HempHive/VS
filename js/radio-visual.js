@@ -17,6 +17,8 @@
                 this.digitalCenterMode = 'spectrum';
                 this._digitalDeckBView = 'video';
                 this._digitalVolStep = 0.05;
+                this._volMuted = false;
+                this._volUnmuteNorm = 0.5;
             }
 
             static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
@@ -35,6 +37,19 @@
 
             _stopInteraction(ev) {
                 this._stopClick(ev);
+            }
+
+            /** Do not swallow pointer/click on real controls — preventDefault on pointerdown would block their click. */
+            _shouldBypassRootGestureSuppression(ev) {
+                try {
+                    const t = ev.target;
+                    if (!t || typeof t.closest !== 'function') return false;
+                    if (t.closest('button')) return true;
+                    if (t.closest('input')) return true;
+                    if (t.closest('select')) return true;
+                    if (t.closest('textarea')) return true;
+                } catch (_) {}
+                return false;
             }
 
             _loadVisualByName(name) {
@@ -857,6 +872,7 @@
                 ctx.fillStyle = bg;
                 ctx.fillRect(0, 0, w, h);
                 let levels = [];
+                let fromAnalyser = false;
                 try {
                     if (state.analyserNode && state.audioCtx) {
                         const fft = state.analyserNode.fftSize || 256;
@@ -873,12 +889,54 @@
                             for (let j = start; j < end; j++) sum += this._vuBuf[j];
                             levels.push(sum / Math.max(1, end - start) / 255);
                         }
+                        fromAnalyser = true;
                     }
                 } catch (_) {}
                 if (!levels.length) {
                     for (let i = 0; i < 72; i++) {
                         levels.push(0.12 + 0.1 * Math.sin(t * 2.2 + i * 0.42));
                     }
+                }
+                const n = levels.length;
+                let lo = 0;
+                let hi = n - 1;
+                if (fromAnalyser) {
+                    let peak = 0;
+                    for (let i = 0; i < n; i++) peak = Math.max(peak, levels[i] || 0);
+                    const thresh = Math.max(0.02, peak * 0.12);
+                    while (lo < n && (levels[lo] || 0) < thresh) lo++;
+                    while (hi > lo && (levels[hi] || 0) < thresh) hi--;
+                    const minSpan = Math.max(10, Math.floor(n * 0.22));
+                    if (hi - lo < minSpan) {
+                        const mid = Math.floor((lo + hi) * 0.5);
+                        lo = Math.max(0, mid - Math.floor(minSpan / 2));
+                        hi = Math.min(n - 1, lo + minSpan - 1);
+                    }
+                    const margin = Math.max(1, Math.floor((hi - lo + 1) * 0.06));
+                    lo = Math.max(0, lo - margin);
+                    hi = Math.min(n - 1, hi + margin);
+                }
+                const span = Math.max(1, hi - lo);
+                const band = [];
+                for (let i = 0; i < n; i++) {
+                    const f = lo + (i / Math.max(1, n - 1)) * span;
+                    const i0 = Math.floor(f);
+                    const i1 = Math.min(n - 1, i0 + 1);
+                    const tt = f - i0;
+                    const v = (levels[i0] || 0) * (1 - tt) + (levels[i1] || 0) * tt;
+                    band.push(v);
+                }
+                const smooth = [];
+                for (let i = 0; i < n; i++) {
+                    const im = (i - 1 + n) % n;
+                    const ip = (i + 1) % n;
+                    smooth.push((band[im] + 2 * band[i] + band[ip]) * 0.25);
+                }
+                const radii = [];
+                for (let i = 0; i < n; i++) {
+                    const raw = smooth[i] || 0;
+                    const lv = Math.min(0.86, Math.max(0.04, Math.pow(raw * 2.15, 0.68)));
+                    radii.push(lv);
                 }
                 const innerR = Math.min(w, h) * 0.14;
                 const outerR = Math.min(w, h) * 0.44;
@@ -889,22 +947,30 @@
                     ctx.arc(cx, cy, innerR + ((outerR - innerR) * ring) / 4, 0, Math.PI * 2);
                     ctx.stroke();
                 }
-                const n = levels.length;
-                for (let i = 0; i < n; i++) {
-                    const lv = Math.min(0.88, Math.max(0.06, Math.pow((levels[i] || 0) * 2.0, 0.74)));
-                    const a0 = (i / n) * Math.PI * 2 - Math.PI / 2;
-                    const a1 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2;
-                    const r1 = innerR + (outerR - innerR) * lv;
-                    ctx.beginPath();
-                    ctx.moveTo(cx + Math.cos(a0) * innerR, cy + Math.sin(a0) * innerR);
-                    ctx.lineTo(cx + Math.cos(a0) * r1, cy + Math.sin(a0) * r1);
-                    ctx.lineTo(cx + Math.cos(a1) * r1, cy + Math.sin(a1) * r1);
-                    ctx.lineTo(cx + Math.cos(a1) * innerR, cy + Math.sin(a1) * innerR);
-                    ctx.closePath();
-                    const hue = 170 + (i / n) * 80;
-                    ctx.fillStyle = `hsla(${hue}, 90%, 58%, ${0.35 + lv * 0.55})`;
-                    ctx.fill();
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                const innerEdge = innerR * 0.98;
+                for (let i = 0; i <= n; i++) {
+                    const ii = i % n;
+                    const a = ((ii + 0.5) / n) * Math.PI * 2 - Math.PI / 2;
+                    const r = innerR + (outerR - innerR) * radii[ii];
+                    const x = cx + Math.cos(a) * r;
+                    const y = cy + Math.sin(a) * r;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
                 }
+                for (let i = n - 1; i >= 0; i--) {
+                    const a = ((i + 0.5) / n) * Math.PI * 2 - Math.PI / 2;
+                    ctx.lineTo(cx + Math.cos(a) * innerEdge, cy + Math.sin(a) * innerEdge);
+                }
+                ctx.closePath();
+                const rim = ctx.createRadialGradient(cx, cy, innerR * 0.9, cx, cy, outerR * 1.02);
+                rim.addColorStop(0, 'rgba(0, 255, 220, 0.22)');
+                rim.addColorStop(0.45, 'rgba(0, 200, 190, 0.42)');
+                rim.addColorStop(1, 'rgba(0, 80, 100, 0.35)');
+                ctx.fillStyle = rim;
+                ctx.fill();
                 ctx.beginPath();
                 ctx.arc(cx, cy, innerR * 0.92, 0, Math.PI * 2);
                 const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
@@ -986,10 +1052,32 @@
                 if (this.els.volAnalog) this.els.volAnalog.value = String(v);
                 this._setKnobRotation(this.els.volKnob, (v * 270) - 135);
                 this._syncDigitalVolumeUi();
+                this._syncVolumeMuteLed();
+            }
+
+            _toggleVolumeMute() {
+                const vs = document.getElementById('volume-slider');
+                const cur = vs ? Number(vs.value) : 0;
+                if (this._volMuted) {
+                    this._volMuted = false;
+                    const restore = Math.max(0.02, Math.min(1, this._volUnmuteNorm || 0.5));
+                    this._applyVolume(restore);
+                } else {
+                    if (cur > 0.001) this._volUnmuteNorm = cur;
+                    this._volMuted = true;
+                    this._applyVolume(0);
+                }
+            }
+
+            _syncVolumeMuteLed() {
+                if (!this.els.volKnob) return;
+                this.els.volKnob.classList.toggle('is-on', !!this._volMuted);
+                this.els.volKnob.setAttribute('aria-pressed', this._volMuted ? 'true' : 'false');
             }
 
             _applyVolume(val) {
                 const v = Math.max(0, Math.min(1, Number(val) || 0));
+                if (v > 0.001) this._volMuted = false;
                 try {
                     if (typeof setVolume === 'function') setVolume(v);
                 } catch (_) {}
@@ -998,6 +1086,7 @@
                 if (this.els.volAnalog) this.els.volAnalog.value = String(v);
                 this._setKnobRotation(this.els.volKnob, (v * 270) - 135);
                 this._syncDigitalVolumeUi();
+                this._syncVolumeMuteLed();
             }
 
             _setKnobRotation(knobEl, deg) {
@@ -1415,6 +1504,8 @@
                 };
                 const volKnob = mkControlKnob('radio-visual-vol-knob', 'Volume');
                 volKnob.setAttribute('role', 'slider');
+                volKnob.classList.add('radio-visual-knob--switch', 'radio-visual-knob--vol-mute');
+                volKnob.setAttribute('aria-label', 'Volume; drag to adjust, tap to mute or unmute');
                 const deckAKnob = mkControlKnob('radio-visual-deck-a-knob', 'Deck A play / pause');
                 deckAKnob.classList.add('radio-visual-knob--deck-a');
                 const deckBKnob = mkControlKnob('radio-visual-deck-b-knob', 'Deck B play / pause');
@@ -1671,14 +1762,17 @@
                 this._wirePointerKnob(volKnob, {
                     get: () => Number(document.getElementById('volume-slider')?.value || 0.5),
                     set: (v) => this._applyVolume(v)
-                });
+                }, { onTap: () => this._toggleVolumeMute() });
                 this._wireDeckKnob(deckAKnob, 'a');
                 this._wireDeckKnob(deckBKnob, 'b');
                 this._wireCrossfadeKnob(crossKnob);
                 this._wireAutoFadeKnob(autoFadeKnob);
                 this._wireAutoMixKnob(autoMixKnob);
 
-                const stopRv = (ev) => this._stopInteraction(ev);
+                const stopRv = (ev) => {
+                    if (this._shouldBypassRootGestureSuppression(ev)) return;
+                    this._stopInteraction(ev);
+                };
                 root.addEventListener('click', stopRv, sig);
                 root.addEventListener('pointerdown', stopRv, sig);
                 root.addEventListener('pointerup', stopRv, sig);
