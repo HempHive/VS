@@ -587,6 +587,7 @@
             padding: 2px 6px 0;
             pointer-events: none;
             flex-shrink: 0;
+            opacity: 0.5;
         }
         #radio-visual-root .radio-visual-digital-center-info .radio-visual-digital-line {
             margin: 0;
@@ -628,13 +629,13 @@
             display: flex;
             flex-direction: column;
             background:
-                linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 40%),
-                linear-gradient(165deg, #2a2835 0%, #0c0a10 45%, #1a1824 100%);
-            border: 1px solid rgba(120, 120, 140, 0.35);
+                linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
+                linear-gradient(165deg, rgba(42, 40, 53, 0.5) 0%, rgba(12, 10, 16, 0.5) 45%, rgba(26, 24, 36, 0.5) 100%);
+            border: 1px solid rgba(120, 120, 140, 0.18);
             box-shadow:
-                0 4px 14px rgba(0, 0, 0, 0.45),
-                inset 0 1px 0 rgba(255, 255, 255, 0.12),
-                inset 0 -2px 8px rgba(0, 0, 0, 0.5);
+                0 4px 14px rgba(0, 0, 0, 0.22),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                inset 0 -2px 8px rgba(0, 0, 0, 0.25);
         }
         #radio-visual-root .radio-visual-digital-car-dash-canvas {
             flex: 1 1 auto;
@@ -650,8 +651,9 @@
             gap: clamp(6px, 1.5vw, 10px);
             padding: 6px 10px 8px;
             flex-shrink: 0;
-            border-top: 1px solid rgba(0, 200, 255, 0.14);
-            background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(12, 14, 22, 0.55) 100%);
+            border-top: 1px solid rgba(0, 200, 255, 0.28);
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(12, 14, 22, 0.72) 100%);
+            opacity: 1;
         }
         #radio-visual-root .radio-visual-digital-dash-xfade-end {
             flex: 0 0 auto;

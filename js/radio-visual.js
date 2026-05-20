@@ -9,7 +9,10 @@
                 this.animId = null;
                 this.clockTimerId = null;
                 this.skin = 'analogue';
-                this._lastStationIdx = -1;
+                this._lastStationIdxA = -2;
+                this._lastStationIdxB = -2;
+                this._donutCoreHueA = 175;
+                this._donutCoreHueB = 285;
                 this._vuBuf = null;
                 this._tuningDrag = false;
                 this._volDrag = false;
@@ -1054,7 +1057,34 @@
                 return { n, radiiL, radiiR, eqHeights, t };
             }
 
-            _drawDigitalSpectrumRing(canvas, radii, n) {
+            _donutHueForStationIndex(idx) {
+                if (!Array.isArray(stations) || idx < 0 || !stations[idx]) {
+                    return Math.floor(Math.random() * 360);
+                }
+                let h = 0;
+                const s = String(stations[idx].name || '') + '|' + String(stations[idx].url || '') + '|' + idx;
+                for (let i = 0; i < s.length; i++) {
+                    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+                }
+                return ((h % 360) + 360) % 360;
+            }
+
+            _syncDonutCoreHues() {
+                const idxA = (typeof currentStationIndex === 'number' && currentStationIndex >= 0)
+                    ? currentStationIndex : -1;
+                const idxB = (typeof currentStationBIndex === 'number' && currentStationBIndex >= 0)
+                    ? currentStationBIndex : -1;
+                if (idxA !== this._lastStationIdxA) {
+                    this._lastStationIdxA = idxA;
+                    this._donutCoreHueA = this._donutHueForStationIndex(idxA);
+                }
+                if (idxB !== this._lastStationIdxB) {
+                    this._lastStationIdxB = idxB;
+                    this._donutCoreHueB = this._donutHueForStationIndex(idxB);
+                }
+            }
+
+            _drawDigitalSpectrumRing(canvas, radii, n, coreHue = 175) {
                 if (!canvas) return;
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return;
@@ -1062,10 +1092,11 @@
                 const h = canvas.height;
                 if (w < 8 || h < 8) return;
                 const cx = w * 0.5;
-                const cy = h * 0.52;
+                const cy = h * 0.5;
                 ctx.clearRect(0, 0, w, h);
                 const innerR = Math.min(w, h) * 0.14;
                 const outerR = Math.min(w, h) * 0.44;
+                const coreR = innerR * 1.12;
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
                 ctx.lineWidth = 1;
                 for (let ring = 1; ring <= 4; ring++) {
@@ -1109,12 +1140,13 @@
                 }
                 ctx.fillStyle = rim;
                 ctx.fill();
+                const hue = ((Number(coreHue) || 0) % 360 + 360) % 360;
                 ctx.beginPath();
-                ctx.arc(cx, cy, innerR * 0.92, 0, Math.PI * 2);
-                const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
-                core.addColorStop(0, 'rgba(0, 255, 220, 0.78)');
-                core.addColorStop(0.5, 'rgba(0, 55, 72, 0.62)');
-                core.addColorStop(1, 'rgba(0, 28, 42, 0.48)');
+                ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+                const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
+                core.addColorStop(0, `hsla(${hue}, 88%, 62%, 0.84)`);
+                core.addColorStop(0.45, `hsla(${hue}, 76%, 40%, 0.72)`);
+                core.addColorStop(1, `hsla(${(hue + 28) % 360}, 68%, 24%, 0.56)`);
                 ctx.fillStyle = core;
                 ctx.fill();
             }
@@ -1141,6 +1173,7 @@
                     ctx.quadraticCurveTo(x0, y0, x0 + rr, y0);
                     ctx.closePath();
                 };
+                const dashDim = 0.5;
                 ctx.clearRect(0, 0, w, h);
                 const m = Math.max(2, Math.min(w, h) * 0.04);
                 const bw = w - m * 2;
@@ -1148,6 +1181,18 @@
                 const bx = m;
                 const by = m;
                 const bezelR = Math.min(14, bh * 0.12);
+                const inset = Math.max(3, m * 0.55);
+                const ix = bx + inset;
+                const iy = by + inset;
+                const iw = bw - inset * 2;
+                const ih = bh - inset * 2;
+                const ir = bezelR * 0.65;
+                const lcdH = ih * 0.34;
+                const lcdY = iy + ih * 0.06;
+                const lcdPad = iw * 0.06;
+                const eqTop = lcdY + lcdH + ih * 0.07;
+                ctx.save();
+                ctx.globalAlpha = dashDim;
                 const chassis = ctx.createLinearGradient(bx, by, bx + bw, by + bh);
                 chassis.addColorStop(0, '#1c1a22');
                 chassis.addColorStop(0.45, '#0a090e');
@@ -1158,12 +1203,6 @@
                 ctx.strokeStyle = 'rgba(200, 200, 220, 0.22)';
                 ctx.lineWidth = Math.max(1, w / 200);
                 ctx.stroke();
-                const inset = Math.max(3, m * 0.55);
-                const ix = bx + inset;
-                const iy = by + inset;
-                const iw = bw - inset * 2;
-                const ih = bh - inset * 2;
-                const ir = bezelR * 0.65;
                 const recess = ctx.createLinearGradient(ix, iy, ix, iy + ih);
                 recess.addColorStop(0, '#08070a');
                 recess.addColorStop(1, '#121018');
@@ -1173,9 +1212,6 @@
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
                 ctx.lineWidth = Math.max(1, w / 240);
                 ctx.stroke();
-                const lcdH = ih * 0.34;
-                const lcdY = iy + ih * 0.06;
-                const lcdPad = iw * 0.06;
                 const lcdGrad = ctx.createLinearGradient(ix + lcdPad, lcdY, ix + iw - lcdPad, lcdY + lcdH);
                 lcdGrad.addColorStop(0, '#061a14');
                 lcdGrad.addColorStop(0.5, '#0a2818');
@@ -1206,7 +1242,7 @@
                 ctx.font = `600 ${Math.max(7, Math.min(w, h) * 0.055)}px ui-monospace, Menlo, Consolas, monospace`;
                 ctx.fillStyle = 'rgba(120, 255, 200, 0.35)';
                 ctx.fillText('STEREO · EQ', ix + iw * 0.5, lcdY + lcdH * 0.72);
-                const eqTop = lcdY + lcdH + ih * 0.07;
+                ctx.restore();
                 const eqH = Math.max(ih * 0.38, h * 0.22);
                 const eqW = iw - lcdPad * 2;
                 const eqX = ix + lcdPad;
@@ -1253,8 +1289,9 @@
                 const cR = this.els.digitalSpectrumCanvasR;
                 if (!cL || !cR) return;
                 const pack = this._computeDigitalSpectrumRadiiAndEq();
-                this._drawDigitalSpectrumRing(cL, pack.radiiL, pack.n);
-                this._drawDigitalSpectrumRing(cR, pack.radiiR, pack.n);
+                this._syncDonutCoreHues();
+                this._drawDigitalSpectrumRing(cL, pack.radiiL, pack.n, this._donutCoreHueA);
+                this._drawDigitalSpectrumRing(cR, pack.radiiR, pack.n, this._donutCoreHueB);
                 this._drawDigitalCarDash(pack.eqHeights, pack.t);
             }
 
@@ -1429,7 +1466,7 @@
                 this._syncAutoMixKnob();
                 this._syncAutoFadeChangeStationKnob();
                 this._updateHudModeLines();
-                this._lastStationIdx = (typeof currentStationIndex === 'number') ? currentStationIndex : -1;
+                this._syncDonutCoreHues();
             }
 
             _tickClock() {
@@ -2101,6 +2138,7 @@
                 this._setDigitalCenterMode(this.digitalCenterMode);
                 this._syncDeckSwitches();
                 this._syncAutoFadeChangeStationKnob();
+                this._syncDonutCoreHues();
                 this._updateStationUi();
                 this._tickClock();
 
