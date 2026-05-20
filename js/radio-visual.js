@@ -15,6 +15,7 @@
                 this._volDrag = false;
                 this._rvAutoFadeRaf = null;
                 this.digitalCenterMode = 'spectrum';
+                this._digitalDeckBView = 'video';
                 this._digitalVolStep = 0.05;
             }
 
@@ -42,6 +43,230 @@
                     const idx = modes.findIndex((m) => m && m.name === name);
                     if (idx >= 0) loadMode(idx);
                 } catch (_) {}
+            }
+
+            _isDigitalDeckBPanelOpen() {
+                return this.skin === 'digital' && this.digitalCenterMode === 'deckB';
+            }
+
+            _deckBFeature(kind, fallback) {
+                if (this._isDigitalDeckBPanelOpen()) {
+                    this._setDigitalDeckBView(kind);
+                    return;
+                }
+                try { fallback(); } catch (_) {}
+            }
+
+            _tearDownDigitalDeckBView() {
+                try {
+                    if (this._rvDigitalPmAnimId) cancelAnimationFrame(this._rvDigitalPmAnimId);
+                } catch (_) {}
+                this._rvDigitalPmAnimId = null;
+                try {
+                    if (this._rvDigitalPmCycleTimeout) clearTimeout(this._rvDigitalPmCycleTimeout);
+                } catch (_) {}
+                this._rvDigitalPmCycleTimeout = null;
+                try {
+                    if (this._rvDigitalBarsAnimId) cancelAnimationFrame(this._rvDigitalBarsAnimId);
+                } catch (_) {}
+                this._rvDigitalBarsAnimId = null;
+                this._rvDigitalPmVisualizer = null;
+                this._rvDigitalPmCanvas = null;
+                this._rvDigitalPmResize = null;
+                this._rvDigitalBarsRenderer = null;
+                this._rvDigitalBarsScene = null;
+                if (this.els.digitalDeckBContent) {
+                    this.els.digitalDeckBContent.innerHTML = '';
+                    this.els.digitalDeckBContent.classList.remove('is-active');
+                }
+                if (this.els.digitalDeckBVideo) {
+                    this.els.digitalDeckBVideo.classList.remove('is-hidden');
+                }
+            }
+
+            _setDigitalDeckBView(view) {
+                const next = (view === 'projectm' || view === 'bars' || view === 'queue') ? view : 'video';
+                this._digitalDeckBView = next;
+                if (next === 'video') {
+                    this._tearDownDigitalDeckBView();
+                    if (this.els.digitalDeckBVideo) this.els.digitalDeckBVideo.classList.remove('is-hidden');
+                    this._syncDigitalDeckBVideo();
+                    return;
+                }
+                if (this.els.digitalDeckBVideo) this.els.digitalDeckBVideo.classList.add('is-hidden');
+                if (next === 'projectm') this._showDigitalDeckBProjectM();
+                else if (next === 'bars') this._showDigitalDeckBAudioBars();
+                else if (next === 'queue') this._showDigitalDeckBQueue();
+            }
+
+            _showDigitalDeckBProjectM() {
+                const mount = this.els.digitalDeckBContent;
+                if (!mount) return;
+                this._tearDownDigitalDeckBView();
+                mount.classList.add('is-active');
+                try { initAudio(); } catch (_) {}
+                if (!state || !state.audioCtx || typeof butterchurn === 'undefined') return;
+                const canvas = document.createElement('canvas');
+                canvas.className = 'radio-visual-digital-deck-b-canvas';
+                mount.appendChild(canvas);
+                const presetMap = (typeof butterchurnPresets !== 'undefined' && butterchurnPresets.getPresets)
+                    ? butterchurnPresets.getPresets() : {};
+                const presetKeys = Object.keys(presetMap);
+                let currentPresetIdx = Math.floor(Math.random() * Math.max(1, presetKeys.length));
+                const resizePm = () => {
+                    try {
+                        const rect = mount.getBoundingClientRect();
+                        const w = Math.max(64, Math.floor(rect.width));
+                        const h = Math.max(64, Math.floor(rect.height));
+                        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                        canvas.width = Math.floor(w * dpr);
+                        canvas.height = Math.floor(h * dpr);
+                        if (this._rvDigitalPmVisualizer && this._rvDigitalPmVisualizer.setRendererSize) {
+                            this._rvDigitalPmVisualizer.setRendererSize(w, h);
+                        }
+                    } catch (_) {}
+                };
+                const rect0 = mount.getBoundingClientRect();
+                const w0 = Math.max(64, Math.floor(rect0.width));
+                const h0 = Math.max(64, Math.floor(rect0.height));
+                const dpr0 = Math.min(window.devicePixelRatio || 1, 2);
+                canvas.width = Math.floor(w0 * dpr0);
+                canvas.height = Math.floor(h0 * dpr0);
+                const pxRatio = Number(visualSettings.pixelRatio) || Math.min(window.devicePixelRatio || 1, 2);
+                let viz;
+                try {
+                    viz = butterchurn.createVisualizer(state.audioCtx, canvas, {
+                        width: w0, height: h0, pixelRatio: pxRatio
+                    });
+                } catch (_) {
+                    viz = null;
+                }
+                if (!viz) return;
+                this._rvDigitalPmVisualizer = viz;
+                this._rvDigitalPmCanvas = canvas;
+                try { viz.connectAudio(state.analyserNode); } catch (_) {}
+                const loadPmPreset = (idx) => {
+                    if (!presetKeys.length || !this._rvDigitalPmVisualizer) return;
+                    try {
+                        this._rvDigitalPmVisualizer.loadPreset(
+                            presetMap[presetKeys[idx]],
+                            Number(visualSettings.transitionSec) || 2.7
+                        );
+                    } catch (_) {}
+                };
+                loadPmPreset(currentPresetIdx);
+                const nextPmPreset = () => {
+                    if (presetKeys.length <= 1) return;
+                    let next = currentPresetIdx;
+                    let guard = 0;
+                    while (next === currentPresetIdx && guard++ < 8) {
+                        next = Math.floor(Math.random() * presetKeys.length);
+                    }
+                    currentPresetIdx = next;
+                    loadPmPreset(currentPresetIdx);
+                };
+                const schedule = () => {
+                    const minS = Number(visualSettings.shuffleMinSec) || 12;
+                    const maxS = Number(visualSettings.shuffleMaxSec) || 25;
+                    const lo = Math.min(minS, maxS);
+                    const hi = Math.max(minS, maxS);
+                    const delay = (lo + Math.random() * (hi - lo)) * 1000;
+                    this._rvDigitalPmCycleTimeout = setTimeout(() => {
+                        nextPmPreset();
+                        schedule();
+                    }, delay);
+                };
+                schedule();
+                this._rvDigitalPmResize = resizePm;
+                resizePm();
+                const loop = () => {
+                    this._rvDigitalPmAnimId = requestAnimationFrame(loop);
+                    try {
+                        if (this._rvDigitalPmVisualizer) this._rvDigitalPmVisualizer.render();
+                    } catch (_) {}
+                };
+                loop();
+            }
+
+            _showDigitalDeckBAudioBars() {
+                const mount = this.els.digitalDeckBContent;
+                if (!mount || typeof THREE === 'undefined' || typeof sceneBars !== 'function') return;
+                this._tearDownDigitalDeckBView();
+                mount.classList.add('is-active');
+                try { initAudio(); } catch (_) {}
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                camera.position.z = 8;
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+                const canvas = renderer.domElement;
+                canvas.className = 'radio-visual-digital-deck-b-canvas';
+                mount.appendChild(canvas);
+                const updateFn = sceneBars(scene, camera);
+                let dataArray = null;
+                const resizeBars = () => {
+                    try {
+                        const rect = mount.getBoundingClientRect();
+                        const w = Math.max(64, Math.floor(rect.width));
+                        const h = Math.max(64, Math.floor(rect.height));
+                        camera.aspect = w / h;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(w, h, false);
+                    } catch (_) {}
+                };
+                this._rvDigitalBarsRenderer = renderer;
+                this._rvDigitalBarsScene = scene;
+                this._rvDigitalPmResize = resizeBars;
+                resizeBars();
+                const loop = () => {
+                    this._rvDigitalBarsAnimId = requestAnimationFrame(loop);
+                    try {
+                        const an = state.analyserNode || state.analyserNodeA;
+                        if (!an) return;
+                        if (!dataArray || dataArray.length !== an.frequencyBinCount) {
+                            dataArray = new Uint8Array(an.frequencyBinCount);
+                        }
+                        an.getByteFrequencyData(dataArray);
+                        if (updateFn) updateFn(dataArray, performance.now());
+                        renderer.render(scene, camera);
+                    } catch (_) {}
+                };
+                loop();
+            }
+
+            _showDigitalDeckBQueue() {
+                const mount = this.els.digitalDeckBContent;
+                if (!mount) return;
+                this._tearDownDigitalDeckBView();
+                mount.classList.add('is-active');
+                const wrap = document.createElement('div');
+                wrap.className = 'radio-visual-digital-deck-b-queue';
+                const title = document.createElement('div');
+                title.className = 'radio-visual-digital-deck-b-queue-title';
+                title.textContent = 'Deck B queue';
+                const list = document.createElement('ul');
+                list.className = 'radio-visual-digital-deck-b-queue-list';
+                try {
+                    const q = (typeof deckFileQueues !== 'undefined' && deckFileQueues.b) ? deckFileQueues.b : [];
+                    if (!q.length) {
+                        const li = document.createElement('li');
+                        li.textContent = 'Queue empty';
+                        list.appendChild(li);
+                    } else {
+                        q.forEach((item, idx) => {
+                            const li = document.createElement('li');
+                            li.textContent = item && item.name ? String(item.name) : `Track ${idx + 1}`;
+                            list.appendChild(li);
+                        });
+                    }
+                } catch (_) {
+                    const li = document.createElement('li');
+                    li.textContent = 'Queue unavailable';
+                    list.appendChild(li);
+                }
+                wrap.appendChild(title);
+                wrap.appendChild(list);
+                mount.appendChild(wrap);
             }
 
             _withDjDeck(fn) {
@@ -573,10 +798,15 @@
                 if (this.els.btnDigitalDeckB) {
                     this.els.btnDigitalDeckB.classList.toggle('is-active', next === 'deckB');
                 }
-                if (next === 'deckB') this._syncDigitalDeckBVideo();
+                if (next === 'deckB') {
+                    this._setDigitalDeckBView(this._digitalDeckBView || 'video');
+                } else {
+                    this._tearDownDigitalDeckBView();
+                }
             }
 
             _tearDownDigitalDeckBPlayer() {
+                try { this._tearDownDigitalDeckBView(); } catch (_) {}
                 try {
                     if (this.els.digitalDeckBVideo) {
                         this.els.digitalDeckBVideo.pause();
@@ -661,7 +891,7 @@
                 }
                 const n = levels.length;
                 for (let i = 0; i < n; i++) {
-                    const lv = Math.min(1, Math.max(0.06, Math.pow((levels[i] || 0) * 3.1, 0.68)));
+                    const lv = Math.min(0.88, Math.max(0.06, Math.pow((levels[i] || 0) * 2.0, 0.74)));
                     const a0 = (i / n) * Math.PI * 2 - Math.PI / 2;
                     const a1 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2;
                     const r1 = innerR + (outerR - innerR) * lv;
@@ -803,9 +1033,8 @@
                         ? currentStationBIndex : -1;
                     if (idxB >= 0 && stations[idxB]) nameB = stations[idxB].name || nameB;
                 } catch (_) {}
-                if (this.els.stationDigital) {
-                    this.els.stationDigital.textContent = `A: ${nameA}  |  B: ${nameB}`;
-                }
+                if (this.els.stationDigitalA) this.els.stationDigitalA.textContent = nameA;
+                if (this.els.stationDigitalB) this.els.stationDigitalB.textContent = nameB;
                 const pctA = this._needlePercentA();
                 const pctB = this._needlePercentB();
                 if (this.els.needle) this.els.needle.style.left = `${pctA}%`;
@@ -944,7 +1173,7 @@
             }
 
 
-            _buildFeatureButtons(gridEl) {
+            _buildFeatureButtons(gridEl, { deckBInPanel = false } = {}) {
                 if (!gridEl) return;
                 const items = [
                     { label: 'Mixer', fn: () => { try { if (typeof toggleMixPanel === 'function') toggleMixPanel(); } catch (_) {} } },
@@ -965,14 +1194,43 @@
                         } catch (_) {}
                     }},
                     { label: 'Video', fn: () => {
+                        if (deckBInPanel) {
+                            this._deckBFeature('video', () => {
+                                this._withDjDeck((dj) => {
+                                    if (dj.deckBVizMode === 'video') { dj.tearDownDeckBViz(); dj.syncDeckBVisualButtons(); }
+                                    else dj.startDeckBVideoVisual();
+                                });
+                            });
+                            return;
+                        }
                         this._withDjDeck((dj) => {
                             if (dj.deckBVizMode === 'video') { dj.tearDownDeckBViz(); dj.syncDeckBVisualButtons(); }
                             else dj.startDeckBVideoVisual();
                         });
                     }},
-                    { label: 'ProjectM', fn: () => this._loadVisualByName('ProjectM v2') },
-                    { label: 'Audio:Bar', fn: () => this._loadVisualByName('Audio Bars') },
-                    { label: 'Queue', fn: () => { this._withDjDeck((dj) => dj.toggleDeckBQueuePanel()); } },
+                    { label: 'ProjectM', fn: () => {
+                        if (deckBInPanel) {
+                            this._deckBFeature('projectm', () => this._loadVisualByName('ProjectM v2'));
+                            return;
+                        }
+                        this._loadVisualByName('ProjectM v2');
+                    }},
+                    { label: 'Audio:Bar', fn: () => {
+                        if (deckBInPanel) {
+                            this._deckBFeature('bars', () => this._loadVisualByName('Audio Bars'));
+                            return;
+                        }
+                        this._loadVisualByName('Audio Bars');
+                    }},
+                    { label: 'Queue', fn: () => {
+                        if (deckBInPanel) {
+                            this._deckBFeature('queue', () => {
+                                this._withDjDeck((dj) => dj.toggleDeckBQueuePanel());
+                            });
+                            return;
+                        }
+                        this._withDjDeck((dj) => dj.toggleDeckBQueuePanel());
+                    }},
                     { label: 'Stations', fn: () => {
                         try {
                             if (typeof uiLocked !== 'undefined' && uiLocked) return;
@@ -1192,8 +1450,14 @@
                     el.textContent = txt;
                     return el;
                 };
-                const stD = mkLine('radio-visual-digital-line--title', 'radio-visual-station-d', '—');
+                const stNameA = mkLine('radio-visual-digital-line--station-a', 'radio-visual-station-name-a', '—');
                 const dClk = mkLine('radio-visual-digital-line--clock', 'radio-visual-digital-clock', '—');
+                const stNameB = mkLine('radio-visual-digital-line--station-b', 'radio-visual-station-name-b', '—');
+                const overlayRow = document.createElement('div');
+                overlayRow.className = 'radio-visual-digital-spectrum-overlay-row';
+                overlayRow.appendChild(stNameA);
+                overlayRow.appendChild(dClk);
+                overlayRow.appendChild(stNameB);
                 const digBtns = document.createElement('div');
                 digBtns.className = 'radio-visual-btn-grid radio-visual-digital-feature-btns';
                 digBtns.id = 'radio-visual-digital-btns';
@@ -1208,17 +1472,19 @@
                 const spectrumOverlay = document.createElement('div');
                 spectrumOverlay.className = 'radio-visual-digital-spectrum-overlay';
                 spectrumOverlay.setAttribute('aria-live', 'polite');
-                spectrumOverlay.appendChild(stD);
-                spectrumOverlay.appendChild(dClk);
+                spectrumOverlay.appendChild(overlayRow);
                 digitalCenterSpectrum.appendChild(spectrumOverlay);
                 const digitalCenterDeckB = document.createElement('div');
                 digitalCenterDeckB.className = 'radio-visual-digital-center-pane';
                 const digitalDeckBMount = document.createElement('div');
                 digitalDeckBMount.className = 'radio-visual-digital-deck-b-mount';
+                const digitalDeckBContent = document.createElement('div');
+                digitalDeckBContent.className = 'radio-visual-digital-deck-b-content';
                 const digitalDeckBVideo = document.createElement('video');
                 digitalDeckBVideo.className = 'radio-visual-digital-deck-b-video';
                 digitalDeckBVideo.playsInline = true;
                 digitalDeckBVideo.muted = true;
+                digitalDeckBMount.appendChild(digitalDeckBContent);
                 digitalDeckBMount.appendChild(digitalDeckBVideo);
                 digitalCenterDeckB.appendChild(digitalDeckBMount);
                 digitalCenter.appendChild(digitalCenterSpectrum);
@@ -1307,7 +1573,10 @@
                     btnSkinDigital: btnD,
                     stageAnalog: stageA,
                     stageDigital: stageD,
-                    stationDigital: stD,
+                    stationDigitalA: stNameA,
+                    stationDigitalB: stNameB,
+                    digitalDeckBMount,
+                    digitalDeckBContent,
                     ticks,
                     needle,
                     needleB,
@@ -1337,7 +1606,7 @@
                 };
 
                 this._buildFeatureButtons(analogBtns);
-                this._buildFeatureButtons(digBtns);
+                this._buildFeatureButtons(digBtns, { deckBInPanel: true });
                 this._setSkin(this.skin);
                 this._syncVolumeFromGlobal();
                 this._setAutoFadeDurationNorm(this._autoFadeDurationNorm());
@@ -1428,12 +1697,15 @@
                     this._drawMeters();
                     if (this.skin === 'digital') {
                         this._drawDigitalSpectrum();
-                        if (this.digitalCenterMode === 'deckB') {
+                        if (this.digitalCenterMode === 'deckB' && this._digitalDeckBView === 'video') {
                             const now = performance.now();
                             if (!this._deckBVideoSyncAt || (now - this._deckBVideoSyncAt) > 800) {
                                 this._deckBVideoSyncAt = now;
                                 this._syncDigitalDeckBVideo();
                             }
+                        }
+                        if (this.digitalCenterMode === 'deckB' && this._rvDigitalPmResize) {
+                            try { this._rvDigitalPmResize(); } catch (_) {}
                         }
                     }
                 } catch (_) {}
@@ -1441,6 +1713,9 @@
 
             onResize() {
                 try { this._resizeCanvases(); } catch (_) {}
+                if (this._rvDigitalPmResize) {
+                    try { this._rvDigitalPmResize(); } catch (_) {}
+                }
             }
 
             destroy() {
