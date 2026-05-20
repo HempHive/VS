@@ -1109,6 +1109,13 @@
                 }
                 ctx.fillStyle = rim;
                 ctx.fill();
+                ctx.beginPath();
+                ctx.arc(cx, cy, innerR * 0.92, 0, Math.PI * 2);
+                const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
+                core.addColorStop(0, 'rgba(0, 255, 220, 0.35)');
+                core.addColorStop(1, 'rgba(0, 40, 60, 0.05)');
+                ctx.fillStyle = core;
+                ctx.fill();
             }
 
             _drawDigitalCarDash(eqHeights, t) {
