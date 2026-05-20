@@ -27,6 +27,8 @@
                 this._digitalBgGifEnabled = true;
                 /** Smoothed ring radii (0–1) for flowing spectrum ribbon. */
                 this._spectrumRingSmooth = null;
+                this._digitalBgGifFilesList = null;
+                this._digitalBgGifManifestPromise = null;
             }
 
             static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
@@ -38,10 +40,11 @@
             static get AUTOMIX_MAX_MIN() { return 20; }
             static get AUTOFADE_CHANGE_STATION_KEY() { return 'dj.autofade.changeStation.enabled.v1'; }
             static get DIGITAL_BG_GIF_DIR() { return 'assets/gifs/digital/'; }
-            /** Background cycle order: dig.gif first, then other gifs in this folder. */
+            /** Fallback if assets/gifs/digital/manifest.json is missing. */
             static get DIGITAL_BG_GIF_LIST() {
-                return ['dig.gif', 'diga.gif', 'digb.gif', 'digc.gif'];
+                return ['dig.gif', 'diga.gif', 'digb.gif', 'digc.gif', 'digd.gif', 'dige.gif', 'digf.gif', 'digg.gif', 'digh.gif', 'digi.gif'];
             }
+            static get DIGITAL_BG_GIF_MANIFEST() { return 'assets/gifs/digital/manifest.json'; }
             static get DIGITAL_BG_GIF_STORAGE_KEY() { return 'radioVisual.digitalBgGif.v1'; }
             static get DIGITAL_BG_GIF_ENABLED_KEY() { return 'radioVisual.digitalBgGif.enabled.v1'; }
 
@@ -67,11 +70,55 @@
                 return false;
             }
 
-            _digitalBgGifFiles() {
-                const list = RadioVisualEngine.DIGITAL_BG_GIF_LIST;
-                const first = list.filter((f) => f === 'dig.gif');
-                const rest = list.filter((f) => f !== 'dig.gif').sort();
+            _sortDigitalBgGifNames(names) {
+                const list = (names || [])
+                    .map((f) => String(f || '').trim())
+                    .filter((f) => /\.gif$/i.test(f));
+                const first = list.filter((f) => f.toLowerCase() === 'dig.gif');
+                const rest = list.filter((f) => f.toLowerCase() !== 'dig.gif').sort((a, b) =>
+                    a.localeCompare(b, undefined, { sensitivity: 'base' })
+                );
                 return [...first, ...rest];
+            }
+
+            _digitalBgGifFilesFromStatic() {
+                return this._sortDigitalBgGifNames(RadioVisualEngine.DIGITAL_BG_GIF_LIST);
+            }
+
+            _digitalBgGifFiles() {
+                if (this._digitalBgGifFilesList && this._digitalBgGifFilesList.length) {
+                    return this._digitalBgGifFilesList;
+                }
+                return this._digitalBgGifFilesFromStatic();
+            }
+
+            _refreshDigitalBgGifList() {
+                if (this._digitalBgGifManifestPromise) return this._digitalBgGifManifestPromise;
+                this._digitalBgGifManifestPromise = (async () => {
+                    try {
+                        const url = `${RadioVisualEngine.DIGITAL_BG_GIF_MANIFEST}?t=${Date.now()}`;
+                        const res = await fetch(url, { cache: 'no-store' });
+                        if (res.ok) {
+                            const data = await res.json();
+                            const raw = Array.isArray(data)
+                                ? data
+                                : (data && (data.gifs || data.files)) || [];
+                            const sorted = this._sortDigitalBgGifNames(raw);
+                            if (sorted.length) {
+                                this._digitalBgGifFilesList = sorted;
+                                if (this._digitalBgGifIdx >= sorted.length) {
+                                    this._digitalBgGifIdx = 0;
+                                }
+                                return sorted;
+                            }
+                        }
+                    } catch (_) {}
+                    this._digitalBgGifFilesList = this._digitalBgGifFilesFromStatic();
+                    return this._digitalBgGifFilesList;
+                })().finally(() => {
+                    this._digitalBgGifManifestPromise = null;
+                });
+                return this._digitalBgGifManifestPromise;
             }
 
             _resolveDigitalBgGifStartIndex(files) {
@@ -150,10 +197,9 @@
                     }
                     return;
                 }
-                const files = this._digitalBgGifFiles();
-                if (!files.length) return;
-                const idx = Math.max(0, Math.min(files.length - 1, this._digitalBgGifIdx || 0));
-                this._applyDigitalSpectrumBgFile(files[idx], idx);
+                this._refreshDigitalBgGifList().then(() => {
+                    this._applyCurrentDigitalBgGif();
+                }).catch(() => {});
             }
 
             _toggleDigitalBgGifEnabled() {
@@ -168,7 +214,14 @@
                 btn.setAttribute('aria-pressed', on ? 'true' : 'false');
                 btn.title = on
                     ? 'Tap: next background · Hold: turn off background'
-                    : 'Background off · Tap: next when on · Hold: turn on';
+                    : 'Background off · Tap to turn on';
+            }
+
+            _applyCurrentDigitalBgGif() {
+                const files = this._digitalBgGifFiles();
+                if (!this.els.spectrumBg || !files.length) return;
+                const idx = Math.max(0, Math.min(files.length - 1, this._digitalBgGifIdx || 0));
+                this._applyDigitalSpectrumBgFile(files[idx], idx);
             }
 
             _initDigitalSpectrumBg() {
@@ -179,18 +232,32 @@
                 } catch (_) {}
                 this._syncDigitalVisBgButton();
                 if (!this._isDigitalBgGifEnabled()) return;
-                const files = this._digitalBgGifFiles();
-                if (!this.els.spectrumBg || !files.length) return;
-                const start = this._resolveDigitalBgGifStartIndex(files);
-                this._applyDigitalSpectrumBgFile(files[start], start);
+                this._refreshDigitalBgGifList().then(() => {
+                    if (!this._isDigitalBgGifEnabled()) return;
+                    const files = this._digitalBgGifFiles();
+                    if (!files.length) return;
+                    const start = this._resolveDigitalBgGifStartIndex(files);
+                    this._applyDigitalSpectrumBgFile(files[start], start);
+                }).catch(() => {});
             }
 
             _cycleDigitalVisBg() {
-                if (!this._isDigitalBgGifEnabled()) return;
-                const files = this._digitalBgGifFiles();
-                if (!this.els.spectrumBg || !files.length) return;
-                const next = (this._digitalBgGifIdx + 1) % files.length;
-                this._applyDigitalSpectrumBgFile(files[next], next);
+                this._refreshDigitalBgGifList().then(() => {
+                    if (!this._isDigitalBgGifEnabled()) return;
+                    const files = this._digitalBgGifFiles();
+                    if (!this.els.spectrumBg || !files.length) return;
+                    const next = (this._digitalBgGifIdx + 1) % files.length;
+                    this._applyDigitalSpectrumBgFile(files[next], next);
+                }).catch(() => {});
+            }
+
+            _onDigitalVisBgTap() {
+                if (!this._isDigitalBgGifEnabled()) {
+                    this._setDigitalBgGifEnabled(true);
+                    this._syncDigitalVisBgButton();
+                    return;
+                }
+                this._cycleDigitalVisBg();
             }
 
             _wireDigitalVisBgButton(btn, sig) {
@@ -218,7 +285,7 @@
                 btn.addEventListener('pointerup', (ev) => {
                     this._stopClick(ev);
                     clearLongPress();
-                    if (!longPressHandled) this._cycleDigitalVisBg();
+                    if (!longPressHandled) this._onDigitalVisBgTap();
                     longPressHandled = false;
                 }, sig);
                 btn.addEventListener('pointercancel', () => {
