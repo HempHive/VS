@@ -22,8 +22,10 @@
             static get AUTOFADE_MIN_MS() { return 2000; }
             static get AUTOFADE_MAX_MS() { return 15000; }
             static get AUTOMIX_MAX_KEY() { return 'dj.automix.max.min.v1'; }
+            static get AUTOMIX_ENABLED_KEY() { return 'dj.automix.enabled.v1'; }
             static get AUTOMIX_MIN_MIN() { return 1; }
             static get AUTOMIX_MAX_MIN() { return 20; }
+            static get AUTOFADE_CHANGE_STATION_KEY() { return 'dj.autofade.changeStation.enabled.v1'; }
 
             _stopClick(ev) {
                 try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
@@ -157,11 +159,10 @@
 
             _syncFadeKnobs() {
                 const active = !!(this._rvFadeActive || this._rvAutoFadeRaf);
-                [this.els.crossKnob, this.els.autoFadeKnob].forEach((el) => {
-                    if (!el) return;
-                    el.classList.toggle('is-on', active);
-                    el.setAttribute('aria-pressed', active ? 'true' : 'false');
-                });
+                if (this.els.crossKnob) {
+                    this.els.crossKnob.classList.toggle('is-on', active);
+                    this.els.crossKnob.setAttribute('aria-pressed', active ? 'true' : 'false');
+                }
             }
 
             _readAutoFadeDurationMs() {
@@ -361,18 +362,80 @@
                 this._runLocalAutoFade();
             }
 
+            _isAutoMixEnabled() {
+                try {
+                    if (typeof isAutoMixEnabledGlobal === 'function') return isAutoMixEnabledGlobal();
+                } catch (_) {}
+                try {
+                    return localStorage.getItem(RadioVisualEngine.AUTOMIX_ENABLED_KEY) === '1';
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            _isAutoFadeChangeStationEnabled() {
+                try {
+                    if (typeof isAutoFadeChangeStationEnabledGlobal === 'function') {
+                        return isAutoFadeChangeStationEnabledGlobal();
+                    }
+                } catch (_) {}
+                try {
+                    const raw = localStorage.getItem(RadioVisualEngine.AUTOFADE_CHANGE_STATION_KEY);
+                    if (raw === '0') return false;
+                    if (raw === '1') return true;
+                } catch (_) {}
+                return true;
+            }
+
             _toggleAutoMix() {
+                if (this._isRadioVisualActive()) {
+                    const next = !this._isAutoMixEnabled();
+                    try { localStorage.setItem(RadioVisualEngine.AUTOMIX_ENABLED_KEY, next ? '1' : '0'); } catch (_) {}
+                    try { state.autoMixEnabled = next; } catch (_) {}
+                    this._syncAutoMixKnob();
+                    return;
+                }
                 const btn = document.getElementById('mix-automix') || document.getElementById('dj-automix');
                 if (btn) {
-                    try { btn.click(); return; } catch (_) {}
+                    try { btn.click(); } catch (_) {}
+                    this._syncAutoMixKnob();
+                    return;
                 }
                 try {
-                    const key = 'dj.automix.enabled.v1';
-                    const on = localStorage.getItem(key) === '1';
-                    const next = !on;
-                    localStorage.setItem(key, next ? '1' : '0');
+                    const next = !this._isAutoMixEnabled();
+                    localStorage.setItem(RadioVisualEngine.AUTOMIX_ENABLED_KEY, next ? '1' : '0');
                     try { state.autoMixEnabled = next; } catch (_) {}
                 } catch (_) {}
+                this._syncAutoMixKnob();
+            }
+
+            _toggleAutoFadeChangeStation() {
+                const cb = document.getElementById('dj-autofade-change-station');
+                if (cb) {
+                    cb.checked = !cb.checked;
+                    try { cb.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+                    this._syncAutoFadeChangeStationKnob();
+                    return;
+                }
+                const next = !this._isAutoFadeChangeStationEnabled();
+                try {
+                    localStorage.setItem(RadioVisualEngine.AUTOFADE_CHANGE_STATION_KEY, next ? '1' : '0');
+                } catch (_) {}
+                this._syncAutoFadeChangeStationKnob();
+            }
+
+            _syncAutoMixKnob() {
+                if (!this.els.autoMixKnob) return;
+                const on = this._isAutoMixEnabled();
+                this.els.autoMixKnob.classList.toggle('is-on', on);
+                this.els.autoMixKnob.setAttribute('aria-pressed', on ? 'true' : 'false');
+            }
+
+            _syncAutoFadeChangeStationKnob() {
+                if (!this.els.autoFadeKnob) return;
+                const on = this._isAutoFadeChangeStationEnabled();
+                this.els.autoFadeKnob.classList.toggle('is-on', on);
+                this.els.autoFadeKnob.setAttribute('aria-pressed', on ? 'true' : 'false');
             }
 
             _deckBActive() {
@@ -634,19 +697,32 @@
                 this._syncCrossfadeKnob();
             }
 
-            _wireFadeButtonKnob(knobEl, { durationKnob = false } = {}) {
+            _wireAutoFadeKnob(knobEl) {
                 if (!knobEl) return;
                 knobEl.classList.add('radio-visual-knob--switch', 'radio-visual-knob--fade-btn');
+                knobEl.setAttribute('role', 'slider');
                 knobEl.tabIndex = 0;
-                const trigger = () => this._triggerAutoFade();
-                if (durationKnob) {
-                    knobEl.setAttribute('role', 'slider');
-                    knobEl.setAttribute('aria-label', 'Auto-fade; drag for duration, tap to cross-fade');
-                    this._wirePointerKnob(knobEl, {
-                        get: () => this._autoFadeDurationNorm(),
-                        set: (t) => this._setAutoFadeDurationNorm(t)
-                    }, { onTap: trigger });
-                }
+                knobEl.setAttribute('aria-label', 'Auto-fade duration; drag to adjust, tap to toggle change station before fading');
+                this._wirePointerKnob(knobEl, {
+                    get: () => this._autoFadeDurationNorm(),
+                    set: (t) => this._setAutoFadeDurationNorm(t)
+                }, { onTap: () => this._toggleAutoFadeChangeStation() });
+                this._setKnobRotation(knobEl, (this._autoFadeDurationNorm() * 270) - 135);
+                this._syncAutoFadeChangeStationKnob();
+            }
+
+            _wireAutoMixKnob(knobEl) {
+                if (!knobEl) return;
+                knobEl.classList.add('radio-visual-knob--switch', 'radio-visual-knob--fade-btn');
+                knobEl.setAttribute('role', 'slider');
+                knobEl.tabIndex = 0;
+                knobEl.setAttribute('aria-label', 'Auto-mix interval; drag to adjust, tap to toggle auto-mix');
+                this._wirePointerKnob(knobEl, {
+                    get: () => this._autoMixMaxNorm(),
+                    set: (t) => this._setAutoMixMaxNorm(t)
+                }, { onTap: () => this._toggleAutoMix() });
+                this._setKnobRotation(knobEl, (this._autoMixMaxNorm() * 270) - 135);
+                this._syncAutoMixKnob();
             }
 
             _wireDeckKnob(knobEl, deck) {
@@ -747,6 +823,8 @@
                 this._syncCrossfadeKnob();
                 this._syncDeckSwitches();
                 this._syncFadeKnobs();
+                this._syncAutoMixKnob();
+                this._syncAutoFadeChangeStationKnob();
                 this._lastStationIdx = (typeof currentStationIndex === 'number') ? currentStationIndex : -1;
             }
 
@@ -894,7 +972,13 @@
                     }},
                     { label: 'ProjectM', fn: () => this._loadVisualByName('ProjectM v2') },
                     { label: 'Audio:Bar', fn: () => this._loadVisualByName('Audio Bars') },
-                    { label: 'Queue', fn: () => { this._withDjDeck((dj) => dj.toggleDeckBQueuePanel()); } }
+                    { label: 'Queue', fn: () => { this._withDjDeck((dj) => dj.toggleDeckBQueuePanel()); } },
+                    { label: 'Stations', fn: () => {
+                        try {
+                            if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                            if (typeof toggleTopMenuPanel === 'function') toggleTopMenuPanel();
+                        } catch (_) {}
+                    } }
                 ];
                 items.forEach((it) => {
                     const b = document.createElement('button');
@@ -1322,11 +1406,8 @@
                 this._wireDeckKnob(deckAKnob, 'a');
                 this._wireDeckKnob(deckBKnob, 'b');
                 this._wireCrossfadeKnob(crossKnob);
-                this._wireFadeButtonKnob(autoFadeKnob, { durationKnob: true });
-                this._wirePointerKnob(autoMixKnob, {
-                    get: () => this._autoMixMaxNorm(),
-                    set: (t) => this._setAutoMixMaxNorm(t)
-                }, { onTap: () => this._toggleAutoMix() });
+                this._wireAutoFadeKnob(autoFadeKnob);
+                this._wireAutoMixKnob(autoMixKnob);
 
                 const stopRv = (ev) => this._stopInteraction(ev);
                 root.addEventListener('click', stopRv, sig);

@@ -216,7 +216,7 @@
         }
         @media (min-width: 640px) {
             #radio-visual-root .radio-visual-analog-actions {
-                grid-template-columns: repeat(7, minmax(0, 1fr));
+                grid-template-columns: repeat(8, minmax(0, 1fr));
             }
         }
         #radio-visual-root .radio-visual-vu-canvas {
@@ -259,7 +259,7 @@
         }
         #radio-visual-root .radio-visual-knobs-row--all .radio-visual-knob {
             width: 100%;
-            max-width: min(72px, 14vw);
+            max-width: min(86px, 16.8vw);
             aspect-ratio: 1;
             height: auto;
             margin: 0 auto;
@@ -305,8 +305,8 @@
             text-overflow: ellipsis;
         }
         #radio-visual-root .radio-visual-knob {
-            width: clamp(56px, 14vw, 72px);
-            height: clamp(56px, 14vw, 72px);
+            width: clamp(67px, 16.8vw, 86px);
+            height: clamp(67px, 16.8vw, 86px);
             border-radius: 50%;
             border: 3px solid #6a5844;
             background: radial-gradient(circle at 35% 30%, #5a5048, #1a1612 65%);
@@ -513,7 +513,7 @@
         }
         #radio-visual-root .radio-visual-digital-feature-btns {
             display: grid;
-            grid-template-columns: repeat(7, minmax(0, 1fr));
+            grid-template-columns: repeat(8, minmax(0, 1fr));
             gap: clamp(4px, 0.8vw, 8px);
             max-width: none;
             margin: 0 0 10px;
