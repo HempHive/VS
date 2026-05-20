@@ -220,7 +220,7 @@
                 );
                 try { localStorage.setItem(RadioVisualEngine.AUTOMIX_MAX_KEY, String(clamped)); } catch (_) {}
                 if (this.els.autoMixReadout) {
-                    this.els.autoMixReadout.textContent = `${clamped}m max`;
+                    this.els.autoMixReadout.textContent = String(clamped);
                 }
                 return clamped;
             }
@@ -1009,27 +1009,6 @@
                 const stageA = document.createElement('section');
                 stageA.className = 'radio-visual-stage radio-visual-skin--analogue is-active';
                 stageA.setAttribute('aria-label', 'Analogue radio');
-                const stationsLine = document.createElement('div');
-                stationsLine.className = 'radio-visual-stations-line';
-                stationsLine.id = 'radio-visual-stations-line';
-                const stPartA = document.createElement('span');
-                stPartA.className = 'radio-visual-station-part radio-visual-station-part--a';
-                const stLabA = document.createElement('span');
-                stLabA.className = 'radio-visual-station-tag';
-                stLabA.textContent = 'A';
-                stPartA.appendChild(stLabA);
-                const stSep = document.createElement('span');
-                stSep.className = 'radio-visual-station-sep';
-                stSep.textContent = '·';
-                const stPartB = document.createElement('span');
-                stPartB.className = 'radio-visual-station-part radio-visual-station-part--b';
-                const stLabB = document.createElement('span');
-                stLabB.className = 'radio-visual-station-tag';
-                stLabB.textContent = 'B';
-                stPartB.appendChild(stLabB);
-                stationsLine.appendChild(stPartA);
-                stationsLine.appendChild(stSep);
-                stationsLine.appendChild(stPartB);
                 const tunerShell = document.createElement('div');
                 tunerShell.className = 'radio-visual-tuner-shell';
                 const tunerRail = document.createElement('div');
@@ -1103,7 +1082,7 @@
                 const autoMixKnob = mkControlKnob('radio-visual-automix-knob', 'Auto-mix max interval; click to toggle');
                 autoMixKnob.setAttribute('role', 'slider');
                 const autoFadeReadout = mkReadout(`${(this._readAutoFadeDurationMs() / 1000).toFixed(1)}s`);
-                const autoMixReadout = mkReadout(`${this._readAutoMixMaxMin()}m max`);
+                const autoMixReadout = mkReadout(String(this._readAutoMixMaxMin()));
                 knobs.appendChild(this._mkKnobBlock('Volume', volKnob));
                 knobs.appendChild(this._mkKnobBlock('Deck A', deckAKnob));
                 knobs.appendChild(this._mkKnobBlock('Deck B', deckBKnob));
@@ -1114,7 +1093,6 @@
                 analogBtns.className = 'radio-visual-btn-grid radio-visual-analog-actions';
                 analogBtns.id = 'radio-visual-analog-btns';
                 tunerShell.appendChild(analogBtns);
-                stageA.appendChild(stationsLine);
                 stageA.appendChild(knobs);
                 stageA.appendChild(tunerShell);
 
