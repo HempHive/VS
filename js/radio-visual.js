@@ -737,10 +737,10 @@
 
             _isHighSpectrumRibbonMode() {
                 if (!this._isAudiblePlaybackActive()) return false;
-                return this._highSpectrumTrebleLevel() > 0.045;
+                return this._highSpectrumTrebleLevel() > 0.032;
             }
 
-            _fullHighSpectrumRadii(n, maxRing) {
+            _fullBandRadii(n, maxRing) {
                 const fill = maxRing ?? 0.66;
                 return new Array(n).fill(fill);
             }
@@ -1297,40 +1297,41 @@
 
             static get SPECTRUM_ANGULAR_BINS() { return 72; }
 
+            /** Radial order: 0 = inner (high), 1 = mid, 2 = outer (low). */
             static get SPECTRUM_FLOWER_LAYERS() {
                 return [
                     {
-                        key: 'low',
+                        key: 'high',
                         layerIndex: 0,
                         phaseBins: 0,
-                        hue: 22,
-                        hueDrift: 70,
-                        sat: 92,
+                        hue: 198,
+                        hueDrift: 58,
+                        sat: 90,
                         light: 56,
-                        alpha: 0.54,
-                        maxRing: 0.62
+                        alpha: 0.62,
+                        maxRing: 0.66
                     },
                     {
                         key: 'mid',
                         layerIndex: 1,
                         phaseBins: 2.5,
-                        hue: 168,
+                        hue: 152,
                         hueDrift: 65,
                         sat: 90,
                         light: 52,
-                        alpha: 0.6,
+                        alpha: 0.58,
                         maxRing: 0.64
                     },
                     {
-                        key: 'high',
+                        key: 'low',
                         layerIndex: 2,
                         phaseBins: 5,
-                        hueOff: 128,
-                        hueDrift: 50,
-                        sat: 88,
-                        light: 50,
-                        alpha: 0.72,
-                        maxRing: 0.66
+                        hue: 24,
+                        hueDrift: 70,
+                        sat: 92,
+                        light: 54,
+                        alpha: 0.54,
+                        maxRing: 0.62
                     }
                 ];
             }
@@ -1482,7 +1483,7 @@
                     const smooth = this._smoothSpectrumBandLevels(levels, sampled.fromAnalyser);
                     let radii = this._radiiFromSpectrumSmooth(smooth, t, layer.key, layer);
                     if (layer.key === 'high' && !highRibbon) {
-                        radii = this._fullHighSpectrumRadii(n, layer.maxRing);
+                        radii = this._fullBandRadii(n, layer.maxRing);
                     }
                     layersL.push({ ...layer, radii });
                     layersR.push({ ...layer, radii: this._mirrorSpectrumRadii(radii) });
