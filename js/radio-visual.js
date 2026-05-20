@@ -940,7 +940,7 @@
                 }
                 const innerR = Math.min(w, h) * 0.14;
                 const outerR = Math.min(w, h) * 0.44;
-                ctx.strokeStyle = 'rgba(0, 255, 220, 0.08)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
                 ctx.lineWidth = 1;
                 for (let ring = 1; ring <= 4; ring++) {
                     ctx.beginPath();
@@ -965,10 +965,22 @@
                     ctx.lineTo(cx + Math.cos(a) * innerEdge, cy + Math.sin(a) * innerEdge);
                 }
                 ctx.closePath();
-                const rim = ctx.createRadialGradient(cx, cy, innerR * 0.9, cx, cy, outerR * 1.02);
-                rim.addColorStop(0, 'rgba(0, 255, 220, 0.22)');
-                rim.addColorStop(0.45, 'rgba(0, 200, 190, 0.42)');
-                rim.addColorStop(1, 'rgba(0, 80, 100, 0.35)');
+                let rim;
+                if (typeof ctx.createConicGradient === 'function') {
+                    rim = ctx.createConicGradient(-Math.PI / 2, cx, cy);
+                    const steps = 24;
+                    for (let k = 0; k <= steps; k++) {
+                        const u = k / steps;
+                        const hue = (u * 360) % 360;
+                        rim.addColorStop(u, `hsla(${hue}, 92%, 56%, 0.78)`);
+                    }
+                } else {
+                    rim = ctx.createRadialGradient(cx, cy, innerR * 0.9, cx, cy, outerR * 1.02);
+                    rim.addColorStop(0, 'rgba(255, 80, 180, 0.28)');
+                    rim.addColorStop(0.35, 'rgba(120, 200, 255, 0.4)');
+                    rim.addColorStop(0.65, 'rgba(80, 255, 160, 0.38)');
+                    rim.addColorStop(1, 'rgba(255, 200, 80, 0.32)');
+                }
                 ctx.fillStyle = rim;
                 ctx.fill();
                 ctx.beginPath();

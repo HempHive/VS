@@ -1778,11 +1778,7 @@
             if (!warmCrossfade) {
                 revokeBlobSrc(audioEl);
             }
-            if (!warmCrossfade) {
-                statusEl.innerText = 'Connecting to Stream...';
-            } else {
-                statusEl.innerText = 'Buffering next station…';
-            }
+            try { statusEl.innerText = ''; } catch (_) {}
             try { setDjDeckRadioLoadingSpinner('a', true); } catch (_) {}
             try { stopNowPlayingPoll(); } catch (_) {}
 
