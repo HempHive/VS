@@ -711,7 +711,7 @@
             grid-template-columns: repeat(8, minmax(0, 1fr));
             gap: clamp(4px, 0.8vw, 8px);
             max-width: none;
-            margin: 12px 0 10px;
+            margin: 0 0 10px;
             position: relative;
             z-index: 12;
             flex-shrink: 0;
@@ -791,7 +791,7 @@
             align-items: stretch;
             gap: 3px;
             width: 100%;
-            margin: 8px 0 10px;
+            margin: 8px 0 6px;
         }
         #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn {
             min-width: 0;
