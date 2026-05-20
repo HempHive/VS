@@ -24,6 +24,7 @@
                 this._volUnmuteNorm = 0.5;
                 this._digitalStageClickTimer = null;
                 this._digitalBgGifIdx = 0;
+                this._digitalBgGifEnabled = true;
             }
 
             static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
@@ -40,6 +41,7 @@
                 return ['dig.gif', 'diga.gif', 'digb.gif', 'digc.gif'];
             }
             static get DIGITAL_BG_GIF_STORAGE_KEY() { return 'radioVisual.digitalBgGif.v1'; }
+            static get DIGITAL_BG_GIF_ENABLED_KEY() { return 'radioVisual.digitalBgGif.enabled.v1'; }
 
             _stopClick(ev) {
                 try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
@@ -118,7 +120,63 @@
                 img.src = url;
             }
 
+            _isDigitalBgGifEnabled() {
+                if (this._digitalBgGifEnabled === false) return false;
+                try {
+                    const raw = localStorage.getItem(RadioVisualEngine.DIGITAL_BG_GIF_ENABLED_KEY);
+                    if (raw === '0') return false;
+                    if (raw === '1') return true;
+                } catch (_) {}
+                return this._digitalBgGifEnabled !== false;
+            }
+
+            _setDigitalBgGifEnabled(enabled) {
+                this._digitalBgGifEnabled = !!enabled;
+                try {
+                    localStorage.setItem(
+                        RadioVisualEngine.DIGITAL_BG_GIF_ENABLED_KEY,
+                        enabled ? '1' : '0'
+                    );
+                } catch (_) {}
+                const bgEl = this.els.spectrumBg;
+                if (!bgEl) return;
+                if (!enabled) {
+                    bgEl.classList.remove('is-visible');
+                    const img = bgEl.querySelector('img');
+                    if (img) {
+                        try { img.remove(); } catch (_) {}
+                    }
+                    return;
+                }
+                const files = this._digitalBgGifFiles();
+                if (!files.length) return;
+                const idx = Math.max(0, Math.min(files.length - 1, this._digitalBgGifIdx || 0));
+                this._applyDigitalSpectrumBgFile(files[idx], idx);
+            }
+
+            _toggleDigitalBgGifEnabled() {
+                this._setDigitalBgGifEnabled(!this._isDigitalBgGifEnabled());
+            }
+
+            _syncDigitalVisBgButton() {
+                const btn = this.els.btnVis;
+                if (!btn) return;
+                const on = this._isDigitalBgGifEnabled();
+                btn.classList.toggle('is-active', on);
+                btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                btn.title = on
+                    ? 'Tap: next background · Hold: turn off background'
+                    : 'Background off · Tap: next when on · Hold: turn on';
+            }
+
             _initDigitalSpectrumBg() {
+                try {
+                    const raw = localStorage.getItem(RadioVisualEngine.DIGITAL_BG_GIF_ENABLED_KEY);
+                    if (raw === '0') this._digitalBgGifEnabled = false;
+                    else if (raw === '1') this._digitalBgGifEnabled = true;
+                } catch (_) {}
+                this._syncDigitalVisBgButton();
+                if (!this._isDigitalBgGifEnabled()) return;
                 const files = this._digitalBgGifFiles();
                 if (!this.els.spectrumBg || !files.length) return;
                 const start = this._resolveDigitalBgGifStartIndex(files);
@@ -126,10 +184,46 @@
             }
 
             _cycleDigitalVisBg() {
+                if (!this._isDigitalBgGifEnabled()) return;
                 const files = this._digitalBgGifFiles();
                 if (!this.els.spectrumBg || !files.length) return;
                 const next = (this._digitalBgGifIdx + 1) % files.length;
                 this._applyDigitalSpectrumBgFile(files[next], next);
+            }
+
+            _wireDigitalVisBgButton(btn, sig) {
+                if (!btn) return;
+                let longPressTimer = null;
+                let longPressHandled = false;
+                const longPressMs = 500;
+                const clearLongPress = () => {
+                    if (longPressTimer) {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                };
+                btn.addEventListener('pointerdown', (ev) => {
+                    this._stopClick(ev);
+                    longPressHandled = false;
+                    clearLongPress();
+                    longPressTimer = setTimeout(() => {
+                        longPressTimer = null;
+                        longPressHandled = true;
+                        this._toggleDigitalBgGifEnabled();
+                        this._syncDigitalVisBgButton();
+                    }, longPressMs);
+                }, sig);
+                btn.addEventListener('pointerup', (ev) => {
+                    this._stopClick(ev);
+                    clearLongPress();
+                    if (!longPressHandled) this._cycleDigitalVisBg();
+                    longPressHandled = false;
+                }, sig);
+                btn.addEventListener('pointercancel', () => {
+                    clearLongPress();
+                    longPressHandled = false;
+                }, sig);
+                btn.addEventListener('click', (ev) => this._stopClick(ev), sig);
             }
 
             _loadVisualByName(name) {
@@ -2097,11 +2191,10 @@
                 volUp.setAttribute('aria-label', 'Volume up');
                 const btnVis = document.createElement('button');
                 btnVis.type = 'button';
-                btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn';
-                btnVis.dataset.rvDigital = 'vis';
-                btnVis.textContent = 'VIS';
-                btnVis.title = 'Cycle digital background (assets/gifs/digital)';
-                btnVis.setAttribute('aria-label', 'Cycle digital background visual');
+                btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-vis-btn';
+                btnVis.textContent = '🔆';
+                btnVis.title = 'Tap: next background · Hold: turn off background';
+                btnVis.setAttribute('aria-label', 'Digital background visual');
                 volGroup.appendChild(volLbl);
                 volGroup.appendChild(volDown);
                 volGroup.appendChild(volDigitalReadout);
@@ -2188,7 +2281,6 @@
                     digitalCarDashCanvas,
                     digitalDeckBVideo,
                     volDigitalReadout,
-                    btnVis,
                     digitalClock: dClk,
                     digitalCenter,
                     analogBtns,
@@ -2220,6 +2312,7 @@
                     this._stopClick(ev);
                     this._stepDigitalVolume(1);
                 }, sig);
+                this._wireDigitalVisBgButton(btnVis, sig);
                 btnDigitalSpectrum.addEventListener('click', (ev) => {
                     this._stopClick(ev);
                     this._setDigitalCenterMode('spectrum');
@@ -2238,7 +2331,6 @@
                         else if (act === 'fade') this._triggerAutoFade();
                         else if (act === 'mix') this._toggleAutoMix();
                         else if (act === 'xfade-station') this._toggleAutoFadeChangeStation();
-                        else if (act === 'vis') this._cycleDigitalVisBg();
                         this._syncDeckSwitches();
                     }, sig);
                 });
