@@ -713,31 +713,8 @@
                 return name;
             }
 
-            _highSpectrumTrebleLevel() {
-                try {
-                    if (!state.analyserNode || !state.audioCtx) return 0;
-                    const fft = state.analyserNode.fftSize || 256;
-                    if (!this._vuBuf || this._vuBuf.length !== fft) {
-                        this._vuBuf = new Uint8Array(fft);
-                    }
-                    state.analyserNode.getByteFrequencyData(this._vuBuf);
-                    const start = Math.floor(this._vuBuf.length * 0.62);
-                    let sum = 0;
-                    let peak = 0;
-                    for (let i = start; i < this._vuBuf.length; i++) {
-                        const v = this._vuBuf[i] || 0;
-                        sum += v;
-                        if (v > peak) peak = v;
-                    }
-                    const n = Math.max(1, this._vuBuf.length - start);
-                    return Math.max(peak / 255, (sum / n) / 255);
-                } catch (_) {}
-                return 0;
-            }
-
             _isHighSpectrumRibbonMode() {
-                if (!this._isAudiblePlaybackActive()) return false;
-                return this._highSpectrumTrebleLevel() > 0.032;
+                return this._isAudiblePlaybackActive();
             }
 
             _fullBandRadii(n, maxRing) {
@@ -1433,26 +1410,45 @@
 
             _radiiFromSpectrumSmooth(smooth, t, bandKey, layerOpts) {
                 const n = smooth.length;
-                const sorted = smooth.slice().sort((a, b) => a - b);
-                const p78 = sorted[Math.min(n - 1, Math.floor(n * 0.78))] || 0.001;
-                const norm = 1 / Math.max(0.05, p78);
-                const gain = 0.76;
-                const gamma = 1.26;
                 const maxRing = layerOpts.maxRing ?? 0.64;
-                const floor = 0.04;
+                const floor = bandKey === 'high' ? 0.06 : 0.04;
                 const target = [];
-                for (let i = 0; i < n; i++) {
-                    const raw = Math.min(1, (smooth[i] || 0) * norm * gain);
-                    let shaped = Math.pow(raw, gamma);
-                    shaped += 0.005 * Math.sin(t * 1.85 + i * 0.11 + layerOpts.layerIndex * 0.9);
-                    target.push(Math.min(maxRing, Math.max(floor, shaped)));
+                if (bandKey === 'high') {
+                    let mn = Infinity;
+                    let mx = 0;
+                    for (let i = 0; i < n; i++) {
+                        const v = smooth[i] || 0;
+                        if (v < mn) mn = v;
+                        if (v > mx) mx = v;
+                    }
+                    const span = Math.max(0.012, mx - mn);
+                    const innerMax = maxRing * 0.92;
+                    const innerMin = floor + maxRing * 0.08;
+                    for (let i = 0; i < n; i++) {
+                        let raw = ((smooth[i] || 0) - mn) / span;
+                        raw = Math.pow(Math.min(1, Math.max(0, raw)), 1.12);
+                        const shaped = innerMin + (innerMax - innerMin) * raw;
+                        target.push(shaped);
+                    }
+                } else {
+                    const sorted = smooth.slice().sort((a, b) => a - b);
+                    const p78 = sorted[Math.min(n - 1, Math.floor(n * 0.78))] || 0.001;
+                    const norm = 1 / Math.max(0.05, p78);
+                    const gain = 0.76;
+                    const gamma = 1.26;
+                    for (let i = 0; i < n; i++) {
+                        const raw = Math.min(1, (smooth[i] || 0) * norm * gain);
+                        let shaped = Math.pow(raw, gamma);
+                        shaped += 0.005 * Math.sin(t * 1.85 + i * 0.11 + layerOpts.layerIndex * 0.9);
+                        target.push(Math.min(maxRing, Math.max(floor, shaped)));
+                    }
                 }
                 if (!this._spectrumRingSmooth[bandKey] || this._spectrumRingSmooth[bandKey].length !== n) {
                     this._spectrumRingSmooth[bandKey] = target.slice();
                 }
                 const radii = [];
-                const attack = 0.28;
-                const release = 0.12;
+                const attack = bandKey === 'high' ? 0.38 : 0.28;
+                const release = bandKey === 'high' ? 0.14 : 0.12;
                 const smoothState = this._spectrumRingSmooth[bandKey];
                 for (let i = 0; i < n; i++) {
                     const tgt = target[i];
@@ -1481,9 +1477,16 @@
                 for (const layer of RadioVisualEngine.SPECTRUM_FLOWER_LAYERS) {
                     const levels = sampled[layer.key] || [];
                     const smooth = this._smoothSpectrumBandLevels(levels, sampled.fromAnalyser);
-                    let radii = this._radiiFromSpectrumSmooth(smooth, t, layer.key, layer);
+                    let radii;
                     if (layer.key === 'high' && !highRibbon) {
                         radii = this._fullBandRadii(n, layer.maxRing);
+                        if (!this._spectrumRingSmooth.high || this._spectrumRingSmooth.high.length !== n) {
+                            this._spectrumRingSmooth.high = radii.slice();
+                        } else {
+                            for (let i = 0; i < n; i++) this._spectrumRingSmooth.high[i] = layer.maxRing;
+                        }
+                    } else {
+                        radii = this._radiiFromSpectrumSmooth(smooth, t, layer.key, layer);
                     }
                     layersL.push({ ...layer, radii });
                     layersR.push({ ...layer, radii: this._mirrorSpectrumRadii(radii) });
@@ -1541,7 +1544,7 @@
                 const span = (outerR - innerR) / layerCount;
                 const zoneInner = innerR + li * span;
                 const zoneOuter = innerR + (li + 1) * span;
-                const petalFloor = 0.1;
+                const petalFloor = layer.key === 'high' ? 0.04 : 0.1;
                 const hue = this._spectrumPetalBaseHue(layer, coreHue);
                 const sat = layer.sat ?? 88;
                 const lit = layer.light ?? 54;
