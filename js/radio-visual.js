@@ -1228,10 +1228,45 @@
 
             static get SPECTRUM_FLOWER_LAYERS() {
                 return [
-                    { key: 'low', layerIndex: 0, phaseBins: 0, hueOff: -42, alpha: 0.5, maxRing: 0.62 },
-                    { key: 'mid', layerIndex: 1, phaseBins: 2.5, hueOff: 58, alpha: 0.58, maxRing: 0.64 },
-                    { key: 'high', layerIndex: 2, phaseBins: 5, hueOff: 128, alpha: 0.72, maxRing: 0.66 }
+                    {
+                        key: 'low',
+                        layerIndex: 0,
+                        phaseBins: 0,
+                        hue: 22,
+                        hueDrift: 70,
+                        sat: 92,
+                        light: 56,
+                        alpha: 0.54,
+                        maxRing: 0.62
+                    },
+                    {
+                        key: 'mid',
+                        layerIndex: 1,
+                        phaseBins: 2.5,
+                        hue: 168,
+                        hueDrift: 65,
+                        sat: 90,
+                        light: 52,
+                        alpha: 0.6,
+                        maxRing: 0.64
+                    },
+                    {
+                        key: 'high',
+                        layerIndex: 2,
+                        phaseBins: 5,
+                        hueOff: 128,
+                        hueDrift: 50,
+                        sat: 88,
+                        light: 50,
+                        alpha: 0.72,
+                        maxRing: 0.66
+                    }
                 ];
+            }
+
+            _spectrumPetalBaseHue(layer, coreHue) {
+                if (typeof layer.hue === 'number') return ((layer.hue % 360) + 360) % 360;
+                return (((Number(coreHue) || 0) + (layer.hueOff || 0)) % 360 + 360) % 360;
             }
 
             _sampleDigitalSpectrumBandLevels(t) {
@@ -1431,7 +1466,10 @@
                 const zoneInner = innerR + li * span;
                 const zoneOuter = innerR + (li + 1) * span;
                 const petalFloor = 0.1;
-                const hue = (((Number(coreHue) || 0) + layer.hueOff) % 360 + 360) % 360;
+                const hue = this._spectrumPetalBaseHue(layer, coreHue);
+                const sat = layer.sat ?? 88;
+                const lit = layer.light ?? 54;
+                const drift = layer.hueDrift ?? 40;
                 ctx.beginPath();
                 for (let i = 0; i <= n; i++) {
                     const ii = i % n;
@@ -1449,13 +1487,26 @@
                     ctx.lineTo(cx + Math.cos(a) * innerPad, cy + Math.sin(a) * innerPad);
                 }
                 ctx.closePath();
-                const petal = ctx.createRadialGradient(cx, cy, zoneInner, cx, cy, zoneOuter);
-                petal.addColorStop(0, `hsla(${hue}, 88%, 58%, ${layer.alpha * 0.55})`);
-                petal.addColorStop(0.55, `hsla(${(hue + 18) % 360}, 92%, 52%, ${layer.alpha})`);
-                petal.addColorStop(1, `hsla(${(hue + 36) % 360}, 85%, 42%, ${layer.alpha * 0.85})`);
-                ctx.fillStyle = petal;
+                const useConic = li < 2 && typeof ctx.createConicGradient === 'function';
+                if (useConic) {
+                    const rim = ctx.createConicGradient(-Math.PI / 2, cx, cy);
+                    const steps = 16;
+                    for (let k = 0; k <= steps; k++) {
+                        const u = k / steps;
+                        const h = (hue + u * drift) % 360;
+                        const a0 = layer.alpha * (0.5 + 0.5 * u);
+                        rim.addColorStop(u, `hsla(${h}, ${sat}%, ${lit}%, ${a0})`);
+                    }
+                    ctx.fillStyle = rim;
+                } else {
+                    const petal = ctx.createRadialGradient(cx, cy, zoneInner, cx, cy, zoneOuter);
+                    petal.addColorStop(0, `hsla(${hue}, ${sat}%, ${lit + 6}%, ${layer.alpha * 0.55})`);
+                    petal.addColorStop(0.55, `hsla(${(hue + drift * 0.35) % 360}, ${sat}%, ${lit}%, ${layer.alpha})`);
+                    petal.addColorStop(1, `hsla(${(hue + drift * 0.7) % 360}, ${sat - 4}%, ${lit - 8}%, ${layer.alpha * 0.85})`);
+                    ctx.fillStyle = petal;
+                }
                 ctx.fill();
-                ctx.strokeStyle = `hsla(${hue}, 90%, 70%, ${layer.alpha * 0.35})`;
+                ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${lit + 14}%, ${layer.alpha * 0.38})`;
                 ctx.lineWidth = 1;
                 ctx.stroke();
             }

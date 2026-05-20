@@ -535,10 +535,12 @@
             opacity: 1;
         }
         #radio-visual-root .radio-visual-digital-spectrum-bg-img {
+            position: absolute;
+            inset: 0;
             display: block;
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: fill;
             object-position: center center;
         }
         #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-spectrum-bg.is-visible) {
