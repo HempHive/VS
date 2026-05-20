@@ -23,6 +23,7 @@
                 this._volMuted = false;
                 this._volUnmuteNorm = 0.5;
                 this._digitalStageClickTimer = null;
+                this._digitalBgGifIdx = 0;
             }
 
             static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
@@ -33,6 +34,12 @@
             static get AUTOMIX_MIN_MIN() { return 1; }
             static get AUTOMIX_MAX_MIN() { return 20; }
             static get AUTOFADE_CHANGE_STATION_KEY() { return 'dj.autofade.changeStation.enabled.v1'; }
+            static get DIGITAL_BG_GIF_DIR() { return 'assets/gifs/digital/'; }
+            /** Background cycle order: dig.gif first, then other gifs in this folder. */
+            static get DIGITAL_BG_GIF_LIST() {
+                return ['dig.gif', 'diga.gif', 'digb.gif', 'digc.gif'];
+            }
+            static get DIGITAL_BG_GIF_STORAGE_KEY() { return 'radioVisual.digitalBgGif.v1'; }
 
             _stopClick(ev) {
                 try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
@@ -56,9 +63,34 @@
                 return false;
             }
 
-            _loadDigitalSpectrumBg(bgEl) {
-                if (!bgEl) return;
-                const url = 'assets/gifs/dig.gif';
+            _digitalBgGifFiles() {
+                const list = RadioVisualEngine.DIGITAL_BG_GIF_LIST;
+                const first = list.filter((f) => f === 'dig.gif');
+                const rest = list.filter((f) => f !== 'dig.gif').sort();
+                return [...first, ...rest];
+            }
+
+            _resolveDigitalBgGifStartIndex(files) {
+                if (!files.length) return 0;
+                try {
+                    const stored = localStorage.getItem(RadioVisualEngine.DIGITAL_BG_GIF_STORAGE_KEY);
+                    const idx = files.indexOf(stored);
+                    if (idx >= 0) return idx;
+                } catch (_) {}
+                return 0;
+            }
+
+            _applyDigitalSpectrumBgFile(filename, idx, trySkipOnError = true) {
+                const bgEl = this.els.spectrumBg;
+                const files = this._digitalBgGifFiles();
+                if (!bgEl || !files.length) return;
+                const i = (typeof idx === 'number' && idx >= 0 && idx < files.length) ? idx : 0;
+                const file = filename || files[i];
+                const url = RadioVisualEngine.DIGITAL_BG_GIF_DIR + file;
+                const prev = bgEl.querySelector('img');
+                if (prev) {
+                    try { prev.remove(); } catch (_) {}
+                }
                 const img = document.createElement('img');
                 img.className = 'radio-visual-digital-spectrum-bg-img';
                 img.alt = '';
@@ -67,12 +99,37 @@
                     try {
                         bgEl.appendChild(img);
                         bgEl.classList.add('is-visible');
+                        this._digitalBgGifIdx = i;
+                        try { localStorage.setItem(RadioVisualEngine.DIGITAL_BG_GIF_STORAGE_KEY, file); } catch (_) {}
                     } catch (_) {}
                 };
                 img.onerror = () => {
-                    try { bgEl.remove(); } catch (_) {}
+                    if (!trySkipOnError || files.length < 2) {
+                        bgEl.classList.remove('is-visible');
+                        return;
+                    }
+                    const next = (i + 1) % files.length;
+                    if (next === i) {
+                        bgEl.classList.remove('is-visible');
+                        return;
+                    }
+                    this._applyDigitalSpectrumBgFile(files[next], next, false);
                 };
                 img.src = url;
+            }
+
+            _initDigitalSpectrumBg() {
+                const files = this._digitalBgGifFiles();
+                if (!this.els.spectrumBg || !files.length) return;
+                const start = this._resolveDigitalBgGifStartIndex(files);
+                this._applyDigitalSpectrumBgFile(files[start], start);
+            }
+
+            _cycleDigitalVisBg() {
+                const files = this._digitalBgGifFiles();
+                if (!this.els.spectrumBg || !files.length) return;
+                const next = (this._digitalBgGifIdx + 1) % files.length;
+                this._applyDigitalSpectrumBgFile(files[next], next);
             }
 
             _loadVisualByName(name) {
@@ -1990,7 +2047,6 @@
                 spectrumRow.appendChild(spectrumSideR);
                 digitalCenterSpectrum.appendChild(spectrumBg);
                 digitalCenterSpectrum.appendChild(spectrumRow);
-                this._loadDigitalSpectrumBg(spectrumBg);
                 const digitalCenterDeckB = document.createElement('div');
                 digitalCenterDeckB.className = 'radio-visual-digital-center-pane';
                 const digitalDeckBMount = document.createElement('div');
@@ -2039,10 +2095,18 @@
                 volUp.className = 'radio-visual-btn radio-visual-digital-step-btn';
                 volUp.textContent = '+';
                 volUp.setAttribute('aria-label', 'Volume up');
+                const btnVis = document.createElement('button');
+                btnVis.type = 'button';
+                btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn';
+                btnVis.dataset.rvDigital = 'vis';
+                btnVis.textContent = 'VIS';
+                btnVis.title = 'Cycle digital background (assets/gifs/digital)';
+                btnVis.setAttribute('aria-label', 'Cycle digital background visual');
                 volGroup.appendChild(volLbl);
                 volGroup.appendChild(volDown);
                 volGroup.appendChild(volDigitalReadout);
                 volGroup.appendChild(volUp);
+                volGroup.appendChild(btnVis);
                 digitalToolbar.appendChild(volGroup);
                 const mkRvDigitalBtn = (act, lab) => {
                     const b = document.createElement('button');
@@ -2114,7 +2178,9 @@
                     crossDigital: crossDig,
                     btnDigitalSpectrum,
                     btnDigitalDeckB,
+                    btnVis,
                     btnXfadeStation,
+                    spectrumBg,
                     digitalCenterSpectrum,
                     digitalCenterDeckB,
                     digitalSpectrumCanvasL,
@@ -2122,6 +2188,7 @@
                     digitalCarDashCanvas,
                     digitalDeckBVideo,
                     volDigitalReadout,
+                    btnVis,
                     digitalClock: dClk,
                     digitalCenter,
                     analogBtns,
@@ -2139,6 +2206,7 @@
                 this._syncDeckSwitches();
                 this._syncAutoFadeChangeStationKnob();
                 this._syncDonutCoreHues();
+                this._initDigitalSpectrumBg();
                 this._updateStationUi();
                 this._tickClock();
 
@@ -2170,6 +2238,7 @@
                         else if (act === 'fade') this._triggerAutoFade();
                         else if (act === 'mix') this._toggleAutoMix();
                         else if (act === 'xfade-station') this._toggleAutoFadeChangeStation();
+                        else if (act === 'vis') this._cycleDigitalVisBg();
                         this._syncDeckSwitches();
                     }, sig);
                 });
