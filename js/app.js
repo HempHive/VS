@@ -3381,6 +3381,8 @@ function exposeAppBindingsToGlobal() {
     try { g.showWebm = showWebm; } catch (_) {}
     try { g.hideWebm = hideWebm; } catch (_) {}
     try { g.loadWebmList = loadWebmList; } catch (_) {}
+    try { g.isWebmOverlayVisible = isWebmOverlayVisible; } catch (_) {}
+    try { g.toggleWebmOverlay = toggleWebmOverlay; } catch (_) {}
     try { g.top = top; } catch (_) {}
     try { g.topBar = topBar; } catch (_) {}
     try { g.topEl = topEl; } catch (_) {}
@@ -3436,9 +3438,13 @@ function exposeAppBindingsToGlobal() {
     try { g.webmDeckBResizeObserver = webmDeckBResizeObserver; } catch (_) {}
     try { g.webmHorizontalIntent = webmHorizontalIntent; } catch (_) {}
     try { g.webmIndex = webmIndex; } catch (_) {}
-    try { g.webmList = webmList; } catch (_) {}
+    try {
+        Object.defineProperty(g, 'webmList', { get: () => webmList, enumerable: true, configurable: true });
+    } catch (_) {}
     try { g.webmNextBtn = webmNextBtn; } catch (_) {}
-    try { g.webmOn = webmOn; } catch (_) {}
+    try {
+        Object.defineProperty(g, 'webmOn', { get: () => webmOn, enumerable: true, configurable: true });
+    } catch (_) {}
     try { g.webmOverlay = webmOverlay; } catch (_) {}
     try { g.webmOverlayEl = webmOverlayEl; } catch (_) {}
     try { g.webmPrevBtn = webmPrevBtn; } catch (_) {}
@@ -3650,74 +3656,22 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             btnDjDecksShortcut.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const loadDjDecksMode = () => {
-                    const load = (typeof globalThis.loadMode === 'function')
-                        ? globalThis.loadMode
-                        : (typeof loadMode === 'function' ? loadMode : null);
-                    const m = globalThis.modes || modes;
-                    if (!Array.isArray(m) || typeof load !== 'function') return;
-                    const idx = m.findIndex((x) => x && x.name === 'DJ Decks');
-                    if (idx >= 0) load(idx);
-                };
+                const loadVis = (typeof globalThis.loadMode === 'function')
+                    ? globalThis.loadMode
+                    : (typeof loadMode === 'function' ? loadMode : null);
+                const m = globalThis.modes || modes;
+                if (!Array.isArray(m) || typeof loadVis !== 'function') return;
+                const radioIdx = m.findIndex((x) => x && (x.name === 'Radio' || x.name === 'Radio Visual'));
+                const djIdx = m.findIndex((x) => x && x.name === 'DJ Decks');
+                const visName = state.activeVisualizer && state.activeVisualizer.name;
                 try {
-                    const visName = state.activeVisualizer && state.activeVisualizer.name;
-                    if (visName && visName !== 'DJ Decks') {
-                        loadDjDecksMode();
+                    if (visName === 'DJ Decks') {
+                        if (radioIdx >= 0) loadVis(radioIdx);
                         resetIdleTimer();
                         return;
                     }
-                    const onDj = !!(state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks');
-                    const deckBVisualActive = !!(
-                        onDj &&
-                        state.activeVisualizer &&
-                        (state.activeVisualizer.deckBVizMode === 'bars' ||
-                         state.activeVisualizer.deckBVizMode === 'projectm' ||
-                         state.activeVisualizer.deckBVizMode === 'blank' ||
-                         state.activeVisualizer.deckBVizMode === 'video' ||
-                         state.activeVisualizer.deckBVizMode === 'karaoke' ||
-                         state.activeVisualizer.deckBVizMode === 'kbop' ||
-                         state.activeVisualizer.deckBQueueVisible ||
-                         state.activeVisualizer.deckBMediaPanelVisible)
-                    );
-                    const deckBTextActive = (() => {
-                        try {
-                            if (typeof getDeckBStageEl !== 'function') return false;
-                            const stage = getDeckBStageEl();
-                            return !!(stage && stage.classList.contains('dj-deck-b-text-mode'));
-                        } catch (_) { return false; }
-                    })();
-                    if (onDj && deckBTextActive) {
-                        try { if (typeof setTextAuto === 'function') setTextAuto(false); } catch (_) {}
-                        try { if (typeof setDeckBTextMode === 'function') setDeckBTextMode(false); } catch (_) {}
-                        try {
-                            const tip = document.getElementById('textin-panel');
-                            if (tip) delete tip.dataset.textTarget;
-                            const panelOpen = !!(tip && !tip.classList.contains('display-none') && tip.classList.contains('open'));
-                            if (panelOpen && typeof hideTextInPanel === 'function') {
-                                hideTextInPanel({ forceCloseDeckB: true });
-                            }
-                        } catch (_) {}
-                        try { if (typeof syncDjTextInDeckLights === 'function') syncDjTextInDeckLights(); } catch (_) {}
-                        resetIdleTimer();
-                        return;
-                    }
-                    if (deckBVisualActive) {
-                        try { if (state.activeVisualizer.deckBQueueVisible && typeof state.activeVisualizer.hideDeckBQueueView === 'function') state.activeVisualizer.hideDeckBQueueView(); } catch (_) {}
-                        try { if (state.activeVisualizer.deckBMediaPanelVisible && typeof state.activeVisualizer.hideDeckBMediaView === 'function') state.activeVisualizer.hideDeckBMediaView(); } catch (_) {}
-                        if (typeof state.activeVisualizer.tearDownDeckBViz === 'function') {
-                            state.activeVisualizer.tearDownDeckBViz();
-                        }
-                        if (typeof state.activeVisualizer.syncDeckBVisualButtons === 'function') {
-                            state.activeVisualizer.syncDeckBVisualButtons();
-                        }
-                        if (typeof state.activeVisualizer.updateStationTitles === 'function') {
-                            state.activeVisualizer.updateStationTitles();
-                        }
-                        resetIdleTimer();
-                        return;
-                    }
+                    if (djIdx >= 0) loadVis(djIdx);
                 } catch (_) {}
-                loadDjDecksMode();
                 resetIdleTimer();
             });
         }
@@ -5889,6 +5843,34 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             // stop auto when hidden
             cancelWebmAuto();
             try { updateAvatarPlayButton(); } catch(_) {}
+        }
+
+        function isWebmOverlayVisible() {
+            try {
+                return !!(webmOverlayEl && !webmOverlayEl.classList.contains('display-none'));
+            } catch (_) {
+                return !!webmOn;
+            }
+        }
+
+        function toggleWebmOverlay(opts) {
+            try {
+                if (uiLocked) return;
+                if (isWebmOverlayVisible()) {
+                    hideWebm();
+                    return;
+                }
+                const open = () => {
+                    try {
+                        if (opts && opts.deckBCenter) showWebm({ deckBCenter: true });
+                        else showWebm();
+                    } catch (_) {}
+                };
+                if (!webmList.length && typeof loadWebmList === 'function') {
+                    return loadWebmList().finally(open);
+                }
+                open();
+            } catch (_) {}
         }
 
         function setWebm(index) {

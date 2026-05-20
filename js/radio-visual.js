@@ -707,65 +707,103 @@
                 return !!(media && media.src && media.src !== 'about:blank');
             }
 
-            async _toggleDeckA() {
-                try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+            _deckEngCancelAutoFade() {
                 try {
                     const eng = state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks'
                         ? state.activeVisualizer : null;
-                    try {
-                        if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
-                    } catch (_) {}
-                    const media = (typeof getDeckAMediaForPlaybackState === 'function')
-                        ? getDeckAMediaForPlaybackState()
-                        : audioEl;
-                    if (!media || !this._deckHasSource(media)) {
-                        try {
-                            if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') {
-                                eng.clearSuppressEnsureCrossfadeDeckPlayback();
-                            }
-                        } catch (_) {}
-                        if (typeof playRadio === 'function') playRadio();
-                        return;
-                    }
-                    if (media.paused) {
-                        try {
-                            if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') {
-                                eng.clearSuppressEnsureCrossfadeDeckPlayback();
-                            }
-                        } catch (_) {}
-                        await media.play().catch(() => {
-                            try { if (typeof playRadio === 'function') playRadio(); } catch (_) {}
-                        });
-                    } else {
-                        try {
-                            if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') {
-                                eng.clearSuppressEnsureCrossfadeDeckPlayback();
-                            }
-                        } catch (_) {}
-                        media.pause();
+                    if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
+                } catch (_) {}
+            }
+
+            _deckEngClearSuppress() {
+                try {
+                    const eng = state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks'
+                        ? state.activeVisualizer : null;
+                    if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') {
+                        eng.clearSuppressEnsureCrossfadeDeckPlayback();
                     }
                 } catch (_) {}
             }
 
-            async _toggleDeckB() {
+            async _startDeckA() {
                 try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
                 try {
-                    const eng = state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks'
-                        ? state.activeVisualizer : null;
-                    try {
-                        if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
-                    } catch (_) {}
-                    if (!audioElB || !this._deckHasSource(audioElB) || audioElB.paused) {
-                        try {
-                            if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') {
-                                eng.clearSuppressEnsureCrossfadeDeckPlayback();
-                            }
-                        } catch (_) {}
-                        if (typeof playRadioB === 'function') playRadioB();
-                    } else {
-                        audioElB.pause();
+                    this._deckEngCancelAutoFade();
+                    const media = (typeof getDeckAMediaForPlaybackState === 'function')
+                        ? getDeckAMediaForPlaybackState()
+                        : audioEl;
+                    if (!media || !this._deckHasSource(media)) {
+                        this._deckEngClearSuppress();
+                        if (typeof playRadio === 'function') playRadio();
+                        return;
+                    }
+                    if (media.paused) {
+                        this._deckEngClearSuppress();
+                        await media.play().catch(() => {
+                            try { if (typeof playRadio === 'function') playRadio(); } catch (_) {}
+                        });
                     }
                 } catch (_) {}
+            }
+
+            async _stopDeckA() {
+                try {
+                    this._deckEngCancelAutoFade();
+                    this._deckEngClearSuppress();
+                    const media = (typeof getDeckAMediaForPlaybackState === 'function')
+                        ? getDeckAMediaForPlaybackState()
+                        : audioEl;
+                    if (media && !media.paused) media.pause();
+                } catch (_) {}
+            }
+
+            async _startDeckB() {
+                try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                try {
+                    this._deckEngCancelAutoFade();
+                    if (!audioElB || !this._deckHasSource(audioElB) || audioElB.paused) {
+                        this._deckEngClearSuppress();
+                        if (typeof playRadioB === 'function') playRadioB();
+                    }
+                } catch (_) {}
+            }
+
+            async _stopDeckB() {
+                try {
+                    this._deckEngCancelAutoFade();
+                    this._deckEngClearSuppress();
+                    if (audioElB && !audioElB.paused) audioElB.pause();
+                } catch (_) {}
+            }
+
+            async _toggleDeckA() {
+                if (this._deckAActive()) await this._stopDeckA();
+                else await this._startDeckA();
+            }
+
+            async _toggleDeckB() {
+                if (this._deckBActive()) await this._stopDeckB();
+                else await this._startDeckB();
+            }
+
+            async _deckKnobTap(deck) {
+                const on = deck === 'a' ? this._deckAActive() : this._deckBActive();
+                if (!on) {
+                    if (deck === 'a') await this._startDeckA();
+                    else await this._startDeckB();
+                } else if (deck === 'a') {
+                    this._stationRand();
+                } else {
+                    this._stationBRand();
+                }
+            }
+
+            async _deckKnobLongPress(deck) {
+                if (deck === 'a') {
+                    if (this._deckAActive()) await this._stopDeckA();
+                } else if (this._deckBActive()) {
+                    await this._stopDeckB();
+                }
             }
 
             _syncDeckSwitches() {
@@ -1201,6 +1239,9 @@
                 knobEl.classList.add(deck === 'a' ? 'radio-visual-knob--deck-a' : 'radio-visual-knob--deck-b');
                 knobEl.setAttribute('role', 'slider');
                 knobEl.tabIndex = 0;
+                const deckLabel = deck === 'a' ? 'Deck A' : 'Deck B';
+                knobEl.setAttribute('aria-label',
+                    `${deckLabel}; tap to start or random station when playing, hold to stop`);
                 this._wirePointerKnob(knobEl, {
                     get: () => (deck === 'a' ? this._needlePercentA() : this._needlePercentB()) / 100,
                     set: (t) => {
@@ -1213,8 +1254,11 @@
                     }
                 }, {
                     onTap: async () => {
-                        if (deck === 'a') await this._toggleDeckA();
-                        else await this._toggleDeckB();
+                        await this._deckKnobTap(deck);
+                        this._syncDeckSwitches();
+                    },
+                    onLongPress: async () => {
+                        await this._deckKnobLongPress(deck);
                         this._syncDeckSwitches();
                     }
                 });
@@ -1491,19 +1535,7 @@
                     { label: 'Mixer', fn: () => { try { g.toggleMixPanel?.(); } catch (_) {} } },
                     { label: 'Avatar', fn: () => {
                         try {
-                            if (g.uiLocked) return;
-                            if (g.webmOn && typeof g.hideWebm === 'function') g.hideWebm();
-                            else if (typeof g.showWebm === 'function') {
-                                if (!g.webmList?.length && typeof g.loadWebmList === 'function') {
-                                    g.loadWebmList().finally(() => {
-                                        try {
-                                            if (g.webmList?.length) g.showWebm();
-                                        } catch (_) {}
-                                    });
-                                } else if (g.webmList?.length) {
-                                    g.showWebm();
-                                }
-                            }
+                            if (typeof g.toggleWebmOverlay === 'function') g.toggleWebmOverlay();
                         } catch (_) {}
                     }},
                     { label: 'Text-In', fn: () => {
@@ -1591,23 +1623,45 @@
                 if (!knobEl) return;
                 let active = false;
                 let moved = false;
+                let longPressHandled = false;
+                let longPressTimer = null;
                 let startY = 0;
                 let startVal = 0;
                 const tapSlop = 4;
+                const longPressMs = (opts && opts.longPressMs) || 500;
+                const clearLongPress = () => {
+                    if (longPressTimer) {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                };
                 const onDown = (ev) => {
                     this._stopClick(ev);
                     active = true;
                     moved = false;
+                    longPressHandled = false;
+                    clearLongPress();
                     startY = ev.clientY;
                     startVal = onValue.get();
                     if (opts && opts.onDragStart) {
                         try { opts.onDragStart(); } catch (_) {}
                     }
+                    if (opts && opts.onLongPress) {
+                        longPressTimer = setTimeout(() => {
+                            longPressTimer = null;
+                            longPressHandled = true;
+                            moved = true;
+                            try { opts.onLongPress(); } catch (_) {}
+                        }, longPressMs);
+                    }
                     try { knobEl.setPointerCapture(ev.pointerId); } catch (_) {}
                 };
                 const onMove = (ev) => {
                     if (!active) return;
-                    if (Math.abs(ev.clientY - startY) > tapSlop) moved = true;
+                    if (Math.abs(ev.clientY - startY) > tapSlop) {
+                        moved = true;
+                        clearLongPress();
+                    }
                     if (!moved) return;
                     onValue.set(Math.max(0, Math.min(1, startVal + (startY - ev.clientY) * 0.004)));
                 };
@@ -1615,10 +1669,12 @@
                     if (!active) return;
                     active = false;
                     this._stopClick(ev);
+                    clearLongPress();
                     try { knobEl.releasePointerCapture(ev.pointerId); } catch (_) {}
-                    if (!moved && opts && opts.onTap) {
+                    if (!moved && !longPressHandled && opts && opts.onTap) {
                         try { opts.onTap(); } catch (_) {}
                     }
+                    longPressHandled = false;
                 };
                 knobEl.addEventListener('pointerdown', onDown, { signal: this.abortCtrl.signal });
                 knobEl.addEventListener('pointermove', onMove, { signal: this.abortCtrl.signal });
@@ -1737,9 +1793,9 @@
                 volKnob.setAttribute('role', 'slider');
                 volKnob.classList.add('radio-visual-knob--switch', 'radio-visual-knob--vol-mute');
                 volKnob.setAttribute('aria-label', 'Volume; drag to adjust, tap to mute or unmute');
-                const deckAKnob = mkControlKnob('radio-visual-deck-a-knob', 'Deck A play / pause');
+                const deckAKnob = mkControlKnob('radio-visual-deck-a-knob', 'Deck A');
                 deckAKnob.classList.add('radio-visual-knob--deck-a');
-                const deckBKnob = mkControlKnob('radio-visual-deck-b-knob', 'Deck B play / pause');
+                const deckBKnob = mkControlKnob('radio-visual-deck-b-knob', 'Deck B');
                 deckBKnob.classList.add('radio-visual-knob--deck-b');
                 const crossKnob = mkControlKnob('radio-visual-cross-knob', 'Cross-fade between decks');
                 const autoFadeKnob = mkControlKnob('radio-visual-autofade-knob', 'Auto-fade');
