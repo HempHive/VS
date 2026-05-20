@@ -734,23 +734,6 @@
                 return this._isSpectrumAudioActive();
             }
 
-            _highBandEnergy(highLevels) {
-                if (!highLevels || !highLevels.length) return 0;
-                let peak = 0;
-                for (let i = 0; i < highLevels.length; i++) {
-                    peak = Math.max(peak, highLevels[i] || 0);
-                }
-                return peak;
-            }
-
-            _isHighSpectrumRibbonMode(sampled) {
-                if (this._isSpectrumAudioActive()) return true;
-                if (sampled && sampled.fromAnalyser && this._highBandEnergy(sampled.high) > 0.018) {
-                    return true;
-                }
-                return false;
-            }
-
             _digitalLcdPrimaryLine() {
                 if (!this._isAudiblePlaybackActive()) return 'DIGITAL TUNER';
                 const name = this._audibleDeckStationName();
@@ -1309,8 +1292,7 @@
                 return out;
             }
 
-            _unifySpectrumRibbonSeam(radii, bandKey) {
-                if (bandKey === 'high') return radii;
+            _unifySpectrumRibbonSeam(radii) {
                 return this._blendSpectrumCircularEnds(radii, 8);
             }
 
@@ -1426,7 +1408,7 @@
                         const len = this._vuBuf.length;
                         const lowEnd = Math.floor(len * 0.33);
                         const midEnd = Math.floor(len * 0.66);
-                        const highStart = Math.floor(len * 0.82);
+                        const highStart = Math.floor(len * 0.58);
                         out.low = this._sampleBandFromFftRange(this._vuBuf, 0, lowEnd, n);
                         out.mid = this._sampleBandFromFftRange(this._vuBuf, lowEnd, midEnd, n);
                         out.high = this._sampleBandFromFftRange(this._vuBuf, highStart, len, n);
@@ -1497,42 +1479,18 @@
             _radiiFromSpectrumSmooth(smooth, t, bandKey, layerOpts) {
                 const n = smooth.length;
                 const maxRing = layerOpts.maxRing ?? 0.64;
-                const floor = bandKey === 'high' ? 0.06 : 0.04;
+                const floor = 0.04;
                 const target = [];
-                if (bandKey === 'high') {
-                    let mn = Infinity;
-                    let mx = 0;
-                    let mean = 0;
-                    for (let i = 0; i < n; i++) {
-                        const v = smooth[i] || 0;
-                        mean += v;
-                        if (v < mn) mn = v;
-                        if (v > mx) mx = v;
-                    }
-                    mean /= Math.max(1, n);
-                    const span = Math.max(0.008, mx - mn);
-                    const innerMax = maxRing * 0.95;
-                    const innerMin = maxRing * 0.08;
-                    const boost = span * 1.35;
-                    for (let i = 0; i < n; i++) {
-                        let raw = ((smooth[i] || 0) - mn) / span;
-                        raw += Math.min(0.45, Math.abs((smooth[i] || 0) - mean) / span * boost);
-                        raw = Math.pow(Math.min(1, Math.max(0, raw)), 0.92);
-                        const shaped = innerMin + (innerMax - innerMin) * raw;
-                        target.push(shaped);
-                    }
-                } else {
-                    const sorted = smooth.slice().sort((a, b) => a - b);
-                    const p78 = sorted[Math.min(n - 1, Math.floor(n * 0.78))] || 0.001;
-                    const norm = 1 / Math.max(0.05, p78);
-                    const gain = 0.76;
-                    const gamma = 1.26;
-                    for (let i = 0; i < n; i++) {
-                        const raw = Math.min(1, (smooth[i] || 0) * norm * gain);
-                        let shaped = Math.pow(raw, gamma);
-                        shaped += 0.005 * Math.sin(t * 1.85 + i * 0.11 + layerOpts.layerIndex * 0.9);
-                        target.push(Math.min(maxRing, Math.max(floor, shaped)));
-                    }
+                const sorted = smooth.slice().sort((a, b) => a - b);
+                const p78 = sorted[Math.min(n - 1, Math.floor(n * 0.78))] || 0.001;
+                const norm = 1 / Math.max(0.05, p78);
+                const gain = bandKey === 'high' ? 0.88 : 0.76;
+                const gamma = bandKey === 'high' ? 1.12 : 1.26;
+                for (let i = 0; i < n; i++) {
+                    const raw = Math.min(1, (smooth[i] || 0) * norm * gain);
+                    let shaped = Math.pow(raw, gamma);
+                    shaped += 0.005 * Math.sin(t * 1.85 + i * 0.11 + layerOpts.layerIndex * 0.9);
+                    target.push(Math.min(maxRing, Math.max(floor, shaped)));
                 }
                 if (!this._spectrumRingSmooth[bandKey] || this._spectrumRingSmooth[bandKey].length !== n) {
                     this._spectrumRingSmooth[bandKey] = target.slice();
@@ -1549,7 +1507,7 @@
                     smoothState[i] = next;
                     radii.push(next);
                 }
-                return this._unifySpectrumRibbonSeam(radii, bandKey);
+                return this._unifySpectrumRibbonSeam(radii);
             }
 
             _mirrorSpectrumRadii(radii) {
@@ -1564,14 +1522,14 @@
                 const layersL = [];
                 const layersR = [];
                 const smoothMix = [];
-                const highRibbon = this._isHighSpectrumRibbonMode(sampled);
+                const spectrumActive = this._isSpectrumAudioActive();
                 let lowSmoothForHue = null;
                 for (const layer of RadioVisualEngine.SPECTRUM_FLOWER_LAYERS) {
                     const levels = sampled[layer.key] || [];
                     const smooth = this._smoothSpectrumBandLevels(levels, sampled.fromAnalyser);
                     if (layer.key === 'low') lowSmoothForHue = smooth;
                     let radii;
-                    if (layer.key === 'high' && !highRibbon) {
+                    if (layer.key === 'high' && !spectrumActive) {
                         radii = this._fullBandRadii(n, layer.maxRing);
                         if (!this._spectrumRingSmooth.high || this._spectrumRingSmooth.high.length !== n) {
                             this._spectrumRingSmooth.high = radii.slice();
@@ -1582,16 +1540,10 @@
                         radii = this._radiiFromSpectrumSmooth(smooth, t, layer.key, layer);
                     }
                     const bassLevel = layer.key === 'low' ? this._bassLevelFromSmooth(smooth) : 0;
-                    layersL.push({
-                        ...layer,
-                        radii,
-                        ribbonActive: layer.key === 'high' ? highRibbon : true,
-                        bassLevel
-                    });
+                    layersL.push({ ...layer, radii, bassLevel });
                     layersR.push({
                         ...layer,
                         radii: this._mirrorSpectrumRadii(radii),
-                        ribbonActive: layer.key === 'high' ? highRibbon : true,
                         bassLevel
                     });
                     for (let i = 0; i < n; i++) smoothMix[i] = (smoothMix[i] || 0) + (smooth[i] || 0);
@@ -1645,91 +1597,14 @@
                 return ((ii + 0.5) / n) * Math.PI * 2 - Math.PI / 2 + phase;
             }
 
-            /** Inner (high) ring: audio-driven wedges — no disk conic (avoids static green–purple band). */
-            _fillHighSpectrumPetal(ctx, cx, cy, innerR, outerR, radii, n, layer) {
-                const span = (outerR - innerR) / 3;
-                const zoneInner = innerR;
-                const zoneOuter = innerR + span;
-                const innerPad = zoneInner + span * 0.06;
-                const maxRing = layer.maxRing || 0.66;
-                const petalFloor = 0.04;
-                const hue = this._spectrumPetalBaseHue(layer, 175);
-                const sat = layer.sat ?? 90;
-                const alpha = layer.alpha ?? 0.62;
-                let rMin = Infinity;
-                let rMax = -Infinity;
-                for (let i = 0; i < n; i++) {
-                    const rv = radii[i] ?? 0;
-                    if (rv < rMin) rMin = rv;
-                    if (rv > rMax) rMax = rv;
-                }
-                const rSpan = rMax - rMin;
-                const ribbon = !!layer.ribbonActive;
-                const fullRing = !ribbon || rSpan < maxRing * 0.004;
-                const denom = Math.max(rSpan, maxRing * 0.012);
-                const drawOne = (i0, i1) => {
-                    const a0 = this._spectrumAngle(i0, n, layer.phaseBins);
-                    const a1 = this._spectrumAngle(i1, n, layer.phaseBins);
-                    const n0 = fullRing ? 1 : petalFloor + (1 - petalFloor) * ((radii[i0] - rMin) / denom);
-                    const n1 = fullRing ? 1 : petalFloor + (1 - petalFloor) * ((radii[i1] - rMin) / denom);
-                    const r0 = zoneInner + (zoneOuter - zoneInner) * n0;
-                    const r1 = zoneInner + (zoneOuter - zoneInner) * n1;
-                    const lit0 = 48 + n0 * 14;
-                    const lit1 = 48 + n1 * 14;
-                    const aFill0 = alpha * (0.42 + n0 * 0.5);
-                    const aFill1 = alpha * (0.42 + n1 * 0.5);
-                    ctx.beginPath();
-                    ctx.moveTo(cx + Math.cos(a0) * innerPad, cy + Math.sin(a0) * innerPad);
-                    ctx.lineTo(cx + Math.cos(a0) * r0, cy + Math.sin(a0) * r0);
-                    ctx.lineTo(cx + Math.cos(a1) * r1, cy + Math.sin(a1) * r1);
-                    ctx.lineTo(cx + Math.cos(a1) * innerPad, cy + Math.sin(a1) * innerPad);
-                    ctx.closePath();
-                    const g = ctx.createLinearGradient(
-                        cx + Math.cos(a0) * r0, cy + Math.sin(a0) * r0,
-                        cx + Math.cos(a1) * r1, cy + Math.sin(a1) * r1
-                    );
-                    g.addColorStop(0, `hsla(${hue}, ${sat}%, ${lit0}%, ${aFill0})`);
-                    g.addColorStop(1, `hsla(${hue}, ${sat}%, ${lit1}%, ${aFill1})`);
-                    ctx.fillStyle = g;
-                    ctx.fill();
-                };
-                for (let i = 0; i < n; i++) {
-                    const i1 = (i + 1) % n;
-                    drawOne(i, i1);
-                }
-                ctx.strokeStyle = `hsla(${hue}, ${sat}%, 68%, ${alpha * 0.28})`;
-                ctx.lineWidth = 0.75;
-                for (let i = 0; i < n; i++) {
-                    const a = this._spectrumAngle(i, n, layer.phaseBins);
-                    const norm = fullRing ? 1 : petalFloor + (1 - petalFloor) * ((radii[i] - rMin) / denom);
-                    const r = zoneInner + (zoneOuter - zoneInner) * norm;
-                    ctx.beginPath();
-                    ctx.moveTo(cx + Math.cos(a) * innerPad, cy + Math.sin(a) * innerPad);
-                    ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
-                    ctx.stroke();
-                }
-            }
-
             _fillDigitalSpectrumPetal(ctx, cx, cy, innerR, outerR, radii, n, layer, coreHue, t) {
-                if (layer.key === 'high') {
-                    this._fillHighSpectrumPetal(ctx, cx, cy, innerR, outerR, radii, n, layer);
-                    return;
-                }
                 const li = layer.layerIndex;
                 const layerCount = 3;
                 const span = (outerR - innerR) / layerCount;
                 const zoneInner = innerR + li * span;
                 const zoneOuter = innerR + (li + 1) * span;
-                const petalFloor = layer.key === 'high' ? 0.04 : 0.1;
+                const petalFloor = 0.1;
                 const maxRing = layer.maxRing || 0.64;
-                let rMin = Infinity;
-                let rMax = -Infinity;
-                for (let i = 0; i < n; i++) {
-                    const rv = radii[i] ?? 0;
-                    if (rv < rMin) rMin = rv;
-                    if (rv > rMax) rMax = rv;
-                }
-                const rSpan = rMax - rMin;
                 const hue = this._spectrumPetalBaseHue(layer, coreHue);
                 const sat = layer.sat ?? 88;
                 const lit = layer.light ?? 54;
@@ -1738,16 +1613,7 @@
                 for (let i = 0; i <= n; i++) {
                     const ii = i % n;
                     const a = this._spectrumAngle(ii, n, layer.phaseBins);
-                    let norm;
-                    if (layer.key === 'high') {
-                        if (!layer.ribbonActive || rSpan < maxRing * 0.03) {
-                            norm = 1;
-                        } else {
-                            norm = petalFloor + (1 - petalFloor) * ((radii[ii] - rMin) / rSpan);
-                        }
-                    } else {
-                        norm = Math.min(1, Math.max(petalFloor, radii[ii] / maxRing));
-                    }
+                    const norm = Math.min(1, Math.max(petalFloor, radii[ii] / maxRing));
                     const r = zoneInner + (zoneOuter - zoneInner) * norm;
                     const x = cx + Math.cos(a) * r;
                     const y = cy + Math.sin(a) * r;
@@ -1762,7 +1628,7 @@
                 ctx.closePath();
                 const canConic = typeof ctx.createConicGradient === 'function';
                 const useOuterPalette = layer.key === 'low' && canConic;
-                const useConic = (layer.key === 'mid' || useOuterPalette) && canConic;
+                const useConic = (layer.key === 'high' || layer.key === 'mid' || useOuterPalette) && canConic;
                 if (useConic) {
                     const rim = ctx.createConicGradient(-Math.PI / 2, cx, cy);
                     const steps = useOuterPalette ? 20 : 16;
@@ -1815,7 +1681,7 @@
                 }
                 ctx.lineJoin = 'round';
                 ctx.lineCap = 'round';
-                const ordered = layers.slice().sort((a, b) => b.layerIndex - a.layerIndex);
+                const ordered = layers.slice().sort((a, b) => a.layerIndex - b.layerIndex);
                 const tDraw = typeof drawT === 'number' ? drawT : performance.now() * 0.001;
                 for (const layer of ordered) {
                     if (!layer.radii || !layer.radii.length) continue;
