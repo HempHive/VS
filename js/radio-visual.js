@@ -2009,8 +2009,8 @@
                 mkRvStationBtn('prev', 'B◀', 'b');
                 mkRvStationBtn('next', 'B▶', 'b');
                 mkRvStationBtn('rand', 'B Rand', 'b');
-                dPanel.appendChild(digBtns);
                 dPanel.appendChild(digitalCenter);
+                dPanel.appendChild(digBtns);
                 dPanel.appendChild(digitalToolbar);
                 stageD.appendChild(dPanel);
 

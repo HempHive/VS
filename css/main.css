@@ -4,10 +4,9 @@
             --ui-bottom-hud-inner: clamp(46px, 5.6vh, 70px);
             --ui-bottom-hud-clearance: calc(var(--ui-bottom-hud-inner) + env(safe-area-inset-bottom, 0px));
         }
-		/* Tiled start-screen GIF: hidden until load/decode, then fades in over 3s
-		   (see ensurePtaGifLoaded / fadeInPtaStartBg). The transition only runs
-		   after the load/decode promise resolves, so the user sees a clean
-		   black → tiled-gif ramp rather than a half-baked first frame. */
+		/* Tiled start-screen GIF: hidden until load/decode, then fades in over 1.2s
+		   (see revealStartScreenAfterAssets). The transition only runs after all
+		   start GIFs resolve, so the user sees a clean black → tiled-gif ramp. */
 		#pta-start-bg {
 			position: fixed;
 			inset: 0;
@@ -19,7 +18,7 @@
 			background-position: top left;
 			background-size: auto;
 			opacity: 0;
-			transition: opacity 3s ease-in-out;
+			transition: opacity 1.2s ease-in-out;
 			will-change: opacity;
 		}
 		#pta-start-bg.pta-visible {
@@ -141,7 +140,7 @@
 			font-size: clamp(96px, 18vw, 280px); /* doubled size */
 			text-shadow: 0 0 20px rgba(255,255,255,0.15), 0 0 24px var(--glowColor, rgba(102,204,255,0.6)), 0 0 48px var(--glowColor, rgba(102,204,255,0.35));
 			opacity: 0;
-			transition: opacity 3s ease-in-out;
+			transition: opacity 1.2s ease-in-out;
 			will-change: opacity;
 		}
 		#logo-omni.pat-revealed {
@@ -149,7 +148,7 @@
 		}
 		/* Per-letter pattern fill. pat.gif is preloaded in <head>; the parent
 		   #logo-omni stays hidden until the gif decodes, then the whole word
-		   ("OMNI>" + clipped pat.gif texture + caret) fades in together over 3s.
+		   ("OMNI>" + clipped pat.gif texture + caret) fades in together over 1.2s.
 		   Keeping the letters themselves at opacity:1 avoids the ">" caret pulse
 		   fighting a per-letter opacity transition. */
 		#logo-omni .logo-letter {
@@ -217,7 +216,7 @@
 		   the 0% keyframe (which otherwise wins over our base .logo-letter
 		   `opacity: 0` and made `>` appear before the rest of the word). */
 		#logo-omni.pat-revealed .logo-letter.logo-start {
-			animation: omniCaretPulse 1.15s ease-in-out 3s infinite;
+			animation: omniCaretPulse 1.15s ease-in-out 1.2s infinite;
 		}
 		@keyframes omniCaretPulse {
 			0%, 100% {

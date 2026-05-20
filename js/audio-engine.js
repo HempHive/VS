@@ -878,16 +878,6 @@
 				logo.classList.add('logo-animate');
 				// ensure persistent glow pulse is active
 				logo.classList.add('logo-glow');
-				// Wait for pat.gif decode before flipping the .pat-revealed class,
-				// so the 3s opacity transition on #logo-omni eases the whole logo
-				// in together instead of letting OMNI and ">" arrive separately.
-				try {
-					ensurePatGifLoaded().then(() => {
-						requestAnimationFrame(() => {
-							try { logo.classList.add('pat-revealed'); } catch (_) {}
-						});
-					});
-				} catch (_) {}
 			}
 		}
 		function applyOverlayGlowAndLogo() {
@@ -899,13 +889,13 @@
 			overlay.classList.remove('hidden');
 			overlay.style.display = 'flex';
 			try {
-				const logo = document.getElementById('logo-omni');
-				if (logo) logo.classList.remove('pat-revealed');
+				if (typeof resetStartScreenReveal === 'function') resetStartScreenReveal();
 			} catch (_) {}
 			try { applyOverlayLogoFx(); } catch (_) {}
-            // Restore tiled background for start screen
-            try { fadeInPtaStartBg(); } catch (_) {}
-			revealStartScreenEdgeFx();
+            // Restore tiled background, logo, and tap.gif border once all start GIFs decode
+            try { revealStartScreenAfterAssets(); } catch (_) {
+				try { fadeInPtaStartBg(); } catch (_) {}
+			}
 			// Hide quick radio button on start page
 			if (typeof radioQuickBtn !== 'undefined' && radioQuickBtn) {
 				radioQuickBtn.style.display = 'none';
@@ -941,14 +931,10 @@
             overlay.style.display = 'none';
 			overlay.classList.remove('glow-on');
 			try {
-				const logo = document.getElementById('logo-omni');
-				if (logo) logo.classList.remove('pat-revealed');
+				if (typeof resetStartScreenReveal === 'function') resetStartScreenReveal();
 			} catch (_) {}
             try { cancelStartTextLoop(); } catch(e) {}
 			if (overlayGlowColorTimer) { try { clearInterval(overlayGlowColorTimer); } catch(e) {} overlayGlowColorTimer = null; }
-			// Hide full-screen border frame
-			const border = document.getElementById('border-frame');
-			if (border) border.classList.remove('visible');
             setStartControlsEnabled(false);
         }
 		// Apply initial glow/shimmer on first startup if overlay is visible
@@ -963,10 +949,9 @@
 
 				try { applyOverlayLogoFx(); } catch(e) {}
 
-				try { fadeInPtaStartBg(); } catch(e) {}
-
-				// tap.gif frame + coloured edge glow only after tap.gif is loaded/decoded
-				revealStartScreenEdgeFx();
+				try { revealStartScreenAfterAssets(); } catch(e) {
+					try { fadeInPtaStartBg(); } catch(_) {}
+				}
 
 				// Ensure radio quick button is hidden on the start screen
 				try {
@@ -1990,3 +1975,5 @@ function stopAllAndShowStart() {
 	}
     showOverlay();
 }
+        try { globalThis.applyOverlayGlowFx = applyOverlayGlowFx; } catch (_) {}
+        try { globalThis.applyOverlayLogoFx = applyOverlayLogoFx; } catch (_) {}

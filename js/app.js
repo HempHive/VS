@@ -1653,17 +1653,54 @@ const QUALITY = {
 			});
 			return patGifLoadPromise;
 		}
-		function fadeInPtaStartBg() {
-			const el = document.getElementById('pta-start-bg');
-			if (!el) return;
-			el.classList.remove('pta-visible');
-			ensurePtaGifLoaded().then(() => {
+		let startScreenRevealPromise = null;
+		function resetStartScreenReveal() {
+			startScreenRevealPromise = null;
+			try {
+				const pta = document.getElementById('pta-start-bg');
+				if (pta) pta.classList.remove('pta-visible');
+			} catch (_) {}
+			try {
+				const logo = document.getElementById('logo-omni');
+				if (logo) logo.classList.remove('pat-revealed');
+			} catch (_) {}
+			try {
+				const border = document.getElementById('border-frame');
+				if (border) border.classList.remove('visible');
+			} catch (_) {}
+		}
+		/** Fade in pta/tap/pat start visuals together once all three GIFs have decoded. */
+		function revealStartScreenAfterAssets() {
+			if (startScreenRevealPromise) return startScreenRevealPromise;
+			startScreenRevealPromise = Promise.all([
+				ensureTapGifLoaded(),
+				ensurePtaGifLoaded(),
+				ensurePatGifLoaded()
+			]).then(() => {
 				requestAnimationFrame(() => {
+					if (!isStartOverlayShowing()) return;
 					try {
-						el.classList.add('pta-visible');
+						const pta = document.getElementById('pta-start-bg');
+						if (pta) pta.classList.add('pta-visible');
+					} catch (_) {}
+					try {
+						const logo = document.getElementById('logo-omni');
+						if (logo) logo.classList.add('pat-revealed');
+					} catch (_) {}
+					try {
+						const border = document.getElementById('border-frame');
+						if (border) border.classList.add('visible');
+					} catch (_) {}
+					try {
+						const glow = globalThis.applyOverlayGlowFx;
+						if (typeof glow === 'function') glow();
 					} catch (_) {}
 				});
 			});
+			return startScreenRevealPromise;
+		}
+		function fadeInPtaStartBg() {
+			return revealStartScreenAfterAssets();
 		}
 		function hidePtaStartBg() {
 			try {
@@ -1682,16 +1719,7 @@ const QUALITY = {
 			}
 		}
 		function revealStartScreenEdgeFx() {
-			ensureTapGifLoaded().then(() => {
-				requestAnimationFrame(() => {
-					if (!isStartOverlayShowing()) return;
-					try {
-						const border = document.getElementById('border-frame');
-						if (border) border.classList.add('visible');
-					} catch (_) {}
-					try { applyOverlayGlowFx(); } catch (_) {}
-				});
-			});
+			return revealStartScreenAfterAssets();
 		}
 		function randomHexColor() {
 			return '#' + Math.floor(Math.random()*0xFFFFFF).toString(16).padStart(6,'0');
@@ -2961,6 +2989,8 @@ function exposeAppBindingsToGlobal() {
     try { g.f = f; } catch (_) {}
     try { g.fa = fa; } catch (_) {}
     try { g.fadeInPtaStartBg = fadeInPtaStartBg; } catch (_) {}
+    try { g.revealStartScreenAfterAssets = revealStartScreenAfterAssets; } catch (_) {}
+    try { g.resetStartScreenReveal = resetStartScreenReveal; } catch (_) {}
     try { g.fb = fb; } catch (_) {}
     try { g.feed = feed; } catch (_) {}
     try { g.fftSize = fftSize; } catch (_) {}

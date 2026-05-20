@@ -711,7 +711,10 @@
             grid-template-columns: repeat(8, minmax(0, 1fr));
             gap: clamp(4px, 0.8vw, 8px);
             max-width: none;
-            margin: 0 0 10px;
+            margin: 12px 0 10px;
+            position: relative;
+            z-index: 12;
+            flex-shrink: 0;
         }
         #radio-visual-root .radio-visual-digital-feature-btns .radio-visual-btn {
             border-color: rgba(140, 70, 200, 0.55);
@@ -830,7 +833,10 @@
             font-size: 1rem;
         }
         @media (max-width: 520px) {
-            #radio-visual-root .radio-visual-btn-grid:not(.radio-visual-analog-actions) {
+            #radio-visual-root .radio-visual-digital-feature-btns {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+            #radio-visual-root .radio-visual-btn-grid:not(.radio-visual-analog-actions):not(.radio-visual-digital-feature-btns) {
                 grid-template-columns: repeat(2, 1fr);
             }
             #radio-visual-root .radio-visual-digital-toolbar {
