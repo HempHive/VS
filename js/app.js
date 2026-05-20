@@ -1815,8 +1815,7 @@ function randomGlowColor() {
             if (vs && state.isPlaying) { vs.style.opacity = '1'; vs.style.pointerEvents = 'auto'; }
             // Show top bar on interaction
             if (topBar && state.isPlaying) { topBar.style.opacity = '1'; topBar.style.pointerEvents = 'auto'; }
-            // Always reveal station banner on interaction if it exists
-            if (stationBanner) {
+            if (stationBanner && !isRadioVisualModeActive()) {
                 if (stationBannerTimer) { clearTimeout(stationBannerTimer); stationBannerTimer = null; }
                 stationBanner.style.opacity = '1';
                 stationBanner.style.pointerEvents = 'auto';
@@ -3656,21 +3655,88 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             btnDjDecksShortcut.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const loadVis = (typeof globalThis.loadMode === 'function')
-                    ? globalThis.loadMode
-                    : (typeof loadMode === 'function' ? loadMode : null);
-                const m = globalThis.modes || modes;
-                if (!Array.isArray(m) || typeof loadVis !== 'function') return;
-                const radioIdx = m.findIndex((x) => x && (x.name === 'Radio' || x.name === 'Radio Visual'));
-                const djIdx = m.findIndex((x) => x && x.name === 'DJ Decks');
-                const visName = state.activeVisualizer && state.activeVisualizer.name;
+                const loadDjDecksMode = () => {
+                    const load = (typeof globalThis.loadMode === 'function')
+                        ? globalThis.loadMode
+                        : (typeof loadMode === 'function' ? loadMode : null);
+                    const m = globalThis.modes || modes;
+                    if (!Array.isArray(m) || typeof load !== 'function') return;
+                    const idx = m.findIndex((x) => x && x.name === 'DJ Decks');
+                    if (idx >= 0) load(idx);
+                };
                 try {
-                    if (visName === 'DJ Decks') {
-                        if (radioIdx >= 0) loadVis(radioIdx);
+                    const visName = state.activeVisualizer && state.activeVisualizer.name;
+                    if (visName && visName !== 'DJ Decks') {
+                        loadDjDecksMode();
                         resetIdleTimer();
                         return;
                     }
-                    if (djIdx >= 0) loadVis(djIdx);
+                    const onDj = !!(state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks');
+                    const deckBVisualActive = !!(
+                        onDj &&
+                        state.activeVisualizer &&
+                        (state.activeVisualizer.deckBVizMode === 'bars' ||
+                         state.activeVisualizer.deckBVizMode === 'projectm' ||
+                         state.activeVisualizer.deckBVizMode === 'blank' ||
+                         state.activeVisualizer.deckBVizMode === 'video' ||
+                         state.activeVisualizer.deckBVizMode === 'karaoke' ||
+                         state.activeVisualizer.deckBVizMode === 'kbop' ||
+                         state.activeVisualizer.deckBQueueVisible ||
+                         state.activeVisualizer.deckBMediaPanelVisible)
+                    );
+                    const deckBTextActive = (() => {
+                        try {
+                            if (typeof getDeckBStageEl !== 'function') return false;
+                            const stage = getDeckBStageEl();
+                            return !!(stage && stage.classList.contains('dj-deck-b-text-mode'));
+                        } catch (_) { return false; }
+                    })();
+                    if (onDj && deckBTextActive) {
+                        try { if (typeof setTextAuto === 'function') setTextAuto(false); } catch (_) {}
+                        try { if (typeof setDeckBTextMode === 'function') setDeckBTextMode(false); } catch (_) {}
+                        try {
+                            const tip = document.getElementById('textin-panel');
+                            if (tip) delete tip.dataset.textTarget;
+                            const panelOpen = !!(tip && !tip.classList.contains('display-none') && tip.classList.contains('open'));
+                            if (panelOpen && typeof hideTextInPanel === 'function') {
+                                hideTextInPanel({ forceCloseDeckB: true });
+                            }
+                        } catch (_) {}
+                        try { if (typeof syncDjTextInDeckLights === 'function') syncDjTextInDeckLights(); } catch (_) {}
+                        resetIdleTimer();
+                        return;
+                    }
+                    if (deckBVisualActive) {
+                        try { if (state.activeVisualizer.deckBQueueVisible && typeof state.activeVisualizer.hideDeckBQueueView === 'function') state.activeVisualizer.hideDeckBQueueView(); } catch (_) {}
+                        try { if (state.activeVisualizer.deckBMediaPanelVisible && typeof state.activeVisualizer.hideDeckBMediaView === 'function') state.activeVisualizer.hideDeckBMediaView(); } catch (_) {}
+                        if (typeof state.activeVisualizer.tearDownDeckBViz === 'function') {
+                            state.activeVisualizer.tearDownDeckBViz();
+                        }
+                        if (typeof state.activeVisualizer.syncDeckBVisualButtons === 'function') {
+                            state.activeVisualizer.syncDeckBVisualButtons();
+                        }
+                        if (typeof state.activeVisualizer.updateStationTitles === 'function') {
+                            state.activeVisualizer.updateStationTitles();
+                        }
+                        resetIdleTimer();
+                        return;
+                    }
+                } catch (_) {}
+                loadDjDecksMode();
+                resetIdleTimer();
+            });
+        }
+        const btnReturnRadio = document.getElementById('btn-return-radio');
+        if (btnReturnRadio) {
+            btnReturnRadio.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                try {
+                    if (typeof globalThis.loadRadioVisualMode === 'function') {
+                        globalThis.loadRadioVisualMode();
+                    } else if (typeof loadRadioVisualMode === 'function') {
+                        loadRadioVisualMode();
+                    }
                 } catch (_) {}
                 resetIdleTimer();
             });
@@ -5185,7 +5251,27 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             nowPlayingPollTimer = setInterval(tick, 26000);
         }
 
+        function isRadioVisualModeActive() {
+            try {
+                const vis = state.activeVisualizer;
+                return !!(vis && (vis.name === 'Radio' || vis.name === 'Radio Visual'));
+            } catch (_) {
+                return false;
+            }
+        }
+
         function showStationBanner(text) {
+            if (isRadioVisualModeActive()) {
+                try {
+                    const rv = state.activeVisualizer;
+                    if (rv && typeof rv._updateHudModeLines === 'function') rv._updateHudModeLines();
+                } catch (_) {}
+                if (stationBanner) {
+                    stationBanner.style.opacity = '0';
+                    stationBanner.style.pointerEvents = 'none';
+                }
+                return;
+            }
             const nm = text || '';
             if (stationBannerNameEl) stationBannerNameEl.textContent = nm;
             else stationBanner.textContent = nm;

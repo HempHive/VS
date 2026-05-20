@@ -58,7 +58,10 @@
                 try {
                     if (!Array.isArray(modes) || typeof loadMode !== 'function') return;
                     const idx = modes.findIndex((m) => m && m.name === name);
-                    if (idx >= 0) loadMode(idx);
+                    if (idx >= 0) {
+                        try { globalThis.__vizLaunchedFromRadioVisual = true; } catch (_) {}
+                        loadMode(idx);
+                    }
                 } catch (_) {}
             }
 
@@ -392,6 +395,42 @@
                     this._setKnobRotation(this.els.crossKnob, (x * 270) - 135);
                 }
                 if (this.els.crossDigital) this.els.crossDigital.value = String(x);
+                if (this._isRadioVisualActive()) this._updateHudModeLines();
+            }
+
+            _crossfaderAudibleDeckKey() {
+                const x = this._getCrossfadeX();
+                return x >= 0.5 ? 'b' : 'a';
+            }
+
+            _stationNameForDeck(deck) {
+                try {
+                    if (!Array.isArray(stations) || !stations.length) return '—';
+                    if (deck === 'b') {
+                        const idx = (typeof currentStationBIndex === 'number' && currentStationBIndex >= 0)
+                            ? currentStationBIndex : -1;
+                        if (idx >= 0 && stations[idx]) return stations[idx].name || '—';
+                    } else {
+                        const idx = (typeof currentStationIndex === 'number' && currentStationIndex >= 0)
+                            ? currentStationIndex : -1;
+                        if (idx >= 0 && stations[idx]) return stations[idx].name || '—';
+                    }
+                } catch (_) {}
+                return '—';
+            }
+
+            _updateHudModeLines() {
+                if (!this._isRadioVisualActive()) return;
+                try {
+                    const titleEl = document.getElementById('mode-title');
+                    const subEl = document.getElementById('mode-sub');
+                    const visName = (this.name === 'Radio') ? 'Radio Visual' : (this.name || 'Radio');
+                    if (titleEl) titleEl.textContent = visName;
+                    if (subEl) {
+                        const deck = this._crossfaderAudibleDeckKey();
+                        subEl.textContent = this._stationNameForDeck(deck);
+                    }
+                } catch (_) {}
             }
 
             _isRadioVisualActive() {
@@ -543,6 +582,7 @@
                     return;
                 }
                 try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                this._retuneIncomingDeckForAutoFade(targetDeck);
                 if (targetDeck === 'b') {
                     try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
                 } else {
@@ -652,18 +692,22 @@
             }
 
             _toggleAutoFadeChangeStation() {
-                const cb = document.getElementById('dj-autofade-change-station');
-                if (cb) {
-                    cb.checked = !cb.checked;
-                    try { cb.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
-                    this._syncAutoFadeChangeStationKnob();
-                    return;
-                }
                 const next = !this._isAutoFadeChangeStationEnabled();
                 try {
                     localStorage.setItem(RadioVisualEngine.AUTOFADE_CHANGE_STATION_KEY, next ? '1' : '0');
                 } catch (_) {}
+                const cb = document.getElementById('dj-autofade-change-station');
+                if (cb) cb.checked = next;
                 this._syncAutoFadeChangeStationKnob();
+            }
+
+            _retuneIncomingDeckForAutoFade(targetDeck) {
+                if (!this._isAutoFadeChangeStationEnabled()) return;
+                try {
+                    if (targetDeck === 'b') {
+                        if (typeof pickRandomStationB === 'function') pickRandomStationB();
+                    } else if (typeof pickRandomStation === 'function') pickRandomStation();
+                } catch (_) {}
             }
 
             _syncAutoMixKnob() {
@@ -1207,7 +1251,11 @@
 
             _wireAutoFadeKnob(knobEl) {
                 if (!knobEl) return;
-                knobEl.classList.add('radio-visual-knob--switch', 'radio-visual-knob--fade-btn');
+                knobEl.classList.add(
+                    'radio-visual-knob--switch',
+                    'radio-visual-knob--fade-btn',
+                    'radio-visual-knob--autofade-change'
+                );
                 knobEl.setAttribute('role', 'slider');
                 knobEl.tabIndex = 0;
                 knobEl.setAttribute('aria-label', 'Auto-fade duration; drag to adjust, tap to toggle change station before fading');
@@ -1361,6 +1409,7 @@
                 this._syncFadeKnobs();
                 this._syncAutoMixKnob();
                 this._syncAutoFadeChangeStationKnob();
+                this._updateHudModeLines();
                 this._lastStationIdx = (typeof currentStationIndex === 'number') ? currentStationIndex : -1;
             }
 
@@ -2107,7 +2156,14 @@
                 this.onResize();
                 this.clockTimerId = setInterval(() => { try { this._tickClock(); } catch (_) {} }, 1000);
                 this.animateFrame();
-                document.getElementById('mode-sub').innerText = 'Radio';
+                this._updateHudModeLines();
+                try {
+                    const banner = document.getElementById('station-banner');
+                    if (banner) {
+                        banner.style.opacity = '0';
+                        banner.style.pointerEvents = 'none';
+                    }
+                } catch (_) {}
             }
 
             animateFrame() {

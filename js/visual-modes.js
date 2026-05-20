@@ -2393,20 +2393,72 @@
             } catch (_) {}
         }
 
+        function findRadioVisualModeIndex() {
+            try {
+                if (!Array.isArray(modes)) return -1;
+                return modes.findIndex((m) => m && (m.name === 'Radio' || m.name === 'Radio Visual'));
+            } catch (_) {
+                return -1;
+            }
+        }
+
+        function loadRadioVisualMode() {
+            const idx = findRadioVisualModeIndex();
+            if (idx >= 0) loadMode(idx);
+        }
+
+        function shouldShowReturnRadioButton() {
+            try {
+                const visName = state.activeVisualizer && state.activeVisualizer.name;
+                if (visName === 'DJ Decks') return true;
+                if (!globalThis.__vizLaunchedFromRadioVisual) return false;
+                if (!visName || visName === 'Radio' || visName === 'Radio Visual') return false;
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
         function updateDjDecksShortcutVisibility() {
             try {
                 const btn = document.getElementById('btn-dj-decks');
-                if (!btn) return;
-                const onDj = !!(state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks');
-                const onRadioVisual = !!(state.activeVisualizer && (
-                    state.activeVisualizer.name === 'Radio' ||
-                    state.activeVisualizer.name === 'Radio Visual'
-                ));
-                btn.textContent = '📻';
-                btn.classList.remove('display-none');
-                btn.title = onDj
-                    ? 'Return to Radio Visual'
-                    : (onRadioVisual ? 'Open DJ Decks' : 'Open Radio Visual');
+                if (btn) {
+                    const onDj = !!(state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks');
+                    const deckBVisualActive = !!(
+                        onDj &&
+                        state.activeVisualizer &&
+                        (state.activeVisualizer.deckBVizMode === 'bars' ||
+                         state.activeVisualizer.deckBVizMode === 'projectm' ||
+                         state.activeVisualizer.deckBVizMode === 'blank' ||
+                         state.activeVisualizer.deckBVizMode === 'video' ||
+                         state.activeVisualizer.deckBVizMode === 'karaoke' ||
+                         state.activeVisualizer.deckBVizMode === 'kbop' ||
+                         state.activeVisualizer.deckBQueueVisible ||
+                         state.activeVisualizer.deckBMediaPanelVisible)
+                    );
+                    const deckBTextActive = (() => {
+                        try {
+                            if (typeof getDeckBStageEl !== 'function') return false;
+                            const stage = getDeckBStageEl();
+                            return !!(stage && stage.classList.contains('dj-deck-b-text-mode'));
+                        } catch (_) { return false; }
+                    })();
+                    const onRadioVisual = !!(state.activeVisualizer && (
+                        state.activeVisualizer.name === 'Radio' ||
+                        state.activeVisualizer.name === 'Radio Visual'
+                    ));
+                    const showReturn = onDj && (deckBVisualActive || deckBTextActive);
+                    btn.classList.toggle('display-none', onDj && !showReturn && !onRadioVisual);
+                    btn.title = showReturn
+                        ? 'Return Deck B controls'
+                        : (onRadioVisual ? 'Open DJ Decks' : 'Open DJ Decks visual');
+                }
+                const btnRadio = document.getElementById('btn-return-radio');
+                if (btnRadio) {
+                    const show = shouldShowReturnRadioButton();
+                    btnRadio.classList.toggle('display-none', !show);
+                    btnRadio.title = 'Return to Radio Visual';
+                }
             } catch (_) {}
         }
 
@@ -2417,6 +2469,12 @@
             if(idx >= modes.length) idx = 0;
             state.currentModeIdx = idx;
             state.activeVisualizer = modes[idx];
+            try {
+                const n = state.activeVisualizer && state.activeVisualizer.name;
+                if (n === 'Radio' || n === 'Radio Visual') {
+                    globalThis.__vizLaunchedFromRadioVisual = false;
+                }
+            } catch (_) {}
             // Persist last selected visualizer
             try {
                 localStorage.setItem('lastModeIndex', String(idx));
@@ -2427,7 +2485,11 @@
             
             // UI Updates
             document.getElementById('mode-title').innerText = state.activeVisualizer.name;
-            if(!(state.activeVisualizer && state.activeVisualizer.loadPreset)) {
+            const isRadioVis = !!(state.activeVisualizer && (
+                state.activeVisualizer.name === 'Radio' ||
+                state.activeVisualizer.name === 'Radio Visual'
+            ));
+            if (!isRadioVis && !(state.activeVisualizer && state.activeVisualizer.loadPreset)) {
                 document.getElementById('mode-sub').innerText = "3D Interactive";
             }
             
@@ -2442,5 +2504,6 @@
 
         try { globalThis.modes = modes; } catch (_) {}
         try { globalThis.loadMode = loadMode; } catch (_) {}
+        try { globalThis.loadRadioVisualMode = loadRadioVisualMode; } catch (_) {}
         try { globalThis.updateDjDecksShortcutVisibility = updateDjDecksShortcutVisibility; } catch (_) {}
         try { globalThis.updateSkipPresetButtonVisibility = updateSkipPresetButtonVisibility; } catch (_) {}
