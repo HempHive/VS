@@ -1432,11 +1432,11 @@
                 knobs.appendChild(this._mkKnobBlock('Auto-Fade', autoFadeKnob, autoFadeReadout, true));
                 knobs.appendChild(this._mkKnobBlock('Auto-Mix', autoMixKnob, autoMixReadout, true));
                 const analogBtns = document.createElement('div');
-                analogBtns.className = 'radio-visual-btn-grid radio-visual-analog-actions';
+                analogBtns.className = 'radio-visual-analog-actions';
                 analogBtns.id = 'radio-visual-analog-btns';
-                tunerShell.appendChild(analogBtns);
                 stageA.appendChild(knobs);
                 stageA.appendChild(tunerShell);
+                stageA.appendChild(analogBtns);
 
                 const stageD = document.createElement('section');
                 stageD.className = 'radio-visual-stage radio-visual-skin--digital';
