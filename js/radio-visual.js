@@ -1064,12 +1064,6 @@
                 const cx = w * 0.5;
                 const cy = h * 0.52;
                 ctx.clearRect(0, 0, w, h);
-                const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.55);
-                bg.addColorStop(0, '#0a1e28');
-                bg.addColorStop(0.55, '#061018');
-                bg.addColorStop(1, '#020608');
-                ctx.fillStyle = bg;
-                ctx.fillRect(0, 0, w, h);
                 const innerR = Math.min(w, h) * 0.14;
                 const outerR = Math.min(w, h) * 0.44;
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
@@ -1114,13 +1108,6 @@
                     rim.addColorStop(1, 'rgba(255, 200, 80, 0.32)');
                 }
                 ctx.fillStyle = rim;
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(cx, cy, innerR * 0.92, 0, Math.PI * 2);
-                const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
-                core.addColorStop(0, 'rgba(0, 255, 220, 0.35)');
-                core.addColorStop(1, 'rgba(0, 40, 60, 0.05)');
-                ctx.fillStyle = core;
                 ctx.fill();
             }
 
