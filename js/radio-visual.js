@@ -2680,9 +2680,7 @@
                 digitalToolbar.appendChild(btnDigitalDeckB);
                 const volGroup = document.createElement('div');
                 volGroup.className = 'radio-visual-digital-toolbar-vol';
-                const volLbl = document.createElement('span');
-                volLbl.className = 'radio-visual-digital-vol-step-label';
-                volLbl.textContent = 'VOL';
+                volGroup.setAttribute('aria-label', 'Volume');
                 volDown = document.createElement('button');
                 volDown.type = 'button';
                 volDown.className = 'radio-visual-btn radio-visual-digital-step-btn';
@@ -2697,7 +2695,6 @@
                 volUp.className = 'radio-visual-btn radio-visual-digital-step-btn';
                 volUp.textContent = '+';
                 volUp.setAttribute('aria-label', 'Volume up');
-                volGroup.appendChild(volLbl);
                 volGroup.appendChild(volDown);
                 volGroup.appendChild(volDigitalReadout);
                 volGroup.appendChild(volUp);

@@ -832,17 +832,19 @@
             border-color: #bff;
         }
         #radio-visual-root .radio-visual-digital-toolbar {
-            display: grid;
-            grid-template-columns: repeat(14, minmax(0, 1fr));
+            display: flex;
+            flex-wrap: nowrap;
             align-items: stretch;
             gap: 3px;
             width: 100%;
             margin: 8px 0 6px;
+            overflow: hidden;
         }
-        #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn {
+        #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-btn {
+            flex: 1 1 0;
             min-width: 0;
             padding: 7px 2px;
-            font-size: clamp(6px, 1.35vw, 9px);
+            font-size: clamp(5px, 1.2vw, 9px);
             letter-spacing: 0.02em;
             line-height: 1.15;
             white-space: nowrap;
@@ -852,39 +854,41 @@
             background: linear-gradient(180deg, #123048, #081820);
             color: #8ef;
         }
+        #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-digital-vis-btn {
+            flex: 0.55 1 0;
+            max-width: 2.4em;
+            padding: 7px 2px;
+        }
         #radio-visual-root .radio-visual-digital-toolbar-vol {
             display: flex;
-            grid-column: span 3;
+            flex: 1.35 1 0;
+            flex-wrap: nowrap;
             min-width: 0;
-            align-items: center;
-            justify-content: center;
-            gap: 3px;
-            padding: 0 2px;
-        }
-        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-vol-step-label {
-            flex-shrink: 0;
-            font-size: 9px;
-            margin: 0;
+            align-items: stretch;
+            gap: 2px;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-vol-readout {
-            flex: 0 1 auto;
-            min-width: 1.1em;
-            max-width: 2.2em;
-            font-size: clamp(4px, 1vw, 5.5px);
+            flex: 1 1 0;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(5px, 1vw, 7px);
             line-height: 1.1;
             padding: 0 1px;
             text-align: center;
+            color: #8ef;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn {
             flex: 0 0 auto;
-            min-width: 28px;
-            padding: 8px 6px;
-            font-size: 1rem;
-        }
-        #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-digital-vis-btn {
+            width: 1.65em;
             min-width: 0;
-            margin: 0;
-            padding: 7px 4px;
+            max-width: 1.85em;
+            padding: 7px 0;
+            font-size: clamp(10px, 2.2vw, 14px);
         }
         @media (max-width: 520px) {
             #radio-visual-root .radio-visual-digital-feature-btns {
@@ -892,11 +896,5 @@
             }
             #radio-visual-root .radio-visual-btn-grid:not(.radio-visual-analog-actions):not(.radio-visual-digital-feature-btns) {
                 grid-template-columns: repeat(2, 1fr);
-            }
-            #radio-visual-root .radio-visual-digital-toolbar {
-                grid-template-columns: repeat(8, minmax(0, 1fr));
-            }
-            #radio-visual-root .radio-visual-digital-toolbar-vol {
-                grid-column: span 4;
             }
         }
