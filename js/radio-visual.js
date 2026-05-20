@@ -22,7 +22,6 @@
                 this.els = {};
                 this.animId = null;
                 this.clockTimerId = null;
-                this.skin = 'analogue';
                 this._lastStationIdxA = -2;
                 this._lastStationIdxB = -2;
                 this._donutCoreHueA = 175;

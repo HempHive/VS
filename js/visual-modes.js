@@ -2445,15 +2445,24 @@
             if (idx >= 0) loadMode(idx);
         }
 
-        function toggleRadioVisualVariant() {
+        function activeRadioVariantKey() {
             try {
                 const vis = state.activeVisualizer;
-                if (!vis || !vis.name) return false;
-                if (vis.name === 'Analogue radio') {
+                if (!vis) return null;
+                if (vis.name === 'Digital Radio' || vis.skin === 'digital') return 'digital';
+                if (vis.name === 'Analogue radio' || vis.skin === 'analogue') return 'analogue';
+            } catch (_) {}
+            return null;
+        }
+
+        function toggleRadioVisualVariant() {
+            try {
+                const cur = activeRadioVariantKey();
+                if (cur === 'analogue') {
                     const idx = findDigitalRadioModeIndex();
                     if (idx >= 0) { loadMode(idx); return true; }
                 }
-                if (vis.name === 'Digital Radio') {
+                if (cur === 'digital') {
                     const idx = findAnalogueRadioModeIndex();
                     if (idx >= 0) { loadMode(idx); return true; }
                 }
@@ -2511,8 +2520,9 @@
                 const btnRadio = document.getElementById('btn-return-radio');
                 if (btnRadio) {
                     const visName = state.activeVisualizer && state.activeVisualizer.name;
-                    const onAnalogueRadio = visName === 'Analogue radio';
-                    const onDigitalRadio = visName === 'Digital Radio';
+                    const variant = activeRadioVariantKey();
+                    const onAnalogueRadio = variant === 'analogue';
+                    const onDigitalRadio = variant === 'digital';
                     const showToggle = onAnalogueRadio || onDigitalRadio;
                     const showReturn = shouldShowReturnRadioButton();
                     btnRadio.classList.toggle('display-none', !showToggle && !showReturn);
