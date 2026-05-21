@@ -382,9 +382,9 @@
             text-shadow: 0 0 10px rgba(0,0,0,0.5); 
         }
 		#mode-sub { 
-			font-size: clamp(10px, 1.2vw, 14px); 
+			font-size: clamp(16px, 2vw, 26px); 
 			color: #aaa; 
-			letter-spacing: 1px; 
+			letter-spacing: 2px; 
 			display: inline; 
 		}
 

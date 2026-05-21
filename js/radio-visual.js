@@ -2714,6 +2714,10 @@
                     b.dataset.rvAction = act;
                     b.dataset.rvDeck = deck;
                     b.textContent = lab;
+                    if (act === 'next') {
+                        b.title = deck === 'b' ? 'Random station (Deck B)' : 'Random station (Deck A)';
+                        b.setAttribute('aria-label', b.title);
+                    }
                     digitalToolbar.appendChild(b);
                 };
                 mkRvDigitalBtn('a', 'A Play');
@@ -2854,11 +2858,9 @@
                                 const a = b.dataset.rvAction;
                                 if (deck === 'b') {
                                     if (a === 'prev') this._stationBPrev();
-                                    else if (a === 'next') this._stationBNext();
-                                    else if (a === 'rand') this._stationBRand();
+                                    else if (a === 'next') this._stationBRand();
                                 } else if (a === 'prev') this._stationPrev();
-                                else if (a === 'next') this._stationNext();
-                                else if (a === 'rand') this._stationRand();
+                                else if (a === 'next') this._stationRand();
                             }, sig);
                         });
                     }
