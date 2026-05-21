@@ -816,6 +816,17 @@
                 return '';
             }
 
+            _deckStationDisplayName(deck) {
+                try {
+                    const dk = deck === 'b' ? 'b' : 'a';
+                    if (typeof globalThis.getDeckStationDisplayName === 'function') {
+                        return String(globalThis.getDeckStationDisplayName(dk) || '').trim();
+                    }
+                    return String(this._stationNameForDeck(dk) || '').trim();
+                } catch (_) {}
+                return '';
+            }
+
             _audibleDeckElement() {
                 try {
                     const dk = this._crossfaderAudibleDeckKey();
@@ -865,10 +876,16 @@
             }
 
             _digitalLcdPrimaryLine() {
-                if (!this._isAudiblePlaybackActive()) return 'DIGITAL TUNER';
-                const name = this._audibleDeckStationName();
-                if (!name || name === '—') return 'DIGITAL TUNER';
-                return name;
+                const name = this._deckStationDisplayName('a');
+                if (name && name !== '—') return name;
+                return 'DIGITAL TUNER';
+            }
+
+            _digitalLcdSecondaryLine() {
+                if (!this._deckBActive()) return 'STEREO · EQ';
+                const name = this._deckStationDisplayName('b');
+                if (name && name !== '—') return name;
+                return 'STEREO · EQ';
             }
 
             _fullBandRadii(n, maxRing) {
@@ -2068,7 +2085,7 @@
                 return line;
             }
 
-            _drawDigitalCarDash(eqHeights, t, lcdPrimaryLine) {
+            _drawDigitalCarDash(eqHeights, t, lcdPrimaryLine, lcdSecondaryLine) {
                 const canvas = this.els.digitalCarDashCanvas;
                 if (!canvas) return;
                 const ctx = canvas.getContext('2d');
@@ -2164,9 +2181,27 @@
                     lcdBasePx
                 );
                 ctx.shadowBlur = 0;
-                ctx.font = `600 ${Math.max(7, Math.min(w, h) * 0.055)}px ui-monospace, Menlo, Consolas, monospace`;
-                ctx.fillStyle = 'rgba(120, 255, 200, 0.35)';
-                ctx.fillText('STEREO · EQ', ix + iw * 0.5, lcdY + lcdH * 0.72);
+                const lcdSub = lcdSecondaryLine || 'STEREO · EQ';
+                const lcdSubIsStation = lcdSub !== 'STEREO · EQ';
+                const lcdSubBasePx = Math.max(7, Math.min(w, h) * 0.055);
+                if (lcdSubIsStation) {
+                    ctx.fillStyle = 'rgba(0, 255, 200, 0.45)';
+                    ctx.shadowColor = 'rgba(0, 255, 200, 0.25)';
+                    ctx.shadowBlur = 4;
+                    this._fitCanvasLcdText(
+                        ctx,
+                        lcdSub,
+                        ix + iw * 0.5,
+                        lcdY + lcdH * 0.72,
+                        iw - lcdPad * 2,
+                        lcdSubBasePx
+                    );
+                } else {
+                    ctx.font = `600 ${lcdSubBasePx}px ui-monospace, Menlo, Consolas, monospace`;
+                    ctx.fillStyle = 'rgba(120, 255, 200, 0.35)';
+                    ctx.fillText(lcdSub, ix + iw * 0.5, lcdY + lcdH * 0.72);
+                }
+                ctx.shadowBlur = 0;
                 ctx.restore();
                 const eqH = Math.max(ih * 0.38, h * 0.22);
                 const eqW = iw - lcdPad * 2;
@@ -2217,7 +2252,12 @@
                 this._syncDonutCoreHues();
                 this._drawDigitalSpectrumFlower(cL, pack.layersL, pack.n, this._donutCoreHueA, pack.t);
                 this._drawDigitalSpectrumFlower(cR, pack.layersR, pack.n, this._donutCoreHueB, pack.t);
-                this._drawDigitalCarDash(pack.eqHeights, pack.t, this._digitalLcdPrimaryLine());
+                this._drawDigitalCarDash(
+                    pack.eqHeights,
+                    pack.t,
+                    this._digitalLcdPrimaryLine(),
+                    this._digitalLcdSecondaryLine()
+                );
             }
 
             _wireCrossfadeKnob(knobEl) {

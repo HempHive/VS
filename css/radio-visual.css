@@ -557,12 +557,6 @@
             border-color: rgba(255, 220, 120, 0.75);
             box-shadow: 0 0 12px rgba(255, 200, 80, 0.4);
         }
-        #radio-visual-root .radio-visual-digital-toolbar .radio-visual-digital-xfade-station-btn.is-active {
-            color: #041018;
-            background: linear-gradient(180deg, #9fff70, #3a9a28);
-            border-color: rgba(160, 255, 120, 0.75);
-            box-shadow: 0 0 14px rgba(80, 255, 60, 0.45);
-        }
         #radio-visual-root .radio-visual-digital-staging-mount {
             position: absolute;
             inset: 0;
@@ -910,12 +904,15 @@
             font-size: 1.25rem;
             line-height: 1;
         }
-        #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn.is-active,
+        #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn.is-active:not(.radio-visual-digital-vis-btn),
         #radio-visual-root .radio-visual-digital-station-row .radio-visual-btn.is-active {
-            color: #041018;
-            background: linear-gradient(180deg, #7ef0e0, #1a9a88);
-            border-color: #bff;
-            box-shadow: 0 0 12px rgba(0, 255, 220, 0.35);
+            color: #d8f4ff;
+            background: rgba(24, 90, 210, 0.28);
+            border-color: rgba(100, 200, 255, 0.82);
+            box-shadow:
+                0 0 14px rgba(50, 150, 255, 0.55),
+                inset 0 0 18px rgba(80, 180, 255, 0.22);
+            text-shadow: 0 0 10px rgba(120, 200, 255, 0.55);
         }
         #radio-visual-root .radio-visual-digital-toolbar {
             display: flex;
