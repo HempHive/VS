@@ -3082,7 +3082,6 @@
                 digitalCenterDeckB.appendChild(digitalDeckBMount);
                 digitalCenter.appendChild(digitalCenterSpectrum);
                 digitalCenter.appendChild(digitalCenterDeckB);
-                digitalCenter.title = 'Tap: return to Spectrum when Deck B view is open. Double-click: fullscreen.';
                 digitalToolbar = document.createElement('div');
                 digitalToolbar.className = 'radio-visual-digital-toolbar';
                 digitalToolbar.id = 'radio-visual-digital-toolbar';
