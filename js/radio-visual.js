@@ -2916,6 +2916,7 @@
                 let btnVis = null;
                 let btnXfadeStation = null;
                 let spectrumBg = null;
+                let dashStack = null;
                 let digitalCenterSpectrum = null;
                 let digitalCenterDeckB = null;
                 let digitalSpectrumCanvasL = null;
@@ -3084,7 +3085,7 @@
                 digitalSpectrumCanvasL.className = 'radio-visual-digital-spectrum-canvas';
                 digitalSpectrumCanvasL.id = 'radio-visual-digital-spectrum-l';
                 spectrumSideL.appendChild(digitalSpectrumCanvasL);
-                const dashStack = document.createElement('div');
+                dashStack = document.createElement('div');
                 dashStack.className = 'radio-visual-digital-dash-stack';
                 dashStack.setAttribute('aria-label', 'Digital radio dash');
                 const centerInfo = document.createElement('div');
