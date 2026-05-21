@@ -1572,7 +1572,50 @@
             }
 
             _unifySpectrumRibbonSeam(radii) {
-                return this._blendSpectrumCircularEnds(radii, 8);
+                const blended = this._blendSpectrumCircularEnds(radii, 12);
+                return this._lockSpectrumRibbonSeam(blended);
+            }
+
+            /** Force the wrap point so bin 0 and bin n−1 share the same outer radius. */
+            _lockSpectrumRibbonSeam(radii) {
+                const n = radii.length;
+                if (n < 4) return radii;
+                const out = radii.slice();
+                const w = Math.min(6, Math.floor(n / 6));
+                let acc = 0;
+                let c = 0;
+                for (let d = -w; d <= w; d++) {
+                    const j = (d + n) % n;
+                    acc += out[j];
+                    c++;
+                }
+                const seam = acc / Math.max(1, c);
+                out[0] = seam;
+                out[n - 1] = seam;
+                for (let k = 1; k < w; k++) {
+                    const t = 1 - k / w;
+                    out[k] = out[k] * (1 - t) + seam * t;
+                    out[n - 1 - k] = out[n - 1 - k] * (1 - t) + seam * t;
+                }
+                return out;
+            }
+
+            _spectrumOuterNorm(ii, radii, n, maxRing, petalFloor) {
+                const w = 4;
+                let sum = 0;
+                for (let d = -w; d <= w; d++) {
+                    const j = (ii + d + n) % n;
+                    sum += (radii[j] || 0) / maxRing;
+                }
+                const avg = sum / (2 * w + 1);
+                return Math.min(1, Math.max(petalFloor, avg));
+            }
+
+            _spectrumSeamBridgeAngle(n, phaseBins) {
+                const phase = (phaseBins / n) * Math.PI * 2;
+                const step = (Math.PI * 2) / n;
+                const aLast = ((n - 1 + 0.5) / n) * Math.PI * 2 - Math.PI / 2 + phase;
+                return aLast + step * 0.5;
             }
 
             _bassLevelFromSmooth(smooth) {
@@ -1741,7 +1784,7 @@
                     const v = (levels[i0] || 0) * (1 - tt) + (levels[i1] || 0) * tt;
                     band.push(v);
                 }
-                const bandSeam = this._blendSpectrumCircularEnds(band, 6);
+                const bandSeam = this._blendSpectrumCircularEnds(band, 8);
                 const smooth = [];
                 for (let i = 0; i < n; i++) {
                     const im1 = (i - 1 + n) % n;
@@ -1890,16 +1933,21 @@
                 const lit = layer.light ?? 54;
                 const drift = layer.hueDrift ?? 40;
                 ctx.beginPath();
-                for (let i = 0; i <= n; i++) {
-                    const ii = i % n;
-                    const a = this._spectrumAngle(ii, n, layer.phaseBins);
-                    const norm = Math.min(1, Math.max(petalFloor, radii[ii] / maxRing));
+                ctx.lineJoin = 'round';
+                ctx.miterLimit = 2;
+                for (let i = 0; i < n; i++) {
+                    const a = this._spectrumAngle(i, n, layer.phaseBins);
+                    const norm = this._spectrumOuterNorm(i, radii, n, maxRing, petalFloor);
                     const r = zoneInner + (zoneOuter - zoneInner) * norm;
                     const x = cx + Math.cos(a) * r;
                     const y = cy + Math.sin(a) * r;
                     if (i === 0) ctx.moveTo(x, y);
                     else ctx.lineTo(x, y);
                 }
+                const normBridge = this._spectrumOuterNorm(0, radii, n, maxRing, petalFloor);
+                const rBridge = zoneInner + (zoneOuter - zoneInner) * normBridge;
+                const aBridge = this._spectrumSeamBridgeAngle(n, layer.phaseBins);
+                ctx.lineTo(cx + Math.cos(aBridge) * rBridge, cy + Math.sin(aBridge) * rBridge);
                 const innerPad = coreR;
                 for (let i = n - 1; i >= 0; i--) {
                     const a = this._spectrumAngle(i, n, layer.phaseBins);
@@ -1910,7 +1958,8 @@
                 const useOuterPalette = layer.key === 'low' && canConic;
                 const useConic = (layer.key === 'high' || layer.key === 'mid' || useOuterPalette) && canConic;
                 if (useConic) {
-                    const rim = ctx.createConicGradient(-Math.PI / 2, cx, cy);
+                    const phase = (layer.phaseBins / n) * Math.PI * 2;
+                    const rim = ctx.createConicGradient(-Math.PI / 2 + phase, cx, cy);
                     const steps = useOuterPalette ? 20 : (layer.key === 'high' ? 24 : 16);
                     const bass = layer.bassLevel ?? 0;
                     const phaseBase = this._outerHuePhase || 0;
