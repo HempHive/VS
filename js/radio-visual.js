@@ -32,6 +32,10 @@
                 this._rvAutoFadeRaf = null;
                 this.digitalCenterMode = 'spectrum';
                 this._digitalDeckBView = 'video';
+                /** Staging overlay in spectrum pane: null | video | projectm | bars | queue */
+                this._digitalStagingView = null;
+                this._rvAutoMixTimerId = null;
+                this._rvAutoMixCyclePending = false;
                 this._digitalVolStep = 0.05;
                 this._volMuted = false;
                 this._volUnmuteNorm = 0.5;
@@ -331,19 +335,40 @@
                 } catch (_) {}
             }
 
-            _isDigitalDeckBPanelOpen() {
-                return this.skin === 'digital' && this.digitalCenterMode === 'deckB';
+            _stagingContentMount() {
+                return this.els.digitalStagingMount || null;
             }
 
-            _deckBFeature(kind, fallback) {
-                if (this._isDigitalDeckBPanelOpen()) {
-                    this._setDigitalDeckBView(kind);
+            _toggleDigitalStagingFeature(kind) {
+                const k = (kind === 'projectm' || kind === 'bars' || kind === 'queue' || kind === 'video')
+                    ? kind : null;
+                if (!k) return;
+                if (this._digitalStagingView === k) {
+                    this._digitalStagingView = null;
+                    this._tearDownDigitalStagingView();
+                    this._syncDigitalStagingButtons();
                     return;
                 }
-                try { fallback(); } catch (_) {}
+                this._digitalStagingView = k;
+                if (this.digitalCenterMode !== 'spectrum') {
+                    this._setDigitalCenterMode('spectrum');
+                }
+                this._setDigitalStagingView(k);
+                this._syncDigitalStagingButtons();
             }
 
-            _tearDownDigitalDeckBView() {
+            _syncDigitalStagingButtons() {
+                const grid = this.els.digitalBtns;
+                if (!grid) return;
+                const on = this._digitalStagingView;
+                grid.querySelectorAll('[data-rv-staging]').forEach((btn) => {
+                    const active = !!(on && btn.dataset.rvStaging === on);
+                    btn.classList.toggle('is-active', active);
+                    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                });
+            }
+
+            _tearDownDigitalStagingView() {
                 try {
                     if (this._rvDigitalPmAnimId) cancelAnimationFrame(this._rvDigitalPmAnimId);
                 } catch (_) {}
@@ -361,6 +386,19 @@
                 this._rvDigitalPmResize = null;
                 this._rvDigitalBarsRenderer = null;
                 this._rvDigitalBarsScene = null;
+                const mount = this._stagingContentMount();
+                if (mount) {
+                    mount.innerHTML = '';
+                    mount.classList.remove('is-active');
+                    mount.setAttribute('aria-hidden', 'true');
+                }
+                if (this.els.digitalStagingVideo) {
+                    try {
+                        this.els.digitalStagingVideo.pause();
+                        this.els.digitalStagingVideo.removeAttribute('src');
+                    } catch (_) {}
+                    this.els.digitalStagingVideo.classList.add('is-hidden');
+                }
                 if (this.els.digitalDeckBContent) {
                     this.els.digitalDeckBContent.innerHTML = '';
                     this.els.digitalDeckBContent.classList.remove('is-active');
@@ -370,25 +408,95 @@
                 }
             }
 
+            _setDigitalStagingView(view) {
+                const next = (view === 'projectm' || view === 'bars' || view === 'queue') ? view : 'video';
+                const mount = this._stagingContentMount();
+                if (!mount) return;
+                mount.classList.add('is-active');
+                mount.setAttribute('aria-hidden', 'false');
+                if (next === 'video') {
+                    this._showDigitalStagingVideo();
+                    return;
+                }
+                if (this.els.digitalStagingVideo) {
+                    this.els.digitalStagingVideo.classList.add('is-hidden');
+                }
+                if (next === 'projectm') this._showDigitalStagingProjectM();
+                else if (next === 'bars') this._showDigitalStagingAudioBars();
+                else if (next === 'queue') this._showDigitalStagingQueue();
+            }
+
             _setDigitalDeckBView(view) {
                 const next = (view === 'projectm' || view === 'bars' || view === 'queue') ? view : 'video';
                 this._digitalDeckBView = next;
                 if (next === 'video') {
-                    this._tearDownDigitalDeckBView();
+                    this._tearDownDigitalStagingView();
+                    if (this.els.digitalDeckBContent) {
+                        this.els.digitalDeckBContent.innerHTML = '';
+                        this.els.digitalDeckBContent.classList.remove('is-active');
+                    }
                     if (this.els.digitalDeckBVideo) this.els.digitalDeckBVideo.classList.remove('is-hidden');
                     this._syncDigitalDeckBVideo();
                     return;
                 }
                 if (this.els.digitalDeckBVideo) this.els.digitalDeckBVideo.classList.add('is-hidden');
-                if (next === 'projectm') this._showDigitalDeckBProjectM();
-                else if (next === 'bars') this._showDigitalDeckBAudioBars();
-                else if (next === 'queue') this._showDigitalDeckBQueue();
-            }
-
-            _showDigitalDeckBProjectM() {
                 const mount = this.els.digitalDeckBContent;
                 if (!mount) return;
-                this._tearDownDigitalDeckBView();
+                mount.classList.add('is-active');
+                if (next === 'projectm') this._showDigitalStagingProjectM(mount);
+                else if (next === 'bars') this._showDigitalStagingAudioBars(mount);
+                else if (next === 'queue') this._showDigitalStagingQueue(mount);
+            }
+
+            _showDigitalStagingVideo() {
+                const mount = this._stagingContentMount();
+                if (!mount) return;
+                this._rvDigitalPmAnimId && cancelAnimationFrame(this._rvDigitalPmAnimId);
+                this._rvDigitalPmAnimId = null;
+                this._rvDigitalBarsAnimId && cancelAnimationFrame(this._rvDigitalBarsAnimId);
+                this._rvDigitalBarsAnimId = null;
+                mount.innerHTML = '';
+                mount.classList.add('is-active');
+                let vid = this.els.digitalStagingVideo;
+                if (!vid) {
+                    vid = document.createElement('video');
+                    vid.className = 'radio-visual-digital-staging-video';
+                    vid.playsInline = true;
+                    vid.muted = true;
+                    this.els.digitalStagingVideo = vid;
+                }
+                vid.classList.remove('is-hidden');
+                mount.appendChild(vid);
+                this._syncDigitalStagingVideo(vid);
+            }
+
+            _syncDigitalStagingVideo(vidEl) {
+                const vid = vidEl || this.els.digitalStagingVideo;
+                if (!vid || !this._digitalStagingView || this._digitalStagingView !== 'video') return;
+                try {
+                    let layer = null;
+                    if (typeof getDeckBVideoPlaybackSources === 'function') {
+                        const sources = getDeckBVideoPlaybackSources();
+                        if (sources && sources.length) layer = sources[0];
+                    }
+                    if (!layer && typeof deckVideoFeeds !== 'undefined' && deckVideoFeeds.b && deckVideoFeeds.b.url) {
+                        layer = { url: deckVideoFeeds.b.url, label: deckVideoFeeds.b.label || 'Deck B' };
+                    }
+                    if (layer && typeof applyDeckBVideoPayloadToElement === 'function') {
+                        applyDeckBVideoPayloadToElement(vid, layer, null);
+                        return;
+                    }
+                    if (layer && layer.url) {
+                        vid.src = layer.url;
+                        vid.play().catch(() => {});
+                    }
+                } catch (_) {}
+            }
+
+            _showDigitalStagingProjectM(mountEl) {
+                const mount = mountEl || this._stagingContentMount();
+                if (!mount) return;
+                this._tearDownDigitalStagingView();
                 mount.classList.add('is-active');
                 try { initAudio(); } catch (_) {}
                 if (!state || !state.audioCtx || typeof butterchurn === 'undefined') return;
@@ -474,10 +582,10 @@
                 loop();
             }
 
-            _showDigitalDeckBAudioBars() {
-                const mount = this.els.digitalDeckBContent;
+            _showDigitalStagingAudioBars(mountEl) {
+                const mount = mountEl || this._stagingContentMount();
                 if (!mount || typeof THREE === 'undefined' || typeof sceneBars !== 'function') return;
-                this._tearDownDigitalDeckBView();
+                this._tearDownDigitalStagingView();
                 mount.classList.add('is-active');
                 try { initAudio(); } catch (_) {}
                 const scene = new THREE.Scene();
@@ -520,10 +628,10 @@
                 loop();
             }
 
-            _showDigitalDeckBQueue() {
-                const mount = this.els.digitalDeckBContent;
+            _showDigitalStagingQueue(mountEl) {
+                const mount = mountEl || this._stagingContentMount();
                 if (!mount) return;
-                this._tearDownDigitalDeckBView();
+                this._tearDownDigitalStagingView();
                 mount.classList.add('is-active');
                 const wrap = document.createElement('div');
                 wrap.className = 'radio-visual-digital-deck-b-queue';
@@ -952,6 +1060,10 @@
                         this._rvFadeTargetDeck = null;
                         this._rvFadeActive = false;
                         this._syncFadeKnobs();
+                        if (this._rvAutoMixCyclePending) {
+                            this._rvAutoMixCyclePending = false;
+                            try { this._scheduleRadioAutoMix(); } catch (_) {}
+                        }
                         return;
                     }
                     this._rvAutoFadeRaf = requestAnimationFrame(tick);
@@ -1010,11 +1122,40 @@
                 return true;
             }
 
+            _clearRadioAutoMixTimer() {
+                if (this._rvAutoMixTimerId) {
+                    try { clearTimeout(this._rvAutoMixTimerId); } catch (_) {}
+                    this._rvAutoMixTimerId = null;
+                }
+            }
+
+            _scheduleRadioAutoMix() {
+                this._clearRadioAutoMixTimer();
+                if (!this._isAutoMixEnabled() || !this._isRadioVisualActive()) return;
+                const maxMin = this._readAutoMixMaxMin();
+                const minMs = RadioVisualEngine.AUTOMIX_MIN_MIN * 60 * 1000;
+                const maxMs = Math.max(minMs, maxMin * 60 * 1000);
+                const waitMs = minMs + Math.floor(Math.random() * Math.max(1, maxMs - minMs + 1));
+                this._rvAutoMixTimerId = setTimeout(() => {
+                    this._rvAutoMixTimerId = null;
+                    if (!this._isAutoMixEnabled() || !this._isRadioVisualActive()) return;
+                    this._rvAutoMixCyclePending = true;
+                    this._runLocalAutoFade();
+                }, waitMs);
+            }
+
             _toggleAutoMix() {
                 if (this._isRadioVisualActive()) {
                     const next = !this._isAutoMixEnabled();
                     try { localStorage.setItem(RadioVisualEngine.AUTOMIX_ENABLED_KEY, next ? '1' : '0'); } catch (_) {}
                     try { state.autoMixEnabled = next; } catch (_) {}
+                    if (next) {
+                        try { this._setAutoFadeChangeStationEnabled(true); } catch (_) {}
+                        this._scheduleRadioAutoMix();
+                    } else {
+                        this._clearRadioAutoMixTimer();
+                        this._rvAutoMixCyclePending = false;
+                    }
                     this._syncAutoMixKnob();
                     return;
                 }
@@ -1051,11 +1192,103 @@
                 } catch (_) {}
             }
 
+            _setAutoFadeChangeStationEnabled(on) {
+                try {
+                    localStorage.setItem(RadioVisualEngine.AUTOFADE_CHANGE_STATION_KEY, on ? '1' : '0');
+                } catch (_) {}
+                const cb = document.getElementById('dj-autofade-change-station');
+                if (cb) cb.checked = !!on;
+                this._syncAutoFadeChangeStationKnob();
+            }
+
             _syncAutoMixKnob() {
-                if (!this.els.autoMixKnob) return;
                 const on = this._isAutoMixEnabled();
-                this.els.autoMixKnob.classList.toggle('is-on', on);
-                this.els.autoMixKnob.setAttribute('aria-pressed', on ? 'true' : 'false');
+                if (this.els.autoMixKnob) {
+                    this.els.autoMixKnob.classList.toggle('is-on', on);
+                    this.els.autoMixKnob.setAttribute('aria-pressed', on ? 'true' : 'false');
+                }
+                if (this.els.btnDigitalMix) {
+                    this.els.btnDigitalMix.classList.toggle('is-active', on);
+                    this.els.btnDigitalMix.setAttribute('aria-pressed', on ? 'true' : 'false');
+                }
+            }
+
+            _closeDigitalAutoMixPanel() {
+                const panel = this.els.digitalAutoMixPanel;
+                if (!panel) return;
+                panel.classList.remove('is-open');
+                panel.setAttribute('aria-hidden', 'true');
+                panel.classList.remove('is-fixed-popup');
+                panel.style.position = '';
+                panel.style.left = '';
+                panel.style.top = '';
+                panel.style.right = '';
+            }
+
+            _openDigitalAutoMixPanel(clientX, clientY) {
+                const panel = this.els.digitalAutoMixPanel;
+                if (!panel) return;
+                const slider = this.els.digitalAutoMixSlider;
+                if (slider) slider.value = String(this._readAutoMixMaxMin());
+                const readout = this.els.digitalAutoMixReadout;
+                if (readout) readout.textContent = `${this._readAutoMixMaxMin()}m`;
+                panel.classList.add('is-open');
+                panel.setAttribute('aria-hidden', 'false');
+                const px = Number(clientX);
+                const py = Number(clientY);
+                panel.classList.add('is-fixed-popup');
+                panel.style.position = 'fixed';
+                panel.style.right = 'auto';
+                const place = () => {
+                    const rect = panel.getBoundingClientRect();
+                    const pad = 8;
+                    let left = (Number.isFinite(px) ? px : window.innerWidth / 2) + 4;
+                    let top = (Number.isFinite(py) ? py : window.innerHeight / 2) + 4;
+                    if (left + rect.width > window.innerWidth - pad) left = window.innerWidth - pad - rect.width;
+                    if (left < pad) left = pad;
+                    if (top + rect.height > window.innerHeight - pad) top = window.innerHeight - pad - rect.height;
+                    if (top < pad) top = pad;
+                    panel.style.left = `${Math.round(left)}px`;
+                    panel.style.top = `${Math.round(top)}px`;
+                };
+                requestAnimationFrame(() => requestAnimationFrame(place));
+            }
+
+            _wireDigitalMixButton(btn, sig) {
+                if (!btn) return;
+                let longPressTimer = null;
+                let longPressHandled = false;
+                const longPressMs = 500;
+                const clearLongPress = () => {
+                    if (longPressTimer) {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                };
+                const pointer = { x: 0, y: 0 };
+                btn.addEventListener('pointerdown', (ev) => {
+                    this._stopClick(ev);
+                    longPressHandled = false;
+                    pointer.x = ev.clientX;
+                    pointer.y = ev.clientY;
+                    clearLongPress();
+                    longPressTimer = setTimeout(() => {
+                        longPressTimer = null;
+                        longPressHandled = true;
+                        this._openDigitalAutoMixPanel(pointer.x, pointer.y);
+                    }, longPressMs);
+                }, sig);
+                btn.addEventListener('pointerup', (ev) => {
+                    this._stopClick(ev);
+                    clearLongPress();
+                    if (!longPressHandled) this._toggleAutoMix();
+                    longPressHandled = false;
+                }, sig);
+                btn.addEventListener('pointercancel', () => {
+                    clearLongPress();
+                    longPressHandled = false;
+                }, sig);
+                btn.addEventListener('click', (ev) => this._stopClick(ev), sig);
             }
 
             _syncAutoFadeChangeStationKnob() {
@@ -1245,13 +1478,15 @@
                 }
                 if (next === 'deckB') {
                     this._setDigitalDeckBView(this._digitalDeckBView || 'video');
-                } else {
-                    this._tearDownDigitalDeckBView();
+                } else if (this._digitalStagingView) {
+                    this._setDigitalStagingView(this._digitalStagingView);
+                } else if (this.els.digitalStagingMount) {
+                    this.els.digitalStagingMount.classList.remove('is-active');
                 }
             }
 
             _tearDownDigitalDeckBPlayer() {
-                try { this._tearDownDigitalDeckBView(); } catch (_) {}
+                try { this._tearDownDigitalStagingView(); } catch (_) {}
                 try {
                     if (this.els.digitalDeckBVideo) {
                         this.els.digitalDeckBVideo.pause();
@@ -2223,6 +2458,12 @@
             _buildFeatureButtons(gridEl, { deckBInPanel = false } = {}) {
                 if (!gridEl) return;
                 const g = globalThis;
+                const stagingByLabel = {
+                    Video: 'video',
+                    ProjectM: 'projectm',
+                    'Audio:Bar': 'bars',
+                    Queue: 'queue'
+                };
                 const items = [
                     { label: 'Mixer', fn: () => { try { g.toggleMixPanel?.(); } catch (_) {} } },
                     { label: 'Avatar', fn: () => {
@@ -2238,12 +2479,7 @@
                     }},
                     { label: 'Video', fn: () => {
                         if (deckBInPanel) {
-                            this._deckBFeature('video', () => {
-                                this._withDjDeck((dj) => {
-                                    if (dj.deckBVizMode === 'video') { dj.tearDownDeckBViz(); dj.syncDeckBVisualButtons(); }
-                                    else dj.startDeckBVideoVisual();
-                                });
-                            });
+                            this._toggleDigitalStagingFeature('video');
                             return;
                         }
                         this._withDjDeck((dj) => {
@@ -2253,23 +2489,21 @@
                     }},
                     { label: 'ProjectM', fn: () => {
                         if (deckBInPanel) {
-                            this._deckBFeature('projectm', () => this._loadVisualByName('ProjectM v2'));
+                            this._toggleDigitalStagingFeature('projectm');
                             return;
                         }
                         this._loadVisualByName('ProjectM v2');
                     }},
                     { label: 'Audio:Bar', fn: () => {
                         if (deckBInPanel) {
-                            this._deckBFeature('bars', () => this._loadVisualByName('Audio Bars'));
+                            this._toggleDigitalStagingFeature('bars');
                             return;
                         }
                         this._loadVisualByName('Audio Bars');
                     }},
                     { label: 'Queue', fn: () => {
                         if (deckBInPanel) {
-                            this._deckBFeature('queue', () => {
-                                this._withDjDeck((dj) => dj.toggleDeckBQueuePanel());
-                            });
+                            this._toggleDigitalStagingFeature('queue');
                             return;
                         }
                         this._withDjDeck((dj) => dj.toggleDeckBQueuePanel());
@@ -2287,9 +2521,15 @@
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
                     b.textContent = it.label;
+                    const stagingKind = stagingByLabel[it.label];
+                    if (deckBInPanel && stagingKind) {
+                        b.dataset.rvStaging = stagingKind;
+                        b.title = `Toggle ${it.label} in staging area`;
+                    }
                     this._bindAction(b, it.fn);
                     gridEl.appendChild(b);
                 });
+                if (deckBInPanel) this._syncDigitalStagingButtons();
             }
 
             _mkKnobBlock(label, knob, readoutEl, readoutOnKnob = false) {
@@ -2577,6 +2817,30 @@
                     return el;
                 };
                 dClk = mkLine('radio-visual-digital-line--clock', 'radio-visual-digital-clock', '—');
+                const digitalAutoMixPanel = document.createElement('div');
+                digitalAutoMixPanel.className = 'radio-visual-digital-automix-panel';
+                digitalAutoMixPanel.id = 'radio-visual-digital-automix-panel';
+                digitalAutoMixPanel.setAttribute('aria-hidden', 'true');
+                const autoMixPanelTitle = document.createElement('div');
+                autoMixPanelTitle.className = 'radio-visual-digital-automix-title';
+                autoMixPanelTitle.textContent = 'Auto-mix max interval';
+                const autoMixPanelRow = document.createElement('div');
+                autoMixPanelRow.className = 'radio-visual-digital-automix-row';
+                const digitalAutoMixSlider = document.createElement('input');
+                digitalAutoMixSlider.type = 'range';
+                digitalAutoMixSlider.className = 'radio-visual-digital-automix-range';
+                digitalAutoMixSlider.min = String(RadioVisualEngine.AUTOMIX_MIN_MIN);
+                digitalAutoMixSlider.max = String(RadioVisualEngine.AUTOMIX_MAX_MIN);
+                digitalAutoMixSlider.step = '1';
+                digitalAutoMixSlider.value = String(this._readAutoMixMaxMin());
+                digitalAutoMixSlider.setAttribute('aria-label', 'Auto-mix maximum interval in minutes');
+                const digitalAutoMixReadout = document.createElement('span');
+                digitalAutoMixReadout.className = 'radio-visual-digital-automix-readout';
+                digitalAutoMixReadout.textContent = `${this._readAutoMixMaxMin()}m`;
+                autoMixPanelRow.appendChild(digitalAutoMixSlider);
+                autoMixPanelRow.appendChild(digitalAutoMixReadout);
+                digitalAutoMixPanel.appendChild(autoMixPanelTitle);
+                digitalAutoMixPanel.appendChild(autoMixPanelRow);
                 digBtns = document.createElement('div');
                 digBtns.className = 'radio-visual-btn-grid radio-visual-digital-feature-btns';
                 digBtns.id = 'radio-visual-digital-btns';
@@ -2639,8 +2903,12 @@
                 spectrumRow.appendChild(spectrumSideL);
                 spectrumRow.appendChild(dashStack);
                 spectrumRow.appendChild(spectrumSideR);
+                const digitalStagingMount = document.createElement('div');
+                digitalStagingMount.className = 'radio-visual-digital-staging-mount';
+                digitalStagingMount.setAttribute('aria-hidden', 'true');
                 digitalCenterSpectrum.appendChild(spectrumBg);
                 digitalCenterSpectrum.appendChild(spectrumRow);
+                digitalCenterSpectrum.appendChild(digitalStagingMount);
                 digitalCenterDeckB = document.createElement('div');
                 digitalCenterDeckB.className = 'radio-visual-digital-center-pane';
                 digitalDeckBMount = document.createElement('div');
@@ -2699,12 +2967,17 @@
                 volGroup.appendChild(volDigitalReadout);
                 volGroup.appendChild(volUp);
                 digitalToolbar.appendChild(volGroup);
+                let btnDigitalMix = null;
                 const mkRvDigitalBtn = (act, lab) => {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
                     b.dataset.rvDigital = act;
                     b.textContent = lab;
+                    if (act === 'mix') {
+                        btnDigitalMix = b;
+                        b.title = 'Tap: toggle auto-mix · Hold: max interval';
+                    }
                     digitalToolbar.appendChild(b);
                 };
                 const mkRvStationBtn = (act, lab, deck) => {
@@ -2738,6 +3011,7 @@
                 digitalToolbar.appendChild(btnXfadeStation);
                 dPanel.appendChild(digitalCenter);
                 dPanel.appendChild(digitalToolbar);
+                dPanel.appendChild(digitalAutoMixPanel);
                 dPanel.appendChild(digBtns);
                 stageD.appendChild(dPanel);
                 }
@@ -2771,7 +3045,12 @@
                     btnDigitalSpectrum,
                     btnDigitalDeckB,
                     btnVis,
+                    btnDigitalMix,
                     btnXfadeStation,
+                    digitalStagingMount,
+                    digitalAutoMixPanel,
+                    digitalAutoMixSlider,
+                    digitalAutoMixReadout,
                     spectrumBg,
                     digitalCenterSpectrum,
                     digitalCenterDeckB,
@@ -2798,8 +3077,19 @@
                     this._initDigitalSpectrumBg();
                 }
                 this._syncDeckSwitches();
+                this._syncAutoMixKnob();
                 this._syncAutoFadeChangeStationKnob();
                 this._syncDonutCoreHues();
+                if (showDigital) {
+                    try {
+                        if (localStorage.getItem(RadioVisualEngine.AUTOMIX_ENABLED_KEY) === '1') {
+                            state.autoMixEnabled = true;
+                        }
+                    } catch (_) {}
+                    if (this._isAutoMixEnabled()) {
+                        try { this._scheduleRadioAutoMix(); } catch (_) {}
+                    }
+                }
                 this._updateStationUi();
                 this._tickClock();
 
@@ -2838,15 +3128,31 @@
                     if (crossDig) {
                         crossDig.addEventListener('input', () => this._setCrossfadeX(crossDig.value), sig);
                     }
+                    if (btnDigitalMix) this._wireDigitalMixButton(btnDigitalMix, sig);
+                    if (digitalAutoMixSlider) {
+                        digitalAutoMixSlider.addEventListener('input', () => {
+                            const mins = this._writeAutoMixMaxMin(Number(digitalAutoMixSlider.value));
+                            if (digitalAutoMixReadout) digitalAutoMixReadout.textContent = `${mins}m`;
+                            this._setAutoMixMaxNorm(this._autoMixMaxNorm());
+                            if (this._isAutoMixEnabled()) this._scheduleRadioAutoMix();
+                        }, sig);
+                    }
+                    document.addEventListener('pointerdown', (ev) => {
+                        const panel = this.els.digitalAutoMixPanel;
+                        if (!panel || !panel.classList.contains('is-open')) return;
+                        if (panel.contains(ev.target)) return;
+                        if (btnDigitalMix && btnDigitalMix.contains(ev.target)) return;
+                        this._closeDigitalAutoMixPanel();
+                    }, sig);
                     if (digitalToolbar) {
                         digitalToolbar.querySelectorAll('[data-rv-digital]').forEach((b) => {
                             b.addEventListener('click', (ev) => {
                                 this._stopClick(ev);
                                 const act = b.dataset.rvDigital;
+                                if (act === 'mix') return;
                                 if (act === 'a') this._toggleDeckA();
                                 else if (act === 'b') this._toggleDeckB();
                                 else if (act === 'fade') this._triggerAutoFade();
-                                else if (act === 'mix') this._toggleAutoMix();
                                 else if (act === 'xfade-station') this._toggleAutoFadeChangeStation();
                                 this._syncDeckSwitches();
                             }, sig);
@@ -2909,14 +3215,22 @@
                     this._drawMeters();
                     if (this.skin === 'digital') {
                         this._drawDigitalSpectrum();
-                        if (this.digitalCenterMode === 'deckB' && this._digitalDeckBView === 'video') {
+                        if (this._digitalStagingView === 'video') {
+                            const now = performance.now();
+                            if (!this._deckBVideoSyncAt || (now - this._deckBVideoSyncAt) > 800) {
+                                this._deckBVideoSyncAt = now;
+                                this._syncDigitalStagingVideo();
+                            }
+                        } else if (this.digitalCenterMode === 'deckB' && this._digitalDeckBView === 'video') {
                             const now = performance.now();
                             if (!this._deckBVideoSyncAt || (now - this._deckBVideoSyncAt) > 800) {
                                 this._deckBVideoSyncAt = now;
                                 this._syncDigitalDeckBVideo();
                             }
                         }
-                        if (this.digitalCenterMode === 'deckB' && this._rvDigitalPmResize) {
+                        if (this._digitalStagingView && this._rvDigitalPmResize) {
+                            try { this._rvDigitalPmResize(); } catch (_) {}
+                        } else if (this.digitalCenterMode === 'deckB' && this._rvDigitalPmResize) {
                             try { this._rvDigitalPmResize(); } catch (_) {}
                         }
                     }
@@ -2931,7 +3245,11 @@
             }
 
             destroy() {
+                this._clearRadioAutoMixTimer();
+                this._rvAutoMixCyclePending = false;
+                try { this._closeDigitalAutoMixPanel(); } catch (_) {}
                 try { this._tearDownDigitalDeckBPlayer(); } catch (_) {}
+                this._digitalStagingView = null;
                 if (this._rvAutoFadeRaf) {
                     try { cancelAnimationFrame(this._rvAutoFadeRaf); } catch (_) {}
                     this._rvAutoFadeRaf = null;
