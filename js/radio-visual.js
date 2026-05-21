@@ -1977,8 +1977,9 @@
                     else ctx.lineTo(x, y);
                 }
                 const innerPad = coreR;
-                for (let i = n - 1; i >= 0; i--) {
-                    const a = this._spectrumEdgeAngle(i, n, layer.phaseBins);
+                for (let i = 0; i <= n; i++) {
+                    const edge = i % n;
+                    const a = this._spectrumEdgeAngle(edge, n, layer.phaseBins);
                     ctx.lineTo(cx + Math.cos(a) * innerPad, cy + Math.sin(a) * innerPad);
                 }
                 ctx.closePath();
