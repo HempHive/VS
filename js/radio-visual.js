@@ -1577,11 +1577,41 @@
 
             _spectrumPetalNorm(ii, radii, n, maxRing, petalFloor) {
                 const raw = (radii[ii] || 0) / maxRing;
-                if (ii !== 0 && ii !== n - 1) {
+                const nearSeam = ii <= 1 || ii >= n - 2;
+                if (!nearSeam) {
                     return Math.min(1, Math.max(petalFloor, raw));
                 }
-                const seam = ((radii[0] || 0) + (radii[n - 1] || 0)) / (2 * maxRing);
+                let sum = 0;
+                let c = 0;
+                for (let d = -1; d <= 1; d++) {
+                    const j = (ii + d + n) % n;
+                    sum += (radii[j] || 0) / maxRing;
+                    c++;
+                }
+                const seam = sum / Math.max(1, c);
                 return Math.min(1, Math.max(petalFloor, seam));
+            }
+
+            _spectrumRibbonSeamAngle(n, phaseBins) {
+                const phase = (phaseBins / n) * Math.PI * 2;
+                return ((0.5) / n) * Math.PI * 2 - Math.PI / 2 + phase;
+            }
+
+            _patchSpectrumRibbonSeam(ctx, cx, cy, coreR, zoneOuter, seamAngle, fillStyle) {
+                if (!fillStyle) return;
+                const half = (Math.PI * 2) / Math.max(8, RadioVisualEngine.SPECTRUM_ANGULAR_BINS) * 0.55;
+                const a0 = seamAngle - half;
+                const a1 = seamAngle + half;
+                const rim = zoneOuter + 1.5;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(a0) * coreR, cy + Math.sin(a0) * coreR);
+                ctx.arc(cx, cy, rim, a0, a1);
+                ctx.arc(cx, cy, coreR, a1, a0, true);
+                ctx.closePath();
+                ctx.fillStyle = fillStyle;
+                ctx.fill();
+                ctx.restore();
             }
 
             _spectrumConicStop(u, opts) {
@@ -1593,7 +1623,8 @@
                 let litUse = lit;
                 let a0 = layerSpec.alpha * (0.5 + 0.5 * u);
                 if (useOuterPalette) {
-                    h = this._paletteHueAt(phaseBase + u * 1.1 + bass * 0.35);
+                    const phaseWrap = phaseBase + u * 1.1 + bass * 0.35;
+                    h = this._paletteHueAt(phaseWrap);
                 } else if (isHigh) {
                     const ripple = Math.sin(u * Math.PI * 6 + shimmerT * 5.8);
                     const pulse = 0.65 + 0.35 * Math.sin(shimmerT * 4.4 + u * Math.PI * 2);
@@ -1602,9 +1633,34 @@
                     litUse = lit + 10 + pulse * 22 + ripple * 8;
                     a0 = layerSpec.alpha * (0.62 + 0.38 * u) * (0.88 + pulse * 0.12);
                 } else {
-                    h = (hue + u * drift) % 360;
+                    const cycle = ((u * drift) % 360 + 360) % 360;
+                    h = (hue + cycle) % 360;
                 }
                 return `hsla(${h}, ${satUse}%, ${litUse}%, ${a0})`;
+            }
+
+            _spectrumPetalRadialFill(ctx, cx, cy, zoneInner, zoneOuter, layer, coreHue, t) {
+                const hue = this._spectrumPetalBaseHue(layer, coreHue);
+                const sat = layer.sat ?? 88;
+                const lit = layer.light ?? 54;
+                const drift = layer.hueDrift ?? 40;
+                const petal = ctx.createRadialGradient(cx, cy, zoneInner, cx, cy, zoneOuter);
+                const shimmerT = typeof t === 'number' ? t : performance.now() * 0.001;
+                if (layer.key === 'high') {
+                    const pulse = 0.5 + 0.5 * Math.sin(shimmerT * 4.4);
+                    const ripple = Math.sin(shimmerT * 5.8);
+                    const h0 = (hue + shimmerT * 42 + ripple * 18) % 360;
+                    const h1 = (hue + drift * 0.35 + shimmerT * 28 + ripple * 12) % 360;
+                    const h2 = (hue + drift * 0.7 + shimmerT * 55 - ripple * 10) % 360;
+                    petal.addColorStop(0, `hsla(${h0}, ${Math.min(100, sat + 10)}%, ${lit + 14 + pulse * 18}%, ${layer.alpha * (0.6 + pulse * 0.15)})`);
+                    petal.addColorStop(0.55, `hsla(${h1}, ${sat + 6}%, ${lit + 8 + pulse * 16}%, ${layer.alpha * (0.92 + pulse * 0.08)})`);
+                    petal.addColorStop(1, `hsla(${h2}, ${sat}%, ${lit + pulse * 12}%, ${layer.alpha * 0.9})`);
+                } else {
+                    petal.addColorStop(0, `hsla(${hue}, ${sat}%, ${lit + 6}%, ${layer.alpha * 0.55})`);
+                    petal.addColorStop(0.55, `hsla(${(hue + drift * 0.35) % 360}, ${sat}%, ${lit}%, ${layer.alpha})`);
+                    petal.addColorStop(1, `hsla(${(hue + drift * 0.7) % 360}, ${sat - 4}%, ${lit - 8}%, ${layer.alpha * 0.85})`);
+                }
+                return petal;
             }
 
             _bassLevelFromSmooth(smooth) {
@@ -1921,13 +1977,16 @@
                 const sat = layer.sat ?? 88;
                 const lit = layer.light ?? 54;
                 const drift = layer.hueDrift ?? 40;
+                const stepAng = (Math.PI * 2) / n;
+                const aLast = this._spectrumAngle(n - 1, n, layer.phaseBins);
+                const seamNorm = this._spectrumPetalNorm(0, radii, n, maxRing, petalFloor);
+                const seamR = zoneInner + (zoneOuter - zoneInner) * seamNorm;
                 ctx.beginPath();
                 let outerCloseX = 0;
                 let outerCloseY = 0;
-                for (let i = 0; i <= n; i++) {
-                    const ii = i % n;
-                    const a = this._spectrumAngle(ii, n, layer.phaseBins);
-                    const norm = this._spectrumPetalNorm(ii, radii, n, maxRing, petalFloor);
+                for (let i = 0; i < n; i++) {
+                    const a = this._spectrumAngle(i, n, layer.phaseBins);
+                    const norm = this._spectrumPetalNorm(i, radii, n, maxRing, petalFloor);
                     const r = zoneInner + (zoneOuter - zoneInner) * norm;
                     const x = cx + Math.cos(a) * r;
                     const y = cy + Math.sin(a) * r;
@@ -1935,12 +1994,15 @@
                         ctx.moveTo(x, y);
                         outerCloseX = x;
                         outerCloseY = y;
-                    } else if (i === n) {
-                        ctx.lineTo(outerCloseX, outerCloseY);
                     } else {
                         ctx.lineTo(x, y);
                     }
                 }
+                for (let s = 1; s <= 3; s++) {
+                    const a = aLast + stepAng * (s / 4);
+                    ctx.lineTo(cx + Math.cos(a) * seamR, cy + Math.sin(a) * seamR);
+                }
+                ctx.lineTo(outerCloseX, outerCloseY);
                 const innerPad = coreR;
                 for (let i = n - 1; i >= 0; i--) {
                     const a = this._spectrumAngle(i, n, layer.phaseBins);
@@ -1949,10 +2011,9 @@
                 ctx.closePath();
                 const canConic = typeof ctx.createConicGradient === 'function';
                 const useOuterPalette = layer.key === 'low' && canConic;
-                const useConic = (layer.key === 'high' || layer.key === 'mid' || useOuterPalette) && canConic;
+                const useConic = useOuterPalette;
+                const ribbonSeam = this._spectrumRibbonSeamAngle(n, layer.phaseBins);
                 if (useConic) {
-                    const phase = (layer.phaseBins / n) * Math.PI * 2;
-                    const ribbonSeam = ((0.5) / n) * Math.PI * 2 - Math.PI / 2 + phase;
                     const rim = ctx.createConicGradient(ribbonSeam + Math.PI, cx, cy);
                     const steps = useOuterPalette ? 20 : (layer.key === 'high' ? 24 : 16);
                     const bass = layer.bassLevel ?? 0;
@@ -1968,38 +2029,15 @@
                         const u = k / steps;
                         rim.addColorStop(u, this._spectrumConicStop(u, stopOpts));
                     }
+                    const endBlend = this._spectrumConicStop(1 - 1 / steps, stopOpts);
+                    rim.addColorStop(1 - 1 / steps, endBlend);
                     rim.addColorStop(1, wrap);
                     ctx.fillStyle = rim;
                 } else {
-                    const petal = ctx.createRadialGradient(cx, cy, zoneInner, cx, cy, zoneOuter);
-                    const shimmerT = typeof t === 'number' ? t : performance.now() * 0.001;
-                    if (layer.key === 'high') {
-                        const pulse = 0.5 + 0.5 * Math.sin(shimmerT * 4.4);
-                        const h0 = (hue + shimmerT * 42) % 360;
-                        const h1 = (hue + drift * 0.35 + shimmerT * 28) % 360;
-                        const h2 = (hue + drift * 0.7 + shimmerT * 55) % 360;
-                        petal.addColorStop(0, `hsla(${h0}, ${Math.min(100, sat + 10)}%, ${lit + 14 + pulse * 18}%, ${layer.alpha * (0.6 + pulse * 0.15)})`);
-                        petal.addColorStop(0.55, `hsla(${h1}, ${sat + 6}%, ${lit + 8 + pulse * 16}%, ${layer.alpha * (0.92 + pulse * 0.08)})`);
-                        petal.addColorStop(1, `hsla(${h2}, ${sat}%, ${lit + pulse * 12}%, ${layer.alpha * 0.9})`);
-                    } else {
-                        petal.addColorStop(0, `hsla(${hue}, ${sat}%, ${lit + 6}%, ${layer.alpha * 0.55})`);
-                        petal.addColorStop(0.55, `hsla(${(hue + drift * 0.35) % 360}, ${sat}%, ${lit}%, ${layer.alpha})`);
-                        petal.addColorStop(1, `hsla(${(hue + drift * 0.7) % 360}, ${sat - 4}%, ${lit - 8}%, ${layer.alpha * 0.85})`);
-                    }
-                    ctx.fillStyle = petal;
+                    ctx.fillStyle = this._spectrumPetalRadialFill(ctx, cx, cy, zoneInner, zoneOuter, layer, coreHue, t);
                 }
                 ctx.fill();
-                const shimmerT = typeof t === 'number' ? t : performance.now() * 0.001;
-                if (layer.key === 'high') {
-                    const pulse = 0.5 + 0.5 * Math.sin(shimmerT * 5.2);
-                    const rimHue = (hue + shimmerT * 40) % 360;
-                    ctx.strokeStyle = `hsla(${rimHue}, ${Math.min(100, sat + 12)}%, ${lit + 20 + pulse * 14}%, ${layer.alpha * (0.42 + pulse * 0.38)})`;
-                    ctx.lineWidth = 1.35;
-                } else {
-                    ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${lit + 14}%, ${layer.alpha * 0.38})`;
-                    ctx.lineWidth = 1;
-                }
-                ctx.stroke();
+                this._patchSpectrumRibbonSeam(ctx, cx, cy, coreR, zoneOuter, ribbonSeam, ctx.fillStyle);
             }
 
             _drawDigitalSpectrumFlower(canvas, layers, n, coreHue = 175, drawT) {
