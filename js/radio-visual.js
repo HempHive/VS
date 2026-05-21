@@ -31,6 +31,8 @@
                 this._volDrag = false;
                 this._rvAutoFadeRaf = null;
                 this.digitalCenterMode = 'spectrum';
+                /** Clock, station LCD, side spectrum EQ, and dash crossfader on the spectrum pane. */
+                this._digitalSpectrumHudVisible = true;
                 this._digitalDeckBView = 'video';
                 /** Staging overlay in spectrum pane: null | video | projectm | bars | queue */
                 this._digitalStagingView = null;
@@ -1526,10 +1528,33 @@
                 }
             }
 
+            _syncDigitalSpectrumHud() {
+                const pane = this.els.digitalCenterSpectrum;
+                if (!pane) return;
+                const show = this._digitalSpectrumHudVisible !== false;
+                pane.classList.toggle('is-spectrum-hud-hidden', !show);
+                if (this.els.btnDigitalSpectrum) {
+                    this.els.btnDigitalSpectrum.setAttribute('aria-pressed', show ? 'true' : 'false');
+                    this.els.btnDigitalSpectrum.title = show
+                        ? 'Spectrum view · Tap again to hide clock, stations, EQ, and crossfader'
+                        : 'Spectrum view (HUD hidden) · Tap to show clock, stations, EQ, and crossfader';
+                }
+            }
+
+            _toggleDigitalSpectrumHud() {
+                this._digitalSpectrumHudVisible = !this._digitalSpectrumHudVisible;
+                this._syncDigitalSpectrumHud();
+            }
+
             _setDigitalCenterMode(mode) {
                 const next = (mode === 'deckB') ? 'deckB' : 'spectrum';
+                const wasDeckB = this.digitalCenterMode === 'deckB';
                 this.digitalCenterMode = next;
                 try { localStorage.setItem('radioVisual.digitalCenter.v1', next); } catch (_) {}
+                if (next === 'spectrum' && wasDeckB) {
+                    this._digitalSpectrumHudVisible = true;
+                    this._syncDigitalSpectrumHud();
+                }
                 if (this.els.digitalCenterSpectrum) {
                     this.els.digitalCenterSpectrum.classList.toggle('is-active', next === 'spectrum');
                 }
@@ -2264,6 +2289,7 @@
 
             _drawDigitalSpectrum() {
                 if (this.skin !== 'digital' || this.digitalCenterMode !== 'spectrum') return;
+                if (!this._digitalSpectrumHudVisible) return;
                 const cL = this.els.digitalSpectrumCanvasL;
                 const cR = this.els.digitalSpectrumCanvasR;
                 if (!cL || !cR) return;
@@ -3257,6 +3283,7 @@
                     this._digitalStagingView = null;
                     try { this._tearDownDigitalStagingView(); } catch (_) {}
                     try { this._setDigitalCenterMode(this.digitalCenterMode); } catch (_) {}
+                    try { this._syncDigitalSpectrumHud(); } catch (_) {}
                     try { this._initDigitalSpectrumBg(); } catch (_) {}
                     try {
                         if (localStorage.getItem(RadioVisualEngine.AUTOMIX_ENABLED_KEY) === '1') {
@@ -3292,9 +3319,15 @@
                     }
                     if (btnVis) this._wireDigitalVisBgButton(btnVis, sig);
                     if (btnDigitalSpectrum) {
+                        btnDigitalSpectrum.title = 'Spectrum view · Tap again to hide clock, stations, EQ, and crossfader';
+                        btnDigitalSpectrum.setAttribute('aria-pressed', 'true');
                         btnDigitalSpectrum.addEventListener('click', (ev) => {
                             this._stopClick(ev);
-                            this._setDigitalCenterMode('spectrum');
+                            if (this.digitalCenterMode === 'spectrum') {
+                                this._toggleDigitalSpectrumHud();
+                            } else {
+                                this._setDigitalCenterMode('spectrum');
+                            }
                         }, sig);
                     }
                     if (btnDigitalDeckB) {

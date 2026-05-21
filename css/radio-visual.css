@@ -857,6 +857,20 @@
         #radio-visual-root .radio-visual-digital-center-pane.is-active {
             display: flex;
         }
+        /* Spectrum HUD toggle (Spectrum button while already on spectrum) */
+        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-center-info,
+        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-car-dash-canvas,
+        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-spectrum-side,
+        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-dash-xfade {
+            visibility: hidden;
+            pointer-events: none;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-dash-stack {
+            pointer-events: none;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-spectrum-row {
+            justify-content: center;
+        }
         #radio-visual-root .radio-visual-digital-spectrum-side .radio-visual-digital-spectrum-canvas {
             position: absolute;
             inset: 0;
