@@ -1577,19 +1577,13 @@
 
             _spectrumPetalNorm(ii, radii, n, maxRing, petalFloor) {
                 const raw = (radii[ii] || 0) / maxRing;
-                const nearSeam = ii <= 1 || ii >= n - 2;
-                if (!nearSeam) {
+                if (ii !== 0 && ii !== n - 1) {
                     return Math.min(1, Math.max(petalFloor, raw));
                 }
-                let sum = 0;
-                let c = 0;
-                for (let d = -1; d <= 1; d++) {
-                    const j = (ii + d + n) % n;
-                    sum += (radii[j] || 0) / maxRing;
-                    c++;
-                }
-                const seam = sum / Math.max(1, c);
-                return Math.min(1, Math.max(petalFloor, seam));
+                const other = ii === 0 ? (radii[n - 1] || 0) : (radii[0] || 0);
+                const seam = ((radii[ii] || 0) + other) / (2 * maxRing);
+                const blended = raw * 0.78 + seam * 0.22;
+                return Math.min(1, Math.max(petalFloor, blended));
             }
 
             _spectrumRibbonSeamAngle(n, phaseBins) {
@@ -1599,10 +1593,10 @@
 
             _patchSpectrumRibbonSeam(ctx, cx, cy, coreR, zoneOuter, seamAngle, fillStyle) {
                 if (!fillStyle) return;
-                const half = (Math.PI * 2) / Math.max(8, RadioVisualEngine.SPECTRUM_ANGULAR_BINS) * 0.55;
+                const half = (Math.PI * 2) / Math.max(8, RadioVisualEngine.SPECTRUM_ANGULAR_BINS) * 0.22;
                 const a0 = seamAngle - half;
                 const a1 = seamAngle + half;
-                const rim = zoneOuter + 1.5;
+                const rim = zoneOuter + 0.4;
                 ctx.save();
                 ctx.beginPath();
                 ctx.moveTo(cx + Math.cos(a0) * coreR, cy + Math.sin(a0) * coreR);
@@ -1998,10 +1992,8 @@
                         ctx.lineTo(x, y);
                     }
                 }
-                for (let s = 1; s <= 3; s++) {
-                    const a = aLast + stepAng * (s / 4);
-                    ctx.lineTo(cx + Math.cos(a) * seamR, cy + Math.sin(a) * seamR);
-                }
+                const aMid = aLast + stepAng * 0.5;
+                ctx.lineTo(cx + Math.cos(aMid) * seamR, cy + Math.sin(aMid) * seamR);
                 ctx.lineTo(outerCloseX, outerCloseY);
                 const innerPad = coreR;
                 for (let i = n - 1; i >= 0; i--) {
