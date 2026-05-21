@@ -2392,7 +2392,13 @@ function randomGlowColor() {
                     window.__canvasGestureLockUntil = Date.now() + CANVAS_GESTURE_COOLDOWN_MS;
                 };
                 const onPointerDown = (e) => {
-                    pDownTarget = e.target || null;
+                    const t = e.target || null;
+                    if (t && typeof t.closest === 'function'
+                        && (t.closest('#radio-visual-root') || t.closest('#dj-visual-root'))) {
+                        pDownTarget = null;
+                        return;
+                    }
+                    pDownTarget = t;
                     pDownX = e.clientX || (e.touches && e.touches[0]?.clientX) || 0;
                     pDownY = e.clientY || (e.touches && e.touches[0]?.clientY) || 0;
                     pDownTime = Date.now();
@@ -2400,6 +2406,7 @@ function randomGlowColor() {
                 };
                 const onPointerUpCanvas = (e) => {
                     if (!state || !state.isPlaying) return;
+                    if (!pDownTarget) return;
                     // ignore if UI overlays present
                     const overlay = document.getElementById('overlay');
                     if (overlay && !overlay.classList.contains('hidden') && overlay.style.display !== 'none') return;
@@ -2486,7 +2493,11 @@ function randomGlowColor() {
                             if (e.target && e.target.closest && e.target.closest('#dj-deck-splitter')) return;
                             if (pDownTarget && pDownTarget.closest && pDownTarget.closest('#dj-deck-splitter')) return;
                         } catch (_) {}
-                        if (pDownTarget && typeof pDownTarget.closest === 'function' && pDownTarget.closest('#dj-visual-root')) {
+                        const gestureFromDeckOrRadioUi = (el) => {
+                            if (!el || typeof el.closest !== 'function') return false;
+                            return !!(el.closest('#dj-visual-root') || el.closest('#radio-visual-root'));
+                        };
+                        if (gestureFromDeckOrRadioUi(pDownTarget) || gestureFromDeckOrRadioUi(e.target)) {
                             return;
                         }
                         if (canvasGestureLocked()) return;
@@ -4571,7 +4582,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
 			try {
 				const horizIntent = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? Math.abs(e.deltaX) : (e.shiftKey ? Math.abs(e.deltaY) : 0));
 				if (horizIntent > 5) {
-					const inUi = !!(e.target && (e.target.closest('#top-menu-content') || e.target.closest('#settings-panel') || e.target.closest('#webm-settings-panel') || e.target.closest('#bottom-avatar-content') || e.target.closest('#keyboard-shortcuts-panel') || e.target.closest('#dj-visual-root')));
+					const inUi = !!(e.target && (e.target.closest('#top-menu-content') || e.target.closest('#settings-panel') || e.target.closest('#webm-settings-panel') || e.target.closest('#bottom-avatar-content') || e.target.closest('#keyboard-shortcuts-panel') || e.target.closest('#dj-visual-root') || e.target.closest('#radio-visual-root')));
 					if (!inUi) {
 						// One step per gesture: lock during momentum and unlock after wheel quiets down
 						if (!window.__wheelNavLocked) {

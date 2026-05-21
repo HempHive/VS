@@ -85,7 +85,7 @@
                     const t = ev.target;
                     if (!t || typeof t.closest !== 'function') return false;
                     if (t.closest('button')) return true;
-                    if (t.closest('input')) return true;
+                    if (t.closest('input, [role="slider"]')) return true;
                     if (t.closest('select')) return true;
                     if (t.closest('textarea')) return true;
                     if (t.closest('.radio-visual-digital-automix-panel')) return true;
@@ -3443,7 +3443,15 @@
                         }, sig);
                     }
                     if (crossDig) {
+                        const stopXfadePointerBubble = (ev) => {
+                            try { ev.stopPropagation(); } catch (_) {}
+                            try { window.__suppressNextClick = true; } catch (_) {}
+                        };
                         crossDig.addEventListener('input', () => this._setCrossfadeX(crossDig.value), sig);
+                        crossDig.addEventListener('pointerdown', stopXfadePointerBubble, sig);
+                        crossDig.addEventListener('pointerup', stopXfadePointerBubble, sig);
+                        crossDig.addEventListener('pointercancel', stopXfadePointerBubble, sig);
+                        crossDig.addEventListener('change', stopXfadePointerBubble, sig);
                     }
                     if (btnDigitalMix) this._wireDigitalMixButton(btnDigitalMix, sig);
                     if (digitalAutoMixSlider) {
