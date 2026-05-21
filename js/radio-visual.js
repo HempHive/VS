@@ -41,7 +41,7 @@
                 this._volUnmuteNorm = 0.5;
                 this._digitalStageClickTimer = null;
                 this._digitalBgGifIdx = 0;
-                this._digitalBgGifEnabled = true;
+                this._digitalBgGifEnabled = false;
                 /** Smoothed ring radii per band: low (base), mid, high (top). */
                 this._spectrumRingSmooth = { low: null, mid: null, high: null };
                 this._digitalBgGifFilesList = null;
@@ -190,13 +190,12 @@
             }
 
             _isDigitalBgGifEnabled() {
-                if (this._digitalBgGifEnabled === false) return false;
                 try {
                     const raw = localStorage.getItem(RadioVisualEngine.DIGITAL_BG_GIF_ENABLED_KEY);
                     if (raw === '0') return false;
                     if (raw === '1') return true;
                 } catch (_) {}
-                return this._digitalBgGifEnabled !== false;
+                return !!this._digitalBgGifEnabled;
             }
 
             _setDigitalBgGifEnabled(enabled) {
@@ -247,18 +246,15 @@
             _initDigitalSpectrumBg() {
                 try {
                     const raw = localStorage.getItem(RadioVisualEngine.DIGITAL_BG_GIF_ENABLED_KEY);
-                    if (raw === '0') {
+                    if (raw === '1') {
+                        this._digitalBgGifEnabled = true;
+                    } else if (raw === '0') {
                         this._digitalBgGifEnabled = false;
                     } else {
-                        this._digitalBgGifEnabled = true;
-                        if (raw !== '1') {
-                            try {
-                                localStorage.setItem(RadioVisualEngine.DIGITAL_BG_GIF_ENABLED_KEY, '1');
-                            } catch (_) {}
-                        }
+                        this._digitalBgGifEnabled = false;
                     }
                 } catch (_) {
-                    this._digitalBgGifEnabled = true;
+                    this._digitalBgGifEnabled = false;
                 }
                 this._syncDigitalVisBgButton();
                 if (!this._isDigitalBgGifEnabled()) return;
@@ -2612,7 +2608,6 @@
                     }},
                     ...(deckBInPanel ? [{
                         label: 'DECKS',
-                        decks: true,
                         fn: () => { this._loadVisualByName('DJ Decks'); }
                     }] : []),
                     { label: 'Queue', fn: () => {
@@ -2633,9 +2628,9 @@
                 items.forEach((it) => {
                     const b = document.createElement('button');
                     b.type = 'button';
-                    b.className = 'radio-visual-btn' + (it.decks ? ' radio-visual-btn--decks' : '');
+                    b.className = 'radio-visual-btn';
                     b.textContent = it.label;
-                    if (it.decks) {
+                    if (it.label === 'DECKS') {
                         b.title = 'Open DJ Decks visual';
                         b.setAttribute('aria-label', 'Open DJ Decks visual');
                     }
@@ -3061,11 +3056,11 @@
                 btnDigitalDeckB.textContent = 'Deck B';
                 btnVis = document.createElement('button');
                 btnVis.type = 'button';
-                btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-vis-btn is-active';
+                btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-vis-btn';
                 btnVis.textContent = '🔆';
-                btnVis.title = 'Tap: next background · Hold: turn off background';
+                btnVis.title = 'Background off · Tap to turn on';
                 btnVis.setAttribute('aria-label', 'Digital background visual');
-                btnVis.setAttribute('aria-pressed', 'true');
+                btnVis.setAttribute('aria-pressed', 'false');
                 digitalToolbar.appendChild(btnVis);
                 digitalToolbar.appendChild(btnDigitalSpectrum);
                 digitalToolbar.appendChild(btnDigitalDeckB);

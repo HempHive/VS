@@ -1891,7 +1891,7 @@
                 overlay.classList.remove('digital-out');
                 // Ensure background gif is not shown behind canvas once playing
                 try { hidePtaStartBg(); } catch(e) {}
-                // Start with last visual if saved, else "DJ Decks" if available
+                // Start with last visual if saved, else Digital Radio
                 try {
                     let idxToLoad = -1;
                     try {
@@ -1908,7 +1908,7 @@
                         }
                     } catch(_) {}
                     if (idxToLoad < 0) {
-                        idxToLoad = Math.max(0, modes.findIndex(m => m && m.name === "DJ Decks"));
+                        idxToLoad = Math.max(0, modes.findIndex(m => m && m.name === 'Digital Radio'));
                     }
                     loadMode(idxToLoad);
                 } catch(e) {
