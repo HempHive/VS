@@ -2610,6 +2610,11 @@
                         }
                         this._loadVisualByName('Audio Bars');
                     }},
+                    ...(deckBInPanel ? [{
+                        label: 'DECKS',
+                        decks: true,
+                        fn: () => { this._loadVisualByName('DJ Decks'); }
+                    }] : []),
                     { label: 'Queue', fn: () => {
                         if (deckBInPanel) {
                             this._toggleDigitalStagingFeature('queue');
@@ -2628,8 +2633,12 @@
                 items.forEach((it) => {
                     const b = document.createElement('button');
                     b.type = 'button';
-                    b.className = 'radio-visual-btn';
+                    b.className = 'radio-visual-btn' + (it.decks ? ' radio-visual-btn--decks' : '');
                     b.textContent = it.label;
+                    if (it.decks) {
+                        b.title = 'Open DJ Decks visual';
+                        b.setAttribute('aria-label', 'Open DJ Decks visual');
+                    }
                     const stagingKind = stagingByLabel[it.label];
                     if (deckBInPanel && stagingKind) {
                         b.dataset.rvStaging = stagingKind;

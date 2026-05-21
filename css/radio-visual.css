@@ -838,7 +838,7 @@
         }
         #radio-visual-root .radio-visual-digital-feature-btns {
             display: grid;
-            grid-template-columns: repeat(8, minmax(0, 1fr));
+            grid-template-columns: repeat(9, minmax(0, 1fr));
             gap: clamp(4px, 0.8vw, 8px);
             max-width: none;
             margin: 0 0 10px;
@@ -865,6 +865,13 @@
         #radio-visual-root .radio-visual-digital-feature-btns .radio-visual-btn:hover {
             filter: brightness(1.15);
             border-color: rgba(180, 100, 255, 0.65);
+        }
+        #radio-visual-root .radio-visual-digital-feature-btns .radio-visual-btn--decks {
+            border-color: rgba(180, 100, 255, 0.7);
+            background: linear-gradient(180deg, #6b42a8 0%, #3a2070 52%, #221040 100%);
+            color: #f4e8ff;
+            font-weight: 700;
+            letter-spacing: 0.08em;
         }
         #radio-visual-root .radio-visual-digital-center-pane.is-active {
             display: flex;
