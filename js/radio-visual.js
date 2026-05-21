@@ -369,6 +369,12 @@
                 });
             }
 
+            _failDigitalStagingView() {
+                this._digitalStagingView = null;
+                this._tearDownDigitalStagingView();
+                this._syncDigitalStagingButtons();
+            }
+
             _tearDownDigitalStagingView() {
                 try {
                     if (this._rvDigitalPmAnimId) cancelAnimationFrame(this._rvDigitalPmAnimId);
@@ -500,7 +506,10 @@
                 this._tearDownDigitalStagingView();
                 mount.classList.add('is-active');
                 try { initAudio(); } catch (_) {}
-                if (!state || !state.audioCtx || typeof butterchurn === 'undefined') return;
+                if (!state || !state.audioCtx || typeof butterchurn === 'undefined') {
+                    this._failDigitalStagingView();
+                    return;
+                }
                 const canvas = document.createElement('canvas');
                 canvas.className = 'radio-visual-digital-deck-b-canvas';
                 mount.appendChild(canvas);
@@ -536,7 +545,10 @@
                 } catch (_) {
                     viz = null;
                 }
-                if (!viz) return;
+                if (!viz) {
+                    this._failDigitalStagingView();
+                    return;
+                }
                 this._rvDigitalPmVisualizer = viz;
                 this._rvDigitalPmCanvas = canvas;
                 try { viz.connectAudio(state.analyserNode); } catch (_) {}
@@ -585,7 +597,10 @@
 
             _showDigitalStagingAudioBars(mountEl) {
                 const mount = mountEl || this._stagingContentMount();
-                if (!mount || typeof THREE === 'undefined' || typeof sceneBars !== 'function') return;
+                if (!mount || typeof THREE === 'undefined' || typeof sceneBars !== 'function') {
+                    this._failDigitalStagingView();
+                    return;
+                }
                 this._tearDownDigitalStagingView();
                 mount.classList.add('is-active');
                 try { initAudio(); } catch (_) {}
@@ -2829,7 +2844,7 @@
                 let stageD = null;
                 if (showDigital) {
                 stageD = document.createElement('section');
-                stageD.className = 'radio-visual-stage radio-visual-skin--digital';
+                stageD.className = 'radio-visual-stage radio-visual-skin--digital is-active';
                 stageD.setAttribute('aria-label', 'Digital radio');
                 const dPanel = document.createElement('div');
                 dPanel.className = 'radio-visual-digital-panel';
@@ -3091,30 +3106,33 @@
                 if (analogBtns) this._buildFeatureButtons(analogBtns);
                 if (digBtns) this._buildFeatureButtons(digBtns, { deckBInPanel: true });
                 if (digitalCenter) this._bindDigitalStageInteractions(digitalCenter);
-                this._applySkinUi();
-                this._syncVolumeFromGlobal();
-                this._setAutoFadeDurationNorm(this._autoFadeDurationNorm());
-                this._setAutoMixMaxNorm(this._autoMixMaxNorm());
-                if (showDigital) {
-                    this._setDigitalCenterMode(this.digitalCenterMode);
-                    this._initDigitalSpectrumBg();
+                try { this._applySkinUi(); } catch (_) {}
+                try { this._syncVolumeFromGlobal(); } catch (_) {}
+                if (showAnalogue) {
+                    try { this._setAutoFadeDurationNorm(this._autoFadeDurationNorm()); } catch (_) {}
+                    try { this._setAutoMixMaxNorm(this._autoMixMaxNorm()); } catch (_) {}
                 }
-                this._syncDeckSwitches();
-                this._syncAutoMixKnob();
-                this._syncAutoFadeChangeStationKnob();
-                this._syncDonutCoreHues();
+                try { this._syncDeckSwitches(); } catch (_) {}
+                try { this._syncAutoMixKnob(); } catch (_) {}
+                try { this._syncAutoFadeChangeStationKnob(); } catch (_) {}
+                try { this._syncDonutCoreHues(); } catch (_) {}
                 if (showDigital) {
+                    this._digitalStagingView = null;
+                    try { this._tearDownDigitalStagingView(); } catch (_) {}
+                    try { this._setDigitalCenterMode(this.digitalCenterMode); } catch (_) {}
+                    try { this._initDigitalSpectrumBg(); } catch (_) {}
                     try {
                         if (localStorage.getItem(RadioVisualEngine.AUTOMIX_ENABLED_KEY) === '1') {
                             state.autoMixEnabled = true;
                         }
                     } catch (_) {}
-                    if (this._isAutoMixEnabled()) {
-                        try { this._scheduleRadioAutoMix(); } catch (_) {}
-                    }
+                    try {
+                        if (this._isAutoMixEnabled()) this._scheduleRadioAutoMix();
+                    } catch (_) {}
                 }
-                this._updateStationUi();
-                this._tickClock();
+                try { this._updateStationUi(); } catch (_) {}
+                try { this._tickClock(); } catch (_) {}
+                try { this.onResize(); } catch (_) {}
 
                 if (btnA) {
                     btnA.addEventListener('click', (ev) => { this._stopClick(ev); this._setSkin('analogue'); }, sig);
@@ -3270,8 +3288,9 @@
                 this._clearRadioAutoMixTimer();
                 this._rvAutoMixCyclePending = false;
                 try { this._closeDigitalAutoMixPanel(); } catch (_) {}
-                try { this._tearDownDigitalDeckBPlayer(); } catch (_) {}
                 this._digitalStagingView = null;
+                try { this._tearDownDigitalStagingView(); } catch (_) {}
+                try { this._tearDownDigitalDeckBPlayer(); } catch (_) {}
                 if (this._rvAutoFadeRaf) {
                     try { cancelAnimationFrame(this._rvAutoFadeRaf); } catch (_) {}
                     this._rvAutoFadeRaf = null;

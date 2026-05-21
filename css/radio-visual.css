@@ -424,6 +424,7 @@
         }
         #radio-visual-root .radio-visual-btn:hover { filter: brightness(1.12); }
         #radio-visual-root .radio-visual-digital-panel {
+            position: relative;
             border-radius: 14px;
             padding: clamp(16px, 3vw, 24px);
             background:
@@ -576,8 +577,15 @@
         #radio-visual-root .radio-visual-digital-staging-mount.is-active {
             display: flex;
         }
-        #radio-visual-root .radio-visual-digital-center-pane:has(.radio-visual-digital-staging-mount.is-active)
-            .radio-visual-digital-spectrum-row {
+        #radio-visual-root .radio-visual-digital-center-pane:has(
+            .radio-visual-digital-staging-mount.is-active .radio-visual-digital-deck-b-canvas
+        ) .radio-visual-digital-spectrum-row,
+        #radio-visual-root .radio-visual-digital-center-pane:has(
+            .radio-visual-digital-staging-mount.is-active .radio-visual-digital-staging-video
+        ) .radio-visual-digital-spectrum-row,
+        #radio-visual-root .radio-visual-digital-center-pane:has(
+            .radio-visual-digital-staging-mount.is-active .radio-visual-digital-deck-b-queue
+        ) .radio-visual-digital-spectrum-row {
             visibility: hidden;
             pointer-events: none;
         }
