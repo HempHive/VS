@@ -1876,11 +1876,12 @@
                 return ((ii + 0.5) / n) * Math.PI * 2 - Math.PI / 2 + phase;
             }
 
-            _fillDigitalSpectrumPetal(ctx, cx, cy, innerR, outerR, radii, n, layer, coreHue, t) {
+            _fillDigitalSpectrumPetal(ctx, cx, cy, innerR, outerR, coreR, radii, n, layer, coreHue, t) {
                 const li = layer.layerIndex;
                 const layerCount = 3;
                 const span = (outerR - innerR) / layerCount;
-                const zoneInner = innerR + li * span;
+                /** All bands share the donut edge; each expands to its own outer guide ring. */
+                const zoneInner = coreR;
                 const zoneOuter = innerR + (li + 1) * span;
                 const petalFloor = 0.1;
                 const maxRing = layer.maxRing || 0.64;
@@ -1899,7 +1900,7 @@
                     if (i === 0) ctx.moveTo(x, y);
                     else ctx.lineTo(x, y);
                 }
-                const innerPad = zoneInner + span * 0.06;
+                const innerPad = coreR;
                 for (let i = n - 1; i >= 0; i--) {
                     const a = this._spectrumAngle(i, n, layer.phaseBins);
                     ctx.lineTo(cx + Math.cos(a) * innerPad, cy + Math.sin(a) * innerPad);
@@ -1964,7 +1965,7 @@
                 const tDraw = typeof drawT === 'number' ? drawT : performance.now() * 0.001;
                 for (const layer of ordered) {
                     if (!layer.radii || !layer.radii.length) continue;
-                    this._fillDigitalSpectrumPetal(ctx, cx, cy, innerR, outerR, layer.radii, n, layer, coreHue, tDraw);
+                    this._fillDigitalSpectrumPetal(ctx, cx, cy, innerR, outerR, coreR, layer.radii, n, layer, coreHue, tDraw);
                 }
                 const hue = ((Number(coreHue) || 0) % 360 + 360) % 360;
                 ctx.beginPath();
