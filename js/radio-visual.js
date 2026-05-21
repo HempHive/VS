@@ -1954,33 +1954,25 @@
                 const sat = layer.sat ?? 88;
                 const lit = layer.light ?? 54;
                 const drift = layer.hueDrift ?? 40;
-                const stepAng = (Math.PI * 2) / n;
                 const normLast = this._spectrumPetalNorm(n - 1, radii, n, maxRing, petalFloor);
                 const normFirst = this._spectrumPetalNorm(0, radii, n, maxRing, petalFloor);
-                const normMid = (normLast + normFirst) * 0.5;
-                const rMid = zoneInner + (zoneOuter - zoneInner) * normMid;
-                const aMid = this._spectrumAngle(n - 1, n, layer.phaseBins) + stepAng * 0.5;
-                const midX = cx + Math.cos(aMid) * rMid;
-                const midY = cy + Math.sin(aMid) * rMid;
+                const normSeam = (normLast + normFirst) * 0.5;
+                const rSeam = zoneInner + (zoneOuter - zoneInner) * normSeam;
+                const aFirst = this._spectrumAngle(0, n, layer.phaseBins);
+                const aLast = this._spectrumAngle(n - 1, n, layer.phaseBins);
+                let arcEnd = aFirst;
+                if (arcEnd <= aLast) arcEnd += Math.PI * 2;
                 ctx.beginPath();
-                let outerCloseX = 0;
-                let outerCloseY = 0;
                 for (let i = 0; i < n; i++) {
                     const a = this._spectrumAngle(i, n, layer.phaseBins);
                     const norm = this._spectrumPetalNorm(i, radii, n, maxRing, petalFloor);
                     const r = zoneInner + (zoneOuter - zoneInner) * norm;
                     const x = cx + Math.cos(a) * r;
                     const y = cy + Math.sin(a) * r;
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                        outerCloseX = x;
-                        outerCloseY = y;
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
                 }
-                ctx.lineTo(midX, midY);
-                ctx.lineTo(outerCloseX, outerCloseY);
+                ctx.arc(cx, cy, rSeam, aLast, arcEnd, false);
                 const innerPad = coreR;
                 for (let i = n - 1; i >= 0; i--) {
                     const a = this._spectrumAngle(i, n, layer.phaseBins);
