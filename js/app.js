@@ -1804,16 +1804,23 @@ function randomGlowColor() {
 		function setBottomTextRandomColor() {
 			const titleEl = document.getElementById('mode-title');
 			const subEl = document.getElementById('mode-sub');
-			if(!titleEl && !subEl) return;
-			let hex = '#ffffff';
+			if (!titleEl && !subEl) return;
+			const pickHudHsl = (hue, sat, lit) => `hsl(${hue} ${sat}% ${lit}%)`;
+			let titleHue = Math.floor(Math.random() * 360);
+			let subHue = (titleHue + 132 + Math.floor(Math.random() * 96)) % 360;
+			let pairKey = '';
 			let attempts = 0;
 			do {
-				hex = '#' + Math.floor(Math.random()*0xFFFFFF).toString(16).padStart(6,'0');
+				titleHue = Math.floor(Math.random() * 360);
+				subHue = (titleHue + 132 + Math.floor(Math.random() * 96)) % 360;
+				pairKey = `${titleHue}|${subHue}`;
 				attempts++;
-			} while (recentBottomColors.includes(hex) && attempts < 10);
-			if (titleEl) titleEl.style.color = hex;
-			if (subEl) subEl.style.color = hex;
-			recentBottomColors.push(hex);
+			} while (recentBottomColors.includes(pairKey) && attempts < 12);
+			const titleColor = pickHudHsl(titleHue, 78 + Math.floor(Math.random() * 14), 68 + Math.floor(Math.random() * 12));
+			const subColor = pickHudHsl(subHue, 72 + Math.floor(Math.random() * 18), 62 + Math.floor(Math.random() * 14));
+			if (titleEl) titleEl.style.color = titleColor;
+			if (subEl) subEl.style.color = subColor;
+			recentBottomColors.push(pairKey);
 			if (recentBottomColors.length > 16) recentBottomColors.shift();
 		}
         let modeShuffleOn = false;

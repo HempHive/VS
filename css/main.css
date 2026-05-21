@@ -379,13 +379,15 @@
             display: inline; 
             letter-spacing: 2px; 
             margin-right: 8px; 
-            text-shadow: 0 0 10px rgba(0,0,0,0.5); 
+            color: #f2ecff;
+            text-shadow: 0 0 12px rgba(180, 160, 255, 0.45), 0 0 10px rgba(0, 0, 0, 0.5);
         }
 		#mode-sub { 
 			font-size: clamp(16px, 2vw, 26px); 
-			color: #aaa; 
+			color: #5ee8c8;
 			letter-spacing: 2px; 
 			display: inline; 
+			text-shadow: 0 0 12px rgba(40, 220, 180, 0.4), 0 0 10px rgba(0, 0, 0, 0.45);
 		}
 
         .hidden { opacity: 0 !important; pointer-events: none; }

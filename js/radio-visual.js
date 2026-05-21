@@ -1911,31 +1911,61 @@
                 const useConic = (layer.key === 'high' || layer.key === 'mid' || useOuterPalette) && canConic;
                 if (useConic) {
                     const rim = ctx.createConicGradient(-Math.PI / 2, cx, cy);
-                    const steps = useOuterPalette ? 20 : 16;
+                    const steps = useOuterPalette ? 20 : (layer.key === 'high' ? 24 : 16);
                     const bass = layer.bassLevel ?? 0;
                     const phaseBase = this._outerHuePhase || 0;
+                    const shimmerT = typeof t === 'number' ? t : performance.now() * 0.001;
+                    const isHigh = layer.key === 'high';
                     for (let k = 0; k <= steps; k++) {
                         const u = k / steps;
                         let h;
+                        let satUse = sat;
+                        let litUse = lit;
+                        let a0 = layer.alpha * (0.5 + 0.5 * u);
                         if (useOuterPalette) {
                             h = this._paletteHueAt(phaseBase + u * 1.1 + bass * 0.35);
+                        } else if (isHigh) {
+                            const ripple = Math.sin(u * Math.PI * 6 + shimmerT * 5.8);
+                            const pulse = 0.65 + 0.35 * Math.sin(shimmerT * 4.4 + u * Math.PI * 2);
+                            h = (hue + u * drift + shimmerT * 48 + ripple * 32) % 360;
+                            satUse = Math.min(100, sat + 6 + pulse * 10);
+                            litUse = lit + 10 + pulse * 22 + ripple * 8;
+                            a0 = layer.alpha * (0.62 + 0.38 * u) * (0.88 + pulse * 0.12);
                         } else {
                             h = (hue + u * drift) % 360;
                         }
-                        const a0 = layer.alpha * (0.5 + 0.5 * u);
-                        rim.addColorStop(u, `hsla(${h}, ${sat}%, ${lit}%, ${a0})`);
+                        rim.addColorStop(u, `hsla(${h}, ${satUse}%, ${litUse}%, ${a0})`);
                     }
                     ctx.fillStyle = rim;
                 } else {
                     const petal = ctx.createRadialGradient(cx, cy, zoneInner, cx, cy, zoneOuter);
-                    petal.addColorStop(0, `hsla(${hue}, ${sat}%, ${lit + 6}%, ${layer.alpha * 0.55})`);
-                    petal.addColorStop(0.55, `hsla(${(hue + drift * 0.35) % 360}, ${sat}%, ${lit}%, ${layer.alpha})`);
-                    petal.addColorStop(1, `hsla(${(hue + drift * 0.7) % 360}, ${sat - 4}%, ${lit - 8}%, ${layer.alpha * 0.85})`);
+                    const shimmerT = typeof t === 'number' ? t : performance.now() * 0.001;
+                    if (layer.key === 'high') {
+                        const pulse = 0.5 + 0.5 * Math.sin(shimmerT * 4.4);
+                        const h0 = (hue + shimmerT * 42) % 360;
+                        const h1 = (hue + drift * 0.35 + shimmerT * 28) % 360;
+                        const h2 = (hue + drift * 0.7 + shimmerT * 55) % 360;
+                        petal.addColorStop(0, `hsla(${h0}, ${Math.min(100, sat + 10)}%, ${lit + 14 + pulse * 18}%, ${layer.alpha * (0.6 + pulse * 0.15)})`);
+                        petal.addColorStop(0.55, `hsla(${h1}, ${sat + 6}%, ${lit + 8 + pulse * 16}%, ${layer.alpha * (0.92 + pulse * 0.08)})`);
+                        petal.addColorStop(1, `hsla(${h2}, ${sat}%, ${lit + pulse * 12}%, ${layer.alpha * 0.9})`);
+                    } else {
+                        petal.addColorStop(0, `hsla(${hue}, ${sat}%, ${lit + 6}%, ${layer.alpha * 0.55})`);
+                        petal.addColorStop(0.55, `hsla(${(hue + drift * 0.35) % 360}, ${sat}%, ${lit}%, ${layer.alpha})`);
+                        petal.addColorStop(1, `hsla(${(hue + drift * 0.7) % 360}, ${sat - 4}%, ${lit - 8}%, ${layer.alpha * 0.85})`);
+                    }
                     ctx.fillStyle = petal;
                 }
                 ctx.fill();
-                ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${lit + 14}%, ${layer.alpha * 0.38})`;
-                ctx.lineWidth = 1;
+                const shimmerT = typeof t === 'number' ? t : performance.now() * 0.001;
+                if (layer.key === 'high') {
+                    const pulse = 0.5 + 0.5 * Math.sin(shimmerT * 5.2);
+                    const rimHue = (hue + shimmerT * 40) % 360;
+                    ctx.strokeStyle = `hsla(${rimHue}, ${Math.min(100, sat + 12)}%, ${lit + 20 + pulse * 14}%, ${layer.alpha * (0.42 + pulse * 0.38)})`;
+                    ctx.lineWidth = 1.35;
+                } else {
+                    ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${lit + 14}%, ${layer.alpha * 0.38})`;
+                    ctx.lineWidth = 1;
+                }
                 ctx.stroke();
             }
 
