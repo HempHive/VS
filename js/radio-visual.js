@@ -85,6 +85,7 @@
                     if (t.closest('input')) return true;
                     if (t.closest('select')) return true;
                     if (t.closest('textarea')) return true;
+                    if (t.closest('.radio-visual-digital-automix-panel')) return true;
                 } catch (_) {}
                 return false;
             }
@@ -1289,6 +1290,24 @@
                     longPressHandled = false;
                 }, sig);
                 btn.addEventListener('click', (ev) => this._stopClick(ev), sig);
+            }
+
+            _wireDigitalAutoMixPanelDismiss(sig) {
+                const dismissIfOutside = (ev) => {
+                    const panel = this.els.digitalAutoMixPanel;
+                    if (!panel || !panel.classList.contains('is-open')) return;
+                    const t = ev.target;
+                    if (!t || typeof t.closest !== 'function') return;
+                    if (panel.contains(t)) return;
+                    const mixBtn = this.els.btnDigitalMix;
+                    if (mixBtn && (mixBtn === t || mixBtn.contains(t))) return;
+                    this._closeDigitalAutoMixPanel();
+                };
+                document.addEventListener('pointerdown', dismissIfOutside, { capture: true, signal: sig });
+                document.addEventListener('click', dismissIfOutside, { capture: true, signal: sig });
+                document.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Escape') this._closeDigitalAutoMixPanel();
+                }, sig);
             }
 
             _syncAutoFadeChangeStationKnob() {
@@ -3134,20 +3153,19 @@
                     }
                     if (btnDigitalMix) this._wireDigitalMixButton(btnDigitalMix, sig);
                     if (digitalAutoMixSlider) {
-                        digitalAutoMixSlider.addEventListener('input', () => {
+                        const applyAutoMixMax = () => {
                             const mins = this._writeAutoMixMaxMin(Number(digitalAutoMixSlider.value));
                             if (digitalAutoMixReadout) digitalAutoMixReadout.textContent = `${mins}m`;
                             this._setAutoMixMaxNorm(this._autoMixMaxNorm());
                             if (this._isAutoMixEnabled()) this._scheduleRadioAutoMix();
+                        };
+                        digitalAutoMixSlider.addEventListener('input', applyAutoMixMax, sig);
+                        digitalAutoMixSlider.addEventListener('change', () => {
+                            applyAutoMixMax();
+                            this._closeDigitalAutoMixPanel();
                         }, sig);
                     }
-                    document.addEventListener('pointerdown', (ev) => {
-                        const panel = this.els.digitalAutoMixPanel;
-                        if (!panel || !panel.classList.contains('is-open')) return;
-                        if (panel.contains(ev.target)) return;
-                        if (btnDigitalMix && btnDigitalMix.contains(ev.target)) return;
-                        this._closeDigitalAutoMixPanel();
-                    }, sig);
+                    this._wireDigitalAutoMixPanelDismiss(sig);
                     if (digitalToolbar) {
                         digitalToolbar.querySelectorAll('[data-rv-digital]').forEach((b) => {
                             b.addEventListener('click', (ev) => {
