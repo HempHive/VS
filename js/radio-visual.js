@@ -1572,7 +1572,13 @@
             }
 
             _unifySpectrumRibbonSeam(radii) {
-                return this._blendSpectrumCircularEnds(radii, 5);
+                const blended = this._blendSpectrumCircularEnds(radii, 3);
+                const n = blended.length;
+                if (n < 2) return blended;
+                const tie = (blended[0] + blended[n - 1]) * 0.5;
+                blended[0] = tie;
+                blended[n - 1] = tie;
+                return blended;
             }
 
             _spectrumPetalNorm(ii, radii, n, maxRing, petalFloor) {
@@ -1948,13 +1954,20 @@
                 const sat = layer.sat ?? 88;
                 const lit = layer.light ?? 54;
                 const drift = layer.hueDrift ?? 40;
+                const stepAng = (Math.PI * 2) / n;
+                const normLast = this._spectrumPetalNorm(n - 1, radii, n, maxRing, petalFloor);
+                const normFirst = this._spectrumPetalNorm(0, radii, n, maxRing, petalFloor);
+                const normMid = (normLast + normFirst) * 0.5;
+                const rMid = zoneInner + (zoneOuter - zoneInner) * normMid;
+                const aMid = this._spectrumAngle(n - 1, n, layer.phaseBins) + stepAng * 0.5;
+                const midX = cx + Math.cos(aMid) * rMid;
+                const midY = cy + Math.sin(aMid) * rMid;
                 ctx.beginPath();
                 let outerCloseX = 0;
                 let outerCloseY = 0;
-                for (let i = 0; i <= n; i++) {
-                    const ii = i % n;
-                    const a = this._spectrumAngle(ii, n, layer.phaseBins);
-                    const norm = this._spectrumPetalNorm(ii, radii, n, maxRing, petalFloor);
+                for (let i = 0; i < n; i++) {
+                    const a = this._spectrumAngle(i, n, layer.phaseBins);
+                    const norm = this._spectrumPetalNorm(i, radii, n, maxRing, petalFloor);
                     const r = zoneInner + (zoneOuter - zoneInner) * norm;
                     const x = cx + Math.cos(a) * r;
                     const y = cy + Math.sin(a) * r;
@@ -1962,12 +1975,12 @@
                         ctx.moveTo(x, y);
                         outerCloseX = x;
                         outerCloseY = y;
-                    } else if (i === n) {
-                        ctx.lineTo(outerCloseX, outerCloseY);
                     } else {
                         ctx.lineTo(x, y);
                     }
                 }
+                ctx.lineTo(midX, midY);
+                ctx.lineTo(outerCloseX, outerCloseY);
                 const innerPad = coreR;
                 for (let i = n - 1; i >= 0; i--) {
                     const a = this._spectrumAngle(i, n, layer.phaseBins);
