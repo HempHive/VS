@@ -1572,40 +1572,17 @@
             }
 
             _unifySpectrumRibbonSeam(radii) {
-                return this._blendSpectrumCircularEnds(radii, 7);
+                return this._blendSpectrumCircularEnds(radii, 5);
             }
 
             _spectrumPetalNorm(ii, radii, n, maxRing, petalFloor) {
                 const raw = (radii[ii] || 0) / maxRing;
-                if (ii !== 0 && ii !== n - 1) {
-                    return Math.min(1, Math.max(petalFloor, raw));
-                }
-                const other = ii === 0 ? (radii[n - 1] || 0) : (radii[0] || 0);
-                const seam = ((radii[ii] || 0) + other) / (2 * maxRing);
-                const blended = raw * 0.78 + seam * 0.22;
-                return Math.min(1, Math.max(petalFloor, blended));
+                return Math.min(1, Math.max(petalFloor, raw));
             }
 
             _spectrumRibbonSeamAngle(n, phaseBins) {
                 const phase = (phaseBins / n) * Math.PI * 2;
                 return ((0.5) / n) * Math.PI * 2 - Math.PI / 2 + phase;
-            }
-
-            _patchSpectrumRibbonSeam(ctx, cx, cy, coreR, zoneOuter, seamAngle, fillStyle) {
-                if (!fillStyle) return;
-                const half = (Math.PI * 2) / Math.max(8, RadioVisualEngine.SPECTRUM_ANGULAR_BINS) * 0.22;
-                const a0 = seamAngle - half;
-                const a1 = seamAngle + half;
-                const rim = zoneOuter + 0.4;
-                ctx.save();
-                ctx.beginPath();
-                ctx.moveTo(cx + Math.cos(a0) * coreR, cy + Math.sin(a0) * coreR);
-                ctx.arc(cx, cy, rim, a0, a1);
-                ctx.arc(cx, cy, coreR, a1, a0, true);
-                ctx.closePath();
-                ctx.fillStyle = fillStyle;
-                ctx.fill();
-                ctx.restore();
             }
 
             _spectrumConicStop(u, opts) {
@@ -1971,16 +1948,13 @@
                 const sat = layer.sat ?? 88;
                 const lit = layer.light ?? 54;
                 const drift = layer.hueDrift ?? 40;
-                const stepAng = (Math.PI * 2) / n;
-                const aLast = this._spectrumAngle(n - 1, n, layer.phaseBins);
-                const seamNorm = this._spectrumPetalNorm(0, radii, n, maxRing, petalFloor);
-                const seamR = zoneInner + (zoneOuter - zoneInner) * seamNorm;
                 ctx.beginPath();
                 let outerCloseX = 0;
                 let outerCloseY = 0;
-                for (let i = 0; i < n; i++) {
-                    const a = this._spectrumAngle(i, n, layer.phaseBins);
-                    const norm = this._spectrumPetalNorm(i, radii, n, maxRing, petalFloor);
+                for (let i = 0; i <= n; i++) {
+                    const ii = i % n;
+                    const a = this._spectrumAngle(ii, n, layer.phaseBins);
+                    const norm = this._spectrumPetalNorm(ii, radii, n, maxRing, petalFloor);
                     const r = zoneInner + (zoneOuter - zoneInner) * norm;
                     const x = cx + Math.cos(a) * r;
                     const y = cy + Math.sin(a) * r;
@@ -1988,13 +1962,12 @@
                         ctx.moveTo(x, y);
                         outerCloseX = x;
                         outerCloseY = y;
+                    } else if (i === n) {
+                        ctx.lineTo(outerCloseX, outerCloseY);
                     } else {
                         ctx.lineTo(x, y);
                     }
                 }
-                const aMid = aLast + stepAng * 0.5;
-                ctx.lineTo(cx + Math.cos(aMid) * seamR, cy + Math.sin(aMid) * seamR);
-                ctx.lineTo(outerCloseX, outerCloseY);
                 const innerPad = coreR;
                 for (let i = n - 1; i >= 0; i--) {
                     const a = this._spectrumAngle(i, n, layer.phaseBins);
@@ -2029,7 +2002,6 @@
                     ctx.fillStyle = this._spectrumPetalRadialFill(ctx, cx, cy, zoneInner, zoneOuter, layer, coreHue, t);
                 }
                 ctx.fill();
-                this._patchSpectrumRibbonSeam(ctx, cx, cy, coreR, zoneOuter, ribbonSeam, ctx.fillStyle);
             }
 
             _drawDigitalSpectrumFlower(canvas, layers, n, coreHue = 175, drawT) {
