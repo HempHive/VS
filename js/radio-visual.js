@@ -1020,7 +1020,14 @@
                 } catch (_) {}
             }
 
+            /** Space-bar short tap (and external callers); same as the digital toolbar Fade button. */
+            triggerAutoFadeFromShortcut() {
+                try { this._triggerAutoFade(); } catch (_) {}
+            }
+
             _runLocalAutoFade() {
+                const fadeInFlight = !!(this._rvAutoFadeRaf && this._rvFadeTargetDeck);
+                const prevFadeTarget = this._rvFadeTargetDeck;
                 if (this._rvAutoFadeRaf) {
                     try { cancelAnimationFrame(this._rvAutoFadeRaf); } catch (_) {}
                     this._rvAutoFadeRaf = null;
@@ -1052,10 +1059,10 @@
                 }
                 const x = this._getCrossfadeX();
                 let targetDeck = x < 0.5 ? 'b' : 'a';
-                if (this._rvAutoFadeRaf && this._rvFadeTargetDeck) {
-                    const destX = this._rvFadeTargetDeck === 'b' ? 1 : 0;
+                if (fadeInFlight && prevFadeTarget) {
+                    const destX = prevFadeTarget === 'b' ? 1 : 0;
                     if (Math.abs(x - destX) > 0.001) {
-                        targetDeck = this._rvFadeTargetDeck === 'a' ? 'b' : 'a';
+                        targetDeck = prevFadeTarget === 'a' ? 'b' : 'a';
                     }
                 }
                 const endVal = targetDeck === 'b' ? 1 : 0;

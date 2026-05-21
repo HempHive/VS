@@ -5528,6 +5528,13 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             return (av && av.name === 'DJ Decks') ? av : null;
         }
 
+        function getDigitalRadioVisualIfActive() {
+            const av = state && state.activeVisualizer;
+            if (!av || av.name !== 'Digital Radio') return null;
+            if (typeof av.triggerAutoFadeFromShortcut === 'function') return av;
+            return null;
+        }
+
         /**
          * Space-bar long-press support.
          *
@@ -5829,20 +5836,25 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 } catch(_) {}
             } else if (e.code === 'Space' || e.key === ' ') {
                 // Space:
-                //   short tap → trigger AUTO-FADE (or reverse it mid-flight)
-                //   long hold → pause both decks (or start the active-deck side if both silent)
-                // When DJ Decks isn't the active visualizer we fall back to the legacy
-                // play/pause-Deck-A behavior so Space still does something useful.
+                //   short tap → AUTO-FADE / Fade (DJ Decks or Digital Radio)
+                //   long hold → pause both decks (DJ Decks only)
+                //   otherwise legacy play/pause Deck A
                 e.preventDefault();
                 if (e.repeat) return; // Key auto-repeat must not re-arm the timer
                 const engine = getDjDecksEngineIfActive();
-                if (!engine) {
+                const radioVis = getDigitalRadioVisualIfActive();
+                if (!engine && !radioVis) {
                     try {
                         if (audioEl) {
                             if (audioEl.paused) audioEl.play().catch(() => {});
                             else audioEl.pause();
                         }
                     } catch(_) {}
+                    return;
+                }
+                if (radioVis && !engine) {
+                    clearSpaceLongPress();
+                    spaceLongPressFired = false;
                     return;
                 }
                 clearSpaceLongPress();
@@ -5922,10 +5934,18 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             document.addEventListener('keyup', (e) => {
                 if (e && e.code && sampleKeyHoldTimers.has(e.code)) clearSampleKeyHold(e.code);
                 if (e && (e.code === 'Space' || e.key === ' ')) {
+                    const eng = getDjDecksEngineIfActive();
+                    const radioVis = getDigitalRadioVisualIfActive();
+                    if (radioVis && !eng) {
+                        if (!spaceLongPressFired) {
+                            try { radioVis.triggerAutoFadeFromShortcut(); } catch (_) {}
+                        }
+                        spaceLongPressFired = false;
+                        return;
+                    }
                     if (spaceLongPressTimer) {
                         clearSpaceLongPress();
                         if (!spaceLongPressFired) {
-                            const eng = getDjDecksEngineIfActive();
                             if (eng && typeof eng.triggerAutoFadeFromShortcut === 'function') {
                                 eng.triggerAutoFadeFromShortcut();
                             }
