@@ -2276,18 +2276,20 @@
             color: #FFD700;
             text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 4px rgba(0,0,0,0.85), 0 0 10px rgba(0,0,0,0.55);
         }
-        /* IDEAS sample slot: ytu.gif uses cover (same as Avatar / ProjectM / Play), not stretch */
+        /* RADIO shortcut: Digital Radio visual (dig.gif) */
         #dj-visual-root #dj-a-sfx-wav,
         #dj-visual-root #dj-b-sfx-wav {
-            background-size: 100% 100%, cover;
+            background-image: url('../assets/images/btn.png'), url('../assets/gifs/dig.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, 100% 100%;
         }
         #dj-visual-root #dj-a-sfx-wav:hover,
         #dj-visual-root #dj-b-sfx-wav:hover,
         #dj-visual-root #dj-a-sfx-wav.on,
-        #dj-visual-root #dj-b-sfx-wav.on,
-        #dj-visual-root #dj-a-sfx-wav.sample-playing,
-        #dj-visual-root #dj-b-sfx-wav.sample-playing {
-            background-size: 100% 100%, cover;
+        #dj-visual-root #dj-b-sfx-wav.on {
+            background-image: url('../assets/images/btn.png'), url('../assets/gifs/dig.gif');
+            background-size: 100% 100%, 100% 100%;
         }
         /* Deck A indicator: matching Deck B visual is active */
         #dj-visual-root .btn.dj-fx.deck-b-active {
@@ -2901,7 +2903,7 @@
             text-align: center;
         }
         /* Deck A/B right grid: uniform 12px * scale ramp across every grid cell —
-         * FX rows, SFX rows (including the IDEAS sample slot #dj-?-sfx-wav, which
+         * FX rows, SFX rows (including the RADIO shortcut #dj-?-sfx-wav, which
          * previously fell back to the base 10px * scale rule at line ~2071 and so
          * rendered smaller than its neighbours), Play, and the toggle buttons.
          * Keeping a single rule means all right-grid labels read at the same

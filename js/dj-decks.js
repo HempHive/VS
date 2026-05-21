@@ -2619,15 +2619,15 @@
 
             <button type="button" class="btn dj-fx" id="dj-fx-high" title="Toggle avatar / WebM overlay (centres in Deck B while a visual is playing there)">Avatar</button>
             <button type="button" class="btn dj-fx" id="dj-a-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Open or close station list (top menu)">Stations</button>
+            <button type="button" class="btn dj-fx" id="dj-a-sfx-wav" title="Switch to Digital Radio visual">RADIO</button>
 
             <button type="button" class="btn dj-fx" id="dj-fx-treble" title="Open or close Mix Settings (bottom panel)">Mixer</button>
             <button type="button" class="btn dj-fx" id="dj-fx-low" title="Toggle Deck B video player">Video</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Open or close the TEXT-IN panel (rising text on the main screen)">TEXT-IN</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-distort" title="Open or close station list (top menu)">Stations</button>
 
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Open K-BOP in Deck B (toggle)">K-BOP</button>
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Open Karaoke Nerds in Deck B (toggle)">KARAOKE</button>
-            <button type="button" class="btn dj-sfx" id="dj-a-sfx-wav" title="IDEAS">IDEAS</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Open or close the TEXT-IN panel (rising text on the main screen)">TEXT-IN</button>
 
             <button type="button" class="dj-play" id="dj-play-a" title="Play or pause Deck A">Play</button>
             <button type="button" class="dj-tbtn" id="dj-a-next" title="Tune to another random station">Rand ⟶</button>
@@ -2800,15 +2800,15 @@
 
                 <button type="button" class="btn dj-fx" id="dj-b-fx-high" title="Toggle avatar in Deck B viz area (arrow keys still nudge position)">Avatar</button>
                 <button type="button" class="btn dj-fx" id="dj-b-queue" title="Show local file queues (Deck A &amp; B)">QUEUE</button>
-                <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Show or hide station cycle list and video queue (Deck B)">Stations</button>
+                <button type="button" class="btn dj-fx" id="dj-b-sfx-wav" title="Switch to Digital Radio visual">RADIO</button>
 
                 <button type="button" class="btn dj-fx" id="dj-b-fx-treble" title="Open or close Mix Settings (bottom panel)">Mixer</button>
                 <button type="button" class="btn dj-fx" id="dj-b-fx-low" title="Toggle Deck B video player">Video</button>
-                <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Open or close TEXT-IN, displaying rising text inside the Deck B player">TEXT-IN</button>
+                <button type="button" class="btn dj-fx" id="dj-b-fx-distort" title="Show or hide station cycle list and video queue (Deck B)">Stations</button>
 
                 <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Open K-BOP in Deck B (toggle)">K-BOP</button>
                 <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Open Karaoke Nerds in Deck B (toggle)">KARAOKE</button>
-                <button type="button" class="btn dj-sfx" id="dj-b-sfx-wav" title="IDEAS">IDEAS</button>
+                <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Open or close TEXT-IN, displaying rising text inside the Deck B player">TEXT-IN</button>
 
                 <button type="button" class="dj-play" id="dj-play-b" title="Play or pause Deck B">Play</button>
                 <button type="button" class="dj-tbtn" id="dj-b-next" title="Tune deck B to another random station">Rand ⟶</button>
@@ -3693,7 +3693,7 @@
                         if (!stationIndexHasStreamUrl(idx)) return false;
                         const expected = sanitizeUrlForAudio(String(stations[idx].url || ''));
                         const elements = (deckKey === 'b')
-                            ? [audioElB]
+                            ? [audioElB, audioElRadioBAlt].filter(Boolean)
                             : [audioEl, audioElRadioAAlt].filter(Boolean);
                         for (const el of elements) {
                             if (!el) continue;
@@ -3724,7 +3724,40 @@
                  * prep element using the same rule `playRadio()` uses internally.
                  */
                 const getRadioReadinessTargetEl = (deckKey) => {
-                    if (deckKey === 'b') return audioElB;
+                    if (deckKey === 'b') {
+                        try {
+                            const idx = getDeckRadioStationIndex('b');
+                            const expected = stationIndexHasStreamUrl(idx)
+                                ? sanitizeUrlForAudio(String(stations[idx].url || ''))
+                                : '';
+                            const pickLoaded = (el) => {
+                                if (!el) return null;
+                                const src = sanitizeUrlForAudio(String(el.currentSrc || el.src || ''));
+                                if (!src || src === 'about:blank') return null;
+                                if (expected && src !== expected) return null;
+                                return el;
+                            };
+                            if (expected) {
+                                const onAlt = pickLoaded(audioElRadioBAlt);
+                                if (onAlt) return onAlt;
+                                const onMain = pickLoaded(audioElB);
+                                if (onMain) return onMain;
+                            }
+                            if (
+                                typeof radioBHandoffAbortCtrl !== 'undefined' && radioBHandoffAbortCtrl &&
+                                audioElRadioBAlt &&
+                                state && state.deckSourceMode && state.deckSourceMode.b === 'radio'
+                            ) {
+                                const outputFromSecondary = (typeof isDeckBRadioOutputFromAlt === 'function')
+                                    ? isDeckBRadioOutputFromAlt()
+                                    : false;
+                                const prepEl = outputFromSecondary ? audioElB : audioElRadioBAlt;
+                                const prepSrc = prepEl ? String(prepEl.currentSrc || prepEl.src || '') : '';
+                                if (prepEl && prepSrc && prepSrc !== 'about:blank') return prepEl;
+                            }
+                        } catch (_) {}
+                        return audioElB;
+                    }
                     try {
                         const idx = getDeckRadioStationIndex('a');
                         const expected = stationIndexHasStreamUrl(idx)
@@ -4693,6 +4726,7 @@
                 const setDeckVolB = (v) => {
                     const cv = clampVol(v);
                     try { if (audioElB) audioElB.volume = cv; } catch (_) {}
+                    try { if (audioElRadioBAlt) audioElRadioBAlt.volume = cv; } catch (_) {}
                     try { syncDeckVolFillCss(this.els.deckVolB, cv); } catch (_) {}
                     if (cv > 0.001) savedDeckVolB = cv;
                     syncDeckVolMuteButtons();
@@ -5569,13 +5603,6 @@
                 if (djNextB) djNextB.addEventListener('click', djRandomB, sig);
 
                 try {
-                    if (typeof bindSample === 'function') {
-                        bindSample(root.querySelector('#dj-a-sfx-wav'), audioElSample4, 'sampleLoop4', 'sourceNodeSample4');
-                        bindSample(root.querySelector('#dj-b-sfx-wav'), audioElSample4, 'sampleLoop4', 'sourceNodeSample4');
-                    }
-                } catch (_) {}
-
-                try {
                     const karaA = root.querySelector('#dj-a-sfx-w1');
                     const karaB = root.querySelector('#dj-b-sfx-w1');
                     const onKaraokeClick = (e) => {
@@ -5695,6 +5722,8 @@
                 bindVisualSwitch('dj-vis-blank', 'Blank');
                 bindVisualSwitch('dj-vis-bars', 'Audio Bars');
                 bindVisualSwitch('dj-vis-pm2', 'ProjectM v2');
+                bindVisualSwitch('dj-a-sfx-wav', 'Digital Radio');
+                bindVisualSwitch('dj-b-sfx-wav', 'Digital Radio');
 
                 const bindDeckBPreviewMode = (id, mode) => {
                     const el = root.querySelector('#' + id);

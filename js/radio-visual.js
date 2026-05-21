@@ -830,9 +830,16 @@
             _audibleDeckElement() {
                 try {
                     const dk = this._crossfaderAudibleDeckKey();
-                    return dk === 'b'
-                        ? (typeof audioElB !== 'undefined' ? audioElB : null)
-                        : (typeof audioEl !== 'undefined' ? audioEl : null);
+                    if (dk === 'b') {
+                        if (typeof globalThis.getDeckBRadioAudibleEl === 'function') {
+                            return globalThis.getDeckBRadioAudibleEl();
+                        }
+                        return (typeof audioElB !== 'undefined' ? audioElB : null);
+                    }
+                    if (typeof globalThis.getDeckARadioAudibleEl === 'function') {
+                        return globalThis.getDeckARadioAudibleEl();
+                    }
+                    return (typeof audioEl !== 'undefined' ? audioEl : null);
                 } catch (_) {}
                 return null;
             }
@@ -1208,7 +1215,10 @@
                     localStorage.setItem(RadioVisualEngine.AUTOFADE_CHANGE_STATION_KEY, next ? '1' : '0');
                 } catch (_) {}
                 const cb = document.getElementById('dj-autofade-change-station');
-                if (cb) cb.checked = next;
+                if (cb) {
+                    cb.checked = next;
+                    try { cb.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+                }
                 this._syncAutoFadeChangeStationKnob();
             }
 
@@ -1352,8 +1362,10 @@
 
             _deckBActive() {
                 try {
-                    return !!(typeof audioElB !== 'undefined' && audioElB && audioElB.src &&
-                        audioElB.src !== 'about:blank' && !audioElB.paused && !audioElB.ended);
+                    const el = (typeof globalThis.getDeckBRadioAudibleEl === 'function')
+                        ? globalThis.getDeckBRadioAudibleEl()
+                        : ((typeof audioElB !== 'undefined') ? audioElB : null);
+                    return !!(el && el.src && el.src !== 'about:blank' && !el.paused && !el.ended);
                 } catch (_) {
                     return false;
                 }
@@ -3157,7 +3169,7 @@
                 mkRvDigitalBtn('b', 'B Play');
                 mkRvStationBtn('prev', 'B◀', 'b');
                 mkRvStationBtn('next', 'B▶', 'b');
-                const btnXfadeStation = document.createElement('button');
+                btnXfadeStation = document.createElement('button');
                 btnXfadeStation.type = 'button';
                 btnXfadeStation.className = 'radio-visual-btn radio-visual-digital-xfade-station-btn';
                 btnXfadeStation.dataset.rvDigital = 'xfade-station';

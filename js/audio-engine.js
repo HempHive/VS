@@ -76,6 +76,11 @@
                 state.gainRadioPrimaryPath.gain.value = 1.0;
                 state.gainRadioSecondaryPath = state.audioCtx.createGain();
                 state.gainRadioSecondaryPath.gain.value = 0.0;
+                // Deck B radio: dual <audio> summed into EQ highshelf (gapless station changes)
+                state.gainRadioBPrimaryPath = state.audioCtx.createGain();
+                state.gainRadioBPrimaryPath.gain.value = 1.0;
+                state.gainRadioBSecondaryPath = state.audioCtx.createGain();
+                state.gainRadioBSecondaryPath.gain.value = 0.0;
                 // Tap A into analyser
                 try { state.trimA.connect(state.analyserNodeA); } catch(_) {}
                 // Beat worklet for A (lazy: only when enabled)
@@ -1079,6 +1084,10 @@
                     try { state.gainRadioPrimaryPath.disconnect(); } catch (_) {}
                     srcNode.connect(state.gainRadioPrimaryPath);
                     state.gainRadioPrimaryPath.connect(eqHigh);
+                } else if (!isA && state.gainRadioBPrimaryPath && eqHigh) {
+                    try { state.gainRadioBPrimaryPath.disconnect(); } catch (_) {}
+                    srcNode.connect(state.gainRadioBPrimaryPath);
+                    state.gainRadioBPrimaryPath.connect(eqHigh);
                 } else if (eqHigh) srcNode.connect(eqHigh);
                 else if (gainFb) srcNode.connect(gainFb);
             } catch (_) {}
@@ -1319,6 +1328,7 @@
 
         function resetDeckFileQueuesAndRevoke() {
             try { resetRadioADualStreamHandoff(); } catch (_) {}
+            try { resetRadioBDualStreamHandoff(); } catch (_) {}
             revokeBlobSrc(audioEl);
             revokeBlobSrc(audioElB);
             ['a', 'b'].forEach((k) => {
@@ -1616,6 +1626,66 @@
                 state.radioAltAMediaWired = true;
             } catch (e) {
                 console.warn('Deck A radio alt element wiring failed:', e);
+            }
+        }
+
+        function abortRadioBHandoff() {
+            try {
+                if (radioBHandoffAbortCtrl) radioBHandoffAbortCtrl.abort();
+            } catch (_) {}
+            radioBHandoffAbortCtrl = null;
+        }
+
+        function resetRadioBDualStreamHandoff() {
+            abortRadioBHandoff();
+            try {
+                if (state.gainRadioBPrimaryPath) state.gainRadioBPrimaryPath.gain.value = 1;
+                if (state.gainRadioBSecondaryPath) state.gainRadioBSecondaryPath.gain.value = 0;
+            } catch (_) {}
+            try { revokeBlobSrc(audioElRadioBAlt); } catch (_) {}
+            try {
+                if (audioElRadioBAlt) {
+                    audioElRadioBAlt.pause();
+                    audioElRadioBAlt.removeAttribute('src');
+                    audioElRadioBAlt.load();
+                }
+            } catch (_) {}
+            try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
+        }
+
+        function isDeckBRadioOutputFromAlt() {
+            try {
+                if (!audioElRadioBAlt || !state.gainRadioBPrimaryPath || !state.gainRadioBSecondaryPath) return false;
+                const gS = Number(state.gainRadioBSecondaryPath.gain.value);
+                const gP = Number(state.gainRadioBPrimaryPath.gain.value);
+                return gS >= gP && gS > 0.01;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function getDeckBRadioAudibleEl() {
+            if (!audioElB) return audioElB;
+            try {
+                if (state && state.deckSourceMode && state.deckSourceMode.b === 'radio' && isDeckBRadioOutputFromAlt()) {
+                    return audioElRadioBAlt;
+                }
+            } catch (_) {}
+            return audioElB;
+        }
+
+        function ensureRadioBAltWired() {
+            if (!state.audioCtx || !state.eqB || !state.eqB.high || !state.gainRadioBSecondaryPath || !audioElRadioBAlt) return;
+            if (state.radioAltBMediaWired) return;
+            clearStaleDeckMediaSource('radioElementSourceBAlt');
+            try {
+                state.radioElementSourceBAlt = createMediaSourceFromElement(state.audioCtx, audioElRadioBAlt);
+                if (!state.radioElementSourceBAlt) return;
+                state.radioElementSourceBAlt.connect(state.gainRadioBSecondaryPath);
+                state.gainRadioBSecondaryPath.connect(state.eqB.high);
+                state.radioAltBMediaWired = true;
+            } catch (e) {
+                console.warn('Deck B radio alt element wiring failed:', e);
             }
         }
 

@@ -214,8 +214,10 @@ const QUALITY = {
         const audioEl = document.getElementById('radio-element');
         const audioElRadioAAlt = document.getElementById('radio-element-a-alt');
         const audioElB = document.getElementById('radio-element-b');
-        /** Abort in-flight Deck A radio crossfade when switching stations again quickly */
+        const audioElRadioBAlt = document.getElementById('radio-element-b-alt');
+        /** Abort in-flight Deck A/B radio crossfade when switching stations again quickly */
         let radioAHandoffAbortCtrl = null;
+        let radioBHandoffAbortCtrl = null;
         const RADIO_STATION_XFADE_KEY = 'dj.radio.stationCrossfade.v1';
         let radioStationCrossfadeEnabled = false;
         let radioStationCrossfadeSec = 0;
@@ -729,6 +731,7 @@ const QUALITY = {
                 currentStationBIndex = 0;
                 try { if (radioInputEl) radioInputEl.value = ''; } catch (_) {}
                 try { resetRadioADualStreamHandoff(); } catch (_) {}
+                try { resetRadioBDualStreamHandoff(); } catch (_) {}
                 try { if (audioEl) { audioEl.pause(); audioEl.removeAttribute('src'); audioEl.load(); } } catch (_) {}
                 try { if (audioElB) { audioElB.pause(); audioElB.removeAttribute('src'); audioElB.load(); } } catch (_) {}
             } else {
@@ -2861,6 +2864,7 @@ function exposeAppBindingsToGlobal() {
     try { g.audioEl = audioEl; } catch (_) {}
     try { g.audioElB = audioElB; } catch (_) {}
     try { g.audioElRadioAAlt = audioElRadioAAlt; } catch (_) {}
+    try { g.audioElRadioBAlt = audioElRadioBAlt; } catch (_) {}
     try { g.audioElSample = audioElSample; } catch (_) {}
     try { g.audioElSample1 = audioElSample1; } catch (_) {}
     try { g.audioElSample2 = audioElSample2; } catch (_) {}
@@ -3232,6 +3236,7 @@ function exposeAppBindingsToGlobal() {
     try { g.qi = qi; } catch (_) {}
     try { g.r = r; } catch (_) {}
     try { g.radioAHandoffAbortCtrl = radioAHandoffAbortCtrl; } catch (_) {}
+    try { g.radioBHandoffAbortCtrl = radioBHandoffAbortCtrl; } catch (_) {}
     try { g.radioBRetryAttempts = radioBRetryAttempts; } catch (_) {}
     try { g.radioInputEl = radioInputEl; } catch (_) {}
     try { g.refreshMixStationB = refreshMixStationB; } catch (_) {}
@@ -3607,6 +3612,11 @@ const refreshDjBeatLoopKnobVisuals = globalThis.refreshDjBeatLoopKnobVisuals;
 const removeQueuedTrack = globalThis.removeQueuedTrack;
 const resetDeckFileQueuesAndRevoke = globalThis.resetDeckFileQueuesAndRevoke;
 const resetRadioADualStreamHandoff = globalThis.resetRadioADualStreamHandoff;
+const abortRadioBHandoff = globalThis.abortRadioBHandoff;
+const resetRadioBDualStreamHandoff = globalThis.resetRadioBDualStreamHandoff;
+const ensureRadioBAltWired = globalThis.ensureRadioBAltWired;
+const getDeckBRadioAudibleEl = globalThis.getDeckBRadioAudibleEl;
+const isDeckBRadioOutputFromAlt = globalThis.isDeckBRadioOutputFromAlt;
 const revokeBlobSrc = globalThis.revokeBlobSrc;
 const sceneBarnsleyFern = globalThis.sceneBarnsleyFern;
 const sceneBars = globalThis.sceneBars;
@@ -4437,24 +4447,38 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             initAudio();
             state.deckSourceMode.b = 'radio';
             try { state.deckLocalDisplayName.b = ''; } catch (_) {}
-            revokeBlobSrc(audioElB);
 
-            let val = parseInt((mixStationB?.value)||'0', 10);
+            let val = parseInt((mixStationB?.value) || '0', 10);
             if (isNaN(val)) val = 0;
             const idx = Math.max(0, Math.min(stations.length - 1, val));
-            currentStationBIndex = idx; 
+            currentStationBIndex = idx;
 
             const sel = stations[idx];
             if (!sel || !sel.url) return;
+            const urlClean = sanitizeUrlForAudio(String(sel.url));
+
+            try { abortRadioBHandoff(); } catch (_) {}
+            const audibleEl = (typeof getDeckBRadioAudibleEl === 'function') ? getDeckBRadioAudibleEl() : audioElB;
+            const audibleSrc = audibleEl ? sanitizeUrlForAudio(String(audibleEl.currentSrc || audibleEl.src || '')) : '';
+            const audiblePlaying = !!(audibleEl && audibleSrc && !audibleEl.paused && !audibleEl.ended);
+            const warmCrossfade = !!(
+                state.gainRadioBPrimaryPath &&
+                state.gainRadioBSecondaryPath &&
+                audioElRadioBAlt &&
+                audiblePlaying &&
+                urlClean &&
+                audibleSrc &&
+                urlClean !== audibleSrc
+            );
+
+            if (!warmCrossfade) {
+                if (typeof resetRadioBDualStreamHandoff === 'function') resetRadioBDualStreamHandoff();
+                revokeBlobSrc(audioElB);
+            }
+
             try { setDjDeckRadioLoadingSpinner('b', true); } catch (_) {}
 
-            const media = audioElB; 
-            try { media.pause(); } catch(e) {}
-            media.crossOrigin = "anonymous";
-            media.src = sel.url;
-            state.audioElB = media;
-
-            media.play().then(() => {
+            const afterConnect = () => {
                 try {
                     if (state.audioCtx && state.audioCtx.state === 'suspended') state.audioCtx.resume();
                 } catch (_) {}
@@ -4464,8 +4488,10 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                 radioBRetryAttempts = 0;
                 try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
                 updateMixBStatus();
-            }).catch((e) => {
-                console.warn("Stream B Playback Error:", e);
+            };
+
+            const onPlayFail = (e) => {
+                console.warn('Stream B playback failed:', e);
                 try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
                 radioBRetryAttempts = (radioBRetryAttempts || 0) + 1;
                 if (radioBRetryAttempts <= MAX_RADIO_RETRIES && stations.length > 0) {
@@ -4475,19 +4501,54 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                     try { statusEl.innerText = 'Deck B: no playable station found.'; } catch (_) {}
                 }
                 updateMixBStatus();
-            });
+            };
+
+            if (!warmCrossfade) {
+                try { audioElB.pause(); } catch (_) {}
+                audioElB.crossOrigin = 'anonymous';
+                audioElB.src = urlClean;
+                state.audioElB = audioElB;
+                audioElB.play().then(afterConnect).catch(onPlayFail);
+                return;
+            }
+
+            try { ensureRadioBAltWired(); } catch (_) {}
+            if (!state.radioAltBMediaWired || !state.radioElementSourceBAlt) {
+                if (typeof resetRadioBDualStreamHandoff === 'function') resetRadioBDualStreamHandoff();
+                revokeBlobSrc(audioElB);
+                audioElB.crossOrigin = 'anonymous';
+                audioElB.src = urlClean;
+                audioElB.play().then(afterConnect).catch(onPlayFail);
+                return;
+            }
+
+            const outputFromSecondary = (typeof isDeckBRadioOutputFromAlt === 'function')
+                ? isDeckBRadioOutputFromAlt()
+                : false;
+            const liveEl = outputFromSecondary ? audioElRadioBAlt : audioElB;
+            const prepEl = outputFromSecondary ? audioElB : audioElRadioBAlt;
+            const liveGain = outputFromSecondary ? state.gainRadioBSecondaryPath : state.gainRadioBPrimaryPath;
+            const prepGain = outputFromSecondary ? state.gainRadioBPrimaryPath : state.gainRadioBSecondaryPath;
+
+            radioBHandoffAbortCtrl = new AbortController();
+            const signal = radioBHandoffAbortCtrl.signal;
+
+            beginDeckAPingPongMediaHandoff(
+                prepEl, liveEl, liveGain, prepGain,
+                urlClean, signal, 14000, afterConnect, onPlayFail
+            );
         }
         function stopRadioB() {
+            try { abortRadioBHandoff(); } catch (_) {}
+            try { if (typeof resetRadioBDualStreamHandoff === 'function') resetRadioBDualStreamHandoff(); } catch (_) {}
             try { state.deckSourceMode.b = 'radio'; } catch (_) {}
             try { state.deckLocalDisplayName.b = ''; } catch (_) {}
             try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
-            // Stop the persistent DOM element
             if (audioElB) {
-                try { audioElB.pause(); } catch(_) {}
-                try { audioElB.removeAttribute('src'); } catch(_) {}
-                try { audioElB.load(); } catch(_) {}
+                try { audioElB.pause(); } catch (_) {}
+                try { audioElB.removeAttribute('src'); } catch (_) {}
+                try { audioElB.load(); } catch (_) {}
             }
-            // We do not set state.audioElB to null here so the reference remains valid
             updateMixBStatus();
         }
         if (mixPlayB) mixPlayB.addEventListener('click', playRadioB);
