@@ -1547,6 +1547,26 @@
                 this._syncDigitalSpectrumHud();
             }
 
+            /** Default spectrum layout: no staging overlay, central dash visible. */
+            _returnToDefaultDigitalSpectrumView() {
+                if (this._digitalStagingView) {
+                    this._digitalStagingView = null;
+                    try { this._tearDownDigitalStagingView(); } catch (_) {}
+                    try { this._syncDigitalStagingButtons(); } catch (_) {}
+                }
+                if (this.digitalCenterMode !== 'spectrum') {
+                    this._setDigitalCenterMode('spectrum');
+                    return;
+                }
+                this._digitalSpectrumHudVisible = true;
+                try { this._syncDigitalSpectrumHud(); } catch (_) {}
+                const mount = this.els.digitalStagingMount;
+                if (mount) {
+                    mount.classList.remove('is-active');
+                    mount.setAttribute('aria-hidden', 'true');
+                }
+            }
+
             _setDigitalCenterMode(mode) {
                 const next = (mode === 'deckB') ? 'deckB' : 'spectrum';
                 const wasDeckB = this.digitalCenterMode === 'deckB';
@@ -3327,10 +3347,10 @@
                         btnDigitalSpectrum.setAttribute('aria-pressed', 'true');
                         btnDigitalSpectrum.addEventListener('click', (ev) => {
                             this._stopClick(ev);
-                            if (this.digitalCenterMode === 'spectrum') {
-                                this._toggleDigitalSpectrumHud();
+                            if (this.digitalCenterMode !== 'spectrum' || this._digitalStagingView) {
+                                this._returnToDefaultDigitalSpectrumView();
                             } else {
-                                this._setDigitalCenterMode('spectrum');
+                                this._toggleDigitalSpectrumHud();
                             }
                         }, sig);
                     }
