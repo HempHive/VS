@@ -50,6 +50,7 @@
                 this._digitalBgGifManifestPromise = null;
                 this._outerHuePhase = 0;
                 this._outerHueLastT = 0;
+                this._rvStagingPmFsToggleAt = 0;
             }
 
             static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
@@ -374,6 +375,7 @@
             }
 
             _tearDownDigitalStagingView() {
+                try { this._exitDigitalStagingPmFullscreen(); } catch (_) {}
                 try {
                     if (this._rvDigitalPmAnimId) cancelAnimationFrame(this._rvDigitalPmAnimId);
                 } catch (_) {}
@@ -591,6 +593,63 @@
                     } catch (_) {}
                 };
                 loop();
+                try {
+                    mount.title = 'Double-click for fullscreen · Esc to exit';
+                } catch (_) {}
+            }
+
+            _getDigitalStagingPmFullscreenEl() {
+                const mount = this._stagingContentMount();
+                if (!mount) return null;
+                const fs = document.fullscreenElement || document.webkitFullscreenElement;
+                if (!fs) return null;
+                if (fs === mount || mount.contains(fs)) return fs;
+                return null;
+            }
+
+            _afterDigitalStagingPmFullscreen() {
+                setTimeout(() => {
+                    try { if (this._rvDigitalPmResize) this._rvDigitalPmResize(); } catch (_) {}
+                    try { this.onResize(); } catch (_) {}
+                }, 200);
+            }
+
+            _exitDigitalStagingPmFullscreen() {
+                try {
+                    if (!this._getDigitalStagingPmFullscreenEl()) return;
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen().then(() => this._afterDigitalStagingPmFullscreen()).catch(() => this._afterDigitalStagingPmFullscreen());
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                        this._afterDigitalStagingPmFullscreen();
+                    }
+                } catch (_) {}
+            }
+
+            _toggleDigitalStagingProjectMFullscreen() {
+                const mount = this._stagingContentMount();
+                if (!mount || !this._rvDigitalPmCanvas || this._digitalStagingView !== 'projectm') return;
+                const now = Date.now();
+                if (now - (this._rvStagingPmFsToggleAt || 0) < 450) return;
+                this._rvStagingPmFsToggleAt = now;
+                try {
+                    if (this._getDigitalStagingPmFullscreenEl()) {
+                        this._exitDigitalStagingPmFullscreen();
+                        return;
+                    }
+                    const req = mount.requestFullscreen || mount.webkitRequestFullscreen;
+                    if (req) {
+                        req.call(mount).then(() => this._afterDigitalStagingPmFullscreen()).catch(() => {});
+                    }
+                } catch (_) {}
+            }
+
+            _isDigitalStagingProjectMTarget(el) {
+                if (!el || typeof el.closest !== 'function') return false;
+                if (this._digitalStagingView !== 'projectm') return false;
+                const mount = this._stagingContentMount();
+                if (!mount || !mount.classList.contains('is-active')) return false;
+                return !!el.closest('.radio-visual-digital-staging-mount');
             }
 
             _showDigitalStagingAudioBars(mountEl) {
@@ -2539,11 +2598,22 @@
                     try { ev.preventDefault(); } catch (_) {}
                     clearTimeout(this._digitalStageClickTimer);
                     this._digitalStageClickTimer = null;
+                    if (this._isDigitalStagingProjectMTarget(ev.target)) {
+                        this._toggleDigitalStagingProjectMFullscreen();
+                        return;
+                    }
                     try {
                         const fs = globalThis.toggleFullscreen;
                         if (typeof fs === 'function') fs();
                     } catch (_) {}
                 }, { signal: sig });
+                const onStagingPmFs = () => {
+                    if (this._digitalStagingView === 'projectm' && this._rvDigitalPmResize) {
+                        this._afterDigitalStagingPmFullscreen();
+                    }
+                };
+                document.addEventListener('fullscreenchange', onStagingPmFs, sig);
+                document.addEventListener('webkitfullscreenchange', onStagingPmFs, sig);
             }
 
             _applySkinUi() {
