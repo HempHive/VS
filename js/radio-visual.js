@@ -1587,6 +1587,14 @@
                 }
             }
 
+            _scheduleDigitalSpectrumLayoutSync() {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        try { this._resizeCanvases(); } catch (_) {}
+                    });
+                });
+            }
+
             _syncDigitalSpectrumHud() {
                 const show = this._digitalSpectrumHudVisible !== false;
                 const pane = this.els.digitalCenterSpectrum;
@@ -1598,6 +1606,9 @@
                     this.els.btnDigitalSpectrum.title = show
                         ? 'Spectrum view · Tap again to hide clock, stations, and crossfader'
                         : 'Spectrum view (panel hidden) · Tap to show clock, stations, and crossfader';
+                }
+                if (this.skin === 'digital' && this.digitalCenterMode === 'spectrum') {
+                    this._scheduleDigitalSpectrumLayoutSync();
                 }
             }
 

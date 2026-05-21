@@ -878,6 +878,19 @@
         #radio-visual-root .radio-visual-digital-dash-stack.is-spectrum-hud-hidden {
             display: none !important;
         }
+        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-spectrum-row {
+            justify-content: center;
+            align-items: center;
+            gap: clamp(12px, 3vw, 40px);
+        }
+        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-spectrum-side {
+            flex: 0 0 auto;
+            height: 100%;
+            width: auto;
+            max-width: calc(50% - 20px);
+            aspect-ratio: 1;
+            align-self: center;
+        }
         #radio-visual-root .radio-visual-digital-spectrum-side .radio-visual-digital-spectrum-canvas {
             position: absolute;
             inset: 0;
