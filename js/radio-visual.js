@@ -1529,15 +1529,16 @@
             }
 
             _syncDigitalSpectrumHud() {
-                const pane = this.els.digitalCenterSpectrum;
-                if (!pane) return;
                 const show = this._digitalSpectrumHudVisible !== false;
-                pane.classList.toggle('is-spectrum-hud-hidden', !show);
+                const pane = this.els.digitalCenterSpectrum;
+                if (pane) pane.classList.toggle('is-spectrum-hud-hidden', !show);
+                const dash = this.els.digitalDashStack;
+                if (dash) dash.classList.toggle('is-spectrum-hud-hidden', !show);
                 if (this.els.btnDigitalSpectrum) {
                     this.els.btnDigitalSpectrum.setAttribute('aria-pressed', show ? 'true' : 'false');
                     this.els.btnDigitalSpectrum.title = show
-                        ? 'Spectrum view · Tap again to hide clock, stations, EQ, and crossfader'
-                        : 'Spectrum view (HUD hidden) · Tap to show clock, stations, EQ, and crossfader';
+                        ? 'Spectrum view · Tap again to hide clock, stations, and crossfader'
+                        : 'Spectrum view (panel hidden) · Tap to show clock, stations, and crossfader';
                 }
             }
 
@@ -2289,7 +2290,6 @@
 
             _drawDigitalSpectrum() {
                 if (this.skin !== 'digital' || this.digitalCenterMode !== 'spectrum') return;
-                if (!this._digitalSpectrumHudVisible) return;
                 const cL = this.els.digitalSpectrumCanvasL;
                 const cR = this.els.digitalSpectrumCanvasR;
                 if (!cL || !cR) return;
@@ -2297,12 +2297,14 @@
                 this._syncDonutCoreHues();
                 this._drawDigitalSpectrumFlower(cL, pack.layersL, pack.n, this._donutCoreHueA, pack.t);
                 this._drawDigitalSpectrumFlower(cR, pack.layersR, pack.n, this._donutCoreHueB, pack.t);
-                this._drawDigitalCarDash(
-                    pack.eqHeights,
-                    pack.t,
-                    this._digitalLcdPrimaryLine(),
-                    this._digitalLcdSecondaryLine()
-                );
+                if (this._digitalSpectrumHudVisible) {
+                    this._drawDigitalCarDash(
+                        pack.eqHeights,
+                        pack.t,
+                        this._digitalLcdPrimaryLine(),
+                        this._digitalLcdSecondaryLine()
+                    );
+                }
             }
 
             _wireCrossfadeKnob(knobEl) {
@@ -3064,6 +3066,7 @@
                 spectrumSideL.appendChild(digitalSpectrumCanvasL);
                 const dashStack = document.createElement('div');
                 dashStack.className = 'radio-visual-digital-dash-stack';
+                dashStack.setAttribute('aria-label', 'Digital radio dash');
                 const centerInfo = document.createElement('div');
                 centerInfo.className = 'radio-visual-digital-center-info';
                 centerInfo.setAttribute('aria-live', 'polite');
@@ -3253,6 +3256,7 @@
                     digitalAutoMixSlider,
                     digitalAutoMixReadout,
                     spectrumBg,
+                    digitalDashStack: dashStack,
                     digitalCenterSpectrum,
                     digitalCenterDeckB,
                     digitalSpectrumCanvasL,
@@ -3319,7 +3323,7 @@
                     }
                     if (btnVis) this._wireDigitalVisBgButton(btnVis, sig);
                     if (btnDigitalSpectrum) {
-                        btnDigitalSpectrum.title = 'Spectrum view · Tap again to hide clock, stations, EQ, and crossfader';
+                        btnDigitalSpectrum.title = 'Spectrum view · Tap again to hide clock, stations, and crossfader';
                         btnDigitalSpectrum.setAttribute('aria-pressed', 'true');
                         btnDigitalSpectrum.addEventListener('click', (ev) => {
                             this._stopClick(ev);

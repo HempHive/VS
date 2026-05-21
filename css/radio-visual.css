@@ -857,19 +857,10 @@
         #radio-visual-root .radio-visual-digital-center-pane.is-active {
             display: flex;
         }
-        /* Spectrum HUD toggle (Spectrum button while already on spectrum) */
-        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-center-info,
-        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-car-dash-canvas,
-        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-spectrum-side,
-        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-dash-xfade {
-            visibility: hidden;
-            pointer-events: none;
-        }
-        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-dash-stack {
-            pointer-events: none;
-        }
-        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-spectrum-row {
-            justify-content: center;
+        /* Spectrum HUD toggle: hide central dash only; side spectrum flowers stay visible */
+        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-hud-hidden .radio-visual-digital-dash-stack,
+        #radio-visual-root .radio-visual-digital-dash-stack.is-spectrum-hud-hidden {
+            display: none !important;
         }
         #radio-visual-root .radio-visual-digital-spectrum-side .radio-visual-digital-spectrum-canvas {
             position: absolute;
