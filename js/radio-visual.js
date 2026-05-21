@@ -1318,8 +1318,8 @@
                     if (mixBtn && (mixBtn === t || mixBtn.contains(t))) return;
                     this._closeDigitalAutoMixPanel();
                 };
-                document.addEventListener('pointerdown', dismissIfOutside, { capture: true, signal: sig });
-                document.addEventListener('click', dismissIfOutside, { capture: true, signal: sig });
+                document.addEventListener('pointerdown', dismissIfOutside, { capture: true, ...sig });
+                document.addEventListener('click', dismissIfOutside, { capture: true, ...sig });
                 document.addEventListener('keydown', (ev) => {
                     if (ev.key === 'Escape') this._closeDigitalAutoMixPanel();
                 }, sig);
