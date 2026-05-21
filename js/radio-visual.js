@@ -1587,8 +1587,7 @@
             }
 
             _spectrumRibbonSeamAngle(n, phaseBins) {
-                const phase = (phaseBins / n) * Math.PI * 2;
-                return ((0.5) / n) * Math.PI * 2 - Math.PI / 2 + phase;
+                return this._spectrumEdgeAngle(0, n, phaseBins);
             }
 
             _spectrumConicStop(u, opts) {
@@ -1941,6 +1940,18 @@
                 return ((ii + 0.5) / n) * Math.PI * 2 - Math.PI / 2 + phase;
             }
 
+            /** Bin boundary angle — outer ring vertices here close without a chord gap. */
+            _spectrumEdgeAngle(ii, n, phaseBins = 0) {
+                const phase = (phaseBins / n) * Math.PI * 2;
+                return (ii / n) * Math.PI * 2 - Math.PI / 2 + phase;
+            }
+
+            _spectrumOuterNormAtEdge(edgeIi, radii, n, maxRing, petalFloor) {
+                const prev = (edgeIi + n - 1) % n;
+                const raw = ((radii[edgeIi] || 0) + (radii[prev] || 0)) / (2 * maxRing);
+                return Math.min(1, Math.max(petalFloor, raw));
+            }
+
             _fillDigitalSpectrumPetal(ctx, cx, cy, innerR, outerR, coreR, radii, n, layer, coreHue, t) {
                 const li = layer.layerIndex;
                 const layerCount = 3;
@@ -1954,28 +1965,20 @@
                 const sat = layer.sat ?? 88;
                 const lit = layer.light ?? 54;
                 const drift = layer.hueDrift ?? 40;
-                const normLast = this._spectrumPetalNorm(n - 1, radii, n, maxRing, petalFloor);
-                const normFirst = this._spectrumPetalNorm(0, radii, n, maxRing, petalFloor);
-                const normSeam = (normLast + normFirst) * 0.5;
-                const rSeam = zoneInner + (zoneOuter - zoneInner) * normSeam;
-                const aFirst = this._spectrumAngle(0, n, layer.phaseBins);
-                const aLast = this._spectrumAngle(n - 1, n, layer.phaseBins);
-                let arcEnd = aFirst;
-                if (arcEnd <= aLast) arcEnd += Math.PI * 2;
                 ctx.beginPath();
-                for (let i = 0; i < n; i++) {
-                    const a = this._spectrumAngle(i, n, layer.phaseBins);
-                    const norm = this._spectrumPetalNorm(i, radii, n, maxRing, petalFloor);
+                for (let i = 0; i <= n; i++) {
+                    const edge = i % n;
+                    const a = this._spectrumEdgeAngle(edge, n, layer.phaseBins);
+                    const norm = this._spectrumOuterNormAtEdge(edge, radii, n, maxRing, petalFloor);
                     const r = zoneInner + (zoneOuter - zoneInner) * norm;
                     const x = cx + Math.cos(a) * r;
                     const y = cy + Math.sin(a) * r;
                     if (i === 0) ctx.moveTo(x, y);
                     else ctx.lineTo(x, y);
                 }
-                ctx.arc(cx, cy, rSeam, aLast, arcEnd, false);
                 const innerPad = coreR;
                 for (let i = n - 1; i >= 0; i--) {
-                    const a = this._spectrumAngle(i, n, layer.phaseBins);
+                    const a = this._spectrumEdgeAngle(i, n, layer.phaseBins);
                     ctx.lineTo(cx + Math.cos(a) * innerPad, cy + Math.sin(a) * innerPad);
                 }
                 ctx.closePath();
