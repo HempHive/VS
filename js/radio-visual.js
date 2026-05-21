@@ -2708,6 +2708,11 @@
                 let volDown = null;
                 let volUp = null;
                 let digitalToolbar = null;
+                let btnDigitalMix = null;
+                let digitalStagingMount = null;
+                let digitalAutoMixPanel = null;
+                let digitalAutoMixSlider = null;
+                let digitalAutoMixReadout = null;
                 if (showAnalogue) {
                 stageA = document.createElement('section');
                 stageA.className = 'radio-visual-stage radio-visual-skin--analogue is-active';
@@ -2817,7 +2822,7 @@
                     return el;
                 };
                 dClk = mkLine('radio-visual-digital-line--clock', 'radio-visual-digital-clock', '—');
-                const digitalAutoMixPanel = document.createElement('div');
+                digitalAutoMixPanel = document.createElement('div');
                 digitalAutoMixPanel.className = 'radio-visual-digital-automix-panel';
                 digitalAutoMixPanel.id = 'radio-visual-digital-automix-panel';
                 digitalAutoMixPanel.setAttribute('aria-hidden', 'true');
@@ -2826,7 +2831,7 @@
                 autoMixPanelTitle.textContent = 'Auto-mix max interval';
                 const autoMixPanelRow = document.createElement('div');
                 autoMixPanelRow.className = 'radio-visual-digital-automix-row';
-                const digitalAutoMixSlider = document.createElement('input');
+                digitalAutoMixSlider = document.createElement('input');
                 digitalAutoMixSlider.type = 'range';
                 digitalAutoMixSlider.className = 'radio-visual-digital-automix-range';
                 digitalAutoMixSlider.min = String(RadioVisualEngine.AUTOMIX_MIN_MIN);
@@ -2834,7 +2839,7 @@
                 digitalAutoMixSlider.step = '1';
                 digitalAutoMixSlider.value = String(this._readAutoMixMaxMin());
                 digitalAutoMixSlider.setAttribute('aria-label', 'Auto-mix maximum interval in minutes');
-                const digitalAutoMixReadout = document.createElement('span');
+                digitalAutoMixReadout = document.createElement('span');
                 digitalAutoMixReadout.className = 'radio-visual-digital-automix-readout';
                 digitalAutoMixReadout.textContent = `${this._readAutoMixMaxMin()}m`;
                 autoMixPanelRow.appendChild(digitalAutoMixSlider);
@@ -2903,7 +2908,7 @@
                 spectrumRow.appendChild(spectrumSideL);
                 spectrumRow.appendChild(dashStack);
                 spectrumRow.appendChild(spectrumSideR);
-                const digitalStagingMount = document.createElement('div');
+                digitalStagingMount = document.createElement('div');
                 digitalStagingMount.className = 'radio-visual-digital-staging-mount';
                 digitalStagingMount.setAttribute('aria-hidden', 'true');
                 digitalCenterSpectrum.appendChild(spectrumBg);
@@ -2967,7 +2972,6 @@
                 volGroup.appendChild(volDigitalReadout);
                 volGroup.appendChild(volUp);
                 digitalToolbar.appendChild(volGroup);
-                let btnDigitalMix = null;
                 const mkRvDigitalBtn = (act, lab) => {
                     const b = document.createElement('button');
                     b.type = 'button';
