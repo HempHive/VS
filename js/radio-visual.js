@@ -1572,50 +1572,39 @@
             }
 
             _unifySpectrumRibbonSeam(radii) {
-                const blended = this._blendSpectrumCircularEnds(radii, 12);
-                return this._lockSpectrumRibbonSeam(blended);
+                return this._blendSpectrumCircularEnds(radii, 7);
             }
 
-            /** Force the wrap point so bin 0 and bin n−1 share the same outer radius. */
-            _lockSpectrumRibbonSeam(radii) {
-                const n = radii.length;
-                if (n < 4) return radii;
-                const out = radii.slice();
-                const w = Math.min(6, Math.floor(n / 6));
-                let acc = 0;
-                let c = 0;
-                for (let d = -w; d <= w; d++) {
-                    const j = (d + n) % n;
-                    acc += out[j];
-                    c++;
+            _spectrumPetalNorm(ii, radii, n, maxRing, petalFloor) {
+                const raw = (radii[ii] || 0) / maxRing;
+                if (ii !== 0 && ii !== n - 1) {
+                    return Math.min(1, Math.max(petalFloor, raw));
                 }
-                const seam = acc / Math.max(1, c);
-                out[0] = seam;
-                out[n - 1] = seam;
-                for (let k = 1; k < w; k++) {
-                    const t = 1 - k / w;
-                    out[k] = out[k] * (1 - t) + seam * t;
-                    out[n - 1 - k] = out[n - 1 - k] * (1 - t) + seam * t;
-                }
-                return out;
+                const seam = ((radii[0] || 0) + (radii[n - 1] || 0)) / (2 * maxRing);
+                return Math.min(1, Math.max(petalFloor, seam));
             }
 
-            _spectrumOuterNorm(ii, radii, n, maxRing, petalFloor) {
-                const w = 4;
-                let sum = 0;
-                for (let d = -w; d <= w; d++) {
-                    const j = (ii + d + n) % n;
-                    sum += (radii[j] || 0) / maxRing;
+            _spectrumConicStop(u, opts) {
+                const {
+                    useOuterPalette, isHigh, hue, sat, lit, drift, layerSpec, bass, phaseBase, shimmerT
+                } = opts;
+                let h;
+                let satUse = sat;
+                let litUse = lit;
+                let a0 = layerSpec.alpha * (0.5 + 0.5 * u);
+                if (useOuterPalette) {
+                    h = this._paletteHueAt(phaseBase + u * 1.1 + bass * 0.35);
+                } else if (isHigh) {
+                    const ripple = Math.sin(u * Math.PI * 6 + shimmerT * 5.8);
+                    const pulse = 0.65 + 0.35 * Math.sin(shimmerT * 4.4 + u * Math.PI * 2);
+                    h = (hue + u * drift + shimmerT * 48 + ripple * 32) % 360;
+                    satUse = Math.min(100, sat + 6 + pulse * 10);
+                    litUse = lit + 10 + pulse * 22 + ripple * 8;
+                    a0 = layerSpec.alpha * (0.62 + 0.38 * u) * (0.88 + pulse * 0.12);
+                } else {
+                    h = (hue + u * drift) % 360;
                 }
-                const avg = sum / (2 * w + 1);
-                return Math.min(1, Math.max(petalFloor, avg));
-            }
-
-            _spectrumSeamBridgeAngle(n, phaseBins) {
-                const phase = (phaseBins / n) * Math.PI * 2;
-                const step = (Math.PI * 2) / n;
-                const aLast = ((n - 1 + 0.5) / n) * Math.PI * 2 - Math.PI / 2 + phase;
-                return aLast + step * 0.5;
+                return `hsla(${h}, ${satUse}%, ${litUse}%, ${a0})`;
             }
 
             _bassLevelFromSmooth(smooth) {
@@ -1784,7 +1773,7 @@
                     const v = (levels[i0] || 0) * (1 - tt) + (levels[i1] || 0) * tt;
                     band.push(v);
                 }
-                const bandSeam = this._blendSpectrumCircularEnds(band, 8);
+                const bandSeam = this._blendSpectrumCircularEnds(band, 6);
                 const smooth = [];
                 for (let i = 0; i < n; i++) {
                     const im1 = (i - 1 + n) % n;
@@ -1933,21 +1922,25 @@
                 const lit = layer.light ?? 54;
                 const drift = layer.hueDrift ?? 40;
                 ctx.beginPath();
-                ctx.lineJoin = 'round';
-                ctx.miterLimit = 2;
-                for (let i = 0; i < n; i++) {
-                    const a = this._spectrumAngle(i, n, layer.phaseBins);
-                    const norm = this._spectrumOuterNorm(i, radii, n, maxRing, petalFloor);
+                let outerCloseX = 0;
+                let outerCloseY = 0;
+                for (let i = 0; i <= n; i++) {
+                    const ii = i % n;
+                    const a = this._spectrumAngle(ii, n, layer.phaseBins);
+                    const norm = this._spectrumPetalNorm(ii, radii, n, maxRing, petalFloor);
                     const r = zoneInner + (zoneOuter - zoneInner) * norm;
                     const x = cx + Math.cos(a) * r;
                     const y = cy + Math.sin(a) * r;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                        outerCloseX = x;
+                        outerCloseY = y;
+                    } else if (i === n) {
+                        ctx.lineTo(outerCloseX, outerCloseY);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
                 }
-                const normBridge = this._spectrumOuterNorm(0, radii, n, maxRing, petalFloor);
-                const rBridge = zoneInner + (zoneOuter - zoneInner) * normBridge;
-                const aBridge = this._spectrumSeamBridgeAngle(n, layer.phaseBins);
-                ctx.lineTo(cx + Math.cos(aBridge) * rBridge, cy + Math.sin(aBridge) * rBridge);
                 const innerPad = coreR;
                 for (let i = n - 1; i >= 0; i--) {
                     const a = this._spectrumAngle(i, n, layer.phaseBins);
@@ -1959,32 +1952,23 @@
                 const useConic = (layer.key === 'high' || layer.key === 'mid' || useOuterPalette) && canConic;
                 if (useConic) {
                     const phase = (layer.phaseBins / n) * Math.PI * 2;
-                    const rim = ctx.createConicGradient(-Math.PI / 2 + phase, cx, cy);
+                    const ribbonSeam = ((0.5) / n) * Math.PI * 2 - Math.PI / 2 + phase;
+                    const rim = ctx.createConicGradient(ribbonSeam + Math.PI, cx, cy);
                     const steps = useOuterPalette ? 20 : (layer.key === 'high' ? 24 : 16);
                     const bass = layer.bassLevel ?? 0;
                     const phaseBase = this._outerHuePhase || 0;
                     const shimmerT = typeof t === 'number' ? t : performance.now() * 0.001;
                     const isHigh = layer.key === 'high';
-                    for (let k = 0; k <= steps; k++) {
+                    const stopOpts = {
+                        useOuterPalette, isHigh, hue, sat, lit, drift, layerSpec: layer, bass, phaseBase, shimmerT
+                    };
+                    const wrap = this._spectrumConicStop(0, stopOpts);
+                    rim.addColorStop(0, wrap);
+                    for (let k = 1; k < steps; k++) {
                         const u = k / steps;
-                        let h;
-                        let satUse = sat;
-                        let litUse = lit;
-                        let a0 = layer.alpha * (0.5 + 0.5 * u);
-                        if (useOuterPalette) {
-                            h = this._paletteHueAt(phaseBase + u * 1.1 + bass * 0.35);
-                        } else if (isHigh) {
-                            const ripple = Math.sin(u * Math.PI * 6 + shimmerT * 5.8);
-                            const pulse = 0.65 + 0.35 * Math.sin(shimmerT * 4.4 + u * Math.PI * 2);
-                            h = (hue + u * drift + shimmerT * 48 + ripple * 32) % 360;
-                            satUse = Math.min(100, sat + 6 + pulse * 10);
-                            litUse = lit + 10 + pulse * 22 + ripple * 8;
-                            a0 = layer.alpha * (0.62 + 0.38 * u) * (0.88 + pulse * 0.12);
-                        } else {
-                            h = (hue + u * drift) % 360;
-                        }
-                        rim.addColorStop(u, `hsla(${h}, ${satUse}%, ${litUse}%, ${a0})`);
+                        rim.addColorStop(u, this._spectrumConicStop(u, stopOpts));
                     }
+                    rim.addColorStop(1, wrap);
                     ctx.fillStyle = rim;
                 } else {
                     const petal = ctx.createRadialGradient(cx, cy, zoneInner, cx, cy, zoneOuter);
