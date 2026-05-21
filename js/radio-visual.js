@@ -235,8 +235,8 @@
                 btn.classList.toggle('is-active', on);
                 btn.setAttribute('aria-pressed', on ? 'true' : 'false');
                 btn.title = on
-                    ? 'Tap: next background · Hold: turn off background'
-                    : 'Background off · Tap to turn on';
+                    ? 'Tap: next background · Hold: turn off · Right-click: first background'
+                    : 'Background off · Tap to turn on · Right-click: first background';
             }
 
             _applyCurrentDigitalBgGif() {
@@ -289,6 +289,18 @@
                 this._cycleDigitalVisBg();
             }
 
+            _resetDigitalVisBgToFirst() {
+                this._refreshDigitalBgGifList().then(() => {
+                    const files = this._digitalBgGifFiles();
+                    if (!this.els.spectrumBg || !files.length) return;
+                    if (!this._isDigitalBgGifEnabled()) {
+                        this._setDigitalBgGifEnabled(true);
+                    }
+                    this._applyDigitalSpectrumBgFile(files[0], 0);
+                    this._syncDigitalVisBgButton();
+                }).catch(() => {});
+            }
+
             _wireDigitalVisBgButton(btn, sig) {
                 if (!btn) return;
                 let longPressTimer = null;
@@ -300,8 +312,20 @@
                         longPressTimer = null;
                     }
                 };
+                btn.addEventListener('contextmenu', (ev) => {
+                    this._stopClick(ev);
+                    try { ev.preventDefault(); } catch (_) {}
+                    clearLongPress();
+                    longPressHandled = true;
+                    this._resetDigitalVisBgToFirst();
+                }, sig);
                 btn.addEventListener('pointerdown', (ev) => {
                     this._stopClick(ev);
+                    if (ev.button === 2) {
+                        clearLongPress();
+                        longPressHandled = true;
+                        return;
+                    }
                     longPressHandled = false;
                     clearLongPress();
                     longPressTimer = setTimeout(() => {
@@ -314,6 +338,10 @@
                 btn.addEventListener('pointerup', (ev) => {
                     this._stopClick(ev);
                     clearLongPress();
+                    if (ev.button === 2) {
+                        longPressHandled = false;
+                        return;
+                    }
                     if (!longPressHandled) this._onDigitalVisBgTap();
                     longPressHandled = false;
                 }, sig);
@@ -3247,7 +3275,7 @@
                 btnVis.type = 'button';
                 btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-vis-btn';
                 btnVis.textContent = '🔆';
-                btnVis.title = 'Background off · Tap to turn on';
+                btnVis.title = 'Background off · Tap to turn on · Right-click: first background';
                 btnVis.setAttribute('aria-label', 'Digital background visual');
                 btnVis.setAttribute('aria-pressed', 'false');
                 digitalToolbar.appendChild(btnVis);
