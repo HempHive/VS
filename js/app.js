@@ -5546,14 +5546,66 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             return null;
         }
 
+        function getActiveRadioVisualEngine() {
+            const av = state && state.activeVisualizer;
+            if (!av) return null;
+            try {
+                if (typeof RadioVisualEngine !== 'undefined' && RadioVisualEngine.isRadioModeName(av.name)) return av;
+            } catch (_) {}
+            return null;
+        }
+
+        function cancelActiveAutoFade() {
+            try {
+                const dj = getDjDecksEngineIfActive();
+                if (dj && typeof dj.cancelAutoFade === 'function') dj.cancelAutoFade();
+            } catch (_) {}
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (rv && typeof rv.cancelAutoFade === 'function') rv.cancelAutoFade();
+            } catch (_) {}
+        }
+
+        function clearCrossfadeResumeSuppress() {
+            try {
+                const dj = getDjDecksEngineIfActive();
+                if (dj && typeof dj.clearSuppressEnsureCrossfadeDeckPlayback === 'function') {
+                    dj.clearSuppressEnsureCrossfadeDeckPlayback();
+                }
+            } catch (_) {}
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (rv && typeof rv._clearSuppressCrossfadeResume === 'function') rv._clearSuppressCrossfadeResume();
+            } catch (_) {}
+        }
+
+        function getDeckBPlaybackMedia() {
+            try {
+                if (typeof getDeckBRadioAudibleEl === 'function') return getDeckBRadioAudibleEl();
+            } catch (_) {}
+            return audioElB;
+        }
+
+        function toggleAutoMixShortcut() {
+            try {
+                const av = state && state.activeVisualizer;
+                if (av && typeof av._toggleAutoMix === 'function') {
+                    av._toggleAutoMix();
+                    return;
+                }
+                const btn = document.getElementById('mix-automix') || document.getElementById('dj-automix');
+                if (btn) btn.click();
+            } catch (_) {}
+        }
+
         /**
          * Space-bar long-press support.
          *
          *  - Short tap  → engine.triggerAutoFadeFromShortcut() (start fade, or reverse
          *                  direction if a fade is already in flight).
-         *  - Long hold  → engine.pauseBothDecksOrStartActive() (pauses both decks if
-         *                  anything is playing; otherwise starts the deck currently
-         *                  winning the crossfader).
+         *  - Long hold  → pauseBothDecksOrStartActive() on DJ Decks or Radio visual
+         *                  (pauses both decks if anything is playing; otherwise starts
+         *                  the deck currently winning the crossfader).
          *
          * spaceLongPressTimer / spaceLongPressFired track the state between keydown
          * and keyup so the short action only runs when the hold threshold wasn't met.
@@ -5595,29 +5647,20 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 // its per-frame ticker will keep re-playing whatever deck has
                 // crossfader gain — so V appears to do nothing for the full
                 // fade. Cancelling the fade first makes the play/pause stick.
-                // No-op when no fade is running.
-                const eng = getDjDecksEngineIfActive();
-                try {
-                    if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
-                } catch (_) {}
+                cancelActiveAutoFade();
                 const media = (typeof getDeckAMediaForPlaybackState === 'function')
                     ? getDeckAMediaForPlaybackState()
                     : audioEl;
                 if (!media) return;
+                const eng = getDjDecksEngineIfActive();
                 if (!deckHasSource(media)) {
-                    try {
-                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
-                    } catch (_) {}
+                    clearCrossfadeResumeSuppress();
                     if (typeof playRadio === 'function') playRadio();
                 } else if (media.paused) {
-                    try {
-                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
-                    } catch (_) {}
+                    clearCrossfadeResumeSuppress();
                     media.play().catch(() => {});
                 } else {
-                    try {
-                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
-                    } catch (_) {}
+                    clearCrossfadeResumeSuppress();
                     media.pause();
                 }
             } catch (_) {}
@@ -5627,23 +5670,18 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 // Same rationale as deckAPlayPause: cancel any in-flight
                 // AUTO-FADE so the user's explicit pause/play on Deck B isn't
                 // overridden by the next animation tick.
-                const eng = getDjDecksEngineIfActive();
-                try {
-                    if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
-                } catch (_) {}
-                if (!audioElB) return;
-                if (!deckHasSource(audioElB)) {
-                    try {
-                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
-                    } catch (_) {}
+                cancelActiveAutoFade();
+                const mediaB = getDeckBPlaybackMedia();
+                if (!mediaB) return;
+                if (!deckHasSource(mediaB)) {
+                    clearCrossfadeResumeSuppress();
                     if (typeof playRadioB === 'function') playRadioB();
-                } else if (audioElB.paused) {
-                    try {
-                        if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') eng.clearSuppressEnsureCrossfadeDeckPlayback();
-                    } catch (_) {}
-                    audioElB.play().catch(() => {});
+                } else if (mediaB.paused) {
+                    clearCrossfadeResumeSuppress();
+                    mediaB.play().catch(() => {});
                 } else {
-                    audioElB.pause();
+                    clearCrossfadeResumeSuppress();
+                    mediaB.pause();
                 }
             } catch (_) {}
         }
@@ -5667,8 +5705,8 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                     }
                     if (ae.tagName === 'INPUT') {
                         const it = String(ae.type || '').toLowerCase();
-                        if (it === 'range' && ae.closest && ae.closest('#dj-visual-root')) {
-                            /* Deck VOL, crossfader, BPM inside DJ overlay — keep Space / shortcuts */
+                        if (it === 'range' && ae.closest && (ae.closest('#dj-visual-root') || ae.closest('#radio-visual-root'))) {
+                            /* Deck VOL, crossfader, BPM inside DJ / radio visual — keep Space / shortcuts */
                         } else {
                             return;
                         }
@@ -5787,6 +5825,10 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 if (e.repeat) return;
                 deckBPlayPause();
+            } else if (e.key === 'o' || e.key === 'O') {
+                e.preventDefault();
+                if (e.repeat) return;
+                toggleAutoMixShortcut();
             } else if (e.key === 't' || e.key === 'T') {
                 // Toggle Text-In panel
                 e.preventDefault();
@@ -5847,13 +5889,13 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 } catch(_) {}
             } else if (e.code === 'Space' || e.key === ' ') {
                 // Space:
-                //   short tap → AUTO-FADE / Fade (DJ Decks or Digital Radio)
-                //   long hold → pause both decks (DJ Decks only)
+                //   short tap → AUTO-FADE / Fade (DJ Decks or Radio visual)
+                //   long hold → pause both decks (or start active deck if silent)
                 //   otherwise legacy play/pause Deck A
                 e.preventDefault();
                 if (e.repeat) return; // Key auto-repeat must not re-arm the timer
                 const engine = getDjDecksEngineIfActive();
-                const radioVis = getDigitalRadioVisualIfActive();
+                const radioVis = getActiveRadioVisualEngine();
                 if (!engine && !radioVis) {
                     try {
                         if (audioEl) {
@@ -5863,19 +5905,17 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                     } catch(_) {}
                     return;
                 }
-                if (radioVis && !engine) {
-                    clearSpaceLongPress();
-                    spaceLongPressFired = false;
-                    return;
-                }
                 clearSpaceLongPress();
                 spaceLongPressFired = false;
                 spaceLongPressTimer = setTimeout(() => {
                     spaceLongPressTimer = null;
                     spaceLongPressFired = true;
                     const eng = getDjDecksEngineIfActive();
+                    const rv = getActiveRadioVisualEngine();
                     if (eng && typeof eng.pauseBothDecksOrStartActive === 'function') {
                         eng.pauseBothDecksOrStartActive();
+                    } else if (rv && typeof rv.pauseBothDecksOrStartActive === 'function') {
+                        rv.pauseBothDecksOrStartActive();
                     }
                 }, SPACE_LONG_HOLD_MS);
             } else if (e.key === 'w' || e.key === 'W') {
@@ -5946,10 +5986,13 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 if (e && e.code && sampleKeyHoldTimers.has(e.code)) clearSampleKeyHold(e.code);
                 if (e && (e.code === 'Space' || e.key === ' ')) {
                     const eng = getDjDecksEngineIfActive();
-                    const radioVis = getDigitalRadioVisualIfActive();
-                    if (radioVis && !eng) {
-                        if (!spaceLongPressFired) {
-                            try { radioVis.triggerAutoFadeFromShortcut(); } catch (_) {}
+                    const rv = getActiveRadioVisualEngine();
+                    if (rv && !eng) {
+                        if (spaceLongPressTimer) {
+                            clearSpaceLongPress();
+                            if (!spaceLongPressFired) {
+                                try { rv.triggerAutoFadeFromShortcut(); } catch (_) {}
+                            }
                         }
                         spaceLongPressFired = false;
                         return;

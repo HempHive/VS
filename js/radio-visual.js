@@ -51,6 +51,8 @@
                 this._outerHuePhase = 0;
                 this._outerHueLastT = 0;
                 this._rvStagingPmFsToggleAt = 0;
+                /** After long Space-hold pause, block auto-fade resume ticks until play again. */
+                this._suppressCrossfadeResume = false;
             }
 
             static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
@@ -1095,16 +1097,23 @@
             }
 
             _resumeDecksForCrossfade() {
+                if (this._suppressCrossfadeResume) return;
                 try {
                     const x = this._getCrossfadeX();
                     const ga = 1 - x;
                     const gb = x;
                     const thresh = 0.03;
-                    if (ga > thresh && typeof audioEl !== 'undefined' && audioEl && audioEl.src && audioEl.paused) {
-                        audioEl.play().catch(() => {});
+                    const mediaA = (typeof getDeckAMediaForPlaybackState === 'function')
+                        ? getDeckAMediaForPlaybackState()
+                        : audioEl;
+                    const mediaB = (typeof getDeckBRadioAudibleEl === 'function')
+                        ? getDeckBRadioAudibleEl()
+                        : audioElB;
+                    if (ga > thresh && mediaA && mediaA.src && mediaA.paused) {
+                        mediaA.play().catch(() => {});
                     }
-                    if (gb > thresh && typeof audioElB !== 'undefined' && audioElB && audioElB.src && audioElB.paused) {
-                        audioElB.play().catch(() => {});
+                    if (gb > thresh && mediaB && mediaB.src && mediaB.paused) {
+                        mediaB.play().catch(() => {});
                     }
                 } catch (_) {}
             }
@@ -1112,6 +1121,57 @@
             /** Space-bar short tap (and external callers); same as the digital toolbar Fade button. */
             triggerAutoFadeFromShortcut() {
                 try { this._triggerAutoFade(); } catch (_) {}
+            }
+
+            /** Stop in-flight radio auto-fade so manual play/pause (V / B) is not overridden each frame. */
+            cancelAutoFade() {
+                if (this._rvAutoFadeRaf) {
+                    try { cancelAnimationFrame(this._rvAutoFadeRaf); } catch (_) {}
+                    this._rvAutoFadeRaf = null;
+                }
+                this._rvFadeTargetDeck = null;
+                this._rvFadeActive = false;
+                if (this._rvFadeLedTimer) {
+                    try { clearTimeout(this._rvFadeLedTimer); } catch (_) {}
+                    this._rvFadeLedTimer = null;
+                }
+                try { this._syncFadeKnobs(); } catch (_) {}
+            }
+
+            _clearSuppressCrossfadeResume() {
+                this._suppressCrossfadeResume = false;
+            }
+
+            _bothDecksSilent() {
+                return !this._deckAActive() && !this._deckBActive();
+            }
+
+            _startActiveDeckByCrossfader() {
+                this._clearSuppressCrossfadeResume();
+                const x = this._getCrossfadeX();
+                if (x < 0.5) {
+                    try { this._startDeckA(); } catch (_) {}
+                } else {
+                    try { this._startDeckB(); } catch (_) {}
+                }
+            }
+
+            /** Space long-hold: pause both decks (and cancel fade), or start the crossfader-favoured deck if silent. */
+            pauseBothDecksOrStartActive() {
+                try {
+                    if (!this._bothDecksSilent()) {
+                        this._suppressCrossfadeResume = true;
+                        this.cancelAutoFade();
+                        const mediaA = (typeof getDeckAMediaForPlaybackState === 'function')
+                            ? getDeckAMediaForPlaybackState()
+                            : audioEl;
+                        const mediaB = this._deckBPlaybackMedia();
+                        try { if (mediaA && !mediaA.paused) mediaA.pause(); } catch (_) {}
+                        try { if (mediaB && !mediaB.paused) mediaB.pause(); } catch (_) {}
+                        return;
+                    }
+                    this._startActiveDeckByCrossfader();
+                } catch (_) {}
             }
 
             _runLocalAutoFade() {
@@ -1487,17 +1547,19 @@
 
             _deckEngCancelAutoFade() {
                 try {
+                    if (this._isRadioVisualActive()) this.cancelAutoFade();
                     const eng = state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks'
                         ? state.activeVisualizer : null;
-                    if (eng && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
+                    if (eng && eng !== this && typeof eng.cancelAutoFade === 'function') eng.cancelAutoFade();
                 } catch (_) {}
             }
 
             _deckEngClearSuppress() {
+                try { this._clearSuppressCrossfadeResume(); } catch (_) {}
                 try {
                     const eng = state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks'
                         ? state.activeVisualizer : null;
-                    if (eng && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') {
+                    if (eng && eng !== this && typeof eng.clearSuppressEnsureCrossfadeDeckPlayback === 'function') {
                         eng.clearSuppressEnsureCrossfadeDeckPlayback();
                     }
                 } catch (_) {}
@@ -1535,11 +1597,19 @@
                 } catch (_) {}
             }
 
+            _deckBPlaybackMedia() {
+                try {
+                    if (typeof getDeckBRadioAudibleEl === 'function') return getDeckBRadioAudibleEl();
+                } catch (_) {}
+                return (typeof audioElB !== 'undefined') ? audioElB : null;
+            }
+
             async _startDeckB() {
                 try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
                 try {
                     this._deckEngCancelAutoFade();
-                    if (!audioElB || !this._deckHasSource(audioElB) || audioElB.paused) {
+                    const mediaB = this._deckBPlaybackMedia();
+                    if (!mediaB || !this._deckHasSource(mediaB) || mediaB.paused) {
                         this._deckEngClearSuppress();
                         if (typeof playRadioB === 'function') playRadioB();
                     }
@@ -1550,7 +1620,8 @@
                 try {
                     this._deckEngCancelAutoFade();
                     this._deckEngClearSuppress();
-                    if (audioElB && !audioElB.paused) audioElB.pause();
+                    const mediaB = this._deckBPlaybackMedia();
+                    if (mediaB && !mediaB.paused) mediaB.pause();
                 } catch (_) {}
             }
 
