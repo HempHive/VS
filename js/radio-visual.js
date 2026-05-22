@@ -1128,10 +1128,17 @@
                 } catch (_) {}
             }
 
-            /** Space-bar short tap (and external callers); same as the Fade toolbar button / crossfader tap. */
+            /**
+             * Space-bar short tap: if nothing is playing, start the deck the crossfader
+             * favours; once audio is flowing, run auto-fade (same as DJ Decks Space tap).
+             */
             triggerAutoFadeFromShortcut() {
                 try {
                     this._clearSuppressCrossfadeResume();
+                    if (this._bothDecksSilent()) {
+                        this._startActiveDeckByCrossfader();
+                        return;
+                    }
                     this._triggerAutoFade();
                 } catch (_) {}
             }
