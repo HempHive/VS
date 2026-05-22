@@ -4662,6 +4662,8 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
         try {
             audioEl.addEventListener('ended', onDeckAEndedForQueue);
             audioElB.addEventListener('ended', onDeckBEndedForQueue);
+            if (audioElRadioAAlt) audioElRadioAAlt.addEventListener('ended', onDeckAEndedForQueue);
+            if (audioElRadioBAlt) audioElRadioBAlt.addEventListener('ended', onDeckBEndedForQueue);
         } catch (_) {}
         webmPrevBtn.addEventListener('click', () => { prevWebm(); resetIdleTimer(); });
         webmNextBtn.addEventListener('click', () => { nextWebm(); resetIdleTimer(); });

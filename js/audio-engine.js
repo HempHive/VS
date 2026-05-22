@@ -1379,23 +1379,48 @@
             } catch (_) {}
         }
 
+        function resumeRandomRadioForDeck(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            initAudio();
+            try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed(dk); } catch (_) {}
+            if (dk === 'b') {
+                try { revokeBlobSrc(audioElB); } catch (_) {}
+                state.deckSourceMode.b = 'radio';
+                try { state.deckLocalDisplayName.b = ''; } catch (_) {}
+                try {
+                    audioElB.removeAttribute('src');
+                    audioElB.load();
+                } catch (_) {}
+                try {
+                    if (typeof pickRandomStationB === 'function') pickRandomStationB();
+                    else if (typeof playRadioB === 'function') playRadioB();
+                } catch (_) {}
+                try { if (typeof refreshActiveDeckVideoDisplays === 'function') refreshActiveDeckVideoDisplays(); } catch (_) {}
+                return;
+            }
+            try { abortRadioAHandoff(); } catch (_) {}
+            try { resetRadioADualStreamHandoff(); } catch (_) {}
+            try { revokeBlobSrc(audioEl); } catch (_) {}
+            state.deckSourceMode.a = 'radio';
+            try { state.deckLocalDisplayName.a = ''; } catch (_) {}
+            try {
+                audioEl.removeAttribute('src');
+                audioEl.load();
+            } catch (_) {}
+            try {
+                if (typeof pickRandomStation === 'function') pickRandomStation();
+                else if (typeof playRadio === 'function') playRadio();
+            } catch (_) {}
+            try { if (typeof refreshActiveDeckVideoDisplays === 'function') refreshActiveDeckVideoDisplays(); } catch (_) {}
+        }
+
         function playDeckATrackFromQueue(opts) {
             initAudio();
             try { stopNowPlayingPoll(); } catch (_) {}
             const q = deckFileQueues.a;
             const deferForAutoMix = shouldDeferLocalPlayForAutoMix('a', opts);
             if (!q.length) {
-                try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed('a'); } catch (_) {}
-                abortRadioAHandoff();
-                resetRadioADualStreamHandoff();
-                revokeBlobSrc(audioEl);
-                state.deckSourceMode.a = 'radio';
-                try { state.deckLocalDisplayName.a = ''; } catch (_) {}
-                try {
-                    audioEl.removeAttribute('src');
-                    audioEl.load();
-                } catch (_) {}
-                playRadio();
+                resumeRandomRadioForDeck('a');
                 try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
                 return;
             }
@@ -1525,14 +1550,7 @@
             const q = deckFileQueues.b;
             const deferForAutoMix = shouldDeferLocalPlayForAutoMix('b', opts);
             if (!q.length) {
-                try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed('b'); } catch (_) {}
-                state.deckSourceMode.b = 'radio';
-                try { state.deckLocalDisplayName.b = ''; } catch (_) {}
-                try {
-                    audioElB.removeAttribute('src');
-                    audioElB.load();
-                } catch (_) {}
-                if (typeof playRadioB === 'function') playRadioB();
+                resumeRandomRadioForDeck('b');
                 try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
                 return;
             }
@@ -1572,16 +1590,23 @@
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
 
-        function onDeckAEndedForQueue() {
+        function onDeckAEndedForQueue(ev) {
             try {
                 if (state.deckSourceMode.a !== 'local') return;
+                const target = ev && ev.target;
+                const audible = (typeof getDeckAMediaForPlaybackState === 'function')
+                    ? getDeckAMediaForPlaybackState()
+                    : audioEl;
+                if (target && audible && target !== audible) return;
                 playDeckATrackFromQueue();
             } catch (_) {}
         }
 
-        function onDeckBEndedForQueue() {
+        function onDeckBEndedForQueue(ev) {
             try {
                 if (state.deckSourceMode.b !== 'local') return;
+                const target = ev && ev.target;
+                if (target && target !== audioElB) return;
                 playDeckBTrackFromQueue();
             } catch (_) {}
         }
