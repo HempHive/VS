@@ -565,6 +565,25 @@
         #radio-visual-root .radio-visual-digital-staging-mount.is-active {
             display: flex;
         }
+        #radio-visual-root .radio-visual-digital-local-queue-panel {
+            position: absolute;
+            inset: 0;
+            z-index: 25;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            pointer-events: auto;
+            border-radius: inherit;
+            background: rgba(0, 10, 18, 0.94);
+        }
+        #radio-visual-root .radio-visual-digital-local-queue-panel.display-none {
+            display: none !important;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane.is-local-queue-open .radio-visual-digital-spectrum-row,
+        #radio-visual-root .radio-visual-digital-center-pane.is-local-queue-open .radio-visual-digital-staging-mount.is-active {
+            visibility: hidden;
+            pointer-events: none;
+        }
         #radio-visual-root .radio-visual-digital-staging-mount:fullscreen,
         #radio-visual-root .radio-visual-digital-staging-mount:-webkit-full-screen {
             display: flex;

@@ -36,6 +36,8 @@
                 this._digitalDeckBView = 'video';
                 /** Staging overlay in spectrum pane: null | video | projectm | bars | queue */
                 this._digitalStagingView = null;
+                /** Local playlists panel (Deck A & B) over the spectrum area */
+                this._digitalLocalQueueVisible = false;
                 this._rvAutoMixTimerId = null;
                 this._rvAutoMixCyclePending = false;
                 this._digitalVolStep = 0.05;
@@ -366,8 +368,274 @@
                 try {
                     if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi();
                 } catch (_) {}
+                try { this._refreshDigitalLocalQueueUi(); } catch (_) {}
                 try { this._syncDeckSwitches(); } catch (_) {}
                 try { this._updateStationUi(); } catch (_) {}
+            }
+
+            _buildDigitalLocalQueuePanel() {
+                const panel = document.createElement('div');
+                panel.id = 'radio-visual-digital-local-queue-panel';
+                panel.className = 'radio-visual-digital-local-queue-panel dj-deck-b-queue-panel display-none';
+                panel.setAttribute('aria-label', 'Local file queues');
+                const header = document.createElement('div');
+                header.className = 'dj-queue-header';
+                header.textContent = 'Local playlists · Deck A & B';
+                const cols = document.createElement('div');
+                cols.className = 'dj-queue-columns';
+                const mkCol = (deck) => {
+                    const col = document.createElement('div');
+                    col.className = 'dj-queue-col';
+                    col.dataset.deck = deck;
+                    const head = document.createElement('div');
+                    head.className = 'dj-queue-col-head';
+                    const title = document.createElement('div');
+                    title.className = 'dj-queue-col-title';
+                    title.textContent = deck === 'b' ? 'Deck B queue' : 'Deck A queue';
+                    const btns = document.createElement('div');
+                    btns.className = 'dj-queue-col-head-btns';
+                    const mkBtn = (id, label, extraClass) => {
+                        const b = document.createElement('button');
+                        b.type = 'button';
+                        b.id = id;
+                        b.textContent = label;
+                        if (extraClass) b.className = extraClass;
+                        return b;
+                    };
+                    btns.appendChild(mkBtn(`rv-digital-queue-add-${deck}`, 'Add files…', 'dj-queue-add'));
+                    btns.appendChild(mkBtn(
+                        `rv-digital-queue-folder-${deck}`,
+                        'Folder…',
+                        'dj-queue-folder'
+                    ));
+                    btns.appendChild(mkBtn(
+                        `rv-digital-queue-url-${deck}`,
+                        'Add URL…',
+                        'dj-queue-add-url'
+                    ));
+                    const ul = document.createElement('ul');
+                    ul.id = `rv-digital-queue-list-${deck}`;
+                    ul.className = 'dj-queue-list';
+                    head.appendChild(title);
+                    head.appendChild(btns);
+                    col.appendChild(head);
+                    col.appendChild(ul);
+                    return col;
+                };
+                cols.appendChild(mkCol('a'));
+                cols.appendChild(mkCol('b'));
+                panel.appendChild(header);
+                panel.appendChild(cols);
+                return panel;
+            }
+
+            _refreshDigitalLocalQueueUi() {
+                if (!this.root || !this._digitalLocalQueueVisible) return;
+                try {
+                    const ulA = this.root.querySelector('#rv-digital-queue-list-a');
+                    const ulB = this.root.querySelector('#rv-digital-queue-list-b');
+                    const fill = (ul, deckKey) => {
+                        if (!ul) return;
+                        ul.innerHTML = '';
+                        const q = (typeof deckFileQueues !== 'undefined')
+                            ? (deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a)
+                            : [];
+                        if (!q || !q.length) return;
+                        q.forEach((item, idx) => {
+                            const li = document.createElement('li');
+                            li.className = 'dj-queue-item';
+                            const idxSpan = document.createElement('span');
+                            idxSpan.className = 'dj-queue-idx';
+                            idxSpan.textContent = String(idx + 1);
+                            const nameSpan = document.createElement('span');
+                            nameSpan.className = 'dj-queue-name';
+                            nameSpan.textContent = item.name || 'Track';
+                            const play = document.createElement('button');
+                            play.type = 'button';
+                            play.className = 'dj-queue-play';
+                            play.textContent = '▹';
+                            play.title = 'Play this track now';
+                            play.addEventListener('click', (ev) => {
+                                try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                                if (typeof playQueuedTrackNow === 'function') playQueuedTrackNow(deckKey, idx);
+                                try { this._refreshDigitalLocalQueueUi(); } catch (_) {}
+                                try { this._syncDeckSwitches(); } catch (_) {}
+                                try { this._updateStationUi(); } catch (_) {}
+                            });
+                            const toOther = document.createElement('button');
+                            toOther.type = 'button';
+                            toOther.className = 'dj-queue-to-deck ' + (deckKey === 'a' ? 'dj-queue-to-deck--to-b' : 'dj-queue-to-deck--to-a');
+                            toOther.textContent = deckKey === 'a' ? 'B' : 'A';
+                            toOther.title = deckKey === 'a' ? 'Send to Deck B queue' : 'Send to Deck A queue';
+                            toOther.addEventListener('click', (ev) => {
+                                try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                                if (typeof moveQueuedTrackToOtherDeck === 'function') {
+                                    moveQueuedTrackToOtherDeck(deckKey, idx);
+                                }
+                                try { this._refreshDigitalLocalQueueUi(); } catch (_) {}
+                            });
+                            const rm = document.createElement('button');
+                            rm.type = 'button';
+                            rm.className = 'dj-queue-remove';
+                            rm.textContent = '✕';
+                            rm.title = 'Remove from queue';
+                            rm.addEventListener('click', (ev) => {
+                                try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                                if (typeof removeQueuedTrack === 'function') removeQueuedTrack(deckKey, idx);
+                                try { this._refreshDigitalLocalQueueUi(); } catch (_) {}
+                            });
+                            li.appendChild(idxSpan);
+                            li.appendChild(nameSpan);
+                            li.appendChild(play);
+                            li.appendChild(toOther);
+                            li.appendChild(rm);
+                            ul.appendChild(li);
+                        });
+                    };
+                    fill(ulA, 'a');
+                    fill(ulB, 'b');
+                } catch (_) {}
+            }
+
+            _syncDigitalLocalQueueButton() {
+                const grid = this.els.digitalBtns;
+                if (!grid) return;
+                const on = !!this._digitalLocalQueueVisible;
+                grid.querySelectorAll('[data-rv-local-queue]').forEach((btn) => {
+                    btn.classList.toggle('is-active', on);
+                    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+            }
+
+            _closeDigitalLocalQueuePanel() {
+                if (!this._digitalLocalQueueVisible) return;
+                this._digitalLocalQueueVisible = false;
+                const pane = this.els.digitalCenterSpectrum;
+                const panel = this.els.digitalLocalQueuePanel;
+                if (pane) pane.classList.remove('is-local-queue-open');
+                if (panel) panel.classList.add('display-none');
+                try { this._syncDigitalLocalQueueButton(); } catch (_) {}
+            }
+
+            _toggleDigitalLocalQueuePanel() {
+                this._digitalLocalQueueVisible = !this._digitalLocalQueueVisible;
+                if (this._digitalLocalQueueVisible && this._digitalStagingView) {
+                    this._digitalStagingView = null;
+                    try { this._tearDownDigitalStagingView(); } catch (_) {}
+                    try { this._syncDigitalStagingButtons(); } catch (_) {}
+                }
+                const pane = this.els.digitalCenterSpectrum;
+                const panel = this.els.digitalLocalQueuePanel;
+                if (pane) pane.classList.toggle('is-local-queue-open', this._digitalLocalQueueVisible);
+                if (panel) panel.classList.toggle('display-none', !this._digitalLocalQueueVisible);
+                if (this._digitalLocalQueueVisible) {
+                    try { this._refreshDigitalLocalQueueUi(); } catch (_) {}
+                }
+                try { this._syncDigitalLocalQueueButton(); } catch (_) {}
+                try { resetIdleTimer(); } catch (_) {}
+            }
+
+            _wireDigitalLocalQueuePanel(sig) {
+                if (!this.root) return;
+                const fiQA = document.createElement('input');
+                fiQA.type = 'file';
+                fiQA.accept = 'audio/*,video/*';
+                fiQA.multiple = true;
+                fiQA.style.display = 'none';
+                fiQA.setAttribute('aria-hidden', 'true');
+                this.root.appendChild(fiQA);
+                const fiQB = document.createElement('input');
+                fiQB.type = 'file';
+                fiQB.accept = 'audio/*,video/*';
+                fiQB.multiple = true;
+                fiQB.style.display = 'none';
+                fiQB.setAttribute('aria-hidden', 'true');
+                this.root.appendChild(fiQB);
+                const fiQAFolder = document.createElement('input');
+                fiQAFolder.type = 'file';
+                fiQAFolder.multiple = true;
+                fiQAFolder.style.display = 'none';
+                fiQAFolder.setAttribute('aria-hidden', 'true');
+                fiQAFolder.setAttribute('webkitdirectory', '');
+                this.root.appendChild(fiQAFolder);
+                const fiQBFolder = document.createElement('input');
+                fiQBFolder.type = 'file';
+                fiQBFolder.multiple = true;
+                fiQBFolder.style.display = 'none';
+                fiQBFolder.setAttribute('aria-hidden', 'true');
+                fiQBFolder.setAttribute('webkitdirectory', '');
+                this.root.appendChild(fiQBFolder);
+
+                const wireDeckFiles = (deckKey, fi, fiFolder) => {
+                    const dk = deckKey === 'b' ? 'b' : 'a';
+                    fi.addEventListener('change', (ev) => {
+                        const files = Array.from(ev.target.files || []);
+                        try { ev.target.value = ''; } catch (_) {}
+                        if (!files.length) return;
+                        try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                        if (typeof enqueueDeckLocalFiles === 'function') enqueueDeckLocalFiles(dk, files);
+                        const playingLocal = state.deckSourceMode[dk] === 'local';
+                        const media = dk === 'b' ? audioElB : audioEl;
+                        const mediaGoing = media && media.src && !media.paused && !media.ended;
+                        if (!playingLocal || !mediaGoing) {
+                            if (dk === 'b' && typeof playDeckBTrackFromQueue === 'function') {
+                                playDeckBTrackFromQueue();
+                            } else if (typeof playDeckATrackFromQueue === 'function') {
+                                playDeckATrackFromQueue();
+                            }
+                        }
+                        this._afterDeckLocalFileDrop();
+                    }, sig);
+                    fiFolder.addEventListener('change', (ev) => {
+                        const files = Array.from(ev.target.files || []);
+                        try { ev.target.value = ''; } catch (_) {}
+                        if (!files.length) return;
+                        try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                        if (typeof enqueueDeckLocalFiles === 'function') enqueueDeckLocalFiles(dk, files);
+                        const playingLocal = state.deckSourceMode[dk] === 'local';
+                        const media = dk === 'b' ? audioElB : audioEl;
+                        const mediaGoing = media && media.src && !media.paused && !media.ended;
+                        if (!playingLocal || !mediaGoing) {
+                            if (dk === 'b' && typeof playDeckBTrackFromQueue === 'function') {
+                                playDeckBTrackFromQueue();
+                            } else if (typeof playDeckATrackFromQueue === 'function') {
+                                playDeckATrackFromQueue();
+                            }
+                        }
+                        this._afterDeckLocalFileDrop();
+                    }, sig);
+                };
+                wireDeckFiles('a', fiQA, fiQAFolder);
+                wireDeckFiles('b', fiQB, fiQBFolder);
+
+                const btnAddA = this.root.querySelector('#rv-digital-queue-add-a');
+                const btnAddB = this.root.querySelector('#rv-digital-queue-add-b');
+                const btnFolderA = this.root.querySelector('#rv-digital-queue-folder-a');
+                const btnFolderB = this.root.querySelector('#rv-digital-queue-folder-b');
+                const btnUrlA = this.root.querySelector('#rv-digital-queue-url-a');
+                const btnUrlB = this.root.querySelector('#rv-digital-queue-url-b');
+                if (btnAddA) btnAddA.addEventListener('click', () => { try { fiQA.click(); } catch (_) {} }, sig);
+                if (btnAddB) btnAddB.addEventListener('click', () => { try { fiQB.click(); } catch (_) {} }, sig);
+                if (btnFolderA) btnFolderA.addEventListener('click', () => { try { fiQAFolder.click(); } catch (_) {} }, sig);
+                if (btnFolderB) btnFolderB.addEventListener('click', () => { try { fiQBFolder.click(); } catch (_) {} }, sig);
+                if (btnUrlA) {
+                    btnUrlA.addEventListener('click', () => {
+                        try {
+                            if (typeof promptAddUrlForDeck === 'function') promptAddUrlForDeck('a');
+                            this._refreshDigitalLocalQueueUi();
+                            this._afterDeckLocalFileDrop();
+                        } catch (_) {}
+                    }, sig);
+                }
+                if (btnUrlB) {
+                    btnUrlB.addEventListener('click', () => {
+                        try {
+                            if (typeof promptAddUrlForDeck === 'function') promptAddUrlForDeck('b');
+                            this._refreshDigitalLocalQueueUi();
+                            this._afterDeckLocalFileDrop();
+                        } catch (_) {}
+                    }, sig);
+                }
             }
 
             /** Left / right spectrum flowers: drop local audio (or video) like DJ jog wheels. */
@@ -407,9 +675,6 @@
                     this._afterDeckLocalFileDrop();
                 };
                 zones.forEach((el) => {
-                    try {
-                        el.title = `Drop local tracks for ${label} (audio or video)`;
-                    } catch (_) {}
                     el.addEventListener('dragover', onDragOver, sig);
                     el.addEventListener('dragleave', onDragLeave, sig);
                     el.addEventListener('drop', onDrop, sig);
@@ -435,6 +700,9 @@
                 const k = (kind === 'projectm' || kind === 'bars' || kind === 'queue' || kind === 'video')
                     ? kind : null;
                 if (!k) return;
+                if (this._digitalLocalQueueVisible) {
+                    try { this._closeDigitalLocalQueuePanel(); } catch (_) {}
+                }
                 if (this._digitalStagingView === k) {
                     this._digitalStagingView = null;
                     this._tearDownDigitalStagingView();
@@ -1956,6 +2224,7 @@
 
             /** Default spectrum layout: no staging overlay, central dash visible. */
             _returnToDefaultDigitalSpectrumView() {
+                try { this._closeDigitalLocalQueuePanel(); } catch (_) {}
                 if (this._digitalStagingView) {
                     this._digitalStagingView = null;
                     try { this._tearDownDigitalStagingView(); } catch (_) {}
@@ -1977,6 +2246,9 @@
             _setDigitalCenterMode(mode) {
                 const next = (mode === 'deckB') ? 'deckB' : 'spectrum';
                 const wasDeckB = this.digitalCenterMode === 'deckB';
+                if (next !== 'spectrum') {
+                    try { this._closeDigitalLocalQueuePanel(); } catch (_) {}
+                }
                 this.digitalCenterMode = next;
                 try { localStorage.setItem('radioVisual.digitalCenter.v1', next); } catch (_) {}
                 if (next === 'spectrum' && wasDeckB) {
@@ -3091,8 +3363,7 @@
                 const stagingByLabel = {
                     Video: 'video',
                     ProjectM: 'projectm',
-                    'Audio:Bar': 'bars',
-                    Queue: 'queue'
+                    'Audio:Bar': 'bars'
                 };
                 const items = [
                     { label: 'Mixer', fn: () => { try { g.toggleMixPanel?.(); } catch (_) {} } },
@@ -3137,7 +3408,7 @@
                     }] : []),
                     { label: 'Queue', fn: () => {
                         if (deckBInPanel) {
-                            this._toggleDigitalStagingFeature('queue');
+                            this._toggleDigitalLocalQueuePanel();
                             return;
                         }
                         this._withDjDeck((dj) => dj.toggleDeckBQueuePanel());
@@ -3164,10 +3435,17 @@
                         b.dataset.rvStaging = stagingKind;
                         b.title = `Toggle ${it.label} in staging area`;
                     }
+                    if (deckBInPanel && it.label === 'Queue') {
+                        b.dataset.rvLocalQueue = '1';
+                        b.title = 'Local playlists · Deck A & B';
+                    }
                     this._bindAction(b, it.fn);
                     gridEl.appendChild(b);
                 });
-                if (deckBInPanel) this._syncDigitalStagingButtons();
+                if (deckBInPanel) {
+                    this._syncDigitalStagingButtons();
+                    this._syncDigitalLocalQueueButton();
+                }
             }
 
             _mkKnobBlock(label, knob, readoutEl, readoutOnKnob = false) {
@@ -3553,9 +3831,11 @@
                 digitalStagingMount = document.createElement('div');
                 digitalStagingMount.className = 'radio-visual-digital-staging-mount';
                 digitalStagingMount.setAttribute('aria-hidden', 'true');
+                const digitalLocalQueuePanel = this._buildDigitalLocalQueuePanel();
                 digitalCenterSpectrum.appendChild(spectrumBg);
                 digitalCenterSpectrum.appendChild(spectrumRow);
                 digitalCenterSpectrum.appendChild(digitalStagingMount);
+                digitalCenterSpectrum.appendChild(digitalLocalQueuePanel);
                 digitalCenterDeckB = document.createElement('div');
                 digitalCenterDeckB.className = 'radio-visual-digital-center-pane';
                 digitalDeckBMount = document.createElement('div');
@@ -3699,6 +3979,7 @@
                     spectrumBg,
                     digitalDashStack: dashStack,
                     digitalCenterSpectrum,
+                    digitalLocalQueuePanel,
                     digitalCenterDeckB,
                     spectrumSideL,
                     spectrumSideR,
@@ -3777,6 +4058,17 @@
                             'b',
                             sig
                         );
+                    } catch (_) {}
+                    try { this._wireDigitalLocalQueuePanel(sig); } catch (_) {}
+                    try {
+                        const engine = this;
+                        const prevRefresh = window.__refreshDjQueueUi;
+                        window.__refreshDjQueueUi = () => {
+                            try {
+                                if (typeof prevRefresh === 'function') prevRefresh();
+                            } catch (_) {}
+                            try { engine._refreshDigitalLocalQueueUi(); } catch (_) {}
+                        };
                     } catch (_) {}
                     if (btnDigitalSpectrum) {
                         btnDigitalSpectrum.title = 'Spectrum view · Tap again to hide clock, stations, and crossfader';
