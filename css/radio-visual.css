@@ -9,8 +9,6 @@
             padding: clamp(10px, 2.5vw, 28px);
             box-sizing: border-box;
             overflow: auto;
-            container-type: size;
-            container-name: rv-root;
             background:
                 radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255, 180, 90, 0.12), transparent 55%),
                 radial-gradient(ellipse 90% 70% at 50% 100%, rgba(20, 40, 80, 0.35), transparent 60%),
@@ -54,27 +52,6 @@
             flex-direction: column;
             align-items: stretch;
             gap: clamp(12px, 2vh, 20px);
-        }
-        /* Digital: grow with viewport; fit width or height, whichever is limiting (16:10). */
-        #radio-visual-root .radio-visual-stage.radio-visual-skin--digital {
-            --rv-digital-aspect: calc(16 / 10);
-            --rv-digital-height-scale: 0.9;
-            width: min(100cqw, calc(100cqh * var(--rv-digital-height-scale) * var(--rv-digital-aspect)));
-            height: min(calc(100cqh * var(--rv-digital-height-scale)), calc(100cqw / var(--rv-digital-aspect)));
-            max-width: 100cqw;
-            max-height: calc(100cqh * var(--rv-digital-height-scale));
-            aspect-ratio: 16 / 9;
-            flex: 0 0 auto;
-            min-height: 0;
-        }
-        @supports not (width: 100cqw) {
-            #radio-visual-root .radio-visual-stage.radio-visual-skin--digital {
-                --rv-fallback-h: calc((100dvh - 5.5rem) * 0.9);
-                width: min(100%, calc(var(--rv-fallback-h) * 16 / 10));
-                height: min(var(--rv-fallback-h), calc((100vw - 2.5rem) / (16 / 10)));
-                max-width: 100%;
-                max-height: var(--rv-fallback-h);
-            }
         }
         #radio-visual-root .radio-visual-stage.is-active { display: flex; }
         #radio-visual-root .radio-visual-stations-line {
@@ -448,13 +425,8 @@
         #radio-visual-root .radio-visual-btn:hover { filter: brightness(1.12); }
         #radio-visual-root .radio-visual-digital-panel {
             position: relative;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            height: 100%;
-            min-height: 0;
             border-radius: 14px;
-            padding: clamp(12px, 1.8vmin, 24px);
+            padding: clamp(16px, 3vw, 24px);
             background:
                 linear-gradient(180deg, rgba(255, 210, 70, 0.14) 0%, transparent 28%),
                 linear-gradient(160deg, #0a1628 0%, #061018 50%, #0c1020 100%);
@@ -523,20 +495,14 @@
         #radio-visual-root .radio-visual-digital-center {
             position: relative;
             width: 100%;
-            flex: 1 1 0;
-            min-height: clamp(140px, 22cqh, 100%);
-            margin: clamp(6px, 1vmin, 14px) 0;
+            min-height: clamp(200px, 34vh, 320px);
+            margin: 10px 0 14px;
             border-radius: 12px;
             overflow: hidden;
             border: 2px solid rgba(0, 220, 255, 0.28);
             background: rgba(0, 12, 20, 0.85);
             box-shadow: inset 0 0 40px rgba(0, 180, 255, 0.08);
             cursor: pointer;
-        }
-        @supports not (width: 100cqh) {
-            #radio-visual-root .radio-visual-digital-center {
-                min-height: clamp(140px, 28vh, 72vh);
-            }
         }
         #radio-visual-root .radio-visual-digital-center-pane {
             position: absolute;
@@ -553,14 +519,10 @@
                 radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255, 220, 90, 0.2), transparent 55%),
                 radial-gradient(ellipse 90% 70% at 50% 100%, rgba(20, 40, 80, 0.35), transparent 60%),
                 linear-gradient(165deg, #0c0a08 0%, #1a1410 38%, #0a0e14 100%);
-            overflow: hidden;
         }
         #radio-visual-root.radio-visual-root--analogue-only .radio-visual-stage,
         #radio-visual-root.radio-visual-root--digital-only .radio-visual-stage {
             display: flex;
-        }
-        #radio-visual-root.radio-visual-root--digital-only {
-            padding: clamp(8px, 1.2vmin, 18px);
         }
         #radio-visual-root .radio-visual-digital-spectrum-bg {
             position: absolute;
@@ -736,21 +698,15 @@
             pointer-events: none;
         }
         #radio-visual-root .radio-visual-digital-dash-stack {
-            flex: 0 0 clamp(130px, 24cqw, 380px);
-            min-width: clamp(120px, 14vw, 200px);
-            max-width: min(42cqw, 420px);
+            flex: 0 0 clamp(150px, 30vw, 280px);
+            min-width: 130px;
+            max-width: min(92vw, 300px);
             display: flex;
             flex-direction: column;
             align-items: stretch;
             justify-content: center;
             gap: clamp(6px, 1.2vw, 10px);
             z-index: 4;
-        }
-        @supports not (width: 100cqw) {
-            #radio-visual-root .radio-visual-digital-dash-stack {
-                flex: 0 0 clamp(130px, 22vw, 380px);
-                max-width: min(42vw, 420px);
-            }
         }
         #radio-visual-root .radio-visual-digital-center-info {
             display: flex;
@@ -917,13 +873,9 @@
             grid-template-columns: repeat(9, minmax(0, 1fr));
             gap: clamp(4px, 0.8vw, 8px);
             max-width: none;
-            width: 100%;
             margin: 0 0 10px;
             position: relative;
             z-index: 12;
-            flex-shrink: 0;
-        }
-        #radio-visual-root .radio-visual-digital-toolbar {
             flex-shrink: 0;
         }
         #radio-visual-root .radio-visual-digital-feature-btns .radio-visual-btn {
