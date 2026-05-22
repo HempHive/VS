@@ -669,6 +669,15 @@
             overflow: hidden;
             background: transparent;
         }
+        #radio-visual-root .radio-visual-digital-spectrum-side.is-local-drop-target {
+            box-shadow:
+                inset 0 0 0 2px rgba(0, 220, 255, 0.85),
+                0 0 18px rgba(0, 180, 255, 0.35);
+            background: rgba(0, 60, 90, 0.18);
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-side .radio-visual-digital-spectrum-canvas {
+            pointer-events: none;
+        }
         #radio-visual-root .radio-visual-digital-dash-stack {
             flex: 0 0 clamp(150px, 30vw, 280px);
             min-width: 130px;

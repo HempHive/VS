@@ -354,6 +354,68 @@
                 btn.addEventListener('click', (ev) => this._stopClick(ev), sig);
             }
 
+            _ingestLocalFilesToDeckAndPlay(deckKey, files) {
+                try {
+                    if (typeof ingestLocalFilesToDeckAndPlay === 'function') {
+                        ingestLocalFilesToDeckAndPlay(deckKey, files);
+                    }
+                } catch (_) {}
+            }
+
+            _afterDeckLocalFileDrop() {
+                try {
+                    if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi();
+                } catch (_) {}
+                try { this._syncDeckSwitches(); } catch (_) {}
+                try { this._updateStationUi(); } catch (_) {}
+            }
+
+            /** Left / right spectrum flowers: drop local audio (or video) like DJ jog wheels. */
+            _wireDigitalSpectrumLocalDrop(zoneEls, deckKey, sig) {
+                const zones = (Array.isArray(zoneEls) ? zoneEls : [zoneEls]).filter(Boolean);
+                if (!zones.length) return;
+                const dk = deckKey === 'b' ? 'b' : 'a';
+                const label = dk === 'b' ? 'Deck B' : 'Deck A';
+                const setDropHighlight = (on) => {
+                    zones.forEach((el) => el.classList.toggle('is-local-drop-target', !!on));
+                };
+                const onDragOver = (ev) => {
+                    try {
+                        const dt = ev.dataTransfer;
+                        if (!dt || !Array.from(dt.types || []).includes('Files')) return;
+                        ev.preventDefault();
+                        dt.dropEffect = 'copy';
+                        setDropHighlight(true);
+                    } catch (_) {}
+                };
+                const onDragLeave = (ev) => {
+                    try {
+                        const rel = ev.relatedTarget;
+                        if (rel && zones.some((z) => z.contains(rel))) return;
+                        setDropHighlight(false);
+                    } catch (_) {}
+                };
+                const onDrop = (ev) => {
+                    try {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                    } catch (_) {}
+                    setDropHighlight(false);
+                    const dt = ev.dataTransfer;
+                    if (!dt || !dt.files || !dt.files.length) return;
+                    this._ingestLocalFilesToDeckAndPlay(dk, dt.files);
+                    this._afterDeckLocalFileDrop();
+                };
+                zones.forEach((el) => {
+                    try {
+                        el.title = `Drop local tracks for ${label} (audio or video)`;
+                    } catch (_) {}
+                    el.addEventListener('dragover', onDragOver, sig);
+                    el.addEventListener('dragleave', onDragLeave, sig);
+                    el.addEventListener('drop', onDrop, sig);
+                });
+            }
+
             _loadVisualByName(name) {
                 try {
                     if (!Array.isArray(modes) || typeof loadMode !== 'function') return;
@@ -3275,6 +3337,8 @@
                 let dashStack = null;
                 let digitalCenterSpectrum = null;
                 let digitalCenterDeckB = null;
+                let spectrumSideL = null;
+                let spectrumSideR = null;
                 let digitalSpectrumCanvasL = null;
                 let digitalSpectrumCanvasR = null;
                 let digitalCarDashCanvas = null;
@@ -3436,6 +3500,7 @@
                 const spectrumRow = document.createElement('div');
                 spectrumRow.className = 'radio-visual-digital-spectrum-row';
                 const spectrumSideL = document.createElement('div');
+                spectrumSideL = document.createElement('div');
                 spectrumSideL.className = 'radio-visual-digital-spectrum-side radio-visual-digital-spectrum-side--left';
                 digitalSpectrumCanvasL = document.createElement('canvas');
                 digitalSpectrumCanvasL.className = 'radio-visual-digital-spectrum-canvas';
@@ -3477,7 +3542,7 @@
                 carDisplay.appendChild(dashXfade);
                 dashStack.appendChild(centerInfo);
                 dashStack.appendChild(carDisplay);
-                const spectrumSideR = document.createElement('div');
+                spectrumSideR = document.createElement('div');
                 spectrumSideR.className = 'radio-visual-digital-spectrum-side radio-visual-digital-spectrum-side--right';
                 digitalSpectrumCanvasR = document.createElement('canvas');
                 digitalSpectrumCanvasR.className = 'radio-visual-digital-spectrum-canvas';
@@ -3636,6 +3701,8 @@
                     digitalDashStack: dashStack,
                     digitalCenterSpectrum,
                     digitalCenterDeckB,
+                    spectrumSideL,
+                    spectrumSideR,
                     digitalSpectrumCanvasL,
                     digitalSpectrumCanvasR,
                     digitalCarDashCanvas,
@@ -3700,6 +3767,18 @@
                     }
                     if (btnVis) this._wireDigitalVisBgButton(btnVis, sig);
                     try { this._wireDigitalKeyboardShortcuts(sig); } catch (_) {}
+                    try {
+                        this._wireDigitalSpectrumLocalDrop(
+                            [spectrumSideL, digitalSpectrumCanvasL],
+                            'a',
+                            sig
+                        );
+                        this._wireDigitalSpectrumLocalDrop(
+                            [spectrumSideR, digitalSpectrumCanvasR],
+                            'b',
+                            sig
+                        );
+                    } catch (_) {}
                     if (btnDigitalSpectrum) {
                         btnDigitalSpectrum.title = 'Spectrum view · Tap again to hide clock, stations, and crossfader';
                         btnDigitalSpectrum.setAttribute('aria-pressed', 'true');
