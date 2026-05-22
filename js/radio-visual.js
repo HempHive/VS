@@ -1120,7 +1120,14 @@
 
             /** Space-bar short tap (and external callers); same as the digital toolbar Fade button. */
             triggerAutoFadeFromShortcut() {
-                try { this._triggerAutoFade(); } catch (_) {}
+                try {
+                    this._clearSuppressCrossfadeResume();
+                    if (this._bothDecksSilent()) {
+                        this._startActiveDeckByCrossfader();
+                        return;
+                    }
+                    this._triggerAutoFade();
+                } catch (_) {}
             }
 
             /** Stop in-flight radio auto-fade so manual play/pause (V / B) is not overridden each frame. */

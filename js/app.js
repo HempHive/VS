@@ -5607,10 +5607,12 @@ tiGlowColorRandBtn.addEventListener('click', () => {
          *                  (pauses both decks if anything is playing; otherwise starts
          *                  the deck currently winning the crossfader).
          *
-         * spaceLongPressTimer / spaceLongPressFired track the state between keydown
-         * and keyup so the short action only runs when the hold threshold wasn't met.
+         * spaceKeyDown / spaceLongPressTimer / spaceLongPressFired track state between
+         * keydown and keyup. Long-hold only runs if Space is still down when the timer
+         * fires (avoids pausing on a quick tap when keyup is delayed or missed).
          */
         const SPACE_LONG_HOLD_MS = 500;
+        let spaceKeyDown = false;
         let spaceLongPressTimer = null;
         let spaceLongPressFired = false;
         function clearSpaceLongPress() {
@@ -5618,6 +5620,28 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 try { clearTimeout(spaceLongPressTimer); } catch (_) {}
                 spaceLongPressTimer = null;
             }
+        }
+        function triggerSpaceShortTap() {
+            try {
+                const eng = getDjDecksEngineIfActive();
+                const rv = getActiveRadioVisualEngine();
+                if (eng && typeof eng.triggerAutoFadeFromShortcut === 'function') {
+                    eng.triggerAutoFadeFromShortcut();
+                } else if (rv && typeof rv.triggerAutoFadeFromShortcut === 'function') {
+                    rv.triggerAutoFadeFromShortcut();
+                }
+            } catch (_) {}
+        }
+        function triggerSpaceLongHold() {
+            try {
+                const eng = getDjDecksEngineIfActive();
+                const rv = getActiveRadioVisualEngine();
+                if (eng && typeof eng.pauseBothDecksOrStartActive === 'function') {
+                    eng.pauseBothDecksOrStartActive();
+                } else if (rv && typeof rv.pauseBothDecksOrStartActive === 'function') {
+                    rv.pauseBothDecksOrStartActive();
+                }
+            } catch (_) {}
         }
 
         /**
@@ -5905,18 +5929,14 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                     } catch(_) {}
                     return;
                 }
+                spaceKeyDown = true;
                 clearSpaceLongPress();
                 spaceLongPressFired = false;
                 spaceLongPressTimer = setTimeout(() => {
                     spaceLongPressTimer = null;
+                    if (!spaceKeyDown) return;
                     spaceLongPressFired = true;
-                    const eng = getDjDecksEngineIfActive();
-                    const rv = getActiveRadioVisualEngine();
-                    if (eng && typeof eng.pauseBothDecksOrStartActive === 'function') {
-                        eng.pauseBothDecksOrStartActive();
-                    } else if (rv && typeof rv.pauseBothDecksOrStartActive === 'function') {
-                        rv.pauseBothDecksOrStartActive();
-                    }
+                    triggerSpaceLongHold();
                 }, SPACE_LONG_HOLD_MS);
             } else if (e.key === 'w' || e.key === 'W') {
                 e.preventDefault();
@@ -5975,6 +5995,14 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             document.addEventListener('keydown', handleGlobalKeydown, false);
         } catch(e) {}
         try {
+            window.addEventListener('blur', () => {
+                if (!spaceKeyDown && !spaceLongPressTimer) return;
+                spaceKeyDown = false;
+                clearSpaceLongPress();
+                spaceLongPressFired = false;
+            }, false);
+        } catch (_) {}
+        try {
             // Quick tap: cancel the long-hold "stop" timer so the sample plays through (or until
             // its natural end / a subsequent press retriggers it). Long-hold: timer already fired
             // and stopped the sample, so this is a no-op.
@@ -5987,24 +6015,10 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 if (e && (e.code === 'Space' || e.key === ' ')) {
                     const eng = getDjDecksEngineIfActive();
                     const rv = getActiveRadioVisualEngine();
-                    if (rv && !eng) {
-                        if (spaceLongPressTimer) {
-                            clearSpaceLongPress();
-                            if (!spaceLongPressFired) {
-                                try { rv.triggerAutoFadeFromShortcut(); } catch (_) {}
-                            }
-                        }
-                        spaceLongPressFired = false;
-                        return;
-                    }
-                    if (spaceLongPressTimer) {
-                        clearSpaceLongPress();
-                        if (!spaceLongPressFired) {
-                            if (eng && typeof eng.triggerAutoFadeFromShortcut === 'function') {
-                                eng.triggerAutoFadeFromShortcut();
-                            }
-                        }
-                    }
+                    if (!eng && !rv) return;
+                    spaceKeyDown = false;
+                    clearSpaceLongPress();
+                    if (!spaceLongPressFired) triggerSpaceShortTap();
                     spaceLongPressFired = false;
                 }
             }, false);
