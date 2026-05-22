@@ -973,9 +973,10 @@
             box-shadow: 0 2px 0 #041018, 0 4px 12px rgba(0, 32, 64, 0.4);
         }
         #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-digital-vis-btn {
-            flex: 0.55 1 0;
-            max-width: 2.4em;
-            padding: 7px 2px;
+            flex: 0.72 1 0;
+            max-width: 3.2em;
+            padding: 7px 5px;
+            font-size: clamp(9px, 2vw, 13px);
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol {
             display: flex;
@@ -991,11 +992,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: clamp(5px, 1vw, 7px);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: clamp(8px, 1.45vw, 11px);
+            font-weight: 700;
             line-height: 1.1;
-            padding: 0 1px;
+            padding: 0 2px;
             text-align: center;
-            color: #8ef;
+            color: #9ff;
+            text-shadow: 0 0 8px rgba(0, 255, 200, 0.3);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;

@@ -1685,11 +1685,15 @@
                 this._syncDigitalVolumeUi();
             }
 
+            _formatDigitalVolumeReadout(v) {
+                return String(Math.round(Math.max(0, Math.min(1, Number(v) || 0)) * 100));
+            }
+
             _syncDigitalVolumeUi() {
                 const vs = document.getElementById('volume-slider');
                 const v = vs ? Number(vs.value) : 0.5;
                 if (this.els.volDigitalReadout) {
-                    this.els.volDigitalReadout.textContent = `${Math.round(v * 100)}%`;
+                    this.els.volDigitalReadout.textContent = this._formatDigitalVolumeReadout(v);
                 }
             }
 
@@ -3352,7 +3356,7 @@
                 btnVis = document.createElement('button');
                 btnVis.type = 'button';
                 btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-vis-btn';
-                btnVis.textContent = '🔆';
+                btnVis.textContent = ' 🔆 ';
                 btnVis.title = 'Background off · Tap to turn on · Right-click: first background';
                 btnVis.setAttribute('aria-label', 'Digital background visual');
                 btnVis.setAttribute('aria-pressed', 'false');
@@ -3370,7 +3374,7 @@
                 volDigitalReadout = document.createElement('span');
                 volDigitalReadout.className = 'radio-visual-digital-vol-readout';
                 volDigitalReadout.id = 'radio-visual-vol-readout';
-                volDigitalReadout.textContent = '50%';
+                volDigitalReadout.textContent = '50';
                 volUp = document.createElement('button');
                 volUp.type = 'button';
                 volUp.className = 'radio-visual-btn radio-visual-digital-step-btn';
