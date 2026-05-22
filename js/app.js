@@ -2023,6 +2023,28 @@ function randomGlowColor() {
             } catch (_) {}
         }
         /** Fullscreen Deck B visuals (`#dj-deck-b-viz-mount` or nested `.dj-video-shell`), not the whole DJ canvas. */
+        function toggleVideoSurfaceFullscreen(videoEl, containerEl) {
+            if (!videoEl) return false;
+            const container = containerEl || videoEl.parentElement;
+            if (!container) return false;
+            const now = Date.now();
+            if (now - (window.__deckBVizFsToggleAt || 0) < 450) return false;
+            window.__deckBVizFsToggleAt = now;
+            try {
+                const fs = document.fullscreenElement || document.webkitFullscreenElement;
+                if (fs && (fs === videoEl || fs === container || container.contains(fs))) {
+                    exitDeckBVizFullscreen();
+                    return true;
+                }
+                const target = container;
+                const req = target.requestFullscreen || target.webkitRequestFullscreen;
+                if (req) {
+                    req.call(target).then(afterDeckBVizFullscreenChange).catch(() => {});
+                    return true;
+                }
+            } catch (_) {}
+            return false;
+        }
         function toggleDeckBVizMountFullscreen() {
             const mount = getDeckBVizMountEl();
             if (!mount) return false;
@@ -3486,6 +3508,7 @@ function exposeAppBindingsToGlobal() {
     try { g.titleEl = titleEl; } catch (_) {}
     try { g.toggleBottomMenuPanel = toggleBottomMenuPanel; } catch (_) {}
     try { g.toggleDeckBVizMountFullscreen = toggleDeckBVizMountFullscreen; } catch (_) {}
+    try { g.toggleVideoSurfaceFullscreen = toggleVideoSurfaceFullscreen; } catch (_) {}
     try { g.toggleFullscreen = toggleFullscreen; } catch (_) {}
     try { g.toggleKeyboardShortcutsPanel = toggleKeyboardShortcutsPanel; } catch (_) {}
     try { g.toggleMixPanel = toggleMixPanel; } catch (_) {}

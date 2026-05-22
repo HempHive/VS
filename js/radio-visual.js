@@ -862,7 +862,45 @@
                 }
                 vid.classList.remove('is-hidden');
                 mount.appendChild(vid);
+                this._wireDigitalStagingVideoFullscreen(vid, mount);
                 this._syncDigitalStagingVideo(vid);
+            }
+
+            _wireDigitalStagingVideoFullscreen(vid, mount) {
+                if (!vid || !mount || !this.abortCtrl) return;
+                if (vid.dataset.rvVideoFsWired === '1') return;
+                vid.dataset.rvVideoFsWired = '1';
+                const sig = { signal: this.abortCtrl.signal };
+                try { vid.title = 'Double-click for fullscreen · Esc to exit'; } catch (_) {}
+                try { mount.title = vid.title; } catch (_) {}
+                const onDbl = (ev) => {
+                    try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                    try {
+                        if (typeof toggleVideoSurfaceFullscreen === 'function') {
+                            toggleVideoSurfaceFullscreen(vid, mount);
+                        }
+                    } catch (_) {}
+                };
+                vid.addEventListener('dblclick', onDbl, sig);
+                mount.addEventListener('dblclick', onDbl, sig);
+            }
+
+            _wireDigitalDeckBVideoFullscreen(vid, mount, sig) {
+                if (!vid || !mount) return;
+                if (vid.dataset.rvDeckBVideoFsWired === '1') return;
+                vid.dataset.rvDeckBVideoFsWired = '1';
+                try { vid.title = 'Double-click for fullscreen · Esc to exit'; } catch (_) {}
+                const onDbl = (ev) => {
+                    try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                    try {
+                        if (typeof toggleVideoSurfaceFullscreen === 'function') {
+                            toggleVideoSurfaceFullscreen(vid, mount);
+                        }
+                    } catch (_) {}
+                };
+                const opts = sig ? sig : undefined;
+                vid.addEventListener('dblclick', onDbl, opts);
+                mount.addEventListener('dblclick', onDbl, opts);
             }
 
             _syncDigitalStagingVideo(vidEl) {
@@ -3270,6 +3308,27 @@
                         return;
                     }
                     try {
+                        if (this._digitalStagingView === 'video' && ev.target && ev.target.closest) {
+                            const stagingVid = ev.target.closest('.radio-visual-digital-staging-video');
+                            const stagingMount = ev.target.closest('.radio-visual-digital-staging-mount');
+                            if (stagingVid || stagingMount) {
+                                const vid = this.els.digitalStagingVideo;
+                                const mount = this._stagingContentMount();
+                                if (vid && typeof toggleVideoSurfaceFullscreen === 'function') {
+                                    toggleVideoSurfaceFullscreen(vid, mount || stagingMount);
+                                    return;
+                                }
+                            }
+                        }
+                        if (this.digitalCenterMode === 'deckB' && ev.target && ev.target.closest) {
+                            const deckVid = ev.target.closest('.radio-visual-digital-deck-b-video');
+                            if (deckVid && typeof toggleVideoSurfaceFullscreen === 'function') {
+                                toggleVideoSurfaceFullscreen(deckVid, deckVid.parentElement);
+                                return;
+                            }
+                        }
+                    } catch (_) {}
+                    try {
                         const fs = globalThis.toggleFullscreen;
                         if (typeof fs === 'function') fs();
                     } catch (_) {}
@@ -3896,6 +3955,7 @@
                 digitalDeckBVideo.muted = true;
                 digitalDeckBMount.appendChild(digitalDeckBContent);
                 digitalDeckBMount.appendChild(digitalDeckBVideo);
+                try { this._wireDigitalDeckBVideoFullscreen(digitalDeckBVideo, digitalDeckBMount, sig); } catch (_) {}
                 digitalCenterDeckB.appendChild(digitalDeckBMount);
                 digitalCenter.appendChild(digitalCenterSpectrum);
                 digitalCenter.appendChild(digitalCenterDeckB);

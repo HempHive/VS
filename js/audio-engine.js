@@ -1121,8 +1121,19 @@
                 registerDeckVideoFeed('b', blobUrl, f.name || 'Local video', true);
             }
         }
+        function deckLocalPlaybackInProgress(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            const media = dk === 'b' ? audioElB : audioEl;
+            try {
+                return state.deckSourceMode[dk] === 'local'
+                    && !!(media && media.src && !media.paused && !media.ended);
+            } catch (_) {
+                return false;
+            }
+        }
         function enqueueDeckLocalFiles(deckKey, files) {
             const q = deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
+            const deferVideoFeed = deckLocalPlaybackInProgress(deckKey);
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 const kind = inferLocalMediaKind(file);
@@ -1130,7 +1141,9 @@
                 const isVideo = kind === 'video';
                 const url = URL.createObjectURL(file);
                 q.push({ name: file.name || (isVideo ? 'Video track' : 'Audio track'), url, isVideo });
-                if (isVideo) registerDeckVideoFeed(deckKey, url, file.name || 'Video track', true);
+                if (isVideo && !deferVideoFeed) {
+                    registerDeckVideoFeed(deckKey, url, file.name || 'Video track', true);
+                }
             }
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
@@ -1163,9 +1176,6 @@
                     url,
                     isVideo
                 });
-                if (isVideo) {
-                    try { registerDeckVideoFeed(deckKey, url, file.name || 'Video track', true); } catch (_) {}
-                }
             }
             return items;
         }
@@ -1190,7 +1200,10 @@
             if (!clean) return false;
             const q = deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
             q.push({ name: String(label || deriveNameFromUrl(clean) || 'URL source'), url: clean });
-            registerDeckVideoFeed(deckKey, clean, label);
+            const isVid = isLikelyVideoUrl(clean) || isVideoQueueEligibleUrl(clean);
+            if (isVid && !deckLocalPlaybackInProgress(deckKey)) {
+                registerDeckVideoFeed(deckKey, clean, label);
+            }
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
             return true;
         }
