@@ -934,6 +934,14 @@
             aspect-ratio: 1;
             align-self: center;
         }
+        /* Third Spectrum tap: hide side flowers (centre dash already hidden in focus/blank). */
+        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-sides-hidden .radio-visual-digital-spectrum-side {
+            display: none !important;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane.is-spectrum-sides-hidden .radio-visual-digital-spectrum-row {
+            visibility: hidden;
+            pointer-events: none;
+        }
         #radio-visual-root .radio-visual-digital-spectrum-side .radio-visual-digital-spectrum-canvas {
             position: absolute;
             inset: 0;
@@ -1072,12 +1080,13 @@
         html:-webkit-full-screen #radio-visual-root.radio-visual-root--digital-active,
         html:-webkit-full-screen #radio-visual-root.radio-visual-root--digital-only,
         html:-webkit-full-screen #radio-visual-root:has(.radio-visual-skin--digital.is-active) {
+            --rv-digital-fs-gutter: clamp(12px, 2.4vmin, 36px);
             position: fixed;
             inset: 0;
             width: 100%;
             height: 100%;
             max-width: none;
-            padding: clamp(6px, 1.2vmin, 18px);
+            padding: var(--rv-digital-fs-gutter);
             overflow: hidden;
             justify-content: stretch;
             align-items: stretch;
@@ -1093,7 +1102,7 @@
             flex: 1 1 auto;
             min-height: 0;
             height: 100%;
-            gap: clamp(8px, 1.2vmin, 16px);
+            gap: clamp(16px, 2.4vmin, 32px);
         }
         html:fullscreen #radio-visual-root.radio-visual-root--digital-active .radio-visual-digital-panel,
         html:fullscreen #radio-visual-root.radio-visual-root--digital-only .radio-visual-digital-panel,
@@ -1107,6 +1116,8 @@
             min-height: 0;
             height: 100%;
             width: 100%;
+            padding: clamp(10px, 1.5vmin, 16px);
+            border-width: 4px;
         }
         html:fullscreen #radio-visual-root.radio-visual-root--digital-active .radio-visual-digital-center,
         html:fullscreen #radio-visual-root.radio-visual-root--digital-only .radio-visual-digital-center,
@@ -1118,8 +1129,8 @@
             min-height: 0;
             aspect-ratio: unset;
             height: auto;
-            margin-top: 6px;
-            margin-bottom: 8px;
+            margin-top: 12px;
+            margin-bottom: 16px;
         }
         html:fullscreen #radio-visual-root.radio-visual-root--digital-active .radio-visual-digital-toolbar,
         html:fullscreen #radio-visual-root.radio-visual-root--digital-only .radio-visual-digital-toolbar,

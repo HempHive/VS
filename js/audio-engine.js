@@ -1102,9 +1102,145 @@
             if (mime.startsWith('audio')) return 'audio';
             if (mime.startsWith('video')) return 'video';
             const n = (file.name || '').toLowerCase();
-            if (/\.(mp3|aac|m4a|wav|flac|ogg|opus|oga|aiff|aif)(\?|$)/i.test(n)) return 'audio';
-            if (/\.(mp4|webm|mkv|mov|m4v|ogv|avi|mpeg|mpg|wmv)(\?|$)/i.test(n)) return 'video';
+            if (/\.(mp3|aac|m4a|m4b|wav|flac|ogg|opus|oga|weba|aiff|aif|wma)(\?|$)/i.test(n)) return 'audio';
+            if (/\.(mp4|webm|mkv|mov|m4v|ogv|avi|mpeg|mpg|wmv|3gp|flv)(\?|$)/i.test(n)) return 'video';
             return null;
+        }
+        function sortDeckLocalFileList(files) {
+            const list = Array.from(files || []).filter(Boolean);
+            list.sort((a, b) => {
+                const pa = String((a && (a.webkitRelativePath || a.name)) || '').toLowerCase();
+                const pb = String((b && (b.webkitRelativePath || b.name)) || '').toLowerCase();
+                return pa.localeCompare(pb, undefined, { numeric: true, sensitivity: 'base' });
+            });
+            return list;
+        }
+        async function readDirectoryEntryFiles(dirEntry) {
+            const out = [];
+            if (!dirEntry || !dirEntry.isDirectory) return out;
+            const reader = dirEntry.createReader();
+            const entries = [];
+            let batch;
+            do {
+                batch = await new Promise((resolve, reject) => {
+                    try { reader.readEntries(resolve, reject); } catch (e) { reject(e); }
+                });
+                if (batch && batch.length) entries.push(...batch);
+            } while (batch && batch.length > 0);
+            for (let i = 0; i < entries.length; i++) {
+                const ent = entries[i];
+                try {
+                    if (ent.isFile) {
+                        const file = await new Promise((resolve, reject) => {
+                            try { ent.file(resolve, reject); } catch (e) { reject(e); }
+                        });
+                        if (file) out.push(file);
+                    } else if (ent.isDirectory) {
+                        const nested = await readDirectoryEntryFiles(ent);
+                        if (nested.length) out.push(...nested);
+                    }
+                } catch (_) {}
+            }
+            return out;
+        }
+        /** Expand dropped folders (and plain files) into a flat File list. */
+        async function collectMediaFilesFromDataTransfer(dt) {
+            if (!dt) return [];
+            const out = [];
+            const items = dt.items ? Array.from(dt.items) : [];
+            if (items.length) {
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (!item || item.kind !== 'file') continue;
+                    let entry = null;
+                    try {
+                        if (typeof item.webkitGetAsEntry === 'function') entry = item.webkitGetAsEntry();
+                        else if (typeof item.getAsEntry === 'function') entry = item.getAsEntry();
+                    } catch (_) {}
+                    if (entry) {
+                        try {
+                            if (entry.isFile) {
+                                const file = await new Promise((resolve, reject) => {
+                                    try { entry.file(resolve, reject); } catch (e) { reject(e); }
+                                });
+                                if (file) out.push(file);
+                            } else if (entry.isDirectory) {
+                                const nested = await readDirectoryEntryFiles(entry);
+                                if (nested.length) out.push(...nested);
+                            }
+                        } catch (_) {}
+                    } else {
+                        try {
+                            const f = item.getAsFile();
+                            if (f) out.push(f);
+                        } catch (_) {}
+                    }
+                }
+            }
+            if (!out.length && dt.files && dt.files.length) {
+                return sortDeckLocalFileList(dt.files);
+            }
+            return sortDeckLocalFileList(out);
+        }
+        /**
+         * Pick a folder via File System Access API (no bulk “upload” prompt).
+         * Returns File[] on success, [] if cancelled, or null if caller should use <input webkitdirectory>.
+         */
+        async function pickDeckLocalFolderFiles() {
+            try {
+                if (typeof window.showDirectoryPicker !== 'function') return null;
+                const dir = await window.showDirectoryPicker({ mode: 'read' });
+                const files = [];
+                async function walk(handle) {
+                    for await (const entry of handle.values()) {
+                        try {
+                            if (entry.kind === 'file') {
+                                const f = await entry.getFile();
+                                if (f) files.push(f);
+                            } else if (entry.kind === 'directory') {
+                                await walk(entry);
+                            }
+                        } catch (_) {}
+                    }
+                }
+                await walk(dir);
+                return sortDeckLocalFileList(files);
+            } catch (e) {
+                if (e && e.name === 'AbortError') return [];
+                return null;
+            }
+        }
+        function shouldAutoplayDeckLocalQueue(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            const media = dk === 'b' ? audioElB : audioEl;
+            try {
+                const playingLocal = state.deckSourceMode[dk] === 'local';
+                const mediaGoing = !!(media && media.src && media.src !== 'about:blank' && !media.paused && !media.ended);
+                return !(playingLocal && mediaGoing);
+            } catch (_) {
+                return true;
+            }
+        }
+        function addDeckLocalFilesToDeck(deckKey, files, opts) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            const sorted = sortDeckLocalFileList(files);
+            if (!sorted.length) return;
+            initAudio();
+            const forceImmediate = !!(opts && opts.forceImmediate);
+            if (forceImmediate) {
+                const items = buildDeckLocalItemsFromFiles(dk, sorted);
+                if (!items.length) return;
+                prependDeckLocalItems(dk, items);
+                const playOpts = { forceImmediate: true };
+                if (dk === 'b') playDeckBTrackFromQueue(playOpts);
+                else playDeckATrackFromQueue(playOpts);
+                return;
+            }
+            enqueueDeckLocalFiles(dk, sorted);
+            if (shouldAutoplayDeckLocalQueue(dk)) {
+                if (dk === 'b') playDeckBTrackFromQueue(opts);
+                else playDeckATrackFromQueue(opts);
+            }
         }
         function isVideoFileForMediaQueue(file) {
             const k = inferLocalMediaKind(file);
@@ -1185,15 +1321,8 @@
             for (let i = items.length - 1; i >= 0; i--) q.unshift(items[i]);
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
-        function ingestLocalFilesToDeckAndPlay(deckKey, files) {
-            const dk = deckKey === 'b' ? 'b' : 'a';
-            const items = buildDeckLocalItemsFromFiles(dk, files);
-            if (!items.length) return;
-            initAudio();
-            prependDeckLocalItems(dk, items);
-            const playOpts = { forceImmediate: true };
-            if (dk === 'b') playDeckBTrackFromQueue(playOpts);
-            else playDeckATrackFromQueue(playOpts);
+        function ingestLocalFilesToDeckAndPlay(deckKey, files, opts) {
+            addDeckLocalFilesToDeck(deckKey, files, { forceImmediate: true, ...(opts || {}) });
         }
 
         /** Read crossfader position (Digital Radio dash, DJ, or Mix panel). */

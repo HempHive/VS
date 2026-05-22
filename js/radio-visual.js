@@ -31,8 +31,8 @@
                 this._volDrag = false;
                 this._rvAutoFadeRaf = null;
                 this.digitalCenterMode = 'spectrum';
-                /** Clock, station LCD, side spectrum EQ, and dash crossfader on the spectrum pane. */
-                this._digitalSpectrumHudVisible = true;
+                /** Spectrum centre layout: full | focus (no dash, large flowers) | blank (no flowers). */
+                this._digitalSpectrumLayout = 'full';
                 this._digitalDeckBView = 'video';
                 /** Staging overlay in spectrum pane: null | video | projectm | bars | queue */
                 this._digitalStagingView = null;
@@ -238,9 +238,7 @@
                 const on = this._isDigitalBgGifEnabled();
                 btn.classList.toggle('is-active', on);
                 btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-                btn.title = on
-                    ? 'Tap: next background · Hold: turn off · Right-click: first background'
-                    : 'Background off · Tap to turn on · Right-click: first background';
+                try { btn.removeAttribute('title'); } catch (_) {}
             }
 
             _applyCurrentDigitalBgGif() {
@@ -358,7 +356,9 @@
 
             _ingestLocalFilesToDeckAndPlay(deckKey, files) {
                 try {
-                    if (typeof ingestLocalFilesToDeckAndPlay === 'function') {
+                    if (typeof addDeckLocalFilesToDeck === 'function') {
+                        addDeckLocalFilesToDeck(deckKey, files);
+                    } else if (typeof ingestLocalFilesToDeckAndPlay === 'function') {
                         ingestLocalFilesToDeckAndPlay(deckKey, files);
                     }
                 } catch (_) {}
@@ -574,43 +574,39 @@
                 fiQBFolder.setAttribute('webkitdirectory', '');
                 this.root.appendChild(fiQBFolder);
 
+                const applyRvDeckLocalFiles = (deckKey, files) => {
+                    if (!files || !files.length) return;
+                    try {
+                        if (typeof addDeckLocalFilesToDeck === 'function') {
+                            addDeckLocalFilesToDeck(deckKey, files);
+                        }
+                    } catch (_) {}
+                    this._afterDeckLocalFileDrop();
+                };
+                const openRvDeckLocalFolderPicker = async (deckKey, fiFolder) => {
+                    let files = null;
+                    try {
+                        if (typeof pickDeckLocalFolderFiles === 'function') {
+                            files = await pickDeckLocalFolderFiles();
+                        }
+                    } catch (_) {}
+                    if (files === null) {
+                        try { fiFolder.click(); } catch (_) {}
+                        return;
+                    }
+                    applyRvDeckLocalFiles(deckKey, files);
+                };
                 const wireDeckFiles = (deckKey, fi, fiFolder) => {
                     const dk = deckKey === 'b' ? 'b' : 'a';
                     fi.addEventListener('change', (ev) => {
                         const files = Array.from(ev.target.files || []);
                         try { ev.target.value = ''; } catch (_) {}
-                        if (!files.length) return;
-                        try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
-                        if (typeof enqueueDeckLocalFiles === 'function') enqueueDeckLocalFiles(dk, files);
-                        const playingLocal = state.deckSourceMode[dk] === 'local';
-                        const media = dk === 'b' ? audioElB : audioEl;
-                        const mediaGoing = media && media.src && !media.paused && !media.ended;
-                        if (!playingLocal || !mediaGoing) {
-                            if (dk === 'b' && typeof playDeckBTrackFromQueue === 'function') {
-                                playDeckBTrackFromQueue();
-                            } else if (typeof playDeckATrackFromQueue === 'function') {
-                                playDeckATrackFromQueue();
-                            }
-                        }
-                        this._afterDeckLocalFileDrop();
+                        applyRvDeckLocalFiles(dk, files);
                     }, sig);
                     fiFolder.addEventListener('change', (ev) => {
                         const files = Array.from(ev.target.files || []);
                         try { ev.target.value = ''; } catch (_) {}
-                        if (!files.length) return;
-                        try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
-                        if (typeof enqueueDeckLocalFiles === 'function') enqueueDeckLocalFiles(dk, files);
-                        const playingLocal = state.deckSourceMode[dk] === 'local';
-                        const media = dk === 'b' ? audioElB : audioEl;
-                        const mediaGoing = media && media.src && !media.paused && !media.ended;
-                        if (!playingLocal || !mediaGoing) {
-                            if (dk === 'b' && typeof playDeckBTrackFromQueue === 'function') {
-                                playDeckBTrackFromQueue();
-                            } else if (typeof playDeckATrackFromQueue === 'function') {
-                                playDeckATrackFromQueue();
-                            }
-                        }
-                        this._afterDeckLocalFileDrop();
+                        applyRvDeckLocalFiles(dk, files);
                     }, sig);
                 };
                 wireDeckFiles('a', fiQA, fiQAFolder);
@@ -624,8 +620,16 @@
                 const btnUrlB = this.root.querySelector('#rv-digital-queue-url-b');
                 if (btnAddA) btnAddA.addEventListener('click', () => { try { fiQA.click(); } catch (_) {} }, sig);
                 if (btnAddB) btnAddB.addEventListener('click', () => { try { fiQB.click(); } catch (_) {} }, sig);
-                if (btnFolderA) btnFolderA.addEventListener('click', () => { try { fiQAFolder.click(); } catch (_) {} }, sig);
-                if (btnFolderB) btnFolderB.addEventListener('click', () => { try { fiQBFolder.click(); } catch (_) {} }, sig);
+                if (btnFolderA) {
+                    btnFolderA.addEventListener('click', () => {
+                        openRvDeckLocalFolderPicker('a', fiQAFolder).catch(() => {});
+                    }, sig);
+                }
+                if (btnFolderB) {
+                    btnFolderB.addEventListener('click', () => {
+                        openRvDeckLocalFolderPicker('b', fiQBFolder).catch(() => {});
+                    }, sig);
+                }
                 if (btnUrlA) {
                     btnUrlA.addEventListener('click', () => {
                         try {
@@ -698,9 +702,19 @@
                     } catch (_) {}
                     setDropHighlight(false);
                     const dt = ev.dataTransfer;
-                    if (!dt || !dt.files || !dt.files.length) return;
-                    this._ingestLocalFilesToDeckAndPlay(dk, dt.files);
-                    this._afterDeckLocalFileDrop();
+                    if (!dt) return;
+                    const finish = (files) => {
+                        if (!files || !files.length) return;
+                        this._ingestLocalFilesToDeckAndPlay(dk, files);
+                        this._afterDeckLocalFileDrop();
+                    };
+                    if (typeof collectMediaFilesFromDataTransfer === 'function') {
+                        collectMediaFilesFromDataTransfer(dt).then(finish).catch(() => {
+                            if (dt.files && dt.files.length) finish(Array.from(dt.files));
+                        });
+                    } else if (dt.files && dt.files.length) {
+                        finish(Array.from(dt.files));
+                    }
                 };
                 zones.forEach((el) => {
                     el.addEventListener('dragover', onDragOver, sig);
@@ -2306,26 +2320,36 @@
                 });
             }
 
-            _syncDigitalSpectrumHud() {
-                const show = this._digitalSpectrumHudVisible !== false;
+            _syncDigitalSpectrumLayout() {
+                const mode = this._digitalSpectrumLayout === 'focus' || this._digitalSpectrumLayout === 'blank'
+                    ? this._digitalSpectrumLayout
+                    : 'full';
+                this._digitalSpectrumLayout = mode;
+                const hudHidden = mode !== 'full';
+                const sidesHidden = mode === 'blank';
                 const pane = this.els.digitalCenterSpectrum;
-                if (pane) pane.classList.toggle('is-spectrum-hud-hidden', !show);
+                if (pane) {
+                    pane.classList.toggle('is-spectrum-hud-hidden', hudHidden);
+                    pane.classList.toggle('is-spectrum-sides-hidden', sidesHidden);
+                }
                 const dash = this.els.digitalDashStack;
-                if (dash) dash.classList.toggle('is-spectrum-hud-hidden', !show);
+                if (dash) dash.classList.toggle('is-spectrum-hud-hidden', hudHidden);
                 if (this.els.btnDigitalSpectrum) {
-                    this.els.btnDigitalSpectrum.setAttribute('aria-pressed', show ? 'true' : 'false');
-                    this.els.btnDigitalSpectrum.title = show
-                        ? 'Spectrum view · Tap again to hide clock, stations, and crossfader'
-                        : 'Spectrum view (panel hidden) · Tap to show clock, stations, and crossfader';
+                    this.els.btnDigitalSpectrum.setAttribute('aria-pressed', mode === 'full' ? 'true' : 'false');
+                    try { this.els.btnDigitalSpectrum.removeAttribute('title'); } catch (_) {}
                 }
                 if (this.skin === 'digital' && this.digitalCenterMode === 'spectrum') {
                     this._scheduleDigitalSpectrumLayoutSync();
                 }
             }
 
-            _toggleDigitalSpectrumHud() {
-                this._digitalSpectrumHudVisible = !this._digitalSpectrumHudVisible;
-                this._syncDigitalSpectrumHud();
+            /** full → focus (no centre) → blank (no spectrums) → full */
+            _cycleDigitalSpectrumLayout() {
+                const order = ['full', 'focus', 'blank'];
+                let i = order.indexOf(this._digitalSpectrumLayout);
+                if (i < 0) i = 0;
+                this._digitalSpectrumLayout = order[(i + 1) % order.length];
+                this._syncDigitalSpectrumLayout();
             }
 
             /** Default spectrum layout: no staging overlay, central dash visible. */
@@ -2340,8 +2364,8 @@
                     this._setDigitalCenterMode('spectrum');
                     return;
                 }
-                this._digitalSpectrumHudVisible = true;
-                try { this._syncDigitalSpectrumHud(); } catch (_) {}
+                this._digitalSpectrumLayout = 'full';
+                try { this._syncDigitalSpectrumLayout(); } catch (_) {}
                 const mount = this.els.digitalStagingMount;
                 if (mount) {
                     mount.classList.remove('is-active');
@@ -2358,8 +2382,8 @@
                 this.digitalCenterMode = next;
                 try { localStorage.setItem('radioVisual.digitalCenter.v1', next); } catch (_) {}
                 if (next === 'spectrum' && wasDeckB) {
-                    this._digitalSpectrumHudVisible = true;
-                    this._syncDigitalSpectrumHud();
+                    this._digitalSpectrumLayout = 'full';
+                    this._syncDigitalSpectrumLayout();
                 }
                 if (this.els.digitalCenterSpectrum) {
                     this.els.digitalCenterSpectrum.classList.toggle('is-active', next === 'spectrum');
@@ -3085,11 +3109,12 @@
                 const cL = this.els.digitalSpectrumCanvasL;
                 const cR = this.els.digitalSpectrumCanvasR;
                 if (!cL || !cR) return;
+                if (this._digitalSpectrumLayout === 'blank') return;
                 const pack = this._computeDigitalSpectrumRadiiAndEq();
                 this._syncDonutCoreHues();
                 this._drawDigitalSpectrumFlower(cL, pack.layersL, pack.n, this._donutCoreHueA, pack.t);
                 this._drawDigitalSpectrumFlower(cR, pack.layersR, pack.n, this._donutCoreHueB, pack.t);
-                if (this._digitalSpectrumHudVisible) {
+                if (this._digitalSpectrumLayout === 'full') {
                     this._drawDigitalCarDash(
                         pack.eqHeights,
                         pack.t,
@@ -3982,8 +4007,7 @@
                 btnVis.type = 'button';
                 btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-vis-btn';
                 btnVis.textContent = ' 🔆 ';
-                btnVis.title = 'Background off · Tap to turn on · Right-click: first background';
-                btnVis.setAttribute('aria-label', 'Digital background visual');
+                btnVis.setAttribute('aria-label', 'Background visual');
                 btnVis.setAttribute('aria-pressed', 'false');
                 digitalToolbar.appendChild(btnVis);
                 digitalToolbar.appendChild(btnDigitalSpectrum);
@@ -4029,10 +4053,7 @@
                     b.dataset.rvDeck = deck;
                     b.textContent = lab;
                     if (act === 'next') {
-                        b.title = deck === 'b'
-                            ? 'Next track in Deck B queue, or random station when empty'
-                            : 'Next track in Deck A queue, or random station when empty';
-                        b.setAttribute('aria-label', b.title);
+                        b.setAttribute('aria-label', deck === 'b' ? 'Deck B next' : 'Deck A next');
                     }
                     digitalToolbar.appendChild(b);
                 };
@@ -4129,7 +4150,7 @@
                     this._digitalStagingView = null;
                     try { this._tearDownDigitalStagingView(); } catch (_) {}
                     try { this._setDigitalCenterMode(this.digitalCenterMode); } catch (_) {}
-                    try { this._syncDigitalSpectrumHud(); } catch (_) {}
+                    try { this._syncDigitalSpectrumLayout(); } catch (_) {}
                     try { this._initDigitalSpectrumBg(); } catch (_) {}
                     try {
                         if (localStorage.getItem(RadioVisualEngine.AUTOMIX_ENABLED_KEY) === '1') {
@@ -4189,14 +4210,14 @@
                         };
                     } catch (_) {}
                     if (btnDigitalSpectrum) {
-                        btnDigitalSpectrum.title = 'Spectrum view · Tap again to hide clock, stations, and crossfader';
+                        btnDigitalSpectrum.setAttribute('aria-label', 'Spectrum layout');
                         btnDigitalSpectrum.setAttribute('aria-pressed', 'true');
                         btnDigitalSpectrum.addEventListener('click', (ev) => {
                             this._stopClick(ev);
                             if (this.digitalCenterMode !== 'spectrum' || this._digitalStagingView) {
                                 this._returnToDefaultDigitalSpectrumView();
                             } else {
-                                this._toggleDigitalSpectrumHud();
+                                this._cycleDigitalSpectrumLayout();
                             }
                         }, sig);
                     }

@@ -5033,64 +5033,64 @@
                     const btnUrlDeckB = root.querySelector('#dj-queue-url-deck-b');
                     if (btnAddA) btnAddA.addEventListener('click', () => { try { __djLocalPickImmediateDeck = null; fiQA.click(); } catch (_) {} }, sig);
                     if (btnAddB) btnAddB.addEventListener('click', () => { try { __djLocalPickImmediateDeck = null; fiQB.click(); } catch (_) {} }, sig);
-                    if (btnFolderA) btnFolderA.addEventListener('click', () => { try { __djLocalPickImmediateDeck = null; fiQAFolder.click(); } catch (_) {} }, sig);
-                    if (btnFolderB) btnFolderB.addEventListener('click', () => { try { __djLocalPickImmediateDeck = null; fiQBFolder.click(); } catch (_) {} }, sig);
+                    if (btnFolderA) {
+                        btnFolderA.addEventListener('click', () => {
+                            openDeckLocalFolderPicker('a', fiQAFolder).catch(() => {});
+                        }, sig);
+                    }
+                    if (btnFolderB) {
+                        btnFolderB.addEventListener('click', () => {
+                            openDeckLocalFolderPicker('b', fiQBFolder).catch(() => {});
+                        }, sig);
+                    }
                     if (btnUrlDeckA) btnUrlDeckA.addEventListener('click', () => { try { promptAddUrlForDeck('a'); this.refreshQueueUi(); } catch (_) {} }, sig);
                     if (btnUrlDeckB) btnUrlDeckB.addEventListener('click', () => { try { promptAddUrlForDeck('b'); this.refreshQueueUi(); } catch (_) {} }, sig);
+                    const applyDeckLocalFilePick = (deckKey, files, forceNow) => {
+                        if (!files || !files.length) return;
+                        if (forceNow) ingestLocalFilesToDeckAndPlay(deckKey, files);
+                        else addDeckLocalFilesToDeck(deckKey, files);
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    };
                     fiQA.addEventListener('change', (ev) => {
                         const files = Array.from(ev.target.files || []);
                         try { ev.target.value = ''; } catch (_) {}
                         if (!files.length) return;
-                        initAudio();
                         const forceNow = __djLocalPickImmediateDeck === 'a';
                         __djLocalPickImmediateDeck = null;
-                        if (forceNow) ingestLocalFilesToDeckAndPlay('a', files);
-                        else {
-                            enqueueDeckLocalFiles('a', files);
-                            const playingLocal = state.deckSourceMode.a === 'local';
-                            const mediaGoing = audioEl && audioEl.src && !audioEl.paused && !audioEl.ended;
-                            if (!playingLocal || !mediaGoing) playDeckATrackFromQueue();
-                        }
-                        try { this.refreshQueueUi(); } catch (_) {}
+                        applyDeckLocalFilePick('a', files, forceNow);
                     }, sig);
                     fiQB.addEventListener('change', (ev) => {
                         const files = Array.from(ev.target.files || []);
                         try { ev.target.value = ''; } catch (_) {}
                         if (!files.length) return;
-                        initAudio();
                         const forceNow = __djLocalPickImmediateDeck === 'b';
                         __djLocalPickImmediateDeck = null;
-                        if (forceNow) ingestLocalFilesToDeckAndPlay('b', files);
-                        else {
-                            enqueueDeckLocalFiles('b', files);
-                            const playingLocal = state.deckSourceMode.b === 'local';
-                            const mediaGoing = audioElB && audioElB.src && !audioElB.paused && !audioElB.ended;
-                            if (!playingLocal || !mediaGoing) playDeckBTrackFromQueue();
-                        }
-                        try { this.refreshQueueUi(); } catch (_) {}
+                        applyDeckLocalFilePick('b', files, forceNow);
                     }, sig);
                     fiQAFolder.addEventListener('change', (ev) => {
                         const files = Array.from(ev.target.files || []);
                         try { ev.target.value = ''; } catch (_) {}
-                        if (!files.length) return;
-                        initAudio();
-                        enqueueDeckLocalFiles('a', files);
-                        const playingLocal = state.deckSourceMode.a === 'local';
-                        const mediaGoing = audioEl && audioEl.src && !audioEl.paused && !audioEl.ended;
-                        if (!playingLocal || !mediaGoing) playDeckATrackFromQueue();
-                        try { this.refreshQueueUi(); } catch (_) {}
+                        applyDeckLocalFilePick('a', files, false);
                     }, sig);
                     fiQBFolder.addEventListener('change', (ev) => {
                         const files = Array.from(ev.target.files || []);
                         try { ev.target.value = ''; } catch (_) {}
-                        if (!files.length) return;
-                        initAudio();
-                        enqueueDeckLocalFiles('b', files);
-                        const playingLocal = state.deckSourceMode.b === 'local';
-                        const mediaGoing = audioElB && audioElB.src && !audioElB.paused && !audioElB.ended;
-                        if (!playingLocal || !mediaGoing) playDeckBTrackFromQueue();
-                        try { this.refreshQueueUi(); } catch (_) {}
+                        applyDeckLocalFilePick('b', files, false);
                     }, sig);
+                    const openDeckLocalFolderPicker = async (deckKey, fiFolder) => {
+                        try { __djLocalPickImmediateDeck = null; } catch (_) {}
+                        let files = null;
+                        try {
+                            if (typeof pickDeckLocalFolderFiles === 'function') {
+                                files = await pickDeckLocalFolderFiles();
+                            }
+                        } catch (_) {}
+                        if (files === null) {
+                            try { fiFolder.click(); } catch (_) {}
+                            return;
+                        }
+                        applyDeckLocalFilePick(deckKey, files, false);
+                    };
 
                     const jogWrapA = this.els.jogA && this.els.jogA.closest('.dj-jog-wrap');
                     const jogWrapB = this.els.jogB && this.els.jogB.closest('.dj-jog-wrap');
@@ -5113,9 +5113,19 @@
                         wrap.addEventListener('drop', (e) => {
                             try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
                             const dt = e.dataTransfer;
-                            if (!dt || !dt.files || !dt.files.length) return;
-                            ingestLocalFilesToDeckAndPlay(deckKey, dt.files);
-                            try { this.refreshQueueUi(); } catch (_) {}
+                            if (!dt) return;
+                            const applyDrop = (files) => {
+                                if (!files || !files.length) return;
+                                addDeckLocalFilesToDeck(deckKey, files);
+                                try { this.refreshQueueUi(); } catch (_) {}
+                            };
+                            if (typeof collectMediaFilesFromDataTransfer === 'function') {
+                                collectMediaFilesFromDataTransfer(dt).then(applyDrop).catch(() => {
+                                    if (dt.files && dt.files.length) applyDrop(Array.from(dt.files));
+                                });
+                            } else if (dt.files && dt.files.length) {
+                                applyDrop(Array.from(dt.files));
+                            }
                         }, sig);
                     };
                     wireJogWrapLocalLoad(jogWrapA, 'a', fiQA);
