@@ -5617,26 +5617,6 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         let spaceShortcutArmed = false;
         let spaceLongPressTimer = null;
         let spaceLongPressFired = false;
-        function keyboardShortcutInputBlocksKey(e) {
-            try {
-                if (shortcutsLocked || uiLocked) return true;
-                const ae = document.activeElement;
-                if (!ae) return false;
-                if (ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable
-                    || (ae.closest && ae.closest('#textin-panel'))) {
-                    return true;
-                }
-                if (ae.tagName === 'INPUT') {
-                    const it = String(ae.type || '').toLowerCase();
-                    if (it === 'range' && ae.closest
-                        && (ae.closest('#dj-visual-root') || ae.closest('#radio-visual-root'))) {
-                        return false;
-                    }
-                    return true;
-                }
-            } catch (_) {}
-            return false;
-        }
         function clearSpaceLongPress() {
             if (spaceLongPressTimer) {
                 try { clearTimeout(spaceLongPressTimer); } catch (_) {}
@@ -5656,15 +5636,46 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 }
             } catch (_) {}
         }
+        function clickDigitalRadioFadeButton() {
+            try {
+                const btn = document.querySelector(
+                    '#radio-visual-root button[data-rv-digital="fade"]'
+                );
+                if (btn) {
+                    btn.click();
+                    return true;
+                }
+            } catch (_) {}
+            return false;
+        }
         function triggerSpaceShortTap() {
             try {
                 const eng = getDjDecksEngineIfActive();
                 const rv = getActiveRadioVisualEngine();
+                if (rv && !eng) {
+                    if (clickDigitalRadioFadeButton()) return;
+                    if (typeof rv.triggerAutoFadeFromShortcut === 'function') {
+                        rv.triggerAutoFadeFromShortcut();
+                    }
+                    return;
+                }
                 if (eng && typeof eng.triggerAutoFadeFromShortcut === 'function') {
                     eng.triggerAutoFadeFromShortcut();
                 } else if (rv && typeof rv.triggerAutoFadeFromShortcut === 'function') {
                     rv.triggerAutoFadeFromShortcut();
                 }
+            } catch (_) {}
+        }
+        function triggerDigitalVisBgShortcut() {
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (!rv || rv.skin !== 'digital') return;
+                if (typeof rv._onDigitalVisBgTap === 'function') {
+                    rv._onDigitalVisBgTap();
+                    return;
+                }
+                const btn = rv.els && rv.els.btnVis;
+                if (btn) btn.click();
             } catch (_) {}
         }
         function triggerSpaceLongHold() {
@@ -5888,6 +5899,36 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 if (e.repeat) return;
                 toggleAutoMixShortcut();
+            } else if (e.key === 'u' || e.key === 'U') {
+                e.preventDefault();
+                if (e.repeat) return;
+                triggerDigitalVisBgShortcut();
+            } else if (e.code === 'Space' || e.key === ' ') {
+                e.preventDefault();
+                if (e.repeat) return;
+                const engine = getDjDecksEngineIfActive();
+                const radioVis = getActiveRadioVisualEngine();
+                if (!engine && !radioVis) {
+                    try {
+                        if (audioEl) {
+                            if (audioEl.paused) audioEl.play().catch(() => {});
+                            else audioEl.pause();
+                        }
+                    } catch (_) {}
+                    return;
+                }
+                blurDeckUiFocusForSpace();
+                spaceShortcutArmed = true;
+                spaceKeyDown = true;
+                spaceKeyDownAt = performance.now();
+                clearSpaceLongPress();
+                spaceLongPressFired = false;
+                spaceLongPressTimer = setTimeout(() => {
+                    spaceLongPressTimer = null;
+                    if (!spaceShortcutArmed || !spaceKeyDown) return;
+                    spaceLongPressFired = true;
+                    triggerSpaceLongHold();
+                }, SPACE_LONG_HOLD_MS);
             } else if (e.key === 't' || e.key === 'T') {
                 // Toggle Text-In panel
                 e.preventDefault();
@@ -5999,42 +6040,20 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 loadMode(state.currentModeIdx + 1);
             }
         }
-        function handleSpaceKeydownCapture(e) {
-            if (!e || (e.code !== 'Space' && e.key !== ' ')) return;
-            if (keyboardShortcutInputBlocksKey(e)) return;
-            const engine = getDjDecksEngineIfActive();
-            const radioVis = getActiveRadioVisualEngine();
-            if (!engine && !radioVis) return;
-            try {
-                e.preventDefault();
-                e.stopPropagation();
-            } catch (_) {}
-            if (e.repeat) return;
-            blurDeckUiFocusForSpace();
-            spaceShortcutArmed = true;
-            spaceKeyDown = true;
-            spaceKeyDownAt = performance.now();
-            clearSpaceLongPress();
-            spaceLongPressFired = false;
-            spaceLongPressTimer = setTimeout(() => {
-                spaceLongPressTimer = null;
-                if (!spaceShortcutArmed || !spaceKeyDown) return;
-                if ((performance.now() - spaceKeyDownAt) < SPACE_LONG_HOLD_MS - 16) return;
-                spaceLongPressFired = true;
-                triggerSpaceLongHold();
-            }, SPACE_LONG_HOLD_MS);
-        }
-        function handleSpaceKeyupCapture(e) {
+        function handleGlobalKeyup(e) {
             try {
                 if (e && e.code && sampleKeyHoldTimers.has(e.code)) clearSampleKeyHold(e.code);
             } catch (_) {}
             if (!e || (e.code !== 'Space' && e.key !== ' ')) return;
-            if (!spaceShortcutArmed && !spaceKeyDown) return;
+            if (!spaceShortcutArmed) return;
+            try {
+                if (shortcutsLocked || uiLocked) return;
+            } catch (_) {}
             try {
                 e.preventDefault();
                 e.stopPropagation();
             } catch (_) {}
-            const held = spaceKeyDownAt ? (performance.now() - spaceKeyDownAt) : SPACE_LONG_HOLD_MS;
+            const held = spaceKeyDownAt ? (performance.now() - spaceKeyDownAt) : 0;
             const wasArmed = spaceShortcutArmed;
             spaceShortcutArmed = false;
             spaceKeyDown = false;
@@ -6045,28 +6064,11 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             spaceLongPressFired = false;
             spaceKeyDownAt = 0;
         }
-        function handleSpaceKeydownBubble(e) {
-            if (!e || (e.code !== 'Space' && e.key !== ' ')) return;
-            if (keyboardShortcutInputBlocksKey(e)) return;
-            const engine = getDjDecksEngineIfActive();
-            const radioVis = getActiveRadioVisualEngine();
-            if (engine || radioVis) return;
-            e.preventDefault();
-            if (e.repeat) return;
-            try {
-                if (audioEl) {
-                    if (audioEl.paused) audioEl.play().catch(() => {});
-                    else audioEl.pause();
-                }
-            } catch (_) {}
-        }
         try {
             document.addEventListener('keydown', handleGlobalKeydown, false);
         } catch(e) {}
         try {
-            window.addEventListener('keydown', handleSpaceKeydownCapture, true);
-            window.addEventListener('keydown', handleSpaceKeydownBubble, false);
-            window.addEventListener('keyup', handleSpaceKeyupCapture, true);
+            document.addEventListener('keyup', handleGlobalKeyup, true);
         } catch(e) {}
         try {
             window.addEventListener('blur', () => {
