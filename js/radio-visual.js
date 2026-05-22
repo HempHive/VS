@@ -413,6 +413,14 @@
                         'Add URL…',
                         'dj-queue-add-url'
                     ));
+                    const clearBtn = mkBtn(
+                        `rv-digital-queue-clear-${deck}`,
+                        'X',
+                        'dj-queue-clear-all'
+                    );
+                    clearBtn.title = deck === 'b' ? 'Clear Deck B queue' : 'Clear Deck A queue';
+                    clearBtn.setAttribute('aria-label', clearBtn.title);
+                    btns.appendChild(clearBtn);
                     const ul = document.createElement('ul');
                     ul.id = `rv-digital-queue-list-${deck}`;
                     ul.className = 'dj-queue-list';
@@ -634,6 +642,26 @@
                             this._refreshDigitalLocalQueueUi();
                             this._afterDeckLocalFileDrop();
                         } catch (_) {}
+                    }, sig);
+                }
+                const btnClearA = this.root.querySelector('#rv-digital-queue-clear-a');
+                const btnClearB = this.root.querySelector('#rv-digital-queue-clear-b');
+                const onClearQueue = (deckKey) => {
+                    try {
+                        if (typeof clearDeckFileQueue === 'function') clearDeckFileQueue(deckKey);
+                    } catch (_) {}
+                    try { this._refreshDigitalLocalQueueUi(); } catch (_) {}
+                };
+                if (btnClearA) {
+                    btnClearA.addEventListener('click', (ev) => {
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        onClearQueue('a');
+                    }, sig);
+                }
+                if (btnClearB) {
+                    btnClearB.addEventListener('click', (ev) => {
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        onClearQueue('b');
                     }, sig);
                 }
             }
@@ -1155,6 +1183,40 @@
                 try {
                     if (typeof pickRandomStationB === 'function') pickRandomStationB();
                 } catch (_) {}
+            }
+
+            /** A▶: next queued local track, or random station when the Deck A queue is empty. */
+            _deckANextOrStation() {
+                try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                const q = (typeof deckFileQueues !== 'undefined' && deckFileQueues.a) ? deckFileQueues.a : [];
+                if (q.length > 0) {
+                    try {
+                        if (typeof playDeckATrackFromQueue === 'function') {
+                            playDeckATrackFromQueue({ forceImmediate: true });
+                        }
+                    } catch (_) {}
+                    try { this._updateStationUi(); } catch (_) {}
+                    try { this._syncDeckSwitches(); } catch (_) {}
+                    return;
+                }
+                this._stationRand();
+            }
+
+            /** B▶: next queued local track, or random station when the Deck B queue is empty. */
+            _deckBNextOrStation() {
+                try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                const q = (typeof deckFileQueues !== 'undefined' && deckFileQueues.b) ? deckFileQueues.b : [];
+                if (q.length > 0) {
+                    try {
+                        if (typeof playDeckBTrackFromQueue === 'function') {
+                            playDeckBTrackFromQueue({ forceImmediate: true });
+                        }
+                    } catch (_) {}
+                    try { this._updateStationUi(); } catch (_) {}
+                    try { this._syncDeckSwitches(); } catch (_) {}
+                    return;
+                }
+                this._stationBRand();
             }
 
             _setStationB(index) {
@@ -3914,7 +3976,9 @@
                     b.dataset.rvDeck = deck;
                     b.textContent = lab;
                     if (act === 'next') {
-                        b.title = deck === 'b' ? 'Random station (Deck B)' : 'Random station (Deck A)';
+                        b.title = deck === 'b'
+                            ? 'Next track in Deck B queue, or random station when empty'
+                            : 'Next track in Deck A queue, or random station when empty';
                         b.setAttribute('aria-label', b.title);
                     }
                     digitalToolbar.appendChild(b);
@@ -4135,9 +4199,9 @@
                                 const a = b.dataset.rvAction;
                                 if (deck === 'b') {
                                     if (a === 'prev') this._stationBPrev();
-                                    else if (a === 'next') this._stationBRand();
+                                    else if (a === 'next') this._deckBNextOrStation();
                                 } else if (a === 'prev') this._stationPrev();
-                                else if (a === 'next') this._stationRand();
+                                else if (a === 'next') this._deckANextOrStation();
                             }, sig);
                         });
                     }

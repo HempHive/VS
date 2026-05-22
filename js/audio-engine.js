@@ -1262,6 +1262,17 @@
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
 
+        function clearDeckFileQueue(deckKey) {
+            const q = deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
+            while (q.length) {
+                const item = q.pop();
+                try {
+                    if (item && item.url && String(item.url).startsWith('blob:')) URL.revokeObjectURL(item.url);
+                } catch (_) {}
+            }
+            try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+        }
+
         function moveQueuedTrackToOtherDeck(deckKey, index) {
             const src = deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
             const dstKey = deckKey === 'b' ? 'a' : 'b';
