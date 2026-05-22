@@ -1151,6 +1151,14 @@
                 try { this._onDigitalVisBgTap(); } catch (_) {}
             }
 
+            /** Long-hold 🔆 / U: toggle background GIF layer off or on (same as pointer long-press on the button). */
+            triggerVisBgLongHoldFromShortcut() {
+                try {
+                    this._toggleDigitalBgGifEnabled();
+                    this._syncDigitalVisBgButton();
+                } catch (_) {}
+            }
+
             _digitalKeyboardBlocksKey(ev) {
                 try {
                     if (globalThis.uiLocked || globalThis.shortcutsLocked) return true;
@@ -1182,25 +1190,51 @@
                 }
             }
 
-            /** Digital Radio only: Space = Fade / long-hold pause; U = 🔆 tap (AbortSignal from init). */
+            _resetDigitalUShortcutState() {
+                this._digitalUHeld = false;
+                this._digitalUAt = 0;
+                this._digitalULongFired = false;
+                if (this._digitalUTimer) {
+                    try { clearTimeout(this._digitalUTimer); } catch (_) {}
+                    this._digitalUTimer = null;
+                }
+            }
+
+            /** Digital Radio only: Space = play/fade / long-hold pause; U = 🔆 tap / long-hold GIF off-on. */
             _wireDigitalKeyboardShortcuts(sig) {
                 const HOLD_MS = 500;
                 this._resetDigitalSpaceShortcutState();
+                this._resetDigitalUShortcutState();
                 const onKeyDown = (ev) => {
                     if (!ev || this._digitalKeyboardBlocksKey(ev)) return;
                     const isSpace = ev.code === 'Space' || ev.key === ' ';
+                    const isU = (ev.key === 'u' || ev.key === 'U')
+                        && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey;
                     if (!isSpace) {
                         this._resetDigitalSpaceShortcutState();
-                        if ((ev.key === 'u' || ev.key === 'U')
-                            && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey) {
-                            if (!this._isRadioVisualActive() || this.skin !== 'digital') return;
-                            try {
-                                ev.preventDefault();
-                                ev.stopPropagation();
-                            } catch (_) {}
-                            if (ev.repeat) return;
-                            this.triggerVisBgFromShortcut();
-                        }
+                    }
+                    if (!isU) {
+                        this._resetDigitalUShortcutState();
+                    }
+                    if (isU) {
+                        if (!this._isRadioVisualActive() || this.skin !== 'digital') return;
+                        try {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                        } catch (_) {}
+                        if (ev.repeat) return;
+                        this._resetDigitalUShortcutState();
+                        this._digitalUHeld = true;
+                        this._digitalUAt = performance.now();
+                        this._digitalUTimer = setTimeout(() => {
+                            this._digitalUTimer = null;
+                            if (!this._digitalUHeld) return;
+                            this._digitalULongFired = true;
+                            try { this.triggerVisBgLongHoldFromShortcut(); } catch (_) {}
+                        }, HOLD_MS);
+                        return;
+                    }
+                    if (!isSpace) {
                         return;
                     }
                     if (!this._isRadioVisualActive() || this.skin !== 'digital') return;
@@ -1224,12 +1258,28 @@
                     }, HOLD_MS);
                 };
                 const onKeyUp = (ev) => {
-                    if (!ev || (ev.code !== 'Space' && ev.key !== ' ')) return;
-                    if (!this._digitalSpaceAt && !this._digitalSpaceHeld) return;
-                    if (!this._isRadioVisualActive() || this.skin !== 'digital') {
+                    if (!ev || !this._isRadioVisualActive() || this.skin !== 'digital') {
                         this._resetDigitalSpaceShortcutState();
+                        this._resetDigitalUShortcutState();
                         return;
                     }
+                    const isU = ev.key === 'u' || ev.key === 'U';
+                    const isSpace = ev.code === 'Space' || ev.key === ' ';
+                    if (isU && (this._digitalUAt || this._digitalUHeld)) {
+                        try {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                        } catch (_) {}
+                        const held = this._digitalUAt ? (performance.now() - this._digitalUAt) : HOLD_MS;
+                        const longFired = this._digitalULongFired;
+                        this._resetDigitalUShortcutState();
+                        if (!longFired && held < HOLD_MS) {
+                            try { this.triggerVisBgFromShortcut(); } catch (_) {}
+                        }
+                        return;
+                    }
+                    if (!isSpace) return;
+                    if (!this._digitalSpaceAt && !this._digitalSpaceHeld) return;
                     try {
                         ev.preventDefault();
                         ev.stopPropagation();
