@@ -869,22 +869,20 @@
                 const vid = vidEl || this.els.digitalStagingVideo;
                 if (!vid || !this._digitalStagingView || this._digitalStagingView !== 'video') return;
                 try {
-                    let layer = null;
-                    if (typeof getDeckBVideoPlaybackSources === 'function') {
-                        const sources = getDeckBVideoPlaybackSources();
-                        if (sources && sources.length) layer = sources[0];
+                    if (typeof applyDeckVideoMirrorToElement === 'function') {
+                        applyDeckVideoMirrorToElement(vid);
                     }
-                    if (!layer && typeof deckVideoFeeds !== 'undefined' && deckVideoFeeds.b && deckVideoFeeds.b.url) {
-                        layer = { url: deckVideoFeeds.b.url, label: deckVideoFeeds.b.label || 'Deck B' };
+                } catch (_) {}
+            }
+
+            _refreshDigitalDeckVideoMirrors() {
+                try {
+                    if (this._digitalStagingView === 'video' && this.els.digitalStagingVideo) {
+                        this._syncDigitalStagingVideo(this.els.digitalStagingVideo);
                     }
-                    if (layer && typeof applyDeckBVideoPayloadToElement === 'function') {
-                        applyDeckBVideoPayloadToElement(vid, layer, null);
-                        return;
-                    }
-                    if (layer && layer.url) {
-                        vid.src = layer.url;
-                        vid.play().catch(() => {});
-                    }
+                } catch (_) {}
+                try {
+                    if (this.digitalCenterMode === 'deckB') this._syncDigitalDeckBVideo();
                 } catch (_) {}
             }
 
@@ -2352,21 +2350,8 @@
                 const vid = this.els.digitalDeckBVideo;
                 if (!vid || this.digitalCenterMode !== 'deckB') return;
                 try {
-                    let layer = null;
-                    if (typeof getDeckBVideoPlaybackSources === 'function') {
-                        const sources = getDeckBVideoPlaybackSources();
-                        if (sources && sources.length) layer = sources[0];
-                    }
-                    if (!layer && typeof deckVideoFeeds !== 'undefined' && deckVideoFeeds.b && deckVideoFeeds.b.url) {
-                        layer = { url: deckVideoFeeds.b.url, label: deckVideoFeeds.b.label || 'Deck B' };
-                    }
-                    if (layer && typeof applyDeckBVideoPayloadToElement === 'function') {
-                        applyDeckBVideoPayloadToElement(vid, layer, null);
-                        return;
-                    }
-                    if (layer && layer.url) {
-                        vid.src = layer.url;
-                        vid.play().catch(() => {});
+                    if (typeof applyDeckVideoMirrorToElement === 'function') {
+                        applyDeckVideoMirrorToElement(vid);
                     }
                 } catch (_) {}
             }

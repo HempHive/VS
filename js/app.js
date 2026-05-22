@@ -806,11 +806,77 @@ const QUALITY = {
             arr.unshift({ url: clean, label: deckVideoFeeds[k].label });
             if (arr.length > 50) arr.length = 50;
             upsertMediaVideoQueueEntry(clean, deckVideoFeeds[k].label);
-            try {
-                if (state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks' && typeof state.activeVisualizer.refreshDeckBVideoSource === 'function') {
-                    state.activeVisualizer.refreshDeckBVideoSource();
+            try { refreshActiveDeckVideoDisplays(); } catch (_) {}
+            try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+        }
+        /** Stop mirroring a deck's local MP4 in the video panel; restore media queue or idle logo. */
+        function releaseDeckVideoFeed(deckKey, urlHint) {
+            const k = deckKey === 'b' ? 'b' : 'a';
+            const feed = deckVideoFeeds[k];
+            const url = sanitizeUrlForAudio(urlHint || (feed && feed.url) || '');
+            deckVideoFeeds[k] = null;
+            if (url) {
+                for (let i = mediaVideoQueue.length - 1; i >= 0; i--) {
+                    const it = mediaVideoQueue[i];
+                    if (it && urlsMediaMatch(it.url, url)) mediaVideoQueue.splice(i, 1);
                 }
-                if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi();
+                const hist = deckVideoHistory[k];
+                for (let i = hist.length - 1; i >= 0; i--) {
+                    if (hist[i] && urlsMediaMatch(hist[i].url, url)) hist.splice(i, 1);
+                }
+            }
+            try { refreshActiveDeckVideoDisplays(); } catch (_) {}
+            try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+        }
+        function refreshActiveDeckVideoDisplays() {
+            try {
+                const av = state && state.activeVisualizer;
+                if (!av) return;
+                if (av.name === 'DJ Decks' && typeof av.refreshDeckBVideoSource === 'function') {
+                    av.refreshDeckBVideoSource();
+                    return;
+                }
+                const n = av.name;
+                const onRadio = n === 'Digital Radio' || n === 'Analogue radio' || n === 'Radio' || n === 'Radio Visual';
+                if (onRadio && typeof av._refreshDigitalDeckVideoMirrors === 'function') {
+                    av._refreshDigitalDeckVideoMirrors();
+                }
+            } catch (_) {}
+        }
+        /** Deck B / Digital Radio video elements: active feed, media queue, or idle logo. */
+        function applyDeckVideoMirrorToElement(vid) {
+            if (!vid) return;
+            try {
+                const metaB = getDeckActiveVideoMeta('b');
+                const metaA = getDeckActiveVideoMeta('a');
+                const meta = metaB || metaA;
+                if (meta && meta.url) {
+                    applyDeckBVideoPayloadToElement(vid, {
+                        url: meta.url,
+                        label: meta.label,
+                        syncFrom: meta.syncFrom || meta.media
+                    }, null);
+                    return;
+                }
+            } catch (_) {}
+            try {
+                if (mediaVideoQueue.length) {
+                    const q = mediaVideoQueue[0];
+                    if (q && q.url) {
+                        applyDeckBVideoPayloadToElement(vid, { url: q.url, label: q.label }, null);
+                        return;
+                    }
+                }
+            } catch (_) {}
+            try {
+                vid.pause();
+                vid.removeAttribute('src');
+                vid.load();
+            } catch (_) {}
+            try {
+                vid.loop = true;
+                vid.src = DECK_B_IDLE_LOGO_URL;
+                vid.play().catch(() => {});
             } catch (_) {}
         }
         function removeMediaVideoQueueItem(id) {
@@ -3268,6 +3334,9 @@ function exposeAppBindingsToGlobal() {
     try { g.rawUrl = rawUrl; } catch (_) {}
     try { g.recentBottomColors = recentBottomColors; } catch (_) {}
     try { g.registerDeckVideoFeed = registerDeckVideoFeed; } catch (_) {}
+    try { g.releaseDeckVideoFeed = releaseDeckVideoFeed; } catch (_) {}
+    try { g.refreshActiveDeckVideoDisplays = refreshActiveDeckVideoDisplays; } catch (_) {}
+    try { g.applyDeckVideoMirrorToElement = applyDeckVideoMirrorToElement; } catch (_) {}
     try { g.reindexStationCursor = reindexStationCursor; } catch (_) {}
     try { g.releaseAutoMixDeferredLocal = releaseAutoMixDeferredLocal; } catch (_) {}
     try { g.removeMediaVideoQueueItem = removeMediaVideoQueueItem; } catch (_) {}
@@ -4044,11 +4113,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                     try { if (djX.parentElement) djX.parentElement.style.setProperty('--cross-x', cx); } catch (_) {}
                 }
             } catch(_) {}
-            try {
-                if (state && state.activeVisualizer && state.activeVisualizer.name === 'DJ Decks' && typeof state.activeVisualizer.refreshDeckBVideoSource === 'function') {
-                    state.activeVisualizer.refreshDeckBVideoSource();
-                }
-            } catch (_) {}
+            try { refreshActiveDeckVideoDisplays(); } catch (_) {}
             try { updateModeSubStationLine(); } catch (_) {}
         }
         if (mixCross) {
@@ -4456,6 +4521,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
         // Play/Stop B
         function playRadioB() {
             initAudio();
+            try { releaseDeckVideoFeed('b'); } catch (_) {}
             state.deckSourceMode.b = 'radio';
             try { state.deckLocalDisplayName.b = ''; } catch (_) {}
 

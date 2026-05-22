@@ -1300,6 +1300,9 @@
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
             try {
                 if (deckKey === 'b') {
+                    if (!item.isVideo) {
+                        try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed('b'); } catch (_) {}
+                    }
                     state.deckSourceMode.b = 'local';
                     try { state.deckLocalDisplayName.b = item.name ? String(item.name) : ''; } catch (_) {}
                     revokeBlobSrc(audioElB);
@@ -1317,6 +1320,9 @@
                         try { if (typeof updateMixBStatus === 'function') updateMixBStatus(); } catch (_) {}
                     }).catch(() => {});
                 } else {
+                    if (!item.isVideo) {
+                        try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed('a'); } catch (_) {}
+                    }
                     state.deckSourceMode.a = 'local';
                     try { state.deckLocalDisplayName.a = item.name ? String(item.name) : ''; } catch (_) {}
                     resetRadioADualStreamHandoff();
@@ -1338,6 +1344,7 @@
         }
 
         function resetDeckFileQueuesAndRevoke() {
+            try { if (typeof releaseDeckVideoFeed === 'function') { releaseDeckVideoFeed('a'); releaseDeckVideoFeed('b'); } } catch (_) {}
             try { resetRadioADualStreamHandoff(); } catch (_) {}
             try { resetRadioBDualStreamHandoff(); } catch (_) {}
             revokeBlobSrc(audioEl);
@@ -1365,6 +1372,7 @@
             const q = deckFileQueues.a;
             const deferForAutoMix = shouldDeferLocalPlayForAutoMix('a', opts);
             if (!q.length) {
+                try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed('a'); } catch (_) {}
                 abortRadioAHandoff();
                 resetRadioADualStreamHandoff();
                 revokeBlobSrc(audioEl);
@@ -1380,6 +1388,9 @@
             }
 
             const item = q[0];
+            if (item && !item.isVideo) {
+                try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed('a'); } catch (_) {}
+            }
             const audibleEl = getDeckAMediaForPlaybackState();
             const wasLocal = state.deckSourceMode.a === 'local';
             const audibleSrc = audibleEl ? sanitizeUrlForAudio(String(audibleEl.currentSrc || audibleEl.src || '')) : '';
@@ -1501,6 +1512,7 @@
             const q = deckFileQueues.b;
             const deferForAutoMix = shouldDeferLocalPlayForAutoMix('b', opts);
             if (!q.length) {
+                try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed('b'); } catch (_) {}
                 state.deckSourceMode.b = 'radio';
                 try { state.deckLocalDisplayName.b = ''; } catch (_) {}
                 try {
@@ -1512,6 +1524,9 @@
                 return;
             }
             const item = q.shift();
+            if (item && !item.isVideo) {
+                try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed('b'); } catch (_) {}
+            }
             state.deckSourceMode.b = 'local';
             try { state.deckLocalDisplayName.b = item.name ? String(item.name) : ''; } catch (_) {}
             try { audioElB.crossOrigin = 'anonymous'; } catch (_) {}
@@ -1811,6 +1826,7 @@
         // --- FIXED PLAYRADIO FUNCTION (Routes through EQ; warm station changes pre-buffer on alt element) ---
         function playRadio() {
             initAudio();
+            try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed('a'); } catch (_) {}
             state.deckSourceMode.a = 'radio';
             try { state.deckLocalDisplayName.a = ''; } catch (_) {}
             let url = '';
