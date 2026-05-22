@@ -58,20 +58,22 @@
         /* Digital: grow with viewport; fit width or height, whichever is limiting (16:10). */
         #radio-visual-root .radio-visual-stage.radio-visual-skin--digital {
             --rv-digital-aspect: calc(16 / 10);
-            width: min(100cqw, calc(100cqh * var(--rv-digital-aspect)));
-            height: min(100cqh, calc(100cqw / var(--rv-digital-aspect)));
+            --rv-digital-height-scale: 0.9;
+            width: min(100cqw, calc(100cqh * var(--rv-digital-height-scale) * var(--rv-digital-aspect)));
+            height: min(calc(100cqh * var(--rv-digital-height-scale)), calc(100cqw / var(--rv-digital-aspect)));
             max-width: 100cqw;
-            max-height: 100cqh;
-            aspect-ratio: 16 / 10;
+            max-height: calc(100cqh * var(--rv-digital-height-scale));
+            aspect-ratio: 16 / 9;
             flex: 0 0 auto;
             min-height: 0;
         }
         @supports not (width: 100cqw) {
             #radio-visual-root .radio-visual-stage.radio-visual-skin--digital {
-                width: min(100%, calc((100dvh - 5.5rem) * 16 / 10));
-                height: min(calc(100dvh - 5.5rem), calc((100vw - 2.5rem) / (16 / 10)));
+                --rv-fallback-h: calc((100dvh - 5.5rem) * 0.9);
+                width: min(100%, calc(var(--rv-fallback-h) * 16 / 10));
+                height: min(var(--rv-fallback-h), calc((100vw - 2.5rem) / (16 / 10)));
                 max-width: 100%;
-                max-height: calc(100dvh - 5.5rem);
+                max-height: var(--rv-fallback-h);
             }
         }
         #radio-visual-root .radio-visual-stage.is-active { display: flex; }
