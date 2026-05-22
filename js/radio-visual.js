@@ -3499,7 +3499,6 @@
                 spectrumBg.setAttribute('aria-hidden', 'true');
                 const spectrumRow = document.createElement('div');
                 spectrumRow.className = 'radio-visual-digital-spectrum-row';
-                const spectrumSideL = document.createElement('div');
                 spectrumSideL = document.createElement('div');
                 spectrumSideL.className = 'radio-visual-digital-spectrum-side radio-visual-digital-spectrum-side--left';
                 digitalSpectrumCanvasL = document.createElement('canvas');
