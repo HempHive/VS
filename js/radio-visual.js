@@ -1136,6 +1136,108 @@
                 } catch (_) {}
             }
 
+            triggerFadeFromShortcut() {
+                this.triggerAutoFadeFromShortcut();
+            }
+
+            triggerVisBgFromShortcut() {
+                try { this._onDigitalVisBgTap(); } catch (_) {}
+            }
+
+            _digitalKeyboardBlocksKey(ev) {
+                try {
+                    if (globalThis.uiLocked || globalThis.shortcutsLocked) return true;
+                    const ae = document.activeElement;
+                    if (!ae) return false;
+                    if (ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable
+                        || (ae.closest && ae.closest('#textin-panel'))) {
+                        return true;
+                    }
+                    if (ae.tagName === 'INPUT') {
+                        const it = String(ae.type || '').toLowerCase();
+                        if (it === 'range' && ae.closest
+                            && (ae.closest('#dj-visual-root') || ae.closest('#radio-visual-root'))) {
+                            return false;
+                        }
+                        return true;
+                    }
+                } catch (_) {}
+                return false;
+            }
+
+            _resetDigitalSpaceShortcutState() {
+                this._digitalSpaceHeld = false;
+                this._digitalSpaceAt = 0;
+                this._digitalSpaceLongFired = false;
+                if (this._digitalSpaceTimer) {
+                    try { clearTimeout(this._digitalSpaceTimer); } catch (_) {}
+                    this._digitalSpaceTimer = null;
+                }
+            }
+
+            /** Digital Radio only: Space = Fade / long-hold pause; U = 🔆 tap (AbortSignal from init). */
+            _wireDigitalKeyboardShortcuts(sig) {
+                const HOLD_MS = 500;
+                this._resetDigitalSpaceShortcutState();
+                const onKeyDown = (ev) => {
+                    if (!ev || this._digitalKeyboardBlocksKey(ev)) return;
+                    const isSpace = ev.code === 'Space' || ev.key === ' ';
+                    if (!isSpace) {
+                        this._resetDigitalSpaceShortcutState();
+                        if ((ev.key === 'u' || ev.key === 'U')
+                            && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey) {
+                            if (!this._isRadioVisualActive() || this.skin !== 'digital') return;
+                            try {
+                                ev.preventDefault();
+                                ev.stopPropagation();
+                            } catch (_) {}
+                            if (ev.repeat) return;
+                            this.triggerVisBgFromShortcut();
+                        }
+                        return;
+                    }
+                    if (!this._isRadioVisualActive() || this.skin !== 'digital') return;
+                    try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                    if (ev.repeat) return;
+                    try {
+                        const ae = document.activeElement;
+                        if (ae && ae !== document.body && typeof ae.blur === 'function'
+                            && ae.closest && ae.closest('#radio-visual-root')) {
+                            ae.blur();
+                        }
+                    } catch (_) {}
+                    this._resetDigitalSpaceShortcutState();
+                    this._digitalSpaceHeld = true;
+                    this._digitalSpaceAt = performance.now();
+                    this._digitalSpaceTimer = setTimeout(() => {
+                        this._digitalSpaceTimer = null;
+                        if (!this._digitalSpaceHeld) return;
+                        this._digitalSpaceLongFired = true;
+                        try { this.pauseBothDecksOrStartActive(); } catch (_) {}
+                    }, HOLD_MS);
+                };
+                const onKeyUp = (ev) => {
+                    if (!ev || (ev.code !== 'Space' && ev.key !== ' ')) return;
+                    if (!this._digitalSpaceAt && !this._digitalSpaceHeld) return;
+                    if (!this._isRadioVisualActive() || this.skin !== 'digital') {
+                        this._resetDigitalSpaceShortcutState();
+                        return;
+                    }
+                    try {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                    } catch (_) {}
+                    const held = this._digitalSpaceAt ? (performance.now() - this._digitalSpaceAt) : HOLD_MS;
+                    const longFired = this._digitalSpaceLongFired;
+                    this._resetDigitalSpaceShortcutState();
+                    if (!longFired && held < HOLD_MS) {
+                        try { this.triggerFadeFromShortcut(); } catch (_) {}
+                    }
+                };
+                document.addEventListener('keydown', onKeyDown, { capture: true, signal: sig.signal });
+                document.addEventListener('keyup', onKeyUp, { capture: true, signal: sig.signal });
+            }
+
             /** Stop in-flight radio auto-fade so manual play/pause (V / B) is not overridden each frame. */
             cancelAutoFade() {
                 if (this._rvAutoFadeRaf) {
@@ -3540,6 +3642,7 @@
                         }, sig);
                     }
                     if (btnVis) this._wireDigitalVisBgButton(btnVis, sig);
+                    try { this._wireDigitalKeyboardShortcuts(sig); } catch (_) {}
                     if (btnDigitalSpectrum) {
                         btnDigitalSpectrum.title = 'Spectrum view · Tap again to hide clock, stations, and crossfader';
                         btnDigitalSpectrum.setAttribute('aria-pressed', 'true');

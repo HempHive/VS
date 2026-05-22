@@ -5548,11 +5548,19 @@ tiGlowColorRandBtn.addEventListener('click', () => {
 
         function getActiveRadioVisualEngine() {
             const av = state && state.activeVisualizer;
-            if (!av) return null;
+            if (!av || !av.name) return null;
+            const n = av.name;
+            if (n === 'Digital Radio' || n === 'Analogue radio' || n === 'Radio' || n === 'Radio Visual') {
+                return av;
+            }
             try {
-                if (typeof RadioVisualEngine !== 'undefined' && RadioVisualEngine.isRadioModeName(av.name)) return av;
+                if (typeof RadioVisualEngine !== 'undefined' && RadioVisualEngine.isRadioModeName(n)) return av;
             } catch (_) {}
             return null;
+        }
+        function isDigitalRadioVisualActive() {
+            const av = state && state.activeVisualizer;
+            return !!(av && av.name === 'Digital Radio' && av.skin === 'digital');
         }
 
         function cancelActiveAutoFade() {
@@ -5623,6 +5631,13 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 spaceLongPressTimer = null;
             }
         }
+        function resetSpaceShortcutState() {
+            spaceShortcutArmed = false;
+            spaceKeyDown = false;
+            spaceKeyDownAt = 0;
+            spaceLongPressFired = false;
+            clearSpaceLongPress();
+        }
         function spaceShortcutTargetsActive() {
             return !!(getDjDecksEngineIfActive() || getActiveRadioVisualEngine());
         }
@@ -5664,18 +5679,6 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 } else if (rv && typeof rv.triggerAutoFadeFromShortcut === 'function') {
                     rv.triggerAutoFadeFromShortcut();
                 }
-            } catch (_) {}
-        }
-        function triggerDigitalVisBgShortcut() {
-            try {
-                const rv = getActiveRadioVisualEngine();
-                if (!rv || rv.skin !== 'digital') return;
-                if (typeof rv._onDigitalVisBgTap === 'function') {
-                    rv._onDigitalVisBgTap();
-                    return;
-                }
-                const btn = rv.els && rv.els.btnVis;
-                if (btn) btn.click();
             } catch (_) {}
         }
         function triggerSpaceLongHold() {
@@ -5783,6 +5786,11 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                     }
                 }
             } catch(_) {}
+
+            const isSpaceKey = e && (e.code === 'Space' || e.key === ' ');
+            if (!isSpaceKey) {
+                resetSpaceShortcutState();
+            }
 
             // Sample pad shortcuts (1..0). Ignore modifier-combined presses so browser/OS
             // shortcuts like Ctrl+1 (tab) are untouched.
@@ -5899,15 +5907,14 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 if (e.repeat) return;
                 toggleAutoMixShortcut();
-            } else if (e.key === 'u' || e.key === 'U') {
-                e.preventDefault();
-                if (e.repeat) return;
-                triggerDigitalVisBgShortcut();
             } else if (e.code === 'Space' || e.key === ' ') {
                 e.preventDefault();
                 if (e.repeat) return;
                 const engine = getDjDecksEngineIfActive();
                 const radioVis = getActiveRadioVisualEngine();
+                if (isDigitalRadioVisualActive() && !engine) {
+                    return;
+                }
                 if (!engine && !radioVis) {
                     try {
                         if (audioEl) {
@@ -6045,24 +6052,28 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 if (e && e.code && sampleKeyHoldTimers.has(e.code)) clearSampleKeyHold(e.code);
             } catch (_) {}
             if (!e || (e.code !== 'Space' && e.key !== ' ')) return;
-            if (!spaceShortcutArmed) return;
+            if (isDigitalRadioVisualActive() && !getDjDecksEngineIfActive()) {
+                resetSpaceShortcutState();
+                return;
+            }
+            if (!spaceShortcutArmed && !spaceKeyDownAt) return;
             try {
-                if (shortcutsLocked || uiLocked) return;
-            } catch (_) {}
+                if (shortcutsLocked || uiLocked) {
+                    resetSpaceShortcutState();
+                    return;
+                }
+            } catch (_) {
+                resetSpaceShortcutState();
+                return;
+            }
             try {
                 e.preventDefault();
                 e.stopPropagation();
             } catch (_) {}
             const held = spaceKeyDownAt ? (performance.now() - spaceKeyDownAt) : 0;
-            const wasArmed = spaceShortcutArmed;
-            spaceShortcutArmed = false;
-            spaceKeyDown = false;
-            clearSpaceLongPress();
-            if (wasArmed && !spaceLongPressFired && held < SPACE_LONG_HOLD_MS) {
-                triggerSpaceShortTap();
-            }
-            spaceLongPressFired = false;
-            spaceKeyDownAt = 0;
+            const doShortTap = !spaceLongPressFired && held < SPACE_LONG_HOLD_MS;
+            resetSpaceShortcutState();
+            if (doShortTap) triggerSpaceShortTap();
         }
         try {
             document.addEventListener('keydown', handleGlobalKeydown, false);
@@ -6072,12 +6083,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         } catch(e) {}
         try {
             window.addEventListener('blur', () => {
-                if (!spaceShortcutArmed && !spaceKeyDown && !spaceLongPressTimer) return;
-                spaceShortcutArmed = false;
-                spaceKeyDown = false;
-                spaceKeyDownAt = 0;
-                clearSpaceLongPress();
-                spaceLongPressFired = false;
+                resetSpaceShortcutState();
             }, false);
         } catch (_) {}
 
