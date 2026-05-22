@@ -2209,9 +2209,17 @@
                 try {
                     this._deckEngCancelAutoFade();
                     const mediaB = this._deckBPlaybackMedia();
-                    if (!mediaB || !this._deckHasSource(mediaB) || mediaB.paused) {
+                    if (!mediaB || !this._deckHasSource(mediaB)) {
                         this._deckEngClearSuppress();
                         if (typeof playRadioB === 'function') playRadioB();
+                        return;
+                    }
+                    if (mediaB.paused) {
+                        this._deckEngClearSuppress();
+                        await mediaB.play().catch(() => {
+                            try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
+                        });
+                        try { if (typeof connectDeckMediaToEq === 'function') connectDeckMediaToEq('b'); } catch (_) {}
                     }
                 } catch (_) {}
             }
@@ -4282,6 +4290,11 @@
                 root.addEventListener('pointerup', stopRv, sig);
 
                 window.addEventListener('resize', this.resizeHandler, sig);
+                const onRvFsResize = () => {
+                    try { this.onResize(); } catch (_) {}
+                };
+                document.addEventListener('fullscreenchange', onRvFsResize, sig);
+                document.addEventListener('webkitfullscreenchange', onRvFsResize, sig);
                 this.onResize();
                 this.clockTimerId = setInterval(() => { try { this._tickClock(); } catch (_) {} }, 1000);
                 this.animateFrame();

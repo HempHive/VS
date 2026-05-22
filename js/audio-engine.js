@@ -1195,6 +1195,46 @@
             if (dk === 'b') playDeckBTrackFromQueue(playOpts);
             else playDeckATrackFromQueue(playOpts);
         }
+
+        /** Read crossfader position (Digital Radio dash, DJ, or Mix panel). */
+        function readCrossfadePosition() {
+            try {
+                const dig = document.getElementById('radio-visual-cross-digital');
+                const mc = document.getElementById('mix-crossfader');
+                const dj = document.getElementById('dj-crossfader');
+                const raw = (dig && dig.value) || (mc && mc.value) || (dj && dj.value) || 0;
+                return Math.max(0, Math.min(1, Number(raw) || 0));
+            } catch (_) {
+                return 0;
+            }
+        }
+
+        /** When starting local playback, ensure the target deck is not fully muted by the crossfader. */
+        function ensureLocalDeckCrossfadeAudible(deckKey) {
+            const isB = deckKey === 'b';
+            const x = readCrossfadePosition();
+            const MIN = 0.5;
+            let target = x;
+            if (isB && x < MIN) target = MIN;
+            else if (!isB && x > 1 - MIN) target = 1 - MIN;
+            if (target === x) return;
+            try {
+                if (typeof applyCrossfade === 'function') applyCrossfade(target);
+            } catch (_) {}
+            try {
+                const dig = document.getElementById('radio-visual-cross-digital');
+                if (dig) dig.value = String(target);
+            } catch (_) {}
+            try {
+                const av = state && state.activeVisualizer;
+                if (av && typeof av._setCrossfadeX === 'function') av._setCrossfadeX(target);
+            } catch (_) {}
+        }
+
+        function prepareDeckBLocalPlayback() {
+            try { abortRadioBHandoff(); } catch (_) {}
+            try { resetRadioBDualStreamHandoff(); } catch (_) {}
+        }
         function enqueueDeckUrl(deckKey, url, label) {
             const clean = sanitizeUrlForAudio(url);
             if (!clean) return false;
@@ -1226,6 +1266,7 @@
             initAudio();
             try {
                 if (deckKey === 'b') {
+                    prepareDeckBLocalPlayback();
                     state.deckSourceMode.b = 'local';
                     try { state.deckLocalDisplayName.b = label ? String(label) : ''; } catch (_) {}
                 } else {
@@ -1247,6 +1288,7 @@
                     try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
                     return true;
                 }
+                ensureLocalDeckCrossfadeAudible(deckKey === 'b' ? 'b' : 'a');
                 media.play().then(() => {
                     connectDeckMediaToEq(deckKey === 'b' ? 'b' : 'a');
                     try {
@@ -1546,6 +1588,7 @@
 
         function playDeckBTrackFromQueue(opts) {
             initAudio();
+            prepareDeckBLocalPlayback();
             revokeBlobSrc(audioElB);
             const q = deckFileQueues.b;
             const deferForAutoMix = shouldDeferLocalPlayForAutoMix('b', opts);
@@ -1571,6 +1614,7 @@
                 try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
                 return;
             }
+            ensureLocalDeckCrossfadeAudible('b');
             audioElB.play().then(() => {
                 connectDeckMediaToEq('b');
                 try {
