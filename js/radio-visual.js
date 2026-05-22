@@ -852,9 +852,19 @@
             }
 
             _getCrossfadeX() {
+                try {
+                    if (this.skin === 'digital') {
+                        const dig = this.els.crossDigital || document.getElementById('radio-visual-cross-digital');
+                        if (dig) {
+                            return Math.max(0, Math.min(1, Number(dig.value) || 0));
+                        }
+                    }
+                } catch (_) {}
                 const dc = document.getElementById('dj-crossfader');
                 const mc = document.getElementById('mix-crossfader');
-                return Math.max(0, Math.min(1, Number((dc && dc.value) || (mc && mc.value) || 0)));
+                const rd = document.getElementById('radio-visual-cross-digital');
+                const raw = (dc && dc.value) || (mc && mc.value) || (rd && rd.value) || 0;
+                return Math.max(0, Math.min(1, Number(raw) || 0));
             }
 
             _setCrossfadeX(x) {
@@ -1118,14 +1128,10 @@
                 } catch (_) {}
             }
 
-            /** Space-bar short tap (and external callers); same as the digital toolbar Fade button. */
+            /** Space-bar short tap (and external callers); same as the Fade toolbar button / crossfader tap. */
             triggerAutoFadeFromShortcut() {
                 try {
                     this._clearSuppressCrossfadeResume();
-                    if (this._bothDecksSilent()) {
-                        this._startActiveDeckByCrossfader();
-                        return;
-                    }
                     this._triggerAutoFade();
                 } catch (_) {}
             }
