@@ -3629,6 +3629,7 @@
                 let digitalToolbar = null;
                 let btnDigitalMix = null;
                 let digitalStagingMount = null;
+                let digitalLocalQueuePanel = null;
                 let digitalAutoMixPanel = null;
                 let digitalAutoMixSlider = null;
                 let digitalAutoMixReadout = null;
@@ -3831,7 +3832,7 @@
                 digitalStagingMount = document.createElement('div');
                 digitalStagingMount.className = 'radio-visual-digital-staging-mount';
                 digitalStagingMount.setAttribute('aria-hidden', 'true');
-                const digitalLocalQueuePanel = this._buildDigitalLocalQueuePanel();
+                digitalLocalQueuePanel = this._buildDigitalLocalQueuePanel();
                 digitalCenterSpectrum.appendChild(spectrumBg);
                 digitalCenterSpectrum.appendChild(spectrumRow);
                 digitalCenterSpectrum.appendChild(digitalStagingMount);
