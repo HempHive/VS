@@ -5613,6 +5613,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
          */
         const SPACE_LONG_HOLD_MS = 500;
         let spaceKeyDown = false;
+        let spaceKeyDownAt = 0;
         let spaceLongPressTimer = null;
         let spaceLongPressFired = false;
         function clearSpaceLongPress() {
@@ -5620,6 +5621,19 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 try { clearTimeout(spaceLongPressTimer); } catch (_) {}
                 spaceLongPressTimer = null;
             }
+        }
+        function spaceShortcutTargetsActive() {
+            return !!(getDjDecksEngineIfActive() || getActiveRadioVisualEngine());
+        }
+        /** Stop Space from activating a focused deck/radio button (keyup click) after our shortcut runs. */
+        function blurDeckUiFocusForSpace() {
+            try {
+                const ae = document.activeElement;
+                if (!ae || ae === document.body || typeof ae.blur !== 'function') return;
+                if (ae.closest && (ae.closest('#radio-visual-root') || ae.closest('#dj-visual-root'))) {
+                    ae.blur();
+                }
+            } catch (_) {}
         }
         function triggerSpaceShortTap() {
             try {
@@ -5929,12 +5943,15 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                     } catch(_) {}
                     return;
                 }
+                blurDeckUiFocusForSpace();
                 spaceKeyDown = true;
+                spaceKeyDownAt = performance.now();
                 clearSpaceLongPress();
                 spaceLongPressFired = false;
                 spaceLongPressTimer = setTimeout(() => {
                     spaceLongPressTimer = null;
                     if (!spaceKeyDown) return;
+                    if ((performance.now() - spaceKeyDownAt) < SPACE_LONG_HOLD_MS - 16) return;
                     spaceLongPressFired = true;
                     triggerSpaceLongHold();
                 }, SPACE_LONG_HOLD_MS);
@@ -5994,34 +6011,43 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         try {
             document.addEventListener('keydown', handleGlobalKeydown, false);
         } catch(e) {}
+        function handleSpaceKeyupCapture(e) {
+            try {
+                if (e && e.code && sampleKeyHoldTimers.has(e.code)) clearSampleKeyHold(e.code);
+            } catch (_) {}
+            if (!e || (e.code !== 'Space' && e.key !== ' ')) return;
+            if (!spaceShortcutTargetsActive()) return;
+            // Capture phase + preventDefault: block native button "click" on Space keyup
+            // (e.g. Digital Radio toolbar Deck A/B/Fade) which was undoing AUTO-FADE / causing pause.
+            try {
+                e.preventDefault();
+                e.stopPropagation();
+            } catch (_) {}
+            if (shortcutsLocked || uiLocked) {
+                spaceKeyDown = false;
+                spaceKeyDownAt = 0;
+                clearSpaceLongPress();
+                spaceLongPressFired = false;
+                return;
+            }
+            const held = spaceKeyDownAt ? (performance.now() - spaceKeyDownAt) : 0;
+            spaceKeyDown = false;
+            clearSpaceLongPress();
+            if (!spaceLongPressFired && held < SPACE_LONG_HOLD_MS) triggerSpaceShortTap();
+            spaceLongPressFired = false;
+            spaceKeyDownAt = 0;
+        }
         try {
             window.addEventListener('blur', () => {
                 if (!spaceKeyDown && !spaceLongPressTimer) return;
                 spaceKeyDown = false;
+                spaceKeyDownAt = 0;
                 clearSpaceLongPress();
                 spaceLongPressFired = false;
             }, false);
         } catch (_) {}
         try {
-            // Quick tap: cancel the long-hold "stop" timer so the sample plays through (or until
-            // its natural end / a subsequent press retriggers it). Long-hold: timer already fired
-            // and stopped the sample, so this is a no-op.
-            //
-            // Space-key handling is symmetric: if the long-hold timer hasn't fired yet, releasing
-            // the key counts as a short tap and triggers AUTO-FADE (start or reverse). If the
-            // timer already fired the long-hold action, the keyup is a no-op.
-            document.addEventListener('keyup', (e) => {
-                if (e && e.code && sampleKeyHoldTimers.has(e.code)) clearSampleKeyHold(e.code);
-                if (e && (e.code === 'Space' || e.key === ' ')) {
-                    const eng = getDjDecksEngineIfActive();
-                    const rv = getActiveRadioVisualEngine();
-                    if (!eng && !rv) return;
-                    spaceKeyDown = false;
-                    clearSpaceLongPress();
-                    if (!spaceLongPressFired) triggerSpaceShortTap();
-                    spaceLongPressFired = false;
-                }
-            }, false);
+            window.addEventListener('keyup', handleSpaceKeyupCapture, true);
         } catch(e) {}
 
         // Bootstrap station list
