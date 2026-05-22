@@ -1151,7 +1151,7 @@
                 try { this._onDigitalVisBgTap(); } catch (_) {}
             }
 
-            /** Long-hold 🔆 / U: toggle background GIF layer off or on (same as pointer long-press on the button). */
+            /** Long-hold 🔆 / I: toggle background GIF layer off or on (same as pointer long-press on the button). */
             triggerVisBgLongHoldFromShortcut() {
                 try {
                     this._toggleDigitalBgGifEnabled();
@@ -1190,46 +1190,46 @@
                 }
             }
 
-            _resetDigitalUShortcutState() {
-                this._digitalUHeld = false;
-                this._digitalUAt = 0;
-                this._digitalULongFired = false;
-                if (this._digitalUTimer) {
-                    try { clearTimeout(this._digitalUTimer); } catch (_) {}
-                    this._digitalUTimer = null;
+            _resetDigitalIShortcutState() {
+                this._digitalIHeld = false;
+                this._digitalIAt = 0;
+                this._digitalILongFired = false;
+                if (this._digitalITimer) {
+                    try { clearTimeout(this._digitalITimer); } catch (_) {}
+                    this._digitalITimer = null;
                 }
             }
 
-            /** Digital Radio only: Space = play/fade / long-hold pause; U = 🔆 tap / long-hold GIF off-on. */
+            /** Digital Radio only: Space = play/fade / long-hold pause; I = 🔆 tap / long-hold GIF off-on. */
             _wireDigitalKeyboardShortcuts(sig) {
                 const HOLD_MS = 500;
                 this._resetDigitalSpaceShortcutState();
-                this._resetDigitalUShortcutState();
+                this._resetDigitalIShortcutState();
                 const onKeyDown = (ev) => {
                     if (!ev || this._digitalKeyboardBlocksKey(ev)) return;
                     const isSpace = ev.code === 'Space' || ev.key === ' ';
-                    const isU = (ev.key === 'u' || ev.key === 'U')
+                    const isI = (ev.key === 'i' || ev.key === 'I')
                         && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey;
                     if (!isSpace) {
                         this._resetDigitalSpaceShortcutState();
                     }
-                    if (!isU) {
-                        this._resetDigitalUShortcutState();
+                    if (!isI) {
+                        this._resetDigitalIShortcutState();
                     }
-                    if (isU) {
+                    if (isI) {
                         if (!this._isRadioVisualActive() || this.skin !== 'digital') return;
                         try {
                             ev.preventDefault();
                             ev.stopPropagation();
                         } catch (_) {}
                         if (ev.repeat) return;
-                        this._resetDigitalUShortcutState();
-                        this._digitalUHeld = true;
-                        this._digitalUAt = performance.now();
-                        this._digitalUTimer = setTimeout(() => {
-                            this._digitalUTimer = null;
-                            if (!this._digitalUHeld) return;
-                            this._digitalULongFired = true;
+                        this._resetDigitalIShortcutState();
+                        this._digitalIHeld = true;
+                        this._digitalIAt = performance.now();
+                        this._digitalITimer = setTimeout(() => {
+                            this._digitalITimer = null;
+                            if (!this._digitalIHeld) return;
+                            this._digitalILongFired = true;
                             try { this.triggerVisBgLongHoldFromShortcut(); } catch (_) {}
                         }, HOLD_MS);
                         return;
@@ -1260,19 +1260,19 @@
                 const onKeyUp = (ev) => {
                     if (!ev || !this._isRadioVisualActive() || this.skin !== 'digital') {
                         this._resetDigitalSpaceShortcutState();
-                        this._resetDigitalUShortcutState();
+                        this._resetDigitalIShortcutState();
                         return;
                     }
-                    const isU = ev.key === 'u' || ev.key === 'U';
+                    const isI = ev.key === 'i' || ev.key === 'I';
                     const isSpace = ev.code === 'Space' || ev.key === ' ';
-                    if (isU && (this._digitalUAt || this._digitalUHeld)) {
+                    if (isI && (this._digitalIAt || this._digitalIHeld)) {
                         try {
                             ev.preventDefault();
                             ev.stopPropagation();
                         } catch (_) {}
-                        const held = this._digitalUAt ? (performance.now() - this._digitalUAt) : HOLD_MS;
-                        const longFired = this._digitalULongFired;
-                        this._resetDigitalUShortcutState();
+                        const held = this._digitalIAt ? (performance.now() - this._digitalIAt) : HOLD_MS;
+                        const longFired = this._digitalILongFired;
+                        this._resetDigitalIShortcutState();
                         if (!longFired && held < HOLD_MS) {
                             try { this.triggerVisBgFromShortcut(); } catch (_) {}
                         }

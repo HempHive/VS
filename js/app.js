@@ -2074,7 +2074,7 @@ function randomGlowColor() {
 			const shortcuts = [
 				'F Fullscreen  •  C Next Visual  •  ,/. Visual',
 				'V Play/Pause A  •  B Play/Pause B  •  N Next Station  •  L Lock',
-				'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
+				'T Text-In Panel  •  Y Text-In Auto  •  U Send Text',
                 'P Radio Stations  •  R Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
 				'H QUEUE  •  J VIDEO  •  K KARAOKE (Deck B)',
 				'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Auto-Fade  •  Esc Back'
@@ -5987,8 +5987,8 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 window.__panelGuardUntilMs = 0; 
                 try { toggleOptionsPanel(); } catch(_) {}
-            } else if (e.key === 'i' || e.key === 'I') {
-                // Send Text-In immediately
+            } else if (e.key === 'u' || e.key === 'U') {
+                // Send Text-In immediately (shortcut swapped from I → U)
                 e.preventDefault();
                 try {
                     const cfg = getTextConfigFromUi();

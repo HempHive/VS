@@ -912,7 +912,7 @@
 			const shortcuts = [
 					'F Fullscreen  •  C Next Visual  •  ,/. Visual',
 					'V Play/Pause A  •  B Play/Pause B  •  N Next Station  •  L Lock',
-					'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
+					'T Text-In Panel  •  Y Text-In Auto  •  U Send Text',
 					'P Radio Stations  •  R Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
 					'H QUEUE  •  J VIDEO  •  K KARAOKE (Deck B)',
 					'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Auto-Fade  •  Esc Back'
@@ -969,7 +969,7 @@
 			const shortcuts = [
 				'F Fullscreen  •  C Next Visual  •  ,/. Visual',
 				'V Play/Pause A  •  B Play/Pause B  •  N Next Station  •  L Lock',
-				'T Text-In Panel  •  Y Text-In Auto  •  I Send Text',
+				'T Text-In Panel  •  Y Text-In Auto  •  U Send Text',
 				'P Radio Stations  •  R Avatar Settings  •  W Toggle Avatar  •  Arrows Move Avatar',
 				'H QUEUE  •  J VIDEO  •  K KARAOKE (Deck B)',
 				'+/− Size  •  Q/E Speed  •  Z/X Opacity  •  Space Auto-Fade  •  Esc Back'
