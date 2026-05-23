@@ -849,6 +849,8 @@
                     } catch (_) {}
                     this.els.digitalStagingVideo.classList.add('is-hidden');
                 }
+                this._digitalStagingVideoSrc = '';
+                this._digitalStagingVideoMode = '';
                 if (this.els.digitalDeckBContent) {
                     this.els.digitalDeckBContent.innerHTML = '';
                     this.els.digitalDeckBContent.classList.remove('is-active');
@@ -917,24 +919,27 @@
 
             _resolveDigitalStagingDefaultVideoUrl() {
                 try {
-                    const list = globalThis.webmList;
-                    if (Array.isArray(list) && list.length) return String(list[0]);
-                } catch (_) {}
-                try {
                     if (typeof DECK_B_IDLE_LOGO_URL === 'string' && DECK_B_IDLE_LOGO_URL) {
                         return DECK_B_IDLE_LOGO_URL;
                     }
                 } catch (_) {}
-                return 'assets/video/red.webm';
+                return 'assets/video/logo.mp4';
             }
 
-            _stagingVideoSyncFromIsViable(syncFrom) {
-                if (!syncFrom) return false;
+            _stagingVideoSyncFromIsViable(syncFrom, deckKey) {
+                if (!syncFrom || !deckKey) return false;
+                try {
+                    if (!state || !state.deckSourceMode || state.deckSourceMode[deckKey] !== 'local') {
+                        return false;
+                    }
+                } catch (_) {
+                    return false;
+                }
                 try {
                     if (syncFrom instanceof HTMLVideoElement) return true;
                     if (syncFrom instanceof HTMLAudioElement) {
                         const d = Number(syncFrom.duration);
-                        return Number.isFinite(d) && d > 0.25 && d < 43200;
+                        return Number.isFinite(d) && d > 1.5 && d < 43200;
                     }
                 } catch (_) {}
                 return false;
@@ -946,25 +951,39 @@
                     const metaA = (typeof getDeckActiveVideoMeta === 'function') ? getDeckActiveVideoMeta('a') : null;
                     const meta = metaB || metaA;
                     if (meta && meta.url) {
-                        const sf = this._stagingVideoSyncFromIsViable(meta.syncFrom || meta.media)
-                            ? (meta.syncFrom || meta.media)
-                            : null;
-                        return { url: meta.url, label: meta.label, syncFrom: sf };
-                    }
-                } catch (_) {}
-                try {
-                    if (typeof mediaVideoQueue !== 'undefined' && mediaVideoQueue.length) {
-                        const q = mediaVideoQueue[0];
-                        if (q && q.url) {
-                            return { url: q.url, label: q.label || 'Queue video', loop: true };
+                        const deckKey = meta.deckKey === 'a' ? 'a' : 'b';
+                        const sf = meta.syncFrom || meta.media;
+                        if (this._stagingVideoSyncFromIsViable(sf, deckKey)) {
+                            return {
+                                url: meta.url,
+                                label: meta.label,
+                                syncFrom: sf,
+                                mode: 'deck-sync'
+                            };
+                        }
+                        if (sf instanceof HTMLVideoElement) {
+                            return { url: meta.url, label: meta.label, loop: true, mode: 'deck' };
                         }
                     }
                 } catch (_) {}
                 return {
                     url: this._resolveDigitalStagingDefaultVideoUrl(),
                     label: 'Video',
-                    loop: true
+                    loop: true,
+                    mode: 'idle'
                 };
+            }
+
+            _wireDigitalStagingVideoLoopFallback(vid) {
+                if (!vid || vid.dataset.rvStagingLoopWired === '1') return;
+                vid.dataset.rvStagingLoopWired = '1';
+                vid.addEventListener('ended', () => {
+                    try {
+                        if (!vid.loop) return;
+                        vid.currentTime = 0;
+                        vid.play().catch(() => {});
+                    } catch (_) {}
+                });
             }
 
             _applyDigitalStagingVideoPayload(vid, cur) {
@@ -978,6 +997,7 @@
                 try { vid.loop = loop; } catch (_) {}
                 try { vid.muted = true; } catch (_) {}
                 try { vid.playsInline = true; } catch (_) {}
+                this._wireDigitalStagingVideoLoopFallback(vid);
 
                 const playVid = () => {
                     try { vid.play().catch(() => {}); } catch (_) {}
@@ -985,6 +1005,7 @@
 
                 if (!same) {
                     this._digitalStagingVideoSrc = want;
+                    this._digitalStagingVideoMode = cur.mode || 'idle';
                     const onReady = () => playVid();
                     try {
                         vid.addEventListener('loadeddata', onReady, { once: true });
@@ -1041,8 +1062,9 @@
                 mount.appendChild(vid);
                 this._wireDigitalStagingVideoFullscreen(vid, mount);
                 this._digitalStagingVideoSrc = '';
+                this._digitalStagingVideoMode = 'idle';
                 this._syncDigitalStagingBgVisibility();
-                this._syncDigitalStagingVideo(vid);
+                this._syncDigitalStagingVideo(vid, true);
             }
 
             _wireDigitalStagingVideoFullscreen(vid, mount) {
@@ -1082,11 +1104,28 @@
                 mount.addEventListener('dblclick', onDbl, opts);
             }
 
-            _syncDigitalStagingVideo(vidEl) {
+            _syncDigitalStagingVideo(vidEl, forceLoad) {
                 const vid = vidEl || this.els.digitalStagingVideo;
                 if (!vid || !this._digitalStagingView || this._digitalStagingView !== 'video') return;
                 try {
                     const payload = this._resolveDigitalStagingVideoPayload();
+                    const mode = payload.mode || 'idle';
+                    const want = String(payload.url || '');
+                    if (!forceLoad && mode === 'idle' && this._digitalStagingVideoMode === 'idle') {
+                        if (this._digitalStagingVideoSrc && want && (
+                            (typeof urlsMediaMatch === 'function')
+                                ? urlsMediaMatch(this._digitalStagingVideoSrc, want)
+                                : this._digitalStagingVideoSrc === want
+                        )) {
+                            if (vid.paused) vid.play().catch(() => {});
+                            return;
+                        }
+                    }
+                    if (!forceLoad && mode === 'deck-sync' && this._digitalStagingVideoSrc === want) {
+                        this._applyDigitalStagingVideoPayload(vid, payload);
+                        return;
+                    }
+                    this._digitalStagingVideoMode = mode;
                     this._applyDigitalStagingVideoPayload(vid, payload);
                 } catch (_) {}
             }
@@ -4495,7 +4534,9 @@
                         this._drawDigitalSpectrum();
                         if (this._digitalStagingView === 'video') {
                             const now = performance.now();
-                            if (!this._deckBVideoSyncAt || (now - this._deckBVideoSyncAt) > 800) {
+                            const syncDeck = this._digitalStagingVideoMode === 'deck-sync';
+                            const interval = syncDeck ? 800 : 4000;
+                            if (!this._deckBVideoSyncAt || (now - this._deckBVideoSyncAt) > interval) {
                                 this._deckBVideoSyncAt = now;
                                 this._syncDigitalStagingVideo();
                             }
