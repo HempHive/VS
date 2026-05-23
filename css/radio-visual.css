@@ -1144,6 +1144,12 @@
                 inset 0 0 20px rgba(100, 200, 255, 0.28);
             text-shadow: 0 0 12px rgba(140, 220, 255, 0.7);
         }
+        #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-btn.is-active .radio-visual-btn-label {
+            color: #ffe566;
+            text-shadow:
+                0 0 6px rgba(255, 230, 80, 0.95),
+                0 0 14px rgba(255, 200, 40, 0.55);
+        }
         #radio-visual-root .radio-visual-digital-toolbar {
             display: flex;
             flex-wrap: nowrap;
@@ -1235,13 +1241,14 @@
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn {
             flex: 0 0 auto;
-            width: 1.65em;
-            min-width: 0;
-            max-width: 1.85em;
+            width: 2.1em;
+            min-width: 2.1em;
+            max-width: 2.35em;
             padding: clamp(5px, 0.73cqw, 7px) 0;
         }
-        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn:has(.radio-visual-btn-label) {
-            font-size: inherit;
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn .radio-visual-btn-label {
+            font-size: clamp(14px, 2.5cqw, 18px);
+            line-height: 1;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn:hover {
             filter: brightness(1.12);
