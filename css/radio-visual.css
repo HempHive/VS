@@ -1154,6 +1154,13 @@
             font-size: 1.25rem;
             line-height: 1;
         }
+        /* Digital toolbar blue theme (overrides default brown .radio-visual-btn). */
+        #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn {
+            border-color: rgba(0, 220, 255, 0.4);
+            background: linear-gradient(180deg, #123048, #081820);
+            color: #8ef;
+            box-shadow: 0 2px 0 #041018, 0 4px 12px rgba(0, 32, 64, 0.4);
+        }
         #radio-visual-root .radio-visual-digital-toolbar-text-btn.is-active,
         #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-btn.is-active,
         #radio-visual-root .radio-visual-digital-station-row .radio-visual-btn.is-active {
@@ -1182,16 +1189,12 @@
             margin: 8px 0 6px;
             overflow: hidden;
         }
-        #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-btn {
-            border-color: rgba(0, 220, 255, 0.4);
-            background: linear-gradient(180deg, #123048, #081820);
-            color: #8ef;
-            box-shadow: 0 2px 0 #041018, 0 4px 12px rgba(0, 32, 64, 0.4);
-        }
-        /* Text toolbar buttons live in a grid (same sizing model as purple feature row). */
-        #radio-visual-root .radio-visual-digital-toolbar-actions {
+        /* Centre strip: Spectrum · A> · Fade · vol · Mix · B> · VIDEO (original order). */
+        #radio-visual-root .radio-visual-digital-toolbar-main {
             display: grid;
-            grid-template-columns: repeat(6, minmax(0, 1fr));
+            grid-template-columns:
+                minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.15fr)
+                minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
             gap: clamp(1px, 0.31cqw, 3px);
             flex: 1 1 0;
             min-width: 0;
@@ -1211,10 +1214,10 @@
             letter-spacing: 0.02em;
             line-height: 1;
             overflow: hidden;
-            border-color: rgba(0, 220, 255, 0.4);
-            background: linear-gradient(180deg, #123048, #081820);
-            color: #8ef;
-            box-shadow: 0 2px 0 #041018, 0 4px 12px rgba(0, 32, 64, 0.4);
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-main > .radio-visual-digital-toolbar-vol {
+            width: 100%;
+            min-width: 0;
         }
         #radio-visual-root .radio-visual-digital-toolbar-text-btn .radio-visual-btn-label {
             display: block;
@@ -1235,39 +1238,42 @@
             align-items: center;
             justify-content: center;
         }
-        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn {
-            border-color: rgba(0, 220, 255, 0.4);
-            background: linear-gradient(180deg, #123048, #081820);
-            color: #8ef;
-            box-shadow: 0 2px 0 #041018, 0 4px 12px rgba(0, 32, 64, 0.4);
-        }
-        #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-digital-vis-btn,
-        #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-digital-toolbar-icon-btn {
-            flex: 0 0 auto;
-            width: clamp(26px, 7.5cqw, 48px);
-            min-width: 0;
-            max-width: clamp(26px, 7.5cqw, 48px);
-            aspect-ratio: 1;
-            padding: clamp(4px, 0.73cqw, 7px);
-            font-size: clamp(8px, 1.35cqw, 13px);
-        }
         #radio-visual-root .radio-visual-digital-toolbar-vol {
             display: flex;
-            flex: 1.15 1 0;
-            flex-wrap: nowrap;
+            flex: none;
+            flex-flow: row nowrap;
+            flex-direction: row;
             min-width: 0;
             align-items: center;
+            justify-content: center;
             gap: clamp(1px, 0.21cqw, 2px);
             overflow: hidden;
+            aspect-ratio: 2.35 / 1;
+            align-self: center;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-digital-toolbar-icon-btn {
+            flex: 0 0 auto;
+            align-self: center;
+            box-sizing: border-box;
+            min-width: 0;
+            width: clamp(20px, 4.8cqw, 30px);
+            height: clamp(20px, 4.8cqw, 30px);
+            max-width: clamp(20px, 4.8cqw, 30px);
+            max-height: clamp(20px, 4.8cqw, 30px);
+            aspect-ratio: 1;
+            padding: clamp(1px, 0.3cqw, 3px);
+            font-size: clamp(8px, 1.45cqw, 12px);
+            line-height: 1;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-vol-readout {
             flex: 1 1 0;
+            order: 1;
             min-width: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-            font-size: clamp(9px, 1.9cqw, 18px);
+            font-size: clamp(8px, 1.65cqw, 16px);
             font-weight: 700;
             line-height: 1;
             padding: 0 1px;
@@ -1281,13 +1287,23 @@
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn {
             container-type: size;
             container-name: rv-toolbar-vol-btn;
-            flex: 0 1 auto;
-            width: clamp(20px, 8.5cqw, 34px);
+            flex: 0 0 auto;
+            order: 0;
+            box-sizing: border-box;
+            width: auto;
+            height: 72%;
+            max-height: 100%;
             min-width: 0;
-            max-width: clamp(20px, 8.5cqw, 34px);
+            max-width: none;
             aspect-ratio: 1;
-            padding: 8% 4%;
+            padding: clamp(1px, 0.35cqw, 4px);
+            min-height: 0;
+            font-size: clamp(10px, 2cqw, 14px);
+            line-height: 1;
             overflow: hidden;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn:last-of-type {
+            order: 2;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn .radio-visual-btn-label {
             line-height: 1;

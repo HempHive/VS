@@ -4207,9 +4207,9 @@
                     if (btn.clientWidth < 10 || btn.clientHeight < 8) return;
                     this._computeRvButtonLabelFitPx(btn, label, opts);
                 };
-                const actions = toolbarEl.querySelector('.radio-visual-digital-toolbar-actions');
-                if (actions) {
-                    actions.querySelectorAll('.radio-visual-digital-toolbar-text-btn').forEach((btn) => {
+                const main = toolbarEl.querySelector('.radio-visual-digital-toolbar-main');
+                if (main) {
+                    main.querySelectorAll('.radio-visual-digital-toolbar-text-btn').forEach((btn) => {
                         fitBtn(btn, mainOpts);
                     });
                 }
@@ -4237,8 +4237,8 @@
                 }
                 const ro = new ResizeObserver(run);
                 ro.observe(rootEl);
-                const actions = rootEl.querySelector('.radio-visual-digital-toolbar-actions');
-                if (actions) ro.observe(actions);
+                const main = rootEl.querySelector('.radio-visual-digital-toolbar-main');
+                if (main) ro.observe(main);
                 rootEl.querySelectorAll('.radio-visual-btn').forEach((btn) => ro.observe(btn));
                 const volGroup = rootEl.querySelector('.radio-visual-digital-toolbar-vol');
                 if (volGroup) ro.observe(volGroup);
@@ -4685,7 +4685,7 @@
                 this._appendRvButtonLabel(btnDigitalVideo, 'VIDEO');
                 btnVis = document.createElement('button');
                 btnVis.type = 'button';
-                btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-vis-btn';
+                btnVis.className = 'radio-visual-btn radio-visual-digital-toolbar-icon-btn radio-visual-digital-vis-btn';
                 btnVis.textContent = ' 🔆 ';
                 btnVis.setAttribute('aria-label', 'Background visual');
                 btnVis.setAttribute('aria-pressed', 'false');
@@ -4709,10 +4709,10 @@
                 volGroup.appendChild(volDown);
                 volGroup.appendChild(volDigitalReadout);
                 volGroup.appendChild(volUp);
-                const toolbarActions = document.createElement('div');
-                toolbarActions.className = 'radio-visual-digital-toolbar-actions';
-                toolbarActions.setAttribute('role', 'group');
-                toolbarActions.setAttribute('aria-label', 'Deck controls');
+                const toolbarMain = document.createElement('div');
+                toolbarMain.className = 'radio-visual-digital-toolbar-main';
+                toolbarMain.setAttribute('role', 'group');
+                toolbarMain.setAttribute('aria-label', 'Deck controls');
                 const mkRvDigitalBtn = (act, lab) => {
                     const b = document.createElement('button');
                     b.type = 'button';
@@ -4739,20 +4739,20 @@
                 const btnDeckBTransport = mkRvStationBtn('B >', 'b');
                 btnXfadeStation = document.createElement('button');
                 btnXfadeStation.type = 'button';
-                btnXfadeStation.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-toolbar-icon-btn radio-visual-digital-xfade-station-btn';
+                btnXfadeStation.className = 'radio-visual-btn radio-visual-digital-toolbar-icon-btn radio-visual-digital-xfade-station-btn';
                 btnXfadeStation.dataset.rvDigital = 'xfade-station';
                 btnXfadeStation.textContent = '🔀';
                 btnXfadeStation.title = 'Change station when auto-fading (toggle)';
                 btnXfadeStation.setAttribute('aria-label', 'Change station when auto-fading');
-                toolbarActions.appendChild(btnDigitalSpectrum);
-                toolbarActions.appendChild(btnDeckATransport);
-                toolbarActions.appendChild(btnFade);
-                toolbarActions.appendChild(btnMix);
-                toolbarActions.appendChild(btnDeckBTransport);
-                toolbarActions.appendChild(btnDigitalVideo);
+                toolbarMain.appendChild(btnDigitalSpectrum);
+                toolbarMain.appendChild(btnDeckATransport);
+                toolbarMain.appendChild(btnFade);
+                toolbarMain.appendChild(volGroup);
+                toolbarMain.appendChild(btnMix);
+                toolbarMain.appendChild(btnDeckBTransport);
+                toolbarMain.appendChild(btnDigitalVideo);
                 digitalToolbar.appendChild(btnVis);
-                digitalToolbar.appendChild(toolbarActions);
-                digitalToolbar.appendChild(volGroup);
+                digitalToolbar.appendChild(toolbarMain);
                 digitalToolbar.appendChild(btnXfadeStation);
                 dPanel.appendChild(digitalCenter);
                 dPanel.appendChild(digitalToolbar);
