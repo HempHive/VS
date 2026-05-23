@@ -1277,14 +1277,16 @@
             flex: 1 1 0;
             order: 1;
             min-width: 0;
+            height: 100%;
+            max-height: clamp(20px, 4.8cqw, 30px);
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-            font-size: clamp(8px, 1.65cqw, 16px);
+            font-size: clamp(9px, 1.55cqw, 13px);
             font-weight: 700;
             line-height: 1;
-            padding: 0 1px;
+            padding: 0 clamp(1px, 0.2cqw, 2px);
             text-align: center;
             color: #9ff;
             text-shadow: 0 0 10px rgba(0, 255, 200, 0.45);
@@ -1298,15 +1300,14 @@
             flex: 0 0 auto;
             order: 0;
             box-sizing: border-box;
-            width: auto;
-            height: 72%;
-            max-height: 100%;
             min-width: 0;
-            max-width: none;
+            width: clamp(20px, 4.8cqw, 30px);
+            height: clamp(20px, 4.8cqw, 30px);
+            max-width: clamp(20px, 4.8cqw, 30px);
+            max-height: clamp(20px, 4.8cqw, 30px);
             aspect-ratio: 1;
-            padding: clamp(1px, 0.35cqw, 4px);
-            min-height: 0;
-            font-size: clamp(10px, 2cqw, 14px);
+            padding: clamp(1px, 0.3cqw, 3px);
+            font-size: clamp(9px, 1.55cqw, 13px);
             line-height: 1;
             overflow: hidden;
         }
@@ -1315,6 +1316,7 @@
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn .radio-visual-btn-label {
             line-height: 1;
+            font-size: inherit;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn:hover {
             filter: brightness(1.12);

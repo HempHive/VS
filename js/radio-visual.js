@@ -4179,7 +4179,7 @@
 
             _rvLabelFitOpts(kind) {
                 if (kind === 'toolbar-vol') {
-                    return { fill: true, maxCap: 14, heightFactor: 0.88, widthFactor: 0.55, minPx: 6 };
+                    return { fill: true, maxCap: 13, heightFactor: 0.82, widthFactor: 0.5, minPx: 7 };
                 }
                 /* feature + toolbar: per-button fill like purple grid */
                 return { fill: true, maxCap: 12, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
@@ -4213,7 +4213,7 @@
                         fitBtn(btn, mainOpts);
                     });
                 }
-                toolbarEl.querySelectorAll('.radio-visual-digital-toolbar-vol .radio-visual-btn').forEach((btn) => {
+                toolbarEl.querySelectorAll('.radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn').forEach((btn) => {
                     fitBtn(btn, volOpts);
                 });
             }
@@ -4741,7 +4741,7 @@
                 btnXfadeStation.type = 'button';
                 btnXfadeStation.className = 'radio-visual-btn radio-visual-digital-toolbar-icon-btn radio-visual-digital-xfade-station-btn';
                 btnXfadeStation.dataset.rvDigital = 'xfade-station';
-                btnXfadeStation.textContent = '🔀';
+                btnXfadeStation.textContent = ' 🔀 ';
                 btnXfadeStation.title = 'Change station when auto-fading (toggle)';
                 btnXfadeStation.setAttribute('aria-label', 'Change station when auto-fading');
                 toolbarMain.appendChild(btnDigitalSpectrum);
