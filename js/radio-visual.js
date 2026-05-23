@@ -3498,16 +3498,16 @@
                 const lcdSubIsStation = lcdSub !== 'STEREO · EQ';
                 const lcdSubBasePx = Math.max(7, Math.min(w, h) * 0.055);
                 if (lcdSubIsStation) {
-                    ctx.fillStyle = 'rgba(0, 255, 200, 0.45)';
-                    ctx.shadowColor = 'rgba(0, 255, 200, 0.25)';
-                    ctx.shadowBlur = 4;
+                    ctx.fillStyle = 'rgba(0, 255, 200, 0.55)';
+                    ctx.shadowColor = 'rgba(0, 255, 200, 0.35)';
+                    ctx.shadowBlur = 6;
                     this._fitCanvasLcdText(
                         ctx,
                         lcdSub,
                         ix + iw * 0.5,
                         lcdY + lcdH * 0.72,
                         iw - lcdPad * 2,
-                        lcdSubBasePx
+                        lcdBasePx
                     );
                 } else {
                     ctx.font = `600 ${lcdSubBasePx}px ui-monospace, Menlo, Consolas, monospace`;
