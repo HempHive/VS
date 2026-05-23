@@ -2623,9 +2623,7 @@
                         longPressTimer = null;
                     }
                 };
-                btn.title = dk === 'b'
-                    ? 'Tap: next track or station · Hold: pause Deck B · Right-click: previous station'
-                    : 'Tap: next track or station · Hold: pause Deck A · Right-click: previous station';
+                try { btn.removeAttribute('title'); } catch (_) {}
                 btn.setAttribute('aria-label', dk === 'b' ? 'Deck B transport' : 'Deck A transport');
                 btn.addEventListener('contextmenu', (ev) => {
                     try {
@@ -4736,7 +4734,6 @@
                 btnDigitalVideo = document.createElement('button');
                 btnDigitalVideo.type = 'button';
                 btnDigitalVideo.className = rvToolbarTextBtnClass;
-                btnDigitalVideo.title = 'Toggle video in staging area';
                 btnDigitalVideo.setAttribute('aria-label', 'Toggle staging video');
                 this._appendRvButtonLabel(btnDigitalVideo, 'VIDEO');
                 btnVis = document.createElement('button');
