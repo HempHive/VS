@@ -5911,12 +5911,18 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 var resetBtn = document.getElementById('btn-webm-reset');
                 if (resetBtn) { resetBtn.click(); }
             } else if (e.key === 'c' || e.key === 'C') {
+                e.preventDefault();
+                if (isDigitalRadioVisualActive()) {
+                    const rv = getActiveRadioVisualEngine();
+                    if (rv && typeof rv.triggerCFromShortcut === 'function') {
+                        try { rv.triggerCFromShortcut(); } catch (_) {}
+                        return;
+                    }
+                }
                 const av = state && state.activeVisualizer;
                 if (av && av.name === 'DJ Decks' && av.deckBVizMode === 'projectm' && typeof av.nextDeckBProjectMPreset === 'function') {
-                    e.preventDefault();
                     try { av.nextDeckBProjectMPreset(); } catch (_) {}
                 } else if (av && typeof av.nextPreset === 'function') {
-                    e.preventDefault();
                     try { av.nextPreset(); } catch (_) {}
                 }
             } else if (e.key === 'Escape') {

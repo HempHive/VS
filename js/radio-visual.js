@@ -1828,6 +1828,19 @@
                 try { this._onDigitalVisBgTap(); } catch (_) {}
             }
 
+            /** C: ProjectM staging → next preset; otherwise cycle SPECTRUM layout (same as the SPECTRUM button). */
+            triggerCFromShortcut() {
+                if (this._digitalStagingView === 'projectm' && typeof this.nextPreset === 'function') {
+                    try { this.nextPreset(); } catch (_) {}
+                    return;
+                }
+                if (this.digitalCenterMode !== 'spectrum' || this._digitalStagingView) {
+                    try { this._returnToDefaultDigitalSpectrumView(); } catch (_) {}
+                    return;
+                }
+                try { this._cycleDigitalSpectrumLayout(); } catch (_) {}
+            }
+
             /** Long-hold 🔆 / I: toggle background GIF layer off or on (same as pointer long-press on the button). */
             triggerVisBgLongHoldFromShortcut() {
                 try {
@@ -1909,13 +1922,12 @@
                     }
                     if (isC) {
                         if (!this._isRadioVisualActive() || this.skin !== 'digital') return;
-                        if (this._digitalStagingView !== 'projectm' || typeof this.nextPreset !== 'function') return;
                         try {
                             ev.preventDefault();
                             ev.stopPropagation();
                         } catch (_) {}
                         if (ev.repeat) return;
-                        try { this.nextPreset(); } catch (_) {}
+                        try { this.triggerCFromShortcut(); } catch (_) {}
                         return;
                     }
                     if (isI) {

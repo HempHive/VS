@@ -1216,10 +1216,10 @@
             try {
                 const playingLocal = state.deckSourceMode[dk] === 'local';
                 const mediaGoing = !!(media && media.src && media.src !== 'about:blank' && !media.paused && !media.ended);
-                return !(playingLocal && mediaGoing);
-            } catch (_) {
-                return true;
-            }
+                if (playingLocal && mediaGoing) return false;
+                if (otherDeckIsAudiblyPlaying(dk) && !deckWinsCrossfade(dk)) return false;
+            } catch (_) {}
+            return true;
         }
         function addDeckLocalFilesToDeck(deckKey, files, opts) {
             const dk = deckKey === 'b' ? 'b' : 'a';
@@ -1338,8 +1338,27 @@
             }
         }
 
+        /** True when the crossfader position gives this deck audible gain (A: x < 0.5, B: x >= 0.5). */
+        function deckWinsCrossfade(deckKey) {
+            const x = readCrossfadePosition();
+            return deckKey === 'b' ? x >= 0.5 : x < 0.5;
+        }
+
+        function otherDeckIsAudiblyPlaying(deckKey) {
+            const other = deckKey === 'b' ? 'a' : 'b';
+            const otherMedia = other === 'b' ? audioElB : audioEl;
+            try {
+                return !!(otherMedia && otherMedia.src && otherMedia.src !== 'about:blank'
+                    && !otherMedia.paused && !otherMedia.ended);
+            } catch (_) {
+                return false;
+            }
+        }
+
         /** When starting local playback, ensure the target deck is not fully muted by the crossfader. */
-        function ensureLocalDeckCrossfadeAudible(deckKey) {
+        function ensureLocalDeckCrossfadeAudible(deckKey, opts) {
+            const force = !!(opts && opts.forceImmediate);
+            if (!force && !deckWinsCrossfade(deckKey)) return;
             const isB = deckKey === 'b';
             const x = readCrossfadePosition();
             const MIN = 0.5;
@@ -1417,7 +1436,7 @@
                     try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
                     return true;
                 }
-                ensureLocalDeckCrossfadeAudible(deckKey === 'b' ? 'b' : 'a');
+                ensureLocalDeckCrossfadeAudible(deckKey === 'b' ? 'b' : 'a', opts);
                 media.play().then(() => {
                     connectDeckMediaToEq(deckKey === 'b' ? 'b' : 'a');
                     try {
@@ -1743,7 +1762,7 @@
                 try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
                 return;
             }
-            ensureLocalDeckCrossfadeAudible('b');
+            ensureLocalDeckCrossfadeAudible('b', opts);
             audioElB.play().then(() => {
                 connectDeckMediaToEq('b');
                 try {
