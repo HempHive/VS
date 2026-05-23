@@ -4194,6 +4194,12 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                     try { djX.style.setProperty('--cross-x', cx); } catch (_) {}
                     try { if (djX.parentElement) djX.parentElement.style.setProperty('--cross-x', cx); } catch (_) {}
                 }
+                const rdX = document.getElementById('radio-visual-cross-digital');
+                if (rdX) {
+                    rdX.value = cx;
+                    try { rdX.style.setProperty('--cross-x', cx); } catch (_) {}
+                    try { if (rdX.parentElement) rdX.parentElement.style.setProperty('--cross-x', cx); } catch (_) {}
+                }
             } catch(_) {}
             try { refreshActiveDeckVideoDisplays(); } catch (_) {}
             try { updateModeSubStationLine(); } catch (_) {}
