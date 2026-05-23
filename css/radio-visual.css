@@ -667,6 +667,22 @@
             display: block;
             background: #000;
         }
+        #radio-visual-root .radio-visual-digital-staging-video-stack {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #radio-visual-root .radio-visual-digital-staging-video-stack .radio-visual-digital-staging-video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: rgba(0, 8, 16, 0.55);
+            opacity: 0;
+            pointer-events: none;
+        }
         #radio-visual-root .radio-visual-digital-staging-video,
         #radio-visual-root .radio-visual-digital-staging-mount .radio-visual-digital-deck-b-canvas {
             width: 100%;

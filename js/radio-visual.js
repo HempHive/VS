@@ -401,7 +401,7 @@
             _ingestLocalFilesToDeckAndPlay(deckKey, files) {
                 try {
                     if (typeof addDeckLocalFilesToDeck === 'function') {
-                        addDeckLocalFilesToDeck(deckKey, files, { forceImmediate: true });
+                        addDeckLocalFilesToDeck(deckKey, files, { forceImmediate: true, preserveCrossfade: true });
                     } else if (typeof ingestLocalFilesToDeckAndPlay === 'function') {
                         ingestLocalFilesToDeckAndPlay(deckKey, files);
                     }
@@ -859,13 +859,24 @@
                     mount.setAttribute('aria-hidden', 'true');
                     try { delete mount.dataset.rvStaging; } catch (_) {}
                 }
-                if (this.els.digitalStagingVideo) {
+                const stagingVids = [
+                    this.els.digitalStagingVideo,
+                    this.els.digitalStagingVideoA,
+                    this.els.digitalStagingVideoB
+                ].filter(Boolean);
+                stagingVids.forEach((vid) => {
                     try {
-                        this.els.digitalStagingVideo.pause();
-                        this.els.digitalStagingVideo.removeAttribute('src');
+                        vid.pause();
+                        vid.removeAttribute('src');
                     } catch (_) {}
-                    this.els.digitalStagingVideo.classList.add('is-hidden');
+                    try { vid.classList.add('is-hidden'); } catch (_) {}
+                });
+                if (this.els.digitalStagingVideoStack) {
+                    try { this.els.digitalStagingVideoStack.remove(); } catch (_) {}
+                    this.els.digitalStagingVideoStack = null;
                 }
+                this.els.digitalStagingVideoA = null;
+                this.els.digitalStagingVideoB = null;
                 this._digitalStagingVideoSrc = '';
                 this._digitalStagingVideoMode = '';
                 if (this.els.digitalDeckBContent) {
@@ -1109,6 +1120,33 @@
                 playVid();
             }
 
+            _ensureDigitalStagingVideoStack(mount) {
+                if (!mount) return null;
+                let stack = mount.querySelector('.radio-visual-digital-staging-video-stack');
+                let vidA = this.els.digitalStagingVideoA;
+                let vidB = this.els.digitalStagingVideoB;
+                if (!stack) {
+                    stack = document.createElement('div');
+                    stack.className = 'radio-visual-digital-staging-video-stack';
+                    vidA = document.createElement('video');
+                    vidA.className = 'radio-visual-digital-staging-video radio-visual-digital-staging-video--a';
+                    vidB = document.createElement('video');
+                    vidB.className = 'radio-visual-digital-staging-video radio-visual-digital-staging-video--b';
+                    [vidA, vidB].forEach((v) => {
+                        v.playsInline = true;
+                        v.muted = true;
+                    });
+                    stack.appendChild(vidA);
+                    stack.appendChild(vidB);
+                    mount.appendChild(stack);
+                }
+                this.els.digitalStagingVideoStack = stack;
+                this.els.digitalStagingVideoA = vidA || stack.querySelector('.radio-visual-digital-staging-video--a');
+                this.els.digitalStagingVideoB = vidB || stack.querySelector('.radio-visual-digital-staging-video--b');
+                this.els.digitalStagingVideo = this.els.digitalStagingVideoStack;
+                return { stack, vidA: this.els.digitalStagingVideoA, vidB: this.els.digitalStagingVideoB };
+            }
+
             _showDigitalStagingVideo() {
                 const mount = this._stagingContentMount();
                 if (!mount) return;
@@ -1118,21 +1156,15 @@
                 this._rvDigitalBarsAnimId = null;
                 mount.innerHTML = '';
                 mount.classList.add('is-active');
-                let vid = this.els.digitalStagingVideo;
-                if (!vid) {
-                    vid = document.createElement('video');
-                    vid.className = 'radio-visual-digital-staging-video';
-                    vid.playsInline = true;
-                    vid.muted = true;
-                    this.els.digitalStagingVideo = vid;
-                }
-                vid.classList.remove('is-hidden');
-                mount.appendChild(vid);
-                this._wireDigitalStagingVideoFullscreen(vid, mount);
+                const stackEls = this._ensureDigitalStagingVideoStack(mount);
+                if (!stackEls) return;
+                const { stack, vidA, vidB } = stackEls;
+                [vidA, vidB].forEach((v) => { try { v.classList.remove('is-hidden'); } catch (_) {} });
+                this._wireDigitalStagingVideoFullscreen(stack, mount);
                 this._digitalStagingVideoSrc = '';
                 this._digitalStagingVideoMode = 'idle';
                 this._syncDigitalStagingBgVisibility();
-                this._syncDigitalStagingVideo(vid, true);
+                this._syncDigitalStagingVideo(null, true);
             }
 
             _wireDigitalStagingVideoFullscreen(vid, mount) {
@@ -1172,36 +1204,99 @@
                 mount.addEventListener('dblclick', onDbl, opts);
             }
 
-            _syncDigitalStagingVideo(vidEl, forceLoad) {
-                const vid = vidEl || this.els.digitalStagingVideo;
-                if (!vid || !this._digitalStagingView || this._digitalStagingView !== 'video') return;
+            _setDigitalStagingVideoOpacity(vid, op) {
+                if (!vid) return;
+                const o = Math.max(0, Math.min(1, Number(op) || 0));
                 try {
-                    const payload = this._resolveDigitalStagingVideoPayload();
-                    const mode = payload.mode || 'idle';
-                    const want = String(payload.url || '');
-                    if (!forceLoad && mode === 'idle' && this._digitalStagingVideoMode === 'idle') {
+                    vid.style.opacity = String(o);
+                    vid.style.pointerEvents = o > 0.35 ? 'auto' : 'none';
+                    vid.classList.toggle('is-hidden', o <= 0.001);
+                } catch (_) {}
+                if (o <= 0.001) {
+                    try { if (!vid.paused) vid.pause(); } catch (_) {}
+                }
+            }
+
+            _setDigitalStagingVideoLayer(vid, layer, op) {
+                if (!vid) return;
+                const o = Math.max(0, Math.min(1, Number(op) || 0));
+                this._setDigitalStagingVideoOpacity(vid, o);
+                if (o <= 0.001) return;
+                if (layer && layer.url && typeof applyDeckBVideoPayloadToElement === 'function') {
+                    applyDeckBVideoPayloadToElement(vid, layer, null);
+                }
+            }
+
+            _applyDigitalStagingVideoCrossfadeOpacities() {
+                if (this._digitalStagingView !== 'video') return;
+                const vidA = this.els.digitalStagingVideoA;
+                const vidB = this.els.digitalStagingVideoB;
+                if (!vidA || !vidB || this._digitalStagingVideoMode !== 'deck-dual') return;
+                try {
+                    const plan = (typeof computeDigitalStagingVideoCrossfadePlan === 'function')
+                        ? computeDigitalStagingVideoCrossfadePlan()
+                        : null;
+                    if (!plan || !plan.dual) return;
+                    this._setDigitalStagingVideoOpacity(vidA, plan.opA);
+                    this._setDigitalStagingVideoOpacity(vidB, plan.opB);
+                } catch (_) {}
+            }
+
+            _syncDigitalStagingVideo(vidEl, forceLoad) {
+                if (!this._digitalStagingView || this._digitalStagingView !== 'video') return;
+                const vidA = this.els.digitalStagingVideoA;
+                const vidB = this.els.digitalStagingVideoB;
+                if (!vidA || !vidB) {
+                    const legacy = vidEl || this.els.digitalStagingVideo;
+                    if (!legacy || legacy.classList && legacy.classList.contains('radio-visual-digital-staging-video-stack')) return;
+                    try {
+                        const payload = this._resolveDigitalStagingVideoPayload();
+                        this._digitalStagingVideoMode = payload.mode || 'idle';
+                        this._applyDigitalStagingVideoPayload(legacy, payload);
+                    } catch (_) {}
+                    return;
+                }
+                try {
+                    const plan = (typeof computeDigitalStagingVideoCrossfadePlan === 'function')
+                        ? computeDigitalStagingVideoCrossfadePlan()
+                        : null;
+                    if (plan && (plan.layerA || plan.layerB)) {
+                        if (plan.dual) {
+                            this._digitalStagingVideoMode = 'deck-dual';
+                            this._setDigitalStagingVideoLayer(vidA, plan.layerA, plan.opA);
+                            this._setDigitalStagingVideoLayer(vidB, plan.layerB, plan.opB);
+                            return;
+                        }
+                        const single = plan.layerB && plan.opB >= plan.opA ? { layer: plan.layerB, vid: vidB, other: vidA }
+                            : { layer: plan.layerA, vid: vidA, other: vidB };
+                        this._digitalStagingVideoMode = 'deck-sync';
+                        this._setDigitalStagingVideoLayer(single.other, null, 0);
+                        this._setDigitalStagingVideoLayer(single.vid, single.layer, 1);
+                        return;
+                    }
+                    if (!forceLoad && this._digitalStagingVideoMode === 'idle') {
+                        const payload = this._resolveDigitalStagingVideoPayload();
+                        const want = String(payload.url || '');
                         if (this._digitalStagingVideoSrc && want && (
                             (typeof urlsMediaMatch === 'function')
                                 ? urlsMediaMatch(this._digitalStagingVideoSrc, want)
                                 : this._digitalStagingVideoSrc === want
                         )) {
-                            if (vid.paused) vid.play().catch(() => {});
+                            if (vidA.paused) vidA.play().catch(() => {});
                             return;
                         }
                     }
-                    if (!forceLoad && mode === 'deck-sync' && this._digitalStagingVideoSrc === want) {
-                        this._applyDigitalStagingVideoPayload(vid, payload);
-                        return;
-                    }
-                    this._digitalStagingVideoMode = mode;
-                    this._applyDigitalStagingVideoPayload(vid, payload);
+                    this._digitalStagingVideoMode = 'idle';
+                    this._setDigitalStagingVideoLayer(vidB, null, 0);
+                    const payload = this._resolveDigitalStagingVideoPayload();
+                    this._applyDigitalStagingVideoPayload(vidA, payload);
                 } catch (_) {}
             }
 
             _refreshDigitalDeckVideoMirrors() {
                 try {
-                    if (this._digitalStagingView === 'video' && this.els.digitalStagingVideo) {
-                        this._syncDigitalStagingVideo(this.els.digitalStagingVideo);
+                    if (this._digitalStagingView === 'video') {
+                        this._syncDigitalStagingVideo(null);
                     }
                 } catch (_) {}
                 try {
@@ -1675,6 +1770,7 @@
                 } catch (_) {}
                 if (this.els.crossDigital) this.els.crossDigital.value = String(v);
                 this._syncCrossfadeKnob();
+                try { this._applyDigitalStagingVideoCrossfadeOpacities(); } catch (_) {}
             }
 
             _syncCrossfadeKnob() {
@@ -3797,7 +3893,7 @@
                             const stagingVid = ev.target.closest('.radio-visual-digital-staging-video');
                             const stagingMount = ev.target.closest('.radio-visual-digital-staging-mount');
                             if (stagingVid || stagingMount) {
-                                const vid = this.els.digitalStagingVideo;
+                                const vid = this.els.digitalStagingVideoStack || this.els.digitalStagingVideo;
                                 const mount = this._stagingContentMount();
                                 if (vid && typeof toggleVideoSurfaceFullscreen === 'function') {
                                     toggleVideoSurfaceFullscreen(vid, mount || stagingMount);
@@ -4904,7 +5000,11 @@
                         this._drawDigitalSpectrum();
                         if (this._digitalStagingView === 'video') {
                             const now = performance.now();
-                            const syncDeck = this._digitalStagingVideoMode === 'deck-sync';
+                            if (this._digitalStagingVideoMode === 'deck-dual') {
+                                this._applyDigitalStagingVideoCrossfadeOpacities();
+                            }
+                            const syncDeck = this._digitalStagingVideoMode === 'deck-sync'
+                                || this._digitalStagingVideoMode === 'deck-dual';
                             const interval = syncDeck ? 800 : 4000;
                             if (!this._deckBVideoSyncAt || (now - this._deckBVideoSyncAt) > interval) {
                                 this._deckBVideoSyncAt = now;

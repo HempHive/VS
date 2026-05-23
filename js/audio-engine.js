@@ -1249,6 +1249,7 @@
                 if (!items.length) return;
                 prependDeckLocalItems(dk, items);
                 const playOpts = { forceImmediate: true };
+                if (opts && opts.preserveCrossfade) playOpts.preserveCrossfade = true;
                 if (dk === 'b') playDeckBTrackFromQueue(playOpts);
                 else playDeckATrackFromQueue(playOpts);
                 return;
@@ -1364,6 +1365,7 @@
 
         /** When starting local playback, ensure the target deck is not fully muted by the crossfader. */
         function ensureLocalDeckCrossfadeAudible(deckKey, opts) {
+            if (opts && opts.preserveCrossfade) return;
             const force = !!(opts && opts.forceImmediate);
             if (!force && !deckWinsCrossfade(deckKey)) return;
             const isB = deckKey === 'b';

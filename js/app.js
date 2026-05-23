@@ -1026,6 +1026,49 @@ const QUALITY = {
                 return 0;
             }
         }
+        /** Crossfader 0–1 from Digital Radio dash, DJ, or Mix (same order as readCrossfadePosition). */
+        function getAppCrossfade01() {
+            try {
+                const dig = document.getElementById('radio-visual-cross-digital');
+                const mc = document.getElementById('mix-crossfader');
+                const dj = document.getElementById('dj-crossfader');
+                const raw = (dig && dig.value !== undefined && dig.value !== '')
+                    ? dig.value
+                    : (mc && mc.value !== undefined && mc.value !== '')
+                        ? mc.value
+                        : (dj && dj.value);
+                return Math.max(0, Math.min(1, Number(raw) || 0));
+            } catch (_) {
+                return 0;
+            }
+        }
+        /** Digital Radio VIDEO staging: blend deck A/B mirrors by crossfader (no queue layer). */
+        function computeDigitalStagingVideoCrossfadePlan() {
+            let x = getAppCrossfade01();
+            const EDGE_SNAP = 0.03;
+            if (x <= EDGE_SNAP) x = 0;
+            else if (x >= 1 - EDGE_SNAP) x = 1;
+            const ga = 1 - x;
+            const gb = x;
+            const metaA = getDeckActiveVideoMeta('a');
+            const metaB = getDeckActiveVideoMeta('b');
+            const layerA = metaA ? { url: metaA.url, label: metaA.label, syncFrom: metaA.syncFrom || metaA.media } : null;
+            const layerB = metaB ? { url: metaB.url, label: metaB.label, syncFrom: metaB.syncFrom || metaB.media } : null;
+            let opA = 0;
+            let opB = 0;
+            if (layerA && layerB) {
+                opA = ga;
+                opB = gb;
+            } else if (layerA) {
+                opA = 1;
+            } else if (layerB) {
+                opB = 1;
+            }
+            let label = 'Video';
+            if (opB >= opA && layerB) label = layerB.label;
+            else if (layerA) label = layerA.label;
+            return { layerA, layerB, opA, opB, label, dual: !!(layerA && layerB) };
+        }
         /**
          * MP4 etc. play through <audio> into the mix; VIDEO mirror follows the deck winning the DJ crossfader
          * (same 0.5 threshold as pickRandomStationForCrossfadedDeck).
@@ -3086,6 +3129,7 @@ function exposeAppBindingsToGlobal() {
     try { g.closeOptionsPanel = closeOptionsPanel; } catch (_) {}
     try { g.code = code; } catch (_) {}
     try { g.computeDeckBVideoCrossfadePlan = computeDeckBVideoCrossfadePlan; } catch (_) {}
+    try { g.computeDigitalStagingVideoCrossfadePlan = computeDigitalStagingVideoCrossfadePlan; } catch (_) {}
     try { g.container = container; } catch (_) {}
     try { g.cs = cs; } catch (_) {}
     try { g.cur = cur; } catch (_) {}
