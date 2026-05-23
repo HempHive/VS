@@ -687,7 +687,7 @@
             overflow: auto;
         }
         #radio-visual-root .radio-visual-digital-feature-btns .radio-visual-btn.is-active {
-            color: #f8f0ff;
+            color: #ff5ce8;
             background: linear-gradient(180deg, #7a4cb8 0%, #4a2878 55%, #2a1548 100%);
             border-color: rgba(220, 160, 255, 0.75);
             box-shadow: 0 0 14px rgba(160, 80, 255, 0.45);
@@ -953,7 +953,7 @@
             width: 100%;
             border-color: rgba(140, 70, 200, 0.55);
             background: linear-gradient(180deg, #5a3488 0%, #2a1548 55%, #1a0c30 100%);
-            color: #ffe566;
+            color: #5cff9e;
             box-shadow:
                 0 3px 0 #120820,
                 0 6px 16px rgba(40, 10, 80, 0.45),
@@ -965,7 +965,7 @@
             display: block;
             width: 100%;
             max-height: 100%;
-            color: #ffe566;
+            color: #5cff9e;
             font-weight: 800;
             letter-spacing: 0.02em;
             line-height: 1;
@@ -975,8 +975,14 @@
             overflow: hidden;
             text-overflow: ellipsis;
             text-shadow:
-                0 0 6px rgba(255, 230, 80, 0.9),
-                0 0 14px rgba(255, 200, 40, 0.55);
+                0 0 6px rgba(80, 255, 160, 0.95),
+                0 0 14px rgba(40, 255, 120, 0.55);
+        }
+        #radio-visual-root .radio-visual-digital-feature-btns .radio-visual-btn.is-active .radio-visual-btn-label {
+            color: #ff5ce8;
+            text-shadow:
+                0 0 6px rgba(255, 100, 230, 0.95),
+                0 0 14px rgba(255, 60, 200, 0.6);
         }
         #radio-visual-root .radio-visual-digital-feature-btns .radio-visual-btn:hover {
             filter: brightness(1.15);
@@ -1140,13 +1146,13 @@
             align-items: center;
             justify-content: center;
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-            font-size: clamp(7px, 1.15cqw, 11px);
+            font-size: clamp(12px, 2.2cqw, 18px);
             font-weight: 700;
             line-height: 1.1;
             padding: 0 2px;
             text-align: center;
             color: #9ff;
-            text-shadow: 0 0 8px rgba(0, 255, 200, 0.3);
+            text-shadow: 0 0 10px rgba(0, 255, 200, 0.45);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
