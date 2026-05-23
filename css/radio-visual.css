@@ -557,6 +557,15 @@
             height: 100%;
             object-fit: fill;
             object-position: center center;
+            opacity: 1;
+            transition: opacity 0.45s ease-in-out;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-bg-img.is-bg-loading {
+            opacity: 0;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-bg-img.is-bg-fade-out {
+            opacity: 0;
+            pointer-events: none;
         }
         #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-spectrum-bg.is-visible) {
             background: rgba(0, 12, 20, 0.35);

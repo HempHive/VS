@@ -165,25 +165,17 @@
                 const i = (typeof idx === 'number' && idx >= 0 && idx < files.length) ? idx : 0;
                 const file = filename || files[i];
                 const url = RadioVisualEngine.DIGITAL_BG_GIF_DIR + file;
-                const prev = bgEl.querySelector('img');
-                if (prev) {
-                    try { prev.remove(); } catch (_) {}
-                }
-                const img = document.createElement('img');
-                img.className = 'radio-visual-digital-spectrum-bg-img';
-                img.alt = '';
-                img.decoding = 'async';
-                img.onload = () => {
-                    try {
-                        bgEl.appendChild(img);
-                        bgEl.classList.add('is-visible');
-                        this._digitalBgGifIdx = i;
-                        try { localStorage.setItem(RadioVisualEngine.DIGITAL_BG_GIF_STORAGE_KEY, file); } catch (_) {}
-                    } catch (_) {}
-                };
-                img.onerror = () => {
+                this._digitalBgGifSwapGen = (this._digitalBgGifSwapGen || 0) + 1;
+                const swapGen = this._digitalBgGifSwapGen;
+                const fadeMs = 450;
+
+                const fail = () => {
+                    if (swapGen !== this._digitalBgGifSwapGen) return;
                     if (!trySkipOnError || files.length < 2) {
                         bgEl.classList.remove('is-visible');
+                        bgEl.querySelectorAll('img').forEach((el) => {
+                            try { el.remove(); } catch (_) {}
+                        });
                         return;
                     }
                     const next = (i + 1) % files.length;
@@ -193,7 +185,56 @@
                     }
                     this._applyDigitalSpectrumBgFile(files[next], next, false);
                 };
+
+                const revealLoadedImg = (img) => {
+                    if (swapGen !== this._digitalBgGifSwapGen) {
+                        try { img.remove(); } catch (_) {}
+                        return;
+                    }
+                    const prevImgs = Array.from(bgEl.querySelectorAll('img')).filter((el) => el !== img);
+                    try {
+                        img.classList.remove('is-bg-loading');
+                        bgEl.classList.add('is-visible');
+                        this._digitalBgGifIdx = i;
+                        try { localStorage.setItem(RadioVisualEngine.DIGITAL_BG_GIF_STORAGE_KEY, file); } catch (_) {}
+                    } catch (_) {}
+                    prevImgs.forEach((el) => el.classList.add('is-bg-fade-out'));
+                    window.setTimeout(() => {
+                        if (swapGen !== this._digitalBgGifSwapGen) return;
+                        prevImgs.forEach((el) => {
+                            try { el.remove(); } catch (_) {}
+                        });
+                    }, fadeMs + 40);
+                };
+
+                const whenReady = (img) => {
+                    const run = () => revealLoadedImg(img);
+                    try {
+                        if (typeof img.decode === 'function') {
+                            img.decode().then(run).catch(run);
+                        } else {
+                            run();
+                        }
+                    } catch (_) {
+                        run();
+                    }
+                };
+
+                const img = document.createElement('img');
+                img.className = 'radio-visual-digital-spectrum-bg-img is-bg-loading';
+                img.alt = '';
+                img.decoding = 'async';
+                img.onload = () => whenReady(img);
+                img.onerror = () => {
+                    try { img.remove(); } catch (_) {}
+                    fail();
+                };
+                try { bgEl.appendChild(img); } catch (_) {}
+                try { bgEl.classList.add('is-visible'); } catch (_) {}
                 img.src = url;
+                try {
+                    if (img.complete && img.naturalWidth > 0) whenReady(img);
+                } catch (_) {}
             }
 
             _isDigitalBgGifEnabled() {
