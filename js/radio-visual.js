@@ -1773,6 +1773,62 @@
                 try { this._applyDigitalStagingVideoCrossfadeOpacities(); } catch (_) {}
             }
 
+            /** Right-click hold on digital crossfader: cut to pointer; release restores (DJ Deck behaviour). */
+            _wireDigitalCrossfadeCutHold(crossEl, sig) {
+                if (!crossEl || crossEl.dataset.cutFadeHold === '1') return;
+                crossEl.dataset.cutFadeHold = '1';
+                const valueFromPointer = (typeof crossfadeValueFromPointerOnRange === 'function')
+                    ? crossfadeValueFromPointerOnRange
+                    : (typeof globalThis.crossfadeValueFromPointerOnRange === 'function')
+                        ? globalThis.crossfadeValueFromPointerOnRange
+                        : (rangeEl, clientX) => {
+                            if (!rangeEl || !Number.isFinite(Number(clientX))) return 0;
+                            const rect = rangeEl.getBoundingClientRect();
+                            const w = Math.max(1, rect.width);
+                            const t = (Number(clientX) - rect.left) / w;
+                            const min = Number(rangeEl.min) || 0;
+                            const max = Number(rangeEl.max) || 1;
+                            return Math.max(min, Math.min(max, min + t * (max - min)));
+                        };
+                let cutFadeHoldActive = false;
+                let cutFadeHoldRestore = 0;
+                let cutFadeHoldPointerId = null;
+                const restoreCutFadeHold = () => {
+                    if (!cutFadeHoldActive) return;
+                    cutFadeHoldActive = false;
+                    cutFadeHoldPointerId = null;
+                    try { this._setCrossfadeX(cutFadeHoldRestore); } catch (_) {}
+                    try { this._resumeDecksForCrossfade(); } catch (_) {}
+                };
+                const onCutFadePointerDown = (ev) => {
+                    if (ev.button !== 2) return;
+                    try { ev.preventDefault(); } catch (_) {}
+                    cutFadeHoldRestore = this._getCrossfadeX();
+                    const cutTo = valueFromPointer(crossEl, ev.clientX);
+                    cutFadeHoldActive = true;
+                    cutFadeHoldPointerId = ev.pointerId;
+                    try { this._setCrossfadeX(cutTo); } catch (_) {}
+                    try { this._resumeDecksForCrossfade(); } catch (_) {}
+                    try { crossEl.setPointerCapture(ev.pointerId); } catch (_) {}
+                };
+                const onCutFadePointerEnd = (ev) => {
+                    if (!cutFadeHoldActive || ev.pointerId !== cutFadeHoldPointerId) return;
+                    try { crossEl.releasePointerCapture(ev.pointerId); } catch (_) {}
+                    restoreCutFadeHold();
+                };
+                const opts = sig || undefined;
+                crossEl.addEventListener('pointerdown', onCutFadePointerDown, opts);
+                crossEl.addEventListener('pointerup', onCutFadePointerEnd, opts);
+                crossEl.addEventListener('pointercancel', onCutFadePointerEnd, opts);
+                crossEl.addEventListener('lostpointercapture', (ev) => {
+                    if (!cutFadeHoldActive || ev.pointerId !== cutFadeHoldPointerId) return;
+                    restoreCutFadeHold();
+                }, opts);
+                crossEl.addEventListener('contextmenu', (e) => {
+                    try { e.preventDefault(); } catch (_) {}
+                }, opts);
+            }
+
             _syncCrossfadeKnob() {
                 const x = this._getCrossfadeX();
                 if (this.els.crossKnob) {
@@ -4919,6 +4975,7 @@
                         crossDig.addEventListener('pointerup', stopXfadePointerBubble, sig);
                         crossDig.addEventListener('pointercancel', stopXfadePointerBubble, sig);
                         crossDig.addEventListener('change', stopXfadePointerBubble, sig);
+                        this._wireDigitalCrossfadeCutHold(crossDig, sig);
                     }
                     if (btnDigitalMix) this._wireDigitalMixButton(btnDigitalMix, sig);
                     if (digitalAutoMixSlider) {
