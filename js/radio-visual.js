@@ -856,6 +856,7 @@
                 if (this.els.digitalDeckBVideo) {
                     this.els.digitalDeckBVideo.classList.remove('is-hidden');
                 }
+                try { this._syncDigitalStagingBgVisibility(); } catch (_) {}
             }
 
             _setDigitalStagingView(view) {
@@ -864,6 +865,7 @@
                 if (!mount) return;
                 mount.classList.add('is-active');
                 mount.setAttribute('aria-hidden', 'false');
+                try { this._syncDigitalStagingBgVisibility(); } catch (_) {}
                 if (next === 'video') {
                     this._showDigitalStagingVideo();
                     return;
@@ -898,6 +900,126 @@
                 else if (next === 'queue') this._showDigitalStagingQueue(mount);
             }
 
+            _syncDigitalStagingBgVisibility() {
+                const bgEl = this.els.spectrumBg;
+                if (!bgEl) return;
+                const suppress = !!(
+                    this._digitalStagingView &&
+                    this.digitalCenterMode === 'spectrum'
+                );
+                bgEl.classList.toggle('is-staging-suppressed', suppress);
+                if (!suppress && this._isDigitalBgGifEnabled()) {
+                    try {
+                        if (bgEl.querySelector('img')) bgEl.classList.add('is-visible');
+                    } catch (_) {}
+                }
+            }
+
+            _resolveDigitalStagingDefaultVideoUrl() {
+                try {
+                    const list = globalThis.webmList;
+                    if (Array.isArray(list) && list.length) return String(list[0]);
+                } catch (_) {}
+                try {
+                    if (typeof DECK_B_IDLE_LOGO_URL === 'string' && DECK_B_IDLE_LOGO_URL) {
+                        return DECK_B_IDLE_LOGO_URL;
+                    }
+                } catch (_) {}
+                return 'assets/video/red.webm';
+            }
+
+            _stagingVideoSyncFromIsViable(syncFrom) {
+                if (!syncFrom) return false;
+                try {
+                    if (syncFrom instanceof HTMLVideoElement) return true;
+                    if (syncFrom instanceof HTMLAudioElement) {
+                        const d = Number(syncFrom.duration);
+                        return Number.isFinite(d) && d > 0.25 && d < 43200;
+                    }
+                } catch (_) {}
+                return false;
+            }
+
+            _resolveDigitalStagingVideoPayload() {
+                try {
+                    const metaB = (typeof getDeckActiveVideoMeta === 'function') ? getDeckActiveVideoMeta('b') : null;
+                    const metaA = (typeof getDeckActiveVideoMeta === 'function') ? getDeckActiveVideoMeta('a') : null;
+                    const meta = metaB || metaA;
+                    if (meta && meta.url) {
+                        const sf = this._stagingVideoSyncFromIsViable(meta.syncFrom || meta.media)
+                            ? (meta.syncFrom || meta.media)
+                            : null;
+                        return { url: meta.url, label: meta.label, syncFrom: sf };
+                    }
+                } catch (_) {}
+                try {
+                    if (typeof mediaVideoQueue !== 'undefined' && mediaVideoQueue.length) {
+                        const q = mediaVideoQueue[0];
+                        if (q && q.url) {
+                            return { url: q.url, label: q.label || 'Queue video', loop: true };
+                        }
+                    }
+                } catch (_) {}
+                return {
+                    url: this._resolveDigitalStagingDefaultVideoUrl(),
+                    label: 'Video',
+                    loop: true
+                };
+            }
+
+            _applyDigitalStagingVideoPayload(vid, cur) {
+                if (!vid || !cur || !cur.url) return;
+                const want = String(cur.url);
+                const had = String(vid.currentSrc || vid.src || '');
+                const same = (typeof urlsMediaMatch === 'function')
+                    ? urlsMediaMatch(want, had)
+                    : want === had;
+                const loop = cur.syncFrom ? false : !!cur.loop;
+                try { vid.loop = loop; } catch (_) {}
+                try { vid.muted = true; } catch (_) {}
+                try { vid.playsInline = true; } catch (_) {}
+
+                const playVid = () => {
+                    try { vid.play().catch(() => {}); } catch (_) {}
+                };
+
+                if (!same) {
+                    this._digitalStagingVideoSrc = want;
+                    const onReady = () => playVid();
+                    try {
+                        vid.addEventListener('loadeddata', onReady, { once: true });
+                    } catch (_) {}
+                    try { vid.src = want; } catch (_) {}
+                    try {
+                        if (vid.complete && vid.naturalWidth > 0) onReady();
+                    } catch (_) {}
+                    return;
+                }
+
+                if (cur.syncFrom) {
+                    const sf = cur.syncFrom;
+                    try {
+                        if (sf.paused || sf.ended) {
+                            if (!vid.paused) vid.pause();
+                            return;
+                        }
+                        if (vid.paused) playVid();
+                        const drift = Math.abs(Number(vid.currentTime) - Number(sf.currentTime));
+                        if (drift > 0.35) {
+                            let t = Number(sf.currentTime) || 0;
+                            const md = Number(sf.duration);
+                            if (Number.isFinite(md) && md > 0) t = Math.min(Math.max(0, t), md - 0.05);
+                            const vdur = Number(vid.duration);
+                            if (Number.isFinite(vdur) && vdur > 0) t = Math.min(t, vdur - 0.05);
+                            try { vid.currentTime = t; } catch (_) {}
+                        }
+                    } catch (_) {}
+                    return;
+                }
+
+                playVid();
+            }
+
             _showDigitalStagingVideo() {
                 const mount = this._stagingContentMount();
                 if (!mount) return;
@@ -918,6 +1040,8 @@
                 vid.classList.remove('is-hidden');
                 mount.appendChild(vid);
                 this._wireDigitalStagingVideoFullscreen(vid, mount);
+                this._digitalStagingVideoSrc = '';
+                this._syncDigitalStagingBgVisibility();
                 this._syncDigitalStagingVideo(vid);
             }
 
@@ -962,9 +1086,8 @@
                 const vid = vidEl || this.els.digitalStagingVideo;
                 if (!vid || !this._digitalStagingView || this._digitalStagingView !== 'video') return;
                 try {
-                    if (typeof applyDeckVideoMirrorToElement === 'function') {
-                        applyDeckVideoMirrorToElement(vid);
-                    }
+                    const payload = this._resolveDigitalStagingVideoPayload();
+                    this._applyDigitalStagingVideoPayload(vid, payload);
                 } catch (_) {}
             }
 

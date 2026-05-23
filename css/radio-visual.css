@@ -549,6 +549,11 @@
         #radio-visual-root .radio-visual-digital-spectrum-bg.is-visible {
             opacity: 1;
         }
+        #radio-visual-root .radio-visual-digital-spectrum-bg.is-staging-suppressed {
+            opacity: 0 !important;
+            pointer-events: none;
+            transition: opacity 0.35s ease-in-out;
+        }
         #radio-visual-root .radio-visual-digital-spectrum-bg-img {
             position: absolute;
             inset: 0;
