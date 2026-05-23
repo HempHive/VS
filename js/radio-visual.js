@@ -36,7 +36,9 @@
                 this._digitalDeckBView = 'video';
                 /** Staging overlay in spectrum pane: null | video | projectm | bars | queue | karaoke */
                 this._digitalStagingView = null;
-                this._digitalKaraokeUrl = 'https://www.karaokenerds.com/';
+                this._digitalKaraokeUrl = (typeof globalThis.KARAOKE_NERDS_EMBED_URL === 'string')
+                    ? globalThis.KARAOKE_NERDS_EMBED_URL
+                    : 'https://www.karaokenerds.com/#query';
                 /** Local playlists panel (Deck A & B) over the spectrum area */
                 this._digitalLocalQueueVisible = false;
                 this._rvAutoMixTimerId = null;
@@ -399,7 +401,7 @@
             _ingestLocalFilesToDeckAndPlay(deckKey, files) {
                 try {
                     if (typeof addDeckLocalFilesToDeck === 'function') {
-                        addDeckLocalFilesToDeck(deckKey, files);
+                        addDeckLocalFilesToDeck(deckKey, files, { forceImmediate: true });
                     } else if (typeof ingestLocalFilesToDeckAndPlay === 'function') {
                         ingestLocalFilesToDeckAndPlay(deckKey, files);
                     }
@@ -894,8 +896,13 @@
 
             _normalizeDigitalEmbedUrl(url) {
                 let href = (url && String(url).trim()) || '';
-                if (!href) href = this._digitalKaraokeUrl || 'https://www.karaokenerds.com/';
+                if (!href) href = this._digitalKaraokeUrl || 'https://www.karaokenerds.com/#query';
                 else if (!/^https?:\/\//i.test(href)) href = 'https://' + href.replace(/^\/+/, '');
+                try {
+                    if (typeof globalThis.normalizeKaraokeNerdsEmbedUrl === 'function') {
+                        return globalThis.normalizeKaraokeNerdsEmbedUrl(href);
+                    }
+                } catch (_) {}
                 return href;
             }
 
@@ -1524,6 +1531,66 @@
                     return;
                 }
                 this._stationRand();
+            }
+
+            _deckAPrevOrStation() {
+                try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                try {
+                    if (typeof globalThis.cancelActiveAutoFade === 'function') {
+                        globalThis.cancelActiveAutoFade();
+                    }
+                } catch (_) {}
+                try {
+                    if (state.deckSourceMode.a === 'local') {
+                        this._stationPrev();
+                    } else if (typeof globalThis.goPreviousStation === 'function') {
+                        globalThis.goPreviousStation();
+                    } else {
+                        this._stationPrev();
+                    }
+                } catch (_) {
+                    this._stationPrev();
+                }
+                try { this._updateStationUi(); } catch (_) {}
+                try { this._syncDeckSwitches(); } catch (_) {}
+            }
+
+            _deckBPrevOrStation() {
+                try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                try {
+                    if (typeof globalThis.cancelActiveAutoFade === 'function') {
+                        globalThis.cancelActiveAutoFade();
+                    }
+                } catch (_) {}
+                this._stationBPrev();
+                try { this._updateStationUi(); } catch (_) {}
+                try { this._syncDeckSwitches(); } catch (_) {}
+            }
+
+            _pauseDeckOutput(deckKey) {
+                const dk = deckKey === 'b' ? 'b' : 'a';
+                try {
+                    if (typeof globalThis.cancelActiveAutoFade === 'function') {
+                        globalThis.cancelActiveAutoFade();
+                    }
+                } catch (_) {}
+                try {
+                    if (typeof globalThis.clearCrossfadeResumeSuppress === 'function') {
+                        globalThis.clearCrossfadeResumeSuppress();
+                    }
+                } catch (_) {}
+                try {
+                    if (dk === 'b') {
+                        const mediaB = this._deckBPlaybackMedia();
+                        if (mediaB && !mediaB.paused) mediaB.pause();
+                    } else {
+                        const mediaA = (typeof getDeckAMediaForPlaybackState === 'function')
+                            ? getDeckAMediaForPlaybackState()
+                            : audioEl;
+                        if (mediaA && !mediaA.paused) mediaA.pause();
+                    }
+                } catch (_) {}
+                try { this._syncDeckSwitches(); } catch (_) {}
             }
 
             /** B▶: next queued local track, or random station when the Deck B queue is empty. */
@@ -2383,6 +2450,57 @@
                     panel.style.top = `${Math.round(top)}px`;
                 };
                 requestAnimationFrame(() => requestAnimationFrame(place));
+            }
+
+            _wireDigitalDeckTransportBtn(btn, deckKey, sig) {
+                if (!btn) return;
+                const dk = deckKey === 'b' ? 'b' : 'a';
+                const HOLD_MS = 500;
+                let longPressTimer = null;
+                let longPressHandled = false;
+                const clearLongPress = () => {
+                    if (longPressTimer) {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                };
+                btn.title = dk === 'b'
+                    ? 'Tap: next track or station · Hold: pause Deck B · Right-click: previous station'
+                    : 'Tap: next track or station · Hold: pause Deck A · Right-click: previous station';
+                btn.setAttribute('aria-label', dk === 'b' ? 'Deck B transport' : 'Deck A transport');
+                btn.addEventListener('contextmenu', (ev) => {
+                    try {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                    } catch (_) {}
+                    if (dk === 'b') this._deckBPrevOrStation();
+                    else this._deckAPrevOrStation();
+                }, sig);
+                btn.addEventListener('pointerdown', (ev) => {
+                    if (ev.button !== 0) return;
+                    this._stopClick(ev);
+                    longPressHandled = false;
+                    clearLongPress();
+                    longPressTimer = setTimeout(() => {
+                        longPressTimer = null;
+                        longPressHandled = true;
+                        this._pauseDeckOutput(dk);
+                    }, HOLD_MS);
+                }, sig);
+                btn.addEventListener('pointerup', (ev) => {
+                    this._stopClick(ev);
+                    clearLongPress();
+                    if (!longPressHandled) {
+                        if (dk === 'b') this._deckBNextOrStation();
+                        else this._deckANextOrStation();
+                    }
+                    longPressHandled = false;
+                }, sig);
+                btn.addEventListener('pointercancel', () => {
+                    clearLongPress();
+                    longPressHandled = false;
+                }, sig);
+                btn.addEventListener('click', (ev) => this._stopClick(ev), sig);
             }
 
             _wireDigitalMixButton(btn, sig) {
@@ -3890,7 +4008,14 @@
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
-                    b.textContent = it.label;
+                    if (deckBInPanel) {
+                        const labelEl = document.createElement('span');
+                        labelEl.className = 'radio-visual-btn-label';
+                        labelEl.textContent = it.label;
+                        b.appendChild(labelEl);
+                    } else {
+                        b.textContent = it.label;
+                    }
                     if (it.label === 'DECKS') {
                         b.title = 'Open DJ Decks visual';
                         b.setAttribute('aria-label', 'Open DJ Decks visual');
@@ -3912,7 +4037,47 @@
                 if (deckBInPanel) {
                     this._syncDigitalStagingButtons();
                     this._syncDigitalLocalQueueButton();
+                    this._wireDigitalFeatureButtonLabelFit(gridEl);
                 }
+            }
+
+            _fitDigitalFeatureButtonLabels(gridEl) {
+                if (!gridEl) return;
+                const pad = 2;
+                gridEl.querySelectorAll('.radio-visual-btn').forEach((btn) => {
+                    const label = btn.querySelector('.radio-visual-btn-label');
+                    if (!label) return;
+                    const maxW = Math.max(8, btn.clientWidth - pad);
+                    const maxH = Math.max(8, btn.clientHeight - pad);
+                    let size = Math.min(maxW * 0.34, maxH * 0.88);
+                    size = Math.min(size, 36);
+                    size = Math.max(size, 5);
+                    label.style.fontSize = '';
+                    label.style.fontSize = `${size}px`;
+                    for (let guard = 0; guard < 80 && size > 5; guard++) {
+                        if (label.scrollWidth <= maxW && label.scrollHeight <= maxH) break;
+                        size -= 0.5;
+                        label.style.fontSize = `${size}px`;
+                    }
+                });
+            }
+
+            _wireDigitalFeatureButtonLabelFit(gridEl) {
+                if (!gridEl || !this.abortCtrl) return;
+                const run = () => {
+                    try { this._fitDigitalFeatureButtonLabels(gridEl); } catch (_) {}
+                };
+                run();
+                if (typeof ResizeObserver === 'undefined') {
+                    globalThis.addEventListener('resize', run, { signal: this.abortCtrl.signal });
+                    return;
+                }
+                const ro = new ResizeObserver(run);
+                ro.observe(gridEl);
+                gridEl.querySelectorAll('.radio-visual-btn').forEach((btn) => ro.observe(btn));
+                this.abortCtrl.signal.addEventListener('abort', () => {
+                    try { ro.disconnect(); } catch (_) {}
+                }, { once: true });
             }
 
             _mkKnobBlock(label, knob, readoutEl, readoutOnKnob = false) {
@@ -4337,9 +4502,6 @@
                 btnVis.textContent = ' 🔆 ';
                 btnVis.setAttribute('aria-label', 'Background visual');
                 btnVis.setAttribute('aria-pressed', 'false');
-                digitalToolbar.appendChild(btnVis);
-                digitalToolbar.appendChild(btnDigitalSpectrum);
-                digitalToolbar.appendChild(btnDigitalDeckB);
                 const volGroup = document.createElement('div');
                 volGroup.className = 'radio-visual-digital-toolbar-vol';
                 volGroup.setAttribute('aria-label', 'Volume');
@@ -4360,7 +4522,6 @@
                 volGroup.appendChild(volDown);
                 volGroup.appendChild(volDigitalReadout);
                 volGroup.appendChild(volUp);
-                digitalToolbar.appendChild(volGroup);
                 const mkRvDigitalBtn = (act, lab) => {
                     const b = document.createElement('button');
                     b.type = 'button';
@@ -4371,35 +4532,35 @@
                         btnDigitalMix = b;
                         b.title = 'Tap: toggle auto-mix · Hold: max interval';
                     }
-                    digitalToolbar.appendChild(b);
+                    return b;
                 };
-                const mkRvStationBtn = (act, lab, deck) => {
+                const mkRvStationBtn = (lab, deck) => {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
-                    b.dataset.rvAction = act;
-                    b.dataset.rvDeck = deck;
+                    b.dataset.rvDeckTransport = deck;
                     b.textContent = lab;
-                    if (act === 'next') {
-                        b.setAttribute('aria-label', deck === 'b' ? 'Deck B next' : 'Deck A next');
-                    }
-                    digitalToolbar.appendChild(b);
+                    return b;
                 };
-                mkRvDigitalBtn('a', 'A Play');
-                mkRvStationBtn('prev', 'A◀', 'a');
-                mkRvStationBtn('next', 'A▶', 'a');
-                mkRvDigitalBtn('fade', 'Fade');
-                mkRvDigitalBtn('mix', 'Mix');
-                mkRvDigitalBtn('b', 'B Play');
-                mkRvStationBtn('prev', 'B◀', 'b');
-                mkRvStationBtn('next', 'B▶', 'b');
+                const btnDeckATransport = mkRvStationBtn('A >', 'a');
+                const btnFade = mkRvDigitalBtn('fade', 'Fade');
+                const btnMix = mkRvDigitalBtn('mix', 'Mix');
+                const btnDeckBTransport = mkRvStationBtn('B >', 'b');
                 btnXfadeStation = document.createElement('button');
                 btnXfadeStation.type = 'button';
-                btnXfadeStation.className = 'radio-visual-btn radio-visual-digital-xfade-station-btn';
+                btnXfadeStation.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-toolbar-icon-btn radio-visual-digital-xfade-station-btn';
                 btnXfadeStation.dataset.rvDigital = 'xfade-station';
                 btnXfadeStation.textContent = '🔀';
                 btnXfadeStation.title = 'Change station when auto-fading (toggle)';
                 btnXfadeStation.setAttribute('aria-label', 'Change station when auto-fading');
+                digitalToolbar.appendChild(btnVis);
+                digitalToolbar.appendChild(btnDigitalSpectrum);
+                digitalToolbar.appendChild(btnDeckATransport);
+                digitalToolbar.appendChild(btnFade);
+                digitalToolbar.appendChild(volGroup);
+                digitalToolbar.appendChild(btnMix);
+                digitalToolbar.appendChild(btnDeckBTransport);
+                digitalToolbar.appendChild(btnDigitalDeckB);
                 digitalToolbar.appendChild(btnXfadeStation);
                 dPanel.appendChild(digitalCenter);
                 dPanel.appendChild(digitalToolbar);
@@ -4587,25 +4748,17 @@
                                 this._stopClick(ev);
                                 const act = b.dataset.rvDigital;
                                 if (act === 'mix') return;
-                                if (act === 'a') this._toggleDeckA();
-                                else if (act === 'b') this._toggleDeckB();
-                                else if (act === 'fade') this._triggerAutoFade();
+                                if (act === 'fade') this._triggerAutoFade();
                                 else if (act === 'xfade-station') this._toggleAutoFadeChangeStation();
                                 this._syncDeckSwitches();
                             }, sig);
                         });
-                        digitalToolbar.querySelectorAll('[data-rv-action]').forEach((b) => {
-                            b.addEventListener('click', (ev) => {
-                                this._stopClick(ev);
-                                const deck = b.dataset.rvDeck || 'a';
-                                const a = b.dataset.rvAction;
-                                if (deck === 'b') {
-                                    if (a === 'prev') this._stationBPrev();
-                                    else if (a === 'next') this._deckBNextOrStation();
-                                } else if (a === 'prev') this._stationPrev();
-                                else if (a === 'next') this._deckANextOrStation();
-                            }, sig);
-                        });
+                        try {
+                            this._wireDigitalDeckTransportBtn(btnDeckATransport, 'a', sig);
+                        } catch (_) {}
+                        try {
+                            this._wireDigitalDeckTransportBtn(btnDeckBTransport, 'b', sig);
+                        } catch (_) {}
                     }
                 }
                 if (tunerRail) {

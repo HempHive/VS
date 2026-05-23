@@ -203,6 +203,24 @@ const QUALITY = {
         /** When true, Deck B video shows idle: looping logo.mp4 if present, else blank (after Stop). */
         let deckBVideoUserIdle = false;
         const DECK_B_IDLE_LOGO_URL = 'assets/video/logo.mp4';
+        const KARAOKE_NERDS_BASE_URL = 'https://www.karaokenerds.com/';
+        /** Hash scrolls the iframe to the search field (below the large logo on first paint). */
+        const KARAOKE_NERDS_EMBED_URL = 'https://www.karaokenerds.com/#query';
+
+        function normalizeKaraokeNerdsEmbedUrl(url) {
+            let href = (url && String(url).trim()) || '';
+            if (!href) return KARAOKE_NERDS_EMBED_URL;
+            if (!/^https?:\/\//i.test(href)) href = 'https://' + href.replace(/^\/+/, '');
+            try {
+                const u = new URL(href);
+                const host = (u.hostname || '').replace(/^www\./i, '').toLowerCase();
+                if (host === 'karaokenerds.com' && !u.hash) {
+                    u.hash = 'query';
+                    return u.href;
+                }
+            } catch (_) {}
+            return href;
+        }
 
         const container = document.getElementById('canvas-container');
         const statusEl = document.getElementById('loading-status');
@@ -326,6 +344,7 @@ const QUALITY = {
                 try { hideWebmSettingsPanel(); } catch(_) {}
                 try { closeBottomMenuPanel(); } catch(_) {}
                 try { closeKeyboardShortcutsPanel(); } catch (_) {}
+                try { closeOptionsPanel(); } catch (_) {}
                 try {
                     if (settingsPanel && !settingsPanel.classList.contains('display-none')) {
                         settingsPanel.classList.add('display-none');
@@ -449,8 +468,51 @@ const QUALITY = {
         function toggleOptionsPanel() {
             if (isOptionsOpen()) closeOptionsPanel(); else openOptionsPanel();
         }
-        if (btnOptions) btnOptions.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); toggleOptionsPanel(); });
         if (btnOptionsClose) btnOptionsClose.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); closeOptionsPanel(); });
+
+        function wireModeInfoOptionsLongPress() {
+            const info = document.getElementById('mode-info');
+            if (!info || info.dataset.modeInfoHoldWired === '1') return;
+            info.dataset.modeInfoHoldWired = '1';
+            const HOLD_MS = 500;
+            let holdTimer = null;
+            let pointerDown = false;
+            const clearHold = () => {
+                if (holdTimer) {
+                    clearTimeout(holdTimer);
+                    holdTimer = null;
+                }
+            };
+            info.addEventListener('pointerdown', (e) => {
+                if (uiLocked) return;
+                if (e.button !== 0) return;
+                try { e.stopPropagation(); } catch (_) {}
+                pointerDown = true;
+                clearHold();
+                holdTimer = setTimeout(() => {
+                    holdTimer = null;
+                    if (!pointerDown) return;
+                    try { toggleOptionsPanel(); } catch (_) {}
+                    try { resetIdleTimer(); } catch (_) {}
+                }, HOLD_MS);
+            });
+            info.addEventListener('pointerup', (e) => {
+                try { e.stopPropagation(); } catch (_) {}
+                pointerDown = false;
+                clearHold();
+            });
+            info.addEventListener('pointercancel', () => {
+                pointerDown = false;
+                clearHold();
+            });
+            info.addEventListener('click', (e) => {
+                try {
+                    e.preventDefault();
+                    e.stopPropagation();
+                } catch (_) {}
+            });
+        }
+        wireModeInfoOptionsLongPress();
         const optTop = document.getElementById('opt-top');
         const optLeft = document.getElementById('opt-left');
         const optRight = document.getElementById('opt-right');
@@ -2922,6 +2984,9 @@ function exposeAppBindingsToGlobal() {
     try { g.AUTOMIX_ENABLED_STORAGE_KEY = AUTOMIX_ENABLED_STORAGE_KEY; } catch (_) {}
     try { g.CANVAS_GESTURE_COOLDOWN_MS = CANVAS_GESTURE_COOLDOWN_MS; } catch (_) {}
     try { g.DECK_B_IDLE_LOGO_URL = DECK_B_IDLE_LOGO_URL; } catch (_) {}
+    try { g.KARAOKE_NERDS_BASE_URL = KARAOKE_NERDS_BASE_URL; } catch (_) {}
+    try { g.KARAOKE_NERDS_EMBED_URL = KARAOKE_NERDS_EMBED_URL; } catch (_) {}
+    try { g.normalizeKaraokeNerdsEmbedUrl = normalizeKaraokeNerdsEmbedUrl; } catch (_) {}
     try { g.DOUBLE_TAP_MS = DOUBLE_TAP_MS; } catch (_) {}
     try { g.EDGE_SNAP = EDGE_SNAP; } catch (_) {}
     try { g.MAX_RADIO_RETRIES = MAX_RADIO_RETRIES; } catch (_) {}
@@ -3778,12 +3843,6 @@ const useMic = globalThis.useMic;
 const waitForRadioStreamAudible = globalThis.waitForRadioStreamAudible;
 const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
 
-        
-        // Allow opening overlay by clicking the title area
-        document.getElementById('mode-info').addEventListener('click', (e) => {
-            e.stopPropagation();
-            showOverlay();
-        });
 
         // --- BINDINGS ---
         document.getElementById('btn-prev')?.addEventListener('click', () => { loadMode(state.currentModeIdx - 1); resetIdleTimer(); });

@@ -1210,13 +1210,30 @@
                 return null;
             }
         }
+        function getDeckLocalPlaybackMedia(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            try {
+                if (!state || !state.deckSourceMode || state.deckSourceMode[dk] !== 'local') return null;
+                if (dk === 'a' && typeof getDeckAMediaForPlaybackState === 'function') {
+                    return getDeckAMediaForPlaybackState();
+                }
+            } catch (_) {}
+            return dk === 'b' ? audioElB : audioEl;
+        }
+
+        function deckLocalPlaybackInProgress(deckKey) {
+            const media = getDeckLocalPlaybackMedia(deckKey);
+            try {
+                return !!(media && media.src && media.src !== 'about:blank' && !media.paused && !media.ended);
+            } catch (_) {
+                return false;
+            }
+        }
+
         function shouldAutoplayDeckLocalQueue(deckKey) {
             const dk = deckKey === 'b' ? 'b' : 'a';
-            const media = dk === 'b' ? audioElB : audioEl;
             try {
-                const playingLocal = state.deckSourceMode[dk] === 'local';
-                const mediaGoing = !!(media && media.src && media.src !== 'about:blank' && !media.paused && !media.ended);
-                if (playingLocal && mediaGoing) return false;
+                if (deckLocalPlaybackInProgress(dk)) return false;
                 if (otherDeckIsAudiblyPlaying(dk) && !deckWinsCrossfade(dk)) return false;
             } catch (_) {}
             return true;
@@ -1255,16 +1272,6 @@
                 try { blobUrl = URL.createObjectURL(f); } catch (_) {}
                 if (!blobUrl) continue;
                 registerDeckVideoFeed('b', blobUrl, f.name || 'Local video', true);
-            }
-        }
-        function deckLocalPlaybackInProgress(deckKey) {
-            const dk = deckKey === 'b' ? 'b' : 'a';
-            const media = dk === 'b' ? audioElB : audioEl;
-            try {
-                return state.deckSourceMode[dk] === 'local'
-                    && !!(media && media.src && !media.paused && !media.ended);
-            } catch (_) {
-                return false;
             }
         }
         function enqueueDeckLocalFiles(deckKey, files) {

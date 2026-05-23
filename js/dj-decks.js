@@ -1831,8 +1831,18 @@
             }
 
             startDeckBKaraokeEmbed(url) {
+                let href = url;
+                try {
+                    if (typeof globalThis.normalizeKaraokeNerdsEmbedUrl === 'function') {
+                        href = globalThis.normalizeKaraokeNerdsEmbedUrl(url);
+                    } else if (!href) {
+                        href = 'https://www.karaokenerds.com/#query';
+                    }
+                } catch (_) {
+                    href = url || 'https://www.karaokenerds.com/#query';
+                }
                 this.startDeckBEmbed(
-                    url || 'https://www.karaokenerds.com/',
+                    href,
                     'karaoke',
                     { iframeTitle: 'Karaoke Nerds', backLabel: 'Karaoke' }
                 );
@@ -1851,7 +1861,7 @@
                     }
                     if (this.deckBQueueVisible) this.hideDeckBQueueView();
                     if (this.deckBMediaPanelVisible) this.hideDeckBMediaView();
-                    this.startDeckBKaraokeEmbed('https://www.karaokenerds.com/');
+                    this.startDeckBKaraokeEmbed();
                     this.syncDeckBVisualButtons();
                     this.updateStationTitles();
                     this.syncFxLightsFromState();
