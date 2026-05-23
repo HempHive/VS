@@ -3528,23 +3528,68 @@
                 ctx.fill();
             }
 
-            _fitCanvasLcdText(ctx, text, centerX, y, maxWidth, basePx) {
-                const weight = 700;
-                const family = 'ui-monospace, Menlo, Consolas, monospace';
-                let fontPx = basePx;
-                let line = String(text || 'DIGITAL TUNER');
-                for (let pass = 0; pass < 8; pass++) {
-                    ctx.font = `${weight} ${fontPx}px ${family}`;
-                    if (ctx.measureText(line).width <= maxWidth) break;
-                    fontPx = Math.max(6, fontPx * 0.88);
+            _lcdMarqueeAnimTime(slotKey, text, animT) {
+                if (!this._lcdMarqueeSlots) this._lcdMarqueeSlots = {};
+                const key = String(slotKey || 'lcd');
+                const line = String(text || '');
+                let slot = this._lcdMarqueeSlots[key];
+                if (!slot || slot.text !== line) {
+                    slot = { text: line, t0: Number(animT) || 0 };
+                    this._lcdMarqueeSlots[key] = slot;
                 }
-                while (line.length > 4) {
-                    ctx.font = `${weight} ${fontPx}px ${family}`;
-                    if (ctx.measureText(line).width <= maxWidth) break;
-                    line = line.slice(0, -2) + '…';
+                return Math.max(0, (Number(animT) || 0) - slot.t0);
+            }
+
+            /** LCD line: fixed size; slow back-and-forth scroll when wider than the display. */
+            _drawCanvasLcdScrollText(ctx, text, clipX, clipY, clipW, clipH, y, basePx, animT, opts = {}) {
+                const weight = opts.weight ?? 700;
+                const family = 'ui-monospace, Menlo, Consolas, monospace';
+                const line = String(text || '').trim() || '—';
+                const fontPx = Math.max(6, Number(basePx) || 12);
+                const padX = 3;
+                const innerW = Math.max(8, clipW - padX * 2);
+                const marqueeT = this._lcdMarqueeAnimTime(opts.marqueeKey || 'lcd', line, animT);
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(clipX, clipY, clipW, clipH);
+                ctx.clip();
+                if (opts.fillStyle) ctx.fillStyle = opts.fillStyle;
+                if (opts.shadowColor) {
+                    ctx.shadowColor = opts.shadowColor;
+                    ctx.shadowBlur = opts.shadowBlur ?? 0;
                 }
                 ctx.font = `${weight} ${fontPx}px ${family}`;
-                ctx.fillText(line, centerX, y);
+                ctx.textBaseline = 'middle';
+                const textW = ctx.measureText(line).width;
+
+                if (textW <= innerW) {
+                    ctx.textAlign = 'center';
+                    ctx.fillText(line, clipX + clipW * 0.5, y);
+                    ctx.restore();
+                    return line;
+                }
+
+                const overflow = textW - innerW;
+                const pxPerSec = 20;
+                const pauseSec = 1.15;
+                const travelSec = Math.max(2, overflow / pxPerSec);
+                const cycle = pauseSec * 2 + travelSec * 2;
+                const u = marqueeT % cycle;
+                let scroll = 0;
+                if (u < pauseSec) {
+                    scroll = 0;
+                } else if (u < pauseSec + travelSec) {
+                    scroll = ((u - pauseSec) / travelSec) * overflow;
+                } else if (u < pauseSec * 2 + travelSec) {
+                    scroll = overflow;
+                } else {
+                    scroll = overflow - ((u - pauseSec * 2 - travelSec) / travelSec) * overflow;
+                }
+
+                ctx.textAlign = 'left';
+                ctx.fillText(line, clipX + padX - scroll, y);
+                ctx.restore();
                 return line;
             }
 
@@ -3633,31 +3678,49 @@
                 ctx.fillStyle = 'rgba(0, 255, 200, 0.55)';
                 ctx.shadowColor = 'rgba(0, 255, 200, 0.35)';
                 ctx.shadowBlur = 6;
+                const lcdClipX = ix + lcdPad;
+                const lcdClipW = iw - lcdPad * 2;
                 const lcdLine = lcdPrimaryLine || 'DIGITAL TUNER';
                 const lcdBasePx = Math.max(8, Math.min(w, h) * 0.075);
-                this._fitCanvasLcdText(
+                this._drawCanvasLcdScrollText(
                     ctx,
                     lcdLine,
-                    ix + iw * 0.5,
+                    lcdClipX,
+                    lcdY,
+                    lcdClipW,
+                    lcdH,
                     lcdY + lcdH * 0.38,
-                    iw - lcdPad * 2,
-                    lcdBasePx
+                    lcdBasePx,
+                    t,
+                    {
+                        marqueeKey: 'digital-lcd-primary',
+                        fillStyle: 'rgba(0, 255, 200, 0.55)',
+                        shadowColor: 'rgba(0, 255, 200, 0.35)',
+                        shadowBlur: 6
+                    }
                 );
                 ctx.shadowBlur = 0;
                 const lcdSub = lcdSecondaryLine || 'STEREO · EQ';
                 const lcdSubIsStation = lcdSub !== 'STEREO · EQ';
                 const lcdSubBasePx = Math.max(7, Math.min(w, h) * 0.055);
                 if (lcdSubIsStation) {
-                    ctx.fillStyle = 'rgba(0, 255, 200, 0.55)';
-                    ctx.shadowColor = 'rgba(0, 255, 200, 0.35)';
-                    ctx.shadowBlur = 6;
-                    this._fitCanvasLcdText(
+                    this._drawCanvasLcdScrollText(
                         ctx,
                         lcdSub,
-                        ix + iw * 0.5,
+                        lcdClipX,
+                        lcdY,
+                        lcdClipW,
+                        lcdH,
                         lcdY + lcdH * 0.72,
-                        iw - lcdPad * 2,
-                        lcdBasePx
+                        lcdSubBasePx,
+                        t,
+                        {
+                            weight: 600,
+                            marqueeKey: 'digital-lcd-secondary',
+                            fillStyle: 'rgba(0, 255, 200, 0.55)',
+                            shadowColor: 'rgba(0, 255, 200, 0.35)',
+                            shadowBlur: 6
+                        }
                     );
                 } else {
                     ctx.font = `600 ${lcdSubBasePx}px ui-monospace, Menlo, Consolas, monospace`;
