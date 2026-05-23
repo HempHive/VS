@@ -4051,40 +4051,81 @@
                 return labelEl;
             }
 
-            _computeRvButtonLabelFitPx(btn, label, { maxCap = 12 } = {}) {
-                const pad = 4;
+            _computeRvButtonLabelFitPx(btn, label, opts = {}) {
+                const pad = opts.pad ?? 4;
+                const maxCap = opts.maxCap ?? 12;
+                const minPx = opts.minPx ?? 5;
+                const heightFactor = opts.heightFactor ?? 0.68;
+                const widthFactor = opts.widthFactor ?? 0.22;
+                const fill = !!opts.fill;
                 const maxW = Math.max(8, btn.clientWidth - pad);
                 const maxH = Math.max(8, btn.clientHeight - pad);
-                let size = Math.min(maxW * 0.22, maxH * 0.68);
-                size = Math.min(size, maxCap);
-                size = Math.max(size, 5);
+                let size = Math.min(maxW * widthFactor, maxH * heightFactor, maxCap);
+                size = Math.max(size, minPx);
                 label.style.fontSize = `${size}px`;
-                for (let guard = 0; guard < 80 && size > 5; guard++) {
-                    if (label.scrollWidth <= maxW && label.scrollHeight <= maxH) break;
-                    size -= 0.25;
+                if (fill) {
+                    size = maxCap;
                     label.style.fontSize = `${size}px`;
+                    for (let guard = 0; guard < 120 && size > minPx; guard++) {
+                        if (label.scrollWidth <= maxW && label.scrollHeight <= maxH) break;
+                        size -= 0.25;
+                        label.style.fontSize = `${size}px`;
+                    }
+                } else {
+                    for (let guard = 0; guard < 80 && size > minPx; guard++) {
+                        if (label.scrollWidth <= maxW && label.scrollHeight <= maxH) break;
+                        size -= 0.25;
+                        label.style.fontSize = `${size}px`;
+                    }
                 }
                 return size;
             }
 
+            _rvLabelFitOpts(kind) {
+                if (kind === 'toolbar') {
+                    return { fill: true, maxCap: 12, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
+                }
+                if (kind === 'toolbar-vol') {
+                    return { fill: true, maxCap: 14, heightFactor: 0.9, widthFactor: 0.72, minPx: 6 };
+                }
+                return { fill: true, maxCap: 12, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
+            }
+
             _fitDigitalFeatureButtonLabels(gridEl) {
                 if (!gridEl) return;
+                const opts = this._rvLabelFitOpts('feature');
                 gridEl.querySelectorAll('.radio-visual-btn').forEach((btn) => {
                     const label = btn.querySelector('.radio-visual-btn-label');
                     if (!label) return;
                     label.style.fontSize = '';
-                    this._computeRvButtonLabelFitPx(btn, label);
+                    this._computeRvButtonLabelFitPx(btn, label, opts);
                 });
             }
 
             _fitDigitalToolbarButtonLabels(toolbarEl) {
                 if (!toolbarEl) return;
+                const mainOpts = this._rvLabelFitOpts('toolbar');
+                const volOpts = this._rvLabelFitOpts('toolbar-vol');
+                const mainEntries = [];
                 toolbarEl.querySelectorAll('.radio-visual-btn .radio-visual-btn-label').forEach((label) => {
                     const btn = label.closest('.radio-visual-btn');
-                    if (!btn || btn.closest('.radio-visual-digital-toolbar-vol')) return;
-                    label.style.fontSize = '';
-                    this._computeRvButtonLabelFitPx(btn, label);
+                    if (!btn) return;
+                    if (btn.closest('.radio-visual-digital-toolbar-vol')) {
+                        label.style.fontSize = '';
+                        this._computeRvButtonLabelFitPx(btn, label, volOpts);
+                        return;
+                    }
+                    mainEntries.push({ btn, label });
                 });
+                if (!mainEntries.length) return;
+                let unified = Infinity;
+                mainEntries.forEach(({ btn, label }) => {
+                    label.style.fontSize = '';
+                    unified = Math.min(unified, this._computeRvButtonLabelFitPx(btn, label, mainOpts));
+                });
+                if (!Number.isFinite(unified)) unified = mainOpts.maxCap;
+                const px = `${unified}px`;
+                mainEntries.forEach(({ label }) => { label.style.fontSize = px; });
             }
 
             _wireRvButtonLabelFit(rootEl, fitFn) {
@@ -4107,6 +4148,8 @@
                 const ro = new ResizeObserver(run);
                 ro.observe(rootEl);
                 rootEl.querySelectorAll('.radio-visual-btn').forEach((btn) => ro.observe(btn));
+                const volGroup = rootEl.querySelector('.radio-visual-digital-toolbar-vol');
+                if (volGroup) ro.observe(volGroup);
                 const panel = rootEl.closest('.radio-visual-digital-panel')
                     || rootEl.closest('.radio-visual-stage.radio-visual-skin--digital');
                 if (panel) ro.observe(panel);
