@@ -4043,20 +4043,20 @@
 
             _fitDigitalFeatureButtonLabels(gridEl) {
                 if (!gridEl) return;
-                const pad = 2;
+                const pad = 4;
                 gridEl.querySelectorAll('.radio-visual-btn').forEach((btn) => {
                     const label = btn.querySelector('.radio-visual-btn-label');
                     if (!label) return;
                     const maxW = Math.max(8, btn.clientWidth - pad);
                     const maxH = Math.max(8, btn.clientHeight - pad);
-                    let size = Math.min(maxW * 0.34, maxH * 0.88);
-                    size = Math.min(size, 36);
+                    let size = Math.min(maxW * 0.22, maxH * 0.68);
+                    size = Math.min(size, 12);
                     size = Math.max(size, 5);
                     label.style.fontSize = '';
                     label.style.fontSize = `${size}px`;
                     for (let guard = 0; guard < 80 && size > 5; guard++) {
                         if (label.scrollWidth <= maxW && label.scrollHeight <= maxH) break;
-                        size -= 0.5;
+                        size -= 0.25;
                         label.style.fontSize = `${size}px`;
                     }
                 });
