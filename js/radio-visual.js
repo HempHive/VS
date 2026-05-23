@@ -4009,10 +4009,7 @@
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
                     if (deckBInPanel) {
-                        const labelEl = document.createElement('span');
-                        labelEl.className = 'radio-visual-btn-label';
-                        labelEl.textContent = it.label;
-                        b.appendChild(labelEl);
+                        this._appendRvButtonLabel(b, it.label);
                     } else {
                         b.textContent = it.label;
                     }
@@ -4041,31 +4038,62 @@
                 }
             }
 
+            _appendRvButtonLabel(btn, text) {
+                const labelEl = document.createElement('span');
+                labelEl.className = 'radio-visual-btn-label';
+                labelEl.textContent = text;
+                btn.appendChild(labelEl);
+                return labelEl;
+            }
+
+            _computeRvButtonLabelFitPx(btn, label, { maxCap = 12 } = {}) {
+                const pad = 4;
+                const maxW = Math.max(8, btn.clientWidth - pad);
+                const maxH = Math.max(8, btn.clientHeight - pad);
+                let size = Math.min(maxW * 0.22, maxH * 0.68);
+                size = Math.min(size, maxCap);
+                size = Math.max(size, 5);
+                label.style.fontSize = `${size}px`;
+                for (let guard = 0; guard < 80 && size > 5; guard++) {
+                    if (label.scrollWidth <= maxW && label.scrollHeight <= maxH) break;
+                    size -= 0.25;
+                    label.style.fontSize = `${size}px`;
+                }
+                return size;
+            }
+
             _fitDigitalFeatureButtonLabels(gridEl) {
                 if (!gridEl) return;
-                const pad = 4;
                 gridEl.querySelectorAll('.radio-visual-btn').forEach((btn) => {
                     const label = btn.querySelector('.radio-visual-btn-label');
                     if (!label) return;
-                    const maxW = Math.max(8, btn.clientWidth - pad);
-                    const maxH = Math.max(8, btn.clientHeight - pad);
-                    let size = Math.min(maxW * 0.22, maxH * 0.68);
-                    size = Math.min(size, 12);
-                    size = Math.max(size, 5);
                     label.style.fontSize = '';
-                    label.style.fontSize = `${size}px`;
-                    for (let guard = 0; guard < 80 && size > 5; guard++) {
-                        if (label.scrollWidth <= maxW && label.scrollHeight <= maxH) break;
-                        size -= 0.25;
-                        label.style.fontSize = `${size}px`;
-                    }
+                    this._computeRvButtonLabelFitPx(btn, label);
                 });
             }
 
-            _wireDigitalFeatureButtonLabelFit(gridEl) {
-                if (!gridEl || !this.abortCtrl) return;
+            _fitDigitalToolbarButtonLabels(toolbarEl) {
+                if (!toolbarEl) return;
+                const entries = [];
+                toolbarEl.querySelectorAll('.radio-visual-btn .radio-visual-btn-label').forEach((label) => {
+                    const btn = label.closest('.radio-visual-btn');
+                    if (btn) entries.push({ btn, label });
+                });
+                if (!entries.length) return;
+                let unified = Infinity;
+                entries.forEach(({ btn, label }) => {
+                    label.style.fontSize = '';
+                    unified = Math.min(unified, this._computeRvButtonLabelFitPx(btn, label));
+                });
+                if (!Number.isFinite(unified)) unified = 12;
+                const px = `${unified}px`;
+                entries.forEach(({ label }) => { label.style.fontSize = px; });
+            }
+
+            _wireRvButtonLabelFit(rootEl, fitFn) {
+                if (!rootEl || !this.abortCtrl) return;
                 const run = () => {
-                    try { this._fitDigitalFeatureButtonLabels(gridEl); } catch (_) {}
+                    try { fitFn.call(this, rootEl); } catch (_) {}
                 };
                 run();
                 if (typeof ResizeObserver === 'undefined') {
@@ -4073,11 +4101,19 @@
                     return;
                 }
                 const ro = new ResizeObserver(run);
-                ro.observe(gridEl);
-                gridEl.querySelectorAll('.radio-visual-btn').forEach((btn) => ro.observe(btn));
+                ro.observe(rootEl);
+                rootEl.querySelectorAll('.radio-visual-btn').forEach((btn) => ro.observe(btn));
                 this.abortCtrl.signal.addEventListener('abort', () => {
                     try { ro.disconnect(); } catch (_) {}
                 }, { once: true });
+            }
+
+            _wireDigitalFeatureButtonLabelFit(gridEl) {
+                this._wireRvButtonLabelFit(gridEl, this._fitDigitalFeatureButtonLabels);
+            }
+
+            _wireDigitalToolbarLabelFit(toolbarEl) {
+                this._wireRvButtonLabelFit(toolbarEl, this._fitDigitalToolbarButtonLabels);
             }
 
             _mkKnobBlock(label, knob, readoutEl, readoutOnKnob = false) {
@@ -4491,11 +4527,11 @@
                 btnDigitalSpectrum = document.createElement('button');
                 btnDigitalSpectrum.type = 'button';
                 btnDigitalSpectrum.className = 'radio-visual-btn';
-                btnDigitalSpectrum.textContent = 'Spectrum';
+                this._appendRvButtonLabel(btnDigitalSpectrum, 'Spectrum');
                 btnDigitalDeckB = document.createElement('button');
                 btnDigitalDeckB.type = 'button';
                 btnDigitalDeckB.className = 'radio-visual-btn';
-                btnDigitalDeckB.textContent = 'Deck B';
+                this._appendRvButtonLabel(btnDigitalDeckB, 'Deck B');
                 btnVis = document.createElement('button');
                 btnVis.type = 'button';
                 btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-vis-btn';
@@ -4508,7 +4544,7 @@
                 volDown = document.createElement('button');
                 volDown.type = 'button';
                 volDown.className = 'radio-visual-btn radio-visual-digital-step-btn';
-                volDown.textContent = '−';
+                this._appendRvButtonLabel(volDown, '−');
                 volDown.setAttribute('aria-label', 'Volume down');
                 volDigitalReadout = document.createElement('span');
                 volDigitalReadout.className = 'radio-visual-digital-vol-readout';
@@ -4517,7 +4553,7 @@
                 volUp = document.createElement('button');
                 volUp.type = 'button';
                 volUp.className = 'radio-visual-btn radio-visual-digital-step-btn';
-                volUp.textContent = '+';
+                this._appendRvButtonLabel(volUp, '+');
                 volUp.setAttribute('aria-label', 'Volume up');
                 volGroup.appendChild(volDown);
                 volGroup.appendChild(volDigitalReadout);
@@ -4527,7 +4563,7 @@
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
                     b.dataset.rvDigital = act;
-                    b.textContent = lab;
+                    this._appendRvButtonLabel(b, lab);
                     if (act === 'mix') {
                         btnDigitalMix = b;
                         b.title = 'Tap: toggle auto-mix · Hold: max interval';
@@ -4539,7 +4575,7 @@
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
                     b.dataset.rvDeckTransport = deck;
-                    b.textContent = lab;
+                    this._appendRvButtonLabel(b, lab);
                     return b;
                 };
                 const btnDeckATransport = mkRvStationBtn('A >', 'a');
@@ -4624,6 +4660,7 @@
 
                 if (analogBtns) this._buildFeatureButtons(analogBtns);
                 if (digBtns) this._buildFeatureButtons(digBtns, { deckBInPanel: true });
+                if (digitalToolbar) this._wireDigitalToolbarLabelFit(digitalToolbar);
                 if (digitalCenter) this._bindDigitalStageInteractions(digitalCenter);
                 try { this._applySkinUi(); } catch (_) {}
                 try { this._syncVolumeFromGlobal(); } catch (_) {}
@@ -4753,12 +4790,9 @@
                                 this._syncDeckSwitches();
                             }, sig);
                         });
-                        try {
-                            this._wireDigitalDeckTransportBtn(btnDeckATransport, 'a', sig);
-                        } catch (_) {}
-                        try {
-                            this._wireDigitalDeckTransportBtn(btnDeckBTransport, 'b', sig);
-                        } catch (_) {}
+                        digitalToolbar.querySelectorAll('[data-rv-deck-transport]').forEach((b) => {
+                            this._wireDigitalDeckTransportBtn(b, b.dataset.rvDeckTransport, sig);
+                        });
                     }
                 }
                 if (tunerRail) {

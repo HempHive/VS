@@ -1086,6 +1086,30 @@
             color: #8ef;
             box-shadow: 0 2px 0 #041018, 0 4px 12px rgba(0, 32, 64, 0.4);
         }
+        #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn:has(.radio-visual-btn-label) {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn .radio-visual-btn-label {
+            display: block;
+            width: 100%;
+            max-height: 100%;
+            font-weight: 800;
+            letter-spacing: inherit;
+            line-height: 1;
+            text-align: center;
+            color: inherit;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-shadow: inherit;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-btn:has(.radio-visual-btn-label) {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn {
             border-color: rgba(0, 220, 255, 0.4);
             background: linear-gradient(180deg, #123048, #081820);
@@ -1131,7 +1155,9 @@
             min-width: 0;
             max-width: 1.85em;
             padding: clamp(5px, 0.73cqw, 7px) 0;
-            font-size: clamp(9px, 1.46cqw, 14px);
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn:has(.radio-visual-btn-label) {
+            font-size: inherit;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn:hover {
             filter: brightness(1.12);
