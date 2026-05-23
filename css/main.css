@@ -462,7 +462,7 @@
 			display: flex; align-items: center; justify-content: center;
 			min-width: 360px;
 		}
-        /* UI Lock (bottom HUD, after 🎚️) */
+        /* UI Lock (bottom HUD, after ⌨️) */
         .center-controls #ui-lock-toggle {
             position: static;
             width: auto;
