@@ -2389,7 +2389,13 @@
                         av.name === 'DJ Decks' &&
                         av.deckBVizMode === 'projectm' &&
                         typeof av.nextDeckBProjectMPreset === 'function');
-                if (mainHasNext || deckBProjectM) skipBtn.classList.remove('display-none');
+                const digitalStagingPm =
+                    !!(av &&
+                        av.name === 'Digital Radio' &&
+                        av.skin === 'digital' &&
+                        av._digitalStagingView === 'projectm' &&
+                        typeof av.nextPreset === 'function');
+                if (mainHasNext || deckBProjectM || digitalStagingPm) skipBtn.classList.remove('display-none');
                 else skipBtn.classList.add('display-none');
             } catch (_) {}
         }

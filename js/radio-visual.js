@@ -834,6 +834,12 @@
                 this._rvDigitalPmVisualizer = null;
                 this._rvDigitalPmCanvas = null;
                 this._rvDigitalPmResize = null;
+                this.nextPreset = null;
+                try {
+                    if (typeof globalThis.updateSkipPresetButtonVisibility === 'function') {
+                        globalThis.updateSkipPresetButtonVisibility();
+                    }
+                } catch (_) {}
                 this._rvDigitalBarsRenderer = null;
                 this._rvDigitalBarsScene = null;
                 const mount = this._stagingContentMount();
@@ -1213,6 +1219,12 @@
                     currentPresetIdx = next;
                     loadPmPreset(currentPresetIdx);
                 };
+                const restartPmCycle = () => {
+                    try {
+                        if (this._rvDigitalPmCycleTimeout) clearTimeout(this._rvDigitalPmCycleTimeout);
+                    } catch (_) {}
+                    schedule();
+                };
                 const schedule = () => {
                     const minS = Number(visualSettings.shuffleMinSec) || 12;
                     const maxS = Number(visualSettings.shuffleMaxSec) || 25;
@@ -1224,7 +1236,16 @@
                         schedule();
                     }, delay);
                 };
+                this.nextPreset = () => {
+                    nextPmPreset();
+                    restartPmCycle();
+                };
                 schedule();
+                try {
+                    if (typeof globalThis.updateSkipPresetButtonVisibility === 'function') {
+                        globalThis.updateSkipPresetButtonVisibility();
+                    }
+                } catch (_) {}
                 this._rvDigitalPmResize = resizePm;
                 resizePm();
                 const loop = () => {
@@ -1855,11 +1876,24 @@
                     const isSpace = ev.code === 'Space' || ev.key === ' ';
                     const isI = (ev.key === 'i' || ev.key === 'I')
                         && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey;
+                    const isC = (ev.key === 'c' || ev.key === 'C')
+                        && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey;
                     if (!isSpace) {
                         this._resetDigitalSpaceShortcutState();
                     }
                     if (!isI) {
                         this._resetDigitalIShortcutState();
+                    }
+                    if (isC) {
+                        if (!this._isRadioVisualActive() || this.skin !== 'digital') return;
+                        if (this._digitalStagingView !== 'projectm' || typeof this.nextPreset !== 'function') return;
+                        try {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                        } catch (_) {}
+                        if (ev.repeat) return;
+                        try { this.nextPreset(); } catch (_) {}
+                        return;
                     }
                     if (isI) {
                         if (!this._isRadioVisualActive() || this.skin !== 'digital') return;
