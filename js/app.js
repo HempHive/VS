@@ -6083,6 +6083,13 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 } catch (_) {}
             } else if (e.key === 'k' || e.key === 'K') {
                 e.preventDefault();
+                if (isDigitalRadioVisualActive()) {
+                    const rv = getActiveRadioVisualEngine();
+                    if (rv && typeof rv.toggleDigitalStagingKaraoke === 'function') {
+                        try { rv.toggleDigitalStagingKaraoke(); } catch (_) {}
+                        return;
+                    }
+                }
                 try {
                     const k = document.getElementById('dj-b-sfx-w1');
                     if (k) k.click();

@@ -575,6 +575,11 @@
         #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-spectrum-bg.is-visible) {
             background: rgba(0, 12, 20, 0.35);
         }
+        #radio-visual-root .radio-visual-digital-center:has(
+            .radio-visual-digital-spectrum-bg.is-visible
+        ):has(.radio-visual-digital-staging-mount[data-rv-staging="bars"].is-active) {
+            background: transparent;
+        }
         #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-spectrum-bg.is-visible) .radio-visual-digital-spectrum-side {
             background: transparent;
         }
@@ -635,9 +640,32 @@
         ) .radio-visual-digital-spectrum-row,
         #radio-visual-root .radio-visual-digital-center-pane:has(
             .radio-visual-digital-staging-mount.is-active .radio-visual-digital-deck-b-queue
+        ) .radio-visual-digital-spectrum-row,
+        #radio-visual-root .radio-visual-digital-center-pane:has(
+            .radio-visual-digital-staging-mount.is-active .radio-visual-digital-embed-shell
         ) .radio-visual-digital-spectrum-row {
             visibility: hidden;
             pointer-events: none;
+        }
+        #radio-visual-root .radio-visual-digital-embed-shell {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: auto;
+            background: #0a0a10;
+            border-radius: inherit;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #radio-visual-root .radio-visual-digital-embed-frame {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            border: 0;
+            display: block;
+            background: #000;
         }
         #radio-visual-root .radio-visual-digital-staging-video,
         #radio-visual-root .radio-visual-digital-staging-mount .radio-visual-digital-deck-b-canvas {
@@ -645,6 +673,13 @@
             height: 100%;
             object-fit: contain;
             background: rgba(0, 8, 16, 0.55);
+        }
+        #radio-visual-root .radio-visual-digital-staging-mount[data-rv-staging="bars"].is-active {
+            background: transparent;
+        }
+        #radio-visual-root .radio-visual-digital-staging-mount[data-rv-staging="bars"].is-active
+            .radio-visual-digital-deck-b-canvas--bars {
+            background: transparent;
         }
         #radio-visual-root .radio-visual-digital-staging-mount .radio-visual-digital-deck-b-queue {
             width: 100%;

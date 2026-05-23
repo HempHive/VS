@@ -34,8 +34,9 @@
                 /** Spectrum centre layout: full | focus (no dash, large flowers) | blank (no flowers). */
                 this._digitalSpectrumLayout = 'full';
                 this._digitalDeckBView = 'video';
-                /** Staging overlay in spectrum pane: null | video | projectm | bars | queue */
+                /** Staging overlay in spectrum pane: null | video | projectm | bars | queue | karaoke */
                 this._digitalStagingView = null;
+                this._digitalKaraokeUrl = 'https://www.karaokenerds.com/';
                 /** Local playlists panel (Deck A & B) over the spectrum area */
                 this._digitalLocalQueueVisible = false;
                 this._rvAutoMixTimerId = null;
@@ -780,7 +781,7 @@
             }
 
             _toggleDigitalStagingFeature(kind) {
-                const k = (kind === 'projectm' || kind === 'bars' || kind === 'queue' || kind === 'video')
+                const k = (kind === 'projectm' || kind === 'bars' || kind === 'queue' || kind === 'video' || kind === 'karaoke')
                     ? kind : null;
                 if (!k) return;
                 if (this._digitalLocalQueueVisible) {
@@ -847,6 +848,7 @@
                     mount.innerHTML = '';
                     mount.classList.remove('is-active');
                     mount.setAttribute('aria-hidden', 'true');
+                    try { delete mount.dataset.rvStaging; } catch (_) {}
                 }
                 if (this.els.digitalStagingVideo) {
                     try {
@@ -868,22 +870,67 @@
             }
 
             _setDigitalStagingView(view) {
-                const next = (view === 'projectm' || view === 'bars' || view === 'queue') ? view : 'video';
                 const mount = this._stagingContentMount();
                 if (!mount) return;
                 mount.classList.add('is-active');
                 mount.setAttribute('aria-hidden', 'false');
+                try {
+                    if (view) mount.dataset.rvStaging = view;
+                    else delete mount.dataset.rvStaging;
+                } catch (_) {}
                 try { this._syncDigitalStagingBgVisibility(); } catch (_) {}
-                if (next === 'video') {
+                if (view === 'video') {
                     this._showDigitalStagingVideo();
                     return;
                 }
                 if (this.els.digitalStagingVideo) {
                     this.els.digitalStagingVideo.classList.add('is-hidden');
                 }
-                if (next === 'projectm') this._showDigitalStagingProjectM();
-                else if (next === 'bars') this._showDigitalStagingAudioBars();
-                else if (next === 'queue') this._showDigitalStagingQueue();
+                if (view === 'projectm') this._showDigitalStagingProjectM();
+                else if (view === 'bars') this._showDigitalStagingAudioBars();
+                else if (view === 'queue') this._showDigitalStagingQueue();
+                else if (view === 'karaoke') this._showDigitalStagingKaraoke();
+            }
+
+            _normalizeDigitalEmbedUrl(url) {
+                let href = (url && String(url).trim()) || '';
+                if (!href) href = this._digitalKaraokeUrl || 'https://www.karaokenerds.com/';
+                else if (!/^https?:\/\//i.test(href)) href = 'https://' + href.replace(/^\/+/, '');
+                return href;
+            }
+
+            _showDigitalStagingKaraoke(mountEl, url) {
+                const mount = mountEl || this._stagingContentMount();
+                if (!mount) return;
+                this._tearDownDigitalStagingView();
+                mount.classList.add('is-active');
+                mount.setAttribute('aria-hidden', 'false');
+                try { this._syncDigitalStagingBgVisibility(); } catch (_) {}
+                const href = this._normalizeDigitalEmbedUrl(url);
+                const shell = document.createElement('div');
+                shell.className = 'radio-visual-digital-embed-shell';
+                const iframe = document.createElement('iframe');
+                iframe.className = 'radio-visual-digital-embed-frame';
+                iframe.setAttribute('title', 'Karaoke Nerds');
+                iframe.setAttribute(
+                    'sandbox',
+                    'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals'
+                );
+                iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+                iframe.src = href;
+                shell.appendChild(iframe);
+                mount.appendChild(shell);
+                try {
+                    mount.title = 'Double-click for fullscreen · Esc to exit';
+                } catch (_) {}
+            }
+
+            toggleDigitalStagingKaraoke(url) {
+                try {
+                    if (globalThis.uiLocked) return;
+                } catch (_) {}
+                if (url) this._digitalKaraokeUrl = this._normalizeDigitalEmbedUrl(url);
+                this._toggleDigitalStagingFeature('karaoke');
             }
 
             _setDigitalDeckBView(view) {
@@ -913,7 +960,8 @@
                 if (!bgEl) return;
                 const suppress = !!(
                     this._digitalStagingView &&
-                    this.digitalCenterMode === 'spectrum'
+                    this.digitalCenterMode === 'spectrum' &&
+                    this._digitalStagingView !== 'bars'
                 );
                 bgEl.classList.toggle('is-staging-suppressed', suppress);
                 if (!suppress && this._isDigitalBgGifEnabled()) {
@@ -1328,9 +1376,11 @@
                 camera.position.z = 8;
                 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+                try { renderer.setClearColor(0x000000, 0); } catch (_) {}
                 const canvas = renderer.domElement;
-                canvas.className = 'radio-visual-digital-deck-b-canvas';
+                canvas.className = 'radio-visual-digital-deck-b-canvas radio-visual-digital-deck-b-canvas--bars';
                 mount.appendChild(canvas);
+                try { this._syncDigitalStagingBgVisibility(); } catch (_) {}
                 const updateFn = sceneBars(scene, camera);
                 let dataArray = null;
                 const resizeBars = () => {
@@ -3774,7 +3824,8 @@
                 const stagingByLabel = {
                     Video: 'video',
                     ProjectM: 'projectm',
-                    'Audio:Bar': 'bars'
+                    'Audio:Bar': 'bars',
+                    KARAOKE: 'karaoke'
                 };
                 const items = [
                     { label: 'Mixer', fn: () => { try { g.toggleMixPanel?.(); } catch (_) {} } },
@@ -3783,11 +3834,14 @@
                             if (typeof g.toggleWebmOverlay === 'function') g.toggleWebmOverlay();
                         } catch (_) {}
                     }},
-                    { label: 'Text-In', fn: () => {
-                        try {
-                            if (typeof g.openTextInForTarget === 'function') g.openTextInForTarget('global');
-                            else if (typeof g.toggleTextInPanel === 'function') g.toggleTextInPanel();
-                        } catch (_) {}
+                    { label: 'KARAOKE', fn: () => {
+                        if (deckBInPanel) {
+                            this.toggleDigitalStagingKaraoke();
+                            return;
+                        }
+                        this._withDjDeck((dj) => {
+                            if (typeof dj.toggleDeckBKaraokeEmbed === 'function') dj.toggleDeckBKaraokeEmbed();
+                        });
                     }},
                     { label: 'Video', fn: () => {
                         if (deckBInPanel) {
@@ -3844,7 +3898,9 @@
                     const stagingKind = stagingByLabel[it.label];
                     if (deckBInPanel && stagingKind) {
                         b.dataset.rvStaging = stagingKind;
-                        b.title = `Toggle ${it.label} in staging area`;
+                        b.title = stagingKind === 'karaoke'
+                            ? 'Toggle Karaoke Nerds in staging area'
+                            : `Toggle ${it.label} in staging area`;
                     }
                     if (deckBInPanel && it.label === 'Queue') {
                         b.dataset.rvLocalQueue = '1';
