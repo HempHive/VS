@@ -4200,12 +4200,21 @@
                 if (!toolbarEl) return;
                 const mainOpts = this._rvLabelFitOpts('feature');
                 const volOpts = this._rvLabelFitOpts('toolbar-vol');
-                toolbarEl.querySelectorAll('.radio-visual-btn').forEach((btn) => {
+                const fitBtn = (btn, opts) => {
                     const label = btn.querySelector('.radio-visual-btn-label');
                     if (!label) return;
                     label.style.fontSize = '';
-                    const opts = btn.closest('.radio-visual-digital-toolbar-vol') ? volOpts : mainOpts;
+                    if (btn.clientWidth < 10 || btn.clientHeight < 8) return;
                     this._computeRvButtonLabelFitPx(btn, label, opts);
+                };
+                const actions = toolbarEl.querySelector('.radio-visual-digital-toolbar-actions');
+                if (actions) {
+                    actions.querySelectorAll('.radio-visual-digital-toolbar-text-btn').forEach((btn) => {
+                        fitBtn(btn, mainOpts);
+                    });
+                }
+                toolbarEl.querySelectorAll('.radio-visual-digital-toolbar-vol .radio-visual-btn').forEach((btn) => {
+                    fitBtn(btn, volOpts);
                 });
             }
 
@@ -4228,6 +4237,8 @@
                 }
                 const ro = new ResizeObserver(run);
                 ro.observe(rootEl);
+                const actions = rootEl.querySelector('.radio-visual-digital-toolbar-actions');
+                if (actions) ro.observe(actions);
                 rootEl.querySelectorAll('.radio-visual-btn').forEach((btn) => ro.observe(btn));
                 const volGroup = rootEl.querySelector('.radio-visual-digital-toolbar-vol');
                 if (volGroup) ro.observe(volGroup);
@@ -4661,13 +4672,14 @@
                 digitalToolbar = document.createElement('div');
                 digitalToolbar.className = 'radio-visual-digital-toolbar';
                 digitalToolbar.id = 'radio-visual-digital-toolbar';
+                const rvToolbarTextBtnClass = 'radio-visual-btn radio-visual-digital-toolbar-text-btn';
                 btnDigitalSpectrum = document.createElement('button');
                 btnDigitalSpectrum.type = 'button';
-                btnDigitalSpectrum.className = 'radio-visual-btn';
+                btnDigitalSpectrum.className = rvToolbarTextBtnClass;
                 this._appendRvButtonLabel(btnDigitalSpectrum, 'Spectrum');
                 btnDigitalVideo = document.createElement('button');
                 btnDigitalVideo.type = 'button';
-                btnDigitalVideo.className = 'radio-visual-btn';
+                btnDigitalVideo.className = rvToolbarTextBtnClass;
                 btnDigitalVideo.title = 'Toggle video in staging area';
                 btnDigitalVideo.setAttribute('aria-label', 'Toggle staging video');
                 this._appendRvButtonLabel(btnDigitalVideo, 'VIDEO');
@@ -4697,10 +4709,14 @@
                 volGroup.appendChild(volDown);
                 volGroup.appendChild(volDigitalReadout);
                 volGroup.appendChild(volUp);
+                const toolbarActions = document.createElement('div');
+                toolbarActions.className = 'radio-visual-digital-toolbar-actions';
+                toolbarActions.setAttribute('role', 'group');
+                toolbarActions.setAttribute('aria-label', 'Deck controls');
                 const mkRvDigitalBtn = (act, lab) => {
                     const b = document.createElement('button');
                     b.type = 'button';
-                    b.className = 'radio-visual-btn';
+                    b.className = rvToolbarTextBtnClass;
                     b.dataset.rvDigital = act;
                     this._appendRvButtonLabel(b, lab);
                     if (act === 'mix') {
@@ -4712,7 +4728,7 @@
                 const mkRvStationBtn = (lab, deck) => {
                     const b = document.createElement('button');
                     b.type = 'button';
-                    b.className = 'radio-visual-btn';
+                    b.className = rvToolbarTextBtnClass;
                     b.dataset.rvDeckTransport = deck;
                     this._appendRvButtonLabel(b, lab);
                     return b;
@@ -4728,14 +4744,15 @@
                 btnXfadeStation.textContent = '🔀';
                 btnXfadeStation.title = 'Change station when auto-fading (toggle)';
                 btnXfadeStation.setAttribute('aria-label', 'Change station when auto-fading');
+                toolbarActions.appendChild(btnDigitalSpectrum);
+                toolbarActions.appendChild(btnDeckATransport);
+                toolbarActions.appendChild(btnFade);
+                toolbarActions.appendChild(btnMix);
+                toolbarActions.appendChild(btnDeckBTransport);
+                toolbarActions.appendChild(btnDigitalVideo);
                 digitalToolbar.appendChild(btnVis);
-                digitalToolbar.appendChild(btnDigitalSpectrum);
-                digitalToolbar.appendChild(btnDeckATransport);
-                digitalToolbar.appendChild(btnFade);
+                digitalToolbar.appendChild(toolbarActions);
                 digitalToolbar.appendChild(volGroup);
-                digitalToolbar.appendChild(btnMix);
-                digitalToolbar.appendChild(btnDeckBTransport);
-                digitalToolbar.appendChild(btnDigitalVideo);
                 digitalToolbar.appendChild(btnXfadeStation);
                 dPanel.appendChild(digitalCenter);
                 dPanel.appendChild(digitalToolbar);

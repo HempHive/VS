@@ -1154,6 +1154,7 @@
             font-size: 1.25rem;
             line-height: 1;
         }
+        #radio-visual-root .radio-visual-digital-toolbar-text-btn.is-active,
         #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-btn.is-active,
         #radio-visual-root .radio-visual-digital-station-row .radio-visual-btn.is-active {
             color: #e8f8ff;
@@ -1164,6 +1165,7 @@
                 inset 0 0 20px rgba(100, 200, 255, 0.28);
             text-shadow: 0 0 12px rgba(140, 220, 255, 0.7);
         }
+        #radio-visual-root .radio-visual-digital-toolbar-text-btn.is-active .radio-visual-btn-label,
         #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-btn.is-active .radio-visual-btn-label {
             color: #ffe566;
             text-shadow:
@@ -1181,41 +1183,42 @@
             overflow: hidden;
         }
         #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-btn {
-            flex: 1 1 0;
-            min-width: 0;
-            min-height: 0;
-            padding: clamp(4px, 0.73cqw, 7px) clamp(1px, 0.21cqw, 2px);
-            letter-spacing: 0.02em;
-            line-height: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
             border-color: rgba(0, 220, 255, 0.4);
             background: linear-gradient(180deg, #123048, #081820);
             color: #8ef;
             box-shadow: 0 2px 0 #041018, 0 4px 12px rgba(0, 32, 64, 0.4);
         }
-        /* Labelled toolbar buttons: same sizing model as purple feature buttons (grid cell ≈ flex slot). */
-        #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-btn:has(.radio-visual-btn-label) {
+        /* Text toolbar buttons live in a grid (same sizing model as purple feature row). */
+        #radio-visual-root .radio-visual-digital-toolbar-actions {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: clamp(1px, 0.31cqw, 3px);
+            flex: 1 1 0;
+            min-width: 0;
+            align-self: center;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-text-btn {
             container-type: size;
             container-name: rv-toolbar-btn;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex: 1 1 0;
             aspect-ratio: 2.35 / 1;
             min-width: 0;
             min-height: 0;
-            height: auto;
-            align-self: center;
+            width: 100%;
             padding: 7% 5%;
-            font-size: inherit;
+            letter-spacing: 0.02em;
+            line-height: 1;
             overflow: hidden;
+            border-color: rgba(0, 220, 255, 0.4);
+            background: linear-gradient(180deg, #123048, #081820);
+            color: #8ef;
+            box-shadow: 0 2px 0 #041018, 0 4px 12px rgba(0, 32, 64, 0.4);
         }
-        #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn .radio-visual-btn-label {
+        #radio-visual-root .radio-visual-digital-toolbar-text-btn .radio-visual-btn-label {
             display: block;
             width: 100%;
-            max-height: 100%;
             color: #8ef;
             font-weight: 800;
             letter-spacing: 0.02em;
@@ -1227,11 +1230,10 @@
             text-overflow: ellipsis;
             text-shadow: 0 0 6px rgba(0, 200, 255, 0.45);
         }
-        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-btn:has(.radio-visual-btn-label) {
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            flex: 0 1 auto;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn {
             border-color: rgba(0, 220, 255, 0.4);
