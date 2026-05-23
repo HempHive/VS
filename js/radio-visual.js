@@ -1493,6 +1493,17 @@
                 this._stationBRand();
             }
 
+            /** Crossfader-winning deck: next queued local track, else random station (N shortcut, like A▶ / B▶). */
+            _crossfadedDeckNextOrStation() {
+                const x = this._getCrossfadeX();
+                if (x < 0.5) this._deckANextOrStation();
+                else this._deckBNextOrStation();
+            }
+
+            triggerNextFromShortcut() {
+                try { this._crossfadedDeckNextOrStation(); } catch (_) {}
+            }
+
             _setStationB(index) {
                 if (!Array.isArray(stations) || !stations.length) return;
                 const idx = Math.max(0, Math.min(stations.length - 1, Number(index) || 0));
@@ -1878,11 +1889,23 @@
                         && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey;
                     const isC = (ev.key === 'c' || ev.key === 'C')
                         && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey;
+                    const isN = (ev.key === 'n' || ev.key === 'N')
+                        && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey;
                     if (!isSpace) {
                         this._resetDigitalSpaceShortcutState();
                     }
                     if (!isI) {
                         this._resetDigitalIShortcutState();
+                    }
+                    if (isN) {
+                        if (!this._isRadioVisualActive() || this.skin !== 'digital') return;
+                        try {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                        } catch (_) {}
+                        if (ev.repeat) return;
+                        try { this.triggerNextFromShortcut(); } catch (_) {}
+                        return;
                     }
                     if (isC) {
                         if (!this._isRadioVisualActive() || this.skin !== 'digital') return;

@@ -5789,7 +5789,8 @@ tiGlowColorRandBtn.addEventListener('click', () => {
          * Holding the key (key-repeat after the OS threshold) is suppressed by the
          * `e.repeat` guard in the keydown branch so a deliberate hold never stutters
          * play/pause back and forth — it just resolves to one toggle. Next-station is
-         * the job of the N shortcut (`pickRandomStationForCrossfadedDeck`), not V/B.
+         * Next track/station is the job of the N shortcut (queue-first on Digital Radio,
+         * else `pickRandomStationForCrossfadedDeck`), not V/B.
          *
          * Each helper also handles the cold-start case: if the deck's media element
          * has no source yet, we call playRadio() / playRadioB() so the very first
@@ -6033,9 +6034,16 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 window.__panelGuardUntilMs = 0; // FIX: Reset guard timer for instant open
                 try { toggleTextInPanel(); } catch(_) {}
             } else if (e.key === 'n' || e.key === 'N') {
-                // Next random station on the deck that's currently winning the crossfader
+                // Digital Radio: next queued local on crossfader-winning deck, else random station (like A▶ / B▶).
                 e.preventDefault();
-                try { pickRandomStationForCrossfadedDeck(); } catch(_) {}
+                if (isDigitalRadioVisualActive()) {
+                    const rv = getActiveRadioVisualEngine();
+                    if (rv && typeof rv.triggerNextFromShortcut === 'function') {
+                        try { rv.triggerNextFromShortcut(); } catch (_) {}
+                        return;
+                    }
+                }
+                try { pickRandomStationForCrossfadedDeck(); } catch (_) {}
             } else if (e.key === 'p' || e.key === 'P') {
                 // Toggle the top-menu Radio Stations list (formerly bound to the
                 // left-click on the radio quick button only).
