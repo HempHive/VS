@@ -805,13 +805,20 @@
 
             _syncDigitalStagingButtons() {
                 const grid = this.els.digitalBtns;
-                if (!grid) return;
                 const on = this._digitalStagingView;
-                grid.querySelectorAll('[data-rv-staging]').forEach((btn) => {
-                    const active = !!(on && btn.dataset.rvStaging === on);
-                    btn.classList.toggle('is-active', active);
-                    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-                });
+                if (grid) {
+                    grid.querySelectorAll('[data-rv-staging]').forEach((btn) => {
+                        const active = !!(on && btn.dataset.rvStaging === on);
+                        btn.classList.toggle('is-active', active);
+                        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                    });
+                }
+                const videoOn = on === 'video';
+                if (this.els.btnDigitalVideo) {
+                    this.els.btnDigitalVideo.classList.toggle('is-active', videoOn);
+                    this.els.btnDigitalVideo.setAttribute('aria-pressed', videoOn ? 'true' : 'false');
+                }
+                try { this._syncDigitalSpectrumButtonState(); } catch (_) {}
             }
 
             _failDigitalStagingView() {
@@ -2774,13 +2781,23 @@
                 }
                 const dash = this.els.digitalDashStack;
                 if (dash) dash.classList.toggle('is-spectrum-hud-hidden', hudHidden);
-                if (this.els.btnDigitalSpectrum) {
-                    this.els.btnDigitalSpectrum.setAttribute('aria-pressed', mode === 'full' ? 'true' : 'false');
-                    try { this.els.btnDigitalSpectrum.removeAttribute('title'); } catch (_) {}
-                }
+                this._syncDigitalSpectrumButtonState();
                 if (this.skin === 'digital' && this.digitalCenterMode === 'spectrum') {
                     this._scheduleDigitalSpectrumLayoutSync();
                 }
+            }
+
+            _syncDigitalSpectrumButtonState() {
+                const btn = this.els.btnDigitalSpectrum;
+                if (!btn) return;
+                const inSpectrumCenter = this.digitalCenterMode === 'spectrum' && !this._digitalStagingView;
+                const layout = this._digitalSpectrumLayout === 'focus' || this._digitalSpectrumLayout === 'blank'
+                    ? this._digitalSpectrumLayout
+                    : 'full';
+                const spectrumsVisible = layout !== 'blank';
+                btn.classList.toggle('is-active', inSpectrumCenter && spectrumsVisible);
+                btn.setAttribute('aria-pressed', (inSpectrumCenter && layout === 'full') ? 'true' : 'false');
+                try { btn.removeAttribute('title'); } catch (_) {}
             }
 
             /** full → focus (no centre) → blank (no spectrums) → full */
@@ -2831,12 +2848,7 @@
                 if (this.els.digitalCenterDeckB) {
                     this.els.digitalCenterDeckB.classList.toggle('is-active', next === 'deckB');
                 }
-                if (this.els.btnDigitalSpectrum) {
-                    this.els.btnDigitalSpectrum.classList.toggle('is-active', next === 'spectrum');
-                }
-                if (this.els.btnDigitalDeckB) {
-                    this.els.btnDigitalDeckB.classList.toggle('is-active', next === 'deckB');
-                }
+                this._syncDigitalSpectrumButtonState();
                 if (next === 'deckB') {
                     this._setDigitalDeckBView(this._digitalDeckBView || 'video');
                 } else if (this._digitalStagingView) {
@@ -3940,7 +3952,6 @@
                 if (!gridEl) return;
                 const g = globalThis;
                 const stagingByLabel = {
-                    Video: 'video',
                     ProjectM: 'projectm',
                     'Audio:Bar': 'bars',
                     KARAOKE: 'karaoke'
@@ -3961,30 +3972,20 @@
                             if (typeof dj.toggleDeckBKaraokeEmbed === 'function') dj.toggleDeckBKaraokeEmbed();
                         });
                     }},
-                    { label: 'Video', fn: () => {
-                        if (deckBInPanel) {
-                            this._toggleDigitalStagingFeature('video');
-                            return;
-                        }
-                        this._withDjDeck((dj) => {
-                            if (dj.deckBVizMode === 'video') { dj.tearDownDeckBViz(); dj.syncDeckBVisualButtons(); }
-                            else dj.startDeckBVideoVisual();
-                        });
-                    }},
-                    { label: 'ProjectM', fn: () => {
-                        if (deckBInPanel) {
-                            this._toggleDigitalStagingFeature('projectm');
-                            return;
-                        }
-                        this._loadVisualByName('ProjectM v2');
-                    }},
-                    { label: 'Audio:Bar', fn: () => {
-                        if (deckBInPanel) {
-                            this._toggleDigitalStagingFeature('bars');
-                            return;
-                        }
-                        this._loadVisualByName('Audio Bars');
-                    }},
+                    ...(deckBInPanel ? [
+                        { label: 'Audio:Bar', fn: () => { this._toggleDigitalStagingFeature('bars'); } },
+                        { label: 'ProjectM', fn: () => { this._toggleDigitalStagingFeature('projectm'); } },
+                        { label: 'TEXT-IN', fn: () => { try { g.toggleTextInPanel?.(); } catch (_) {} } }
+                    ] : [
+                        { label: 'Video', fn: () => {
+                            this._withDjDeck((dj) => {
+                                if (dj.deckBVizMode === 'video') { dj.tearDownDeckBViz(); dj.syncDeckBVisualButtons(); }
+                                else dj.startDeckBVideoVisual();
+                            });
+                        }},
+                        { label: 'ProjectM', fn: () => { this._loadVisualByName('ProjectM v2'); } },
+                        { label: 'Audio:Bar', fn: () => { this._loadVisualByName('Audio Bars'); } }
+                    ]),
                     ...(deckBInPanel ? [{
                         label: 'DECKS',
                         fn: () => { this._loadVisualByName('DJ Decks'); }
@@ -4016,6 +4017,10 @@
                     if (it.label === 'DECKS') {
                         b.title = 'Open DJ Decks visual';
                         b.setAttribute('aria-label', 'Open DJ Decks visual');
+                    }
+                    if (deckBInPanel && it.label === 'TEXT-IN') {
+                        b.title = 'Open or close TEXT-IN panel';
+                        b.setAttribute('aria-label', 'TEXT-IN panel');
                     }
                     const stagingKind = stagingByLabel[it.label];
                     if (deckBInPanel && stagingKind) {
@@ -4284,7 +4289,7 @@
                 let digitalCenter = null;
                 let crossDig = null;
                 let btnDigitalSpectrum = null;
-                let btnDigitalDeckB = null;
+                let btnDigitalVideo = null;
                 let btnVis = null;
                 let btnXfadeStation = null;
                 let spectrumBg = null;
@@ -4541,10 +4546,12 @@
                 btnDigitalSpectrum.type = 'button';
                 btnDigitalSpectrum.className = 'radio-visual-btn';
                 this._appendRvButtonLabel(btnDigitalSpectrum, 'Spectrum');
-                btnDigitalDeckB = document.createElement('button');
-                btnDigitalDeckB.type = 'button';
-                btnDigitalDeckB.className = 'radio-visual-btn';
-                this._appendRvButtonLabel(btnDigitalDeckB, 'Deck B');
+                btnDigitalVideo = document.createElement('button');
+                btnDigitalVideo.type = 'button';
+                btnDigitalVideo.className = 'radio-visual-btn';
+                btnDigitalVideo.title = 'Toggle video in staging area';
+                btnDigitalVideo.setAttribute('aria-label', 'Toggle staging video');
+                this._appendRvButtonLabel(btnDigitalVideo, 'VIDEO');
                 btnVis = document.createElement('button');
                 btnVis.type = 'button';
                 btnVis.className = 'radio-visual-btn radio-visual-digital-step-btn radio-visual-digital-vis-btn';
@@ -4609,7 +4616,7 @@
                 digitalToolbar.appendChild(volGroup);
                 digitalToolbar.appendChild(btnMix);
                 digitalToolbar.appendChild(btnDeckBTransport);
-                digitalToolbar.appendChild(btnDigitalDeckB);
+                digitalToolbar.appendChild(btnDigitalVideo);
                 digitalToolbar.appendChild(btnXfadeStation);
                 dPanel.appendChild(digitalCenter);
                 dPanel.appendChild(digitalToolbar);
@@ -4645,7 +4652,7 @@
                     autoMixReadout,
                     crossDigital: crossDig,
                     btnDigitalSpectrum,
-                    btnDigitalDeckB,
+                    btnDigitalVideo,
                     btnVis,
                     btnDigitalMix,
                     btnXfadeStation,
@@ -4750,7 +4757,7 @@
                     } catch (_) {}
                     if (btnDigitalSpectrum) {
                         btnDigitalSpectrum.setAttribute('aria-label', 'Spectrum layout');
-                        btnDigitalSpectrum.setAttribute('aria-pressed', 'true');
+                        try { this._syncDigitalSpectrumButtonState(); } catch (_) {}
                         btnDigitalSpectrum.addEventListener('click', (ev) => {
                             this._stopClick(ev);
                             if (this.digitalCenterMode !== 'spectrum' || this._digitalStagingView) {
@@ -4760,10 +4767,10 @@
                             }
                         }, sig);
                     }
-                    if (btnDigitalDeckB) {
-                        btnDigitalDeckB.addEventListener('click', (ev) => {
+                    if (btnDigitalVideo) {
+                        btnDigitalVideo.addEventListener('click', (ev) => {
                             this._stopClick(ev);
-                            this._setDigitalCenterMode('deckB');
+                            this._toggleDigitalStagingFeature('video');
                         }, sig);
                     }
                     if (crossDig) {
