@@ -4074,20 +4074,28 @@
 
             _fitDigitalToolbarButtonLabels(toolbarEl) {
                 if (!toolbarEl) return;
-                const entries = [];
+                const mainEntries = [];
+                const volEntries = [];
                 toolbarEl.querySelectorAll('.radio-visual-btn .radio-visual-btn-label').forEach((label) => {
                     const btn = label.closest('.radio-visual-btn');
-                    if (btn) entries.push({ btn, label });
+                    if (!btn) return;
+                    if (btn.closest('.radio-visual-digital-toolbar-vol')) volEntries.push({ btn, label });
+                    else mainEntries.push({ btn, label });
                 });
-                if (!entries.length) return;
-                let unified = Infinity;
-                entries.forEach(({ btn, label }) => {
+                if (mainEntries.length) {
+                    let unified = Infinity;
+                    mainEntries.forEach(({ btn, label }) => {
+                        label.style.fontSize = '';
+                        unified = Math.min(unified, this._computeRvButtonLabelFitPx(btn, label));
+                    });
+                    if (!Number.isFinite(unified)) unified = 12;
+                    const px = `${unified}px`;
+                    mainEntries.forEach(({ label }) => { label.style.fontSize = px; });
+                }
+                volEntries.forEach(({ btn, label }) => {
                     label.style.fontSize = '';
-                    unified = Math.min(unified, this._computeRvButtonLabelFitPx(btn, label));
+                    this._computeRvButtonLabelFitPx(btn, label);
                 });
-                if (!Number.isFinite(unified)) unified = 12;
-                const px = `${unified}px`;
-                entries.forEach(({ label }) => { label.style.fontSize = px; });
             }
 
             _wireRvButtonLabelFit(rootEl, fitFn) {

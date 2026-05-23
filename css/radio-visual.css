@@ -1074,6 +1074,7 @@
         #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-btn {
             flex: 1 1 0;
             min-width: 0;
+            min-height: clamp(28px, 4.8cqw, 40px);
             padding: clamp(5px, 0.73cqw, 7px) clamp(1px, 0.21cqw, 2px);
             font-size: clamp(4px, 0.94cqw, 9px);
             letter-spacing: 0.02em;
@@ -1128,6 +1129,7 @@
             flex: 1.35 1 0;
             flex-wrap: nowrap;
             min-width: 0;
+            min-height: clamp(28px, 4.8cqw, 40px);
             align-items: stretch;
             gap: 2px;
         }
