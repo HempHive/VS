@@ -4079,27 +4079,25 @@
 
             _fitDigitalToolbarButtonLabels(toolbarEl) {
                 if (!toolbarEl) return;
-                const mainEntries = [];
                 toolbarEl.querySelectorAll('.radio-visual-btn .radio-visual-btn-label').forEach((label) => {
                     const btn = label.closest('.radio-visual-btn');
                     if (!btn || btn.closest('.radio-visual-digital-toolbar-vol')) return;
-                    mainEntries.push({ btn, label });
-                });
-                if (!mainEntries.length) return;
-                let unified = Infinity;
-                mainEntries.forEach(({ btn, label }) => {
                     label.style.fontSize = '';
-                    unified = Math.min(unified, this._computeRvButtonLabelFitPx(btn, label));
+                    this._computeRvButtonLabelFitPx(btn, label);
                 });
-                if (!Number.isFinite(unified)) unified = 12;
-                const px = `${unified}px`;
-                mainEntries.forEach(({ label }) => { label.style.fontSize = px; });
             }
 
             _wireRvButtonLabelFit(rootEl, fitFn) {
                 if (!rootEl || !this.abortCtrl) return;
+                let rafId = 0;
                 const run = () => {
-                    try { fitFn.call(this, rootEl); } catch (_) {}
+                    if (rafId) cancelAnimationFrame(rafId);
+                    rafId = requestAnimationFrame(() => {
+                        rafId = requestAnimationFrame(() => {
+                            rafId = 0;
+                            try { fitFn.call(this, rootEl); } catch (_) {}
+                        });
+                    });
                 };
                 run();
                 if (typeof ResizeObserver === 'undefined') {
@@ -4109,8 +4107,12 @@
                 const ro = new ResizeObserver(run);
                 ro.observe(rootEl);
                 rootEl.querySelectorAll('.radio-visual-btn').forEach((btn) => ro.observe(btn));
+                const panel = rootEl.closest('.radio-visual-digital-panel')
+                    || rootEl.closest('.radio-visual-stage.radio-visual-skin--digital');
+                if (panel) ro.observe(panel);
                 this.abortCtrl.signal.addEventListener('abort', () => {
                     try { ro.disconnect(); } catch (_) {}
+                    if (rafId) cancelAnimationFrame(rafId);
                 }, { once: true });
             }
 
@@ -4886,6 +4888,13 @@
                 if (this._rvDigitalPmResize) {
                     try { this._rvDigitalPmResize(); } catch (_) {}
                 }
+                try {
+                    if (this.els.digitalBtns) this._fitDigitalFeatureButtonLabels(this.els.digitalBtns);
+                } catch (_) {}
+                try {
+                    const toolbar = document.getElementById('radio-visual-digital-toolbar');
+                    if (toolbar) this._fitDigitalToolbarButtonLabels(toolbar);
+                } catch (_) {}
             }
 
             destroy() {

@@ -841,8 +841,8 @@
             flex-direction: row;
             align-items: center;
             justify-content: stretch;
-            gap: clamp(6px, 1.04cqw, 10px);
-            padding: 6px 10px 8px;
+            gap: clamp(4px, 1.04cqw, 10px);
+            padding: clamp(4px, 0.83cqw, 6px) clamp(4px, 1.04cqw, 10px) clamp(5px, 0.83cqw, 8px);
             flex-shrink: 0;
             border-top: 1px solid rgba(0, 200, 255, 0.28);
             background: linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(12, 14, 22, 0.72) 100%);
@@ -866,16 +866,20 @@
             text-shadow: 0 0 10px rgba(88, 0, 255, 0.45);
         }
         #radio-visual-root .radio-visual-digital-dash-xfade-wrap {
+            container-type: inline-size;
+            container-name: rv-xfade;
             position: relative;
             flex: 1 1 auto;
             min-width: 0;
-            min-height: 48px;
             display: flex;
             align-items: center;
             --cross-x: 0;
             --cross-deck-a: rgba(208, 18, 18, 0.6);
             --cross-deck-b: rgba(30, 26, 77, 0.6);
-            --cross-thumb-half: 24px;
+            --xfade-thumb: clamp(22px, 28cqw, 48px);
+            --cross-thumb-half: calc(var(--xfade-thumb) / 2);
+            --xfade-rail-h: clamp(6px, 4cqw, 12px);
+            min-height: var(--xfade-thumb);
         }
         #radio-visual-root .radio-visual-digital-dash-xfade-wrap::before {
             content: '';
@@ -883,9 +887,9 @@
             left: var(--cross-thumb-half);
             right: var(--cross-thumb-half);
             top: 50%;
-            height: 12px;
+            height: var(--xfade-rail-h);
             transform: translateY(-50%);
-            border-radius: 6px;
+            border-radius: calc(var(--xfade-rail-h) / 2);
             border: 1px solid rgba(212, 175, 55, 0.9);
             box-sizing: border-box;
             background: linear-gradient(
@@ -903,7 +907,7 @@
             appearance: none;
             width: 100%;
             min-width: 0;
-            height: 12px !important;
+            height: var(--xfade-rail-h) !important;
             position: relative;
             z-index: 1;
             margin: 0;
@@ -915,18 +919,18 @@
         #radio-visual-root .radio-visual-digital-dash-xfade-range::-webkit-slider-thumb {
             -webkit-appearance: none !important;
             appearance: none !important;
-            width: 48px !important;
-            height: 48px !important;
+            width: var(--xfade-thumb) !important;
+            height: var(--xfade-thumb) !important;
             background: transparent url('../assets/images/vol.png') center center / 100% 100% no-repeat !important;
             border: none !important;
             border-radius: 50%;
-            margin-top: -18px !important;
+            margin-top: calc((var(--xfade-rail-h) - var(--xfade-thumb)) / 2) !important;
             box-shadow: none !important;
             cursor: pointer;
         }
         #radio-visual-root .radio-visual-digital-dash-xfade-range::-moz-range-thumb {
-            width: 48px !important;
-            height: 48px !important;
+            width: var(--xfade-thumb) !important;
+            height: var(--xfade-thumb) !important;
             background: transparent url('../assets/images/vol.png') center center / 100% 100% no-repeat !important;
             border: none !important;
             border-radius: 50%;
@@ -937,7 +941,7 @@
             background: transparent !important;
         }
         #radio-visual-root .radio-visual-digital-dash-xfade-range::-webkit-slider-runnable-track {
-            height: 12px;
+            height: var(--xfade-rail-h);
             background: transparent;
         }
         #radio-visual-root .radio-visual-digital-deck-b-mount {
@@ -1175,10 +1179,13 @@
             color: #8ef;
             box-shadow: 0 2px 0 #041018, 0 4px 12px rgba(0, 32, 64, 0.4);
         }
-        #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn:has(.radio-visual-btn-label) {
+        #radio-visual-root .radio-visual-digital-toolbar > .radio-visual-btn:has(.radio-visual-btn-label) {
+            container-type: size;
+            container-name: rv-toolbar-btn;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: inherit;
         }
         #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn .radio-visual-btn-label {
             display: block;
