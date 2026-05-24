@@ -42,6 +42,8 @@
                 /** Local playlists panel (Deck A & B) over the spectrum area */
                 this._digitalLocalQueueVisible = false;
                 this._rvAutoMixTimerId = null;
+                this._rvAutoMixNextFadeAt = 0;
+                this._rvAutoMixNextFadeIntervalId = null;
                 this._rvAutoMixCyclePending = false;
                 this._digitalVolStep = 0.05;
                 this._volMuted = false;
@@ -2337,6 +2339,9 @@
             }
 
             _runLocalAutoFade() {
+                if (this._isAutoMixEnabled()) {
+                    this._clearRadioAutoMixTimeoutOnly();
+                }
                 const fadeInFlight = !!(this._rvAutoFadeRaf && this._rvFadeTargetDeck);
                 const prevFadeTarget = this._rvFadeTargetDeck;
                 if (this._rvAutoFadeRaf) {
@@ -2414,8 +2419,8 @@
                         this._rvFadeTargetDeck = null;
                         this._rvFadeActive = false;
                         this._syncFadeKnobs();
-                        if (this._rvAutoMixCyclePending) {
-                            this._rvAutoMixCyclePending = false;
+                        this._rvAutoMixCyclePending = false;
+                        if (this._isAutoMixEnabled()) {
                             try { this._scheduleRadioAutoMix(); } catch (_) {}
                         }
                         return;
@@ -2476,11 +2481,69 @@
                 return true;
             }
 
-            _clearRadioAutoMixTimer() {
+            _formatAutoMixCountdown(ms) {
+                if (!Number.isFinite(ms) || ms <= 0) return '0:00';
+                const totalSec = Math.max(0, Math.ceil(ms / 1000));
+                const h = Math.floor(totalSec / 3600);
+                const m = Math.floor((totalSec % 3600) / 60);
+                const sec = totalSec % 60;
+                if (h > 0) {
+                    return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+                }
+                return `${m}:${String(sec).padStart(2, '0')}`;
+            }
+
+            _clearAutoMixNextFadeTick() {
+                if (this._rvAutoMixNextFadeIntervalId) {
+                    try { clearInterval(this._rvAutoMixNextFadeIntervalId); } catch (_) {}
+                    this._rvAutoMixNextFadeIntervalId = null;
+                }
+            }
+
+            _clearAutoMixNextFadeUi() {
+                if (this.els.digitalAutoMixTimer) {
+                    this.els.digitalAutoMixTimer.textContent = '';
+                    this.els.digitalAutoMixTimer.classList.add('display-none');
+                    this.els.digitalAutoMixTimer.setAttribute('aria-hidden', 'true');
+                }
+            }
+
+            _updateAutoMixNextFadeUi() {
+                if (!this._isAutoMixEnabled() || !this._rvAutoMixNextFadeAt) {
+                    this._clearAutoMixNextFadeUi();
+                    return;
+                }
+                const left = Math.max(0, this._rvAutoMixNextFadeAt - Date.now());
+                const clock = this._formatAutoMixCountdown(left);
+                const el = this.els.digitalAutoMixTimer;
+                if (!el) return;
+                el.textContent = `· ${clock}`;
+                el.classList.remove('display-none');
+                el.setAttribute('aria-hidden', 'false');
+                el.setAttribute('aria-label', `Next auto-mix crossfade in ${clock}`);
+            }
+
+            _syncAutoMixNextFadeDisplay() {
+                this._clearAutoMixNextFadeTick();
+                this._updateAutoMixNextFadeUi();
+                if (!this._isAutoMixEnabled() || !this._rvAutoMixNextFadeAt) return;
+                this._rvAutoMixNextFadeIntervalId = setInterval(() => {
+                    try { this._updateAutoMixNextFadeUi(); } catch (_) {}
+                }, 1000);
+            }
+
+            _clearRadioAutoMixTimeoutOnly() {
                 if (this._rvAutoMixTimerId) {
                     try { clearTimeout(this._rvAutoMixTimerId); } catch (_) {}
                     this._rvAutoMixTimerId = null;
                 }
+            }
+
+            _clearRadioAutoMixTimer() {
+                this._clearRadioAutoMixTimeoutOnly();
+                this._rvAutoMixNextFadeAt = 0;
+                this._clearAutoMixNextFadeTick();
+                this._clearAutoMixNextFadeUi();
             }
 
             _scheduleRadioAutoMix() {
@@ -2490,6 +2553,8 @@
                 const minMs = RadioVisualEngine.AUTOMIX_MIN_MIN * 60 * 1000;
                 const maxMs = Math.max(minMs, maxMin * 60 * 1000);
                 const waitMs = minMs + Math.floor(Math.random() * Math.max(1, maxMs - minMs + 1));
+                this._rvAutoMixNextFadeAt = Date.now() + waitMs;
+                this._syncAutoMixNextFadeDisplay();
                 this._rvAutoMixTimerId = setTimeout(() => {
                     this._rvAutoMixTimerId = null;
                     if (!this._isAutoMixEnabled() || !this._isRadioVisualActive()) return;
@@ -4669,7 +4734,16 @@
                     el.textContent = txt;
                     return el;
                 };
+                const clockRow = document.createElement('div');
+                clockRow.className = 'radio-visual-digital-clock-row';
                 dClk = mkLine('radio-visual-digital-line--clock', 'radio-visual-digital-clock', '—');
+                const digitalAutoMixTimer = document.createElement('span');
+                digitalAutoMixTimer.className = 'radio-visual-digital-automix-timer display-none';
+                digitalAutoMixTimer.id = 'radio-visual-digital-automix-timer';
+                digitalAutoMixTimer.setAttribute('aria-live', 'polite');
+                digitalAutoMixTimer.setAttribute('aria-hidden', 'true');
+                clockRow.appendChild(dClk);
+                clockRow.appendChild(digitalAutoMixTimer);
                 digitalAutoMixPanel = document.createElement('div');
                 digitalAutoMixPanel.className = 'radio-visual-digital-automix-panel';
                 digitalAutoMixPanel.id = 'radio-visual-digital-automix-panel';
@@ -4718,7 +4792,7 @@
                 const centerInfo = document.createElement('div');
                 centerInfo.className = 'radio-visual-digital-center-info';
                 centerInfo.setAttribute('aria-live', 'polite');
-                centerInfo.appendChild(dClk);
+                centerInfo.appendChild(clockRow);
                 const carDisplay = document.createElement('div');
                 carDisplay.className = 'radio-visual-digital-car-display';
                 digitalCarDashCanvas = document.createElement('canvas');
@@ -4925,6 +4999,7 @@
                     digitalDeckBVideo,
                     volDigitalReadout,
                     digitalClock: dClk,
+                    digitalAutoMixTimer,
                     digitalCenter,
                     analogBtns,
                     digitalBtns: digBtns
