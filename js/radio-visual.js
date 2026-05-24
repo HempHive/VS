@@ -4597,6 +4597,7 @@
                 let needleB = null;
                 let vuCanvas = null;
                 let dClk = null;
+                let digitalAutoMixTimer = null;
                 let digBtns = null;
                 let digitalCenter = null;
                 let crossDig = null;
@@ -4737,7 +4738,7 @@
                 const clockRow = document.createElement('div');
                 clockRow.className = 'radio-visual-digital-clock-row';
                 dClk = mkLine('radio-visual-digital-line--clock', 'radio-visual-digital-clock', '—');
-                const digitalAutoMixTimer = document.createElement('span');
+                digitalAutoMixTimer = document.createElement('span');
                 digitalAutoMixTimer.className = 'radio-visual-digital-automix-timer display-none';
                 digitalAutoMixTimer.id = 'radio-visual-digital-automix-timer';
                 digitalAutoMixTimer.setAttribute('aria-live', 'polite');
