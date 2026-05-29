@@ -2391,22 +2391,7 @@
                 }
                 try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
                 this._retuneIncomingDeckForAutoFade(targetDeck);
-                if (targetDeck === 'b') {
-                    try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
-                } else {
-                    try {
-                        const m = (typeof getDeckAMediaForPlaybackState === 'function')
-                            ? getDeckAMediaForPlaybackState()
-                            : audioEl;
-                        if (!m || !m.src) {
-                            if (typeof playRadio === 'function') playRadio();
-                        } else if (m.paused) {
-                            m.play().catch(() => {});
-                        }
-                    } catch (_) {
-                        try { if (typeof playRadio === 'function') playRadio(); } catch (_) {}
-                    }
-                }
+                this._ensureIncomingDeckPlaybackForAutoFade(targetDeck);
                 const durMs = this._readAutoFadeDurationMs();
                 const startTs = performance.now();
                 const tick = (ts) => {
@@ -2608,10 +2593,43 @@
             _retuneIncomingDeckForAutoFade(targetDeck) {
                 if (!this._isAutoFadeChangeStationEnabled()) return;
                 try {
+                    if (state.deckSourceMode && state.deckSourceMode[targetDeck] === 'local') return;
+                } catch (_) {}
+                try {
                     if (targetDeck === 'b') {
                         if (typeof pickRandomStationB === 'function') pickRandomStationB();
                     } else if (typeof pickRandomStation === 'function') pickRandomStation();
                 } catch (_) {}
+            }
+
+            _ensureIncomingDeckPlaybackForAutoFade(targetDeck) {
+                const dk = targetDeck === 'b' ? 'b' : 'a';
+                try {
+                    const localMode = !!(state && state.deckSourceMode && state.deckSourceMode[dk] === 'local');
+                    const media = dk === 'b'
+                        ? this._deckBPlaybackMedia()
+                        : ((typeof getDeckAMediaForPlaybackState === 'function')
+                            ? getDeckAMediaForPlaybackState()
+                            : audioEl);
+                    const src = media ? String(media.currentSrc || media.src || '') : '';
+                    if (localMode && src && src !== 'about:blank') {
+                        if (media.paused) media.play().catch(() => {});
+                        return;
+                    }
+                    if (!media || !src || src === 'about:blank') {
+                        if (dk === 'b') {
+                            if (typeof playRadioB === 'function') playRadioB();
+                        } else if (typeof playRadio === 'function') playRadio();
+                        return;
+                    }
+                    if (media.paused) media.play().catch(() => {});
+                } catch (_) {
+                    try {
+                        if (dk === 'b') {
+                            if (typeof playRadioB === 'function') playRadioB();
+                        } else if (typeof playRadio === 'function') playRadio();
+                    } catch (_) {}
+                }
             }
 
             _setAutoFadeChangeStationEnabled(on) {
@@ -5106,7 +5124,10 @@
                             try { ev.stopPropagation(); } catch (_) {}
                             try { window.__suppressNextClick = true; } catch (_) {}
                         };
-                        crossDig.addEventListener('input', () => this._setCrossfadeX(crossDig.value), sig);
+                        crossDig.addEventListener('input', () => {
+                            this._setCrossfadeX(crossDig.value);
+                            try { this._resumeDecksForCrossfade(); } catch (_) {}
+                        }, sig);
                         crossDig.addEventListener('pointerdown', stopXfadePointerBubble, sig);
                         crossDig.addEventListener('pointerup', stopXfadePointerBubble, sig);
                         crossDig.addEventListener('pointercancel', stopXfadePointerBubble, sig);

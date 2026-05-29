@@ -1763,11 +1763,12 @@
             try { audioElB.crossOrigin = 'anonymous'; } catch (_) {}
             audioElB.src = item.url;
             if (item.isVideo) registerDeckVideoFeed('b', item.url, item.name, true);
-            if (deferForAutoMix) {
+            const preservePaused = !!(opts && opts.preserveCrossfade) && !deckWinsCrossfade('b');
+            if (deferForAutoMix || preservePaused) {
                 try { audioElB.currentTime = 0; } catch (_) {}
                 try { audioElB.pause(); } catch (_) {}
                 try { connectDeckMediaToEq('b'); } catch (_) {}
-                markAutoMixDeferredLocal('b', true);
+                if (deferForAutoMix) markAutoMixDeferredLocal('b', true);
                 try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
                 return;
             }

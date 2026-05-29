@@ -4146,6 +4146,15 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                 resetIdleTimer();
             });
         }
+        const mixPanelVisual = document.getElementById('mix-panel-visual');
+        if (mixPanelVisual) {
+            mixPanelVisual.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                try { loadMode(state.currentModeIdx + 1); } catch (_) {}
+                try { resetIdleTimer(); } catch (_) {}
+            });
+        }
         if (mixClose) {
             mixClose.addEventListener('click', (e) => {
                 e.preventDefault(); e.stopPropagation();

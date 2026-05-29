@@ -388,7 +388,10 @@
                 <span style="font-size:12px; color:#5800FF; font-weight:bold">B</span>
             </div>
             <span id="midi-status" style="font-size:10px; color:#889; white-space:nowrap; flex-shrink:0; max-width:140px; overflow:hidden; text-overflow:ellipsis; cursor:pointer;" title="Bluetooth/USB MIDI (Web MIDI API). Default: CC54=crossfader; Ch.1 CC7=Gain A; Ch.2 CC7=Gain B; Note 36/37=Play A/B. Custom: localStorage key omniMidiMap (JSON). Click to enable MIDI or reopen this prompt (same as OMNI “M” on the start screen).">MIDI · …</span>
-            <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
+            <div class="mix-panel-visual-close" style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                <button type="button" class="btn" id="mix-panel-visual" title="Next visual mode">Visual ͢</button>
+                <button class="icon-btn interactive" id="btn-mix-close" title="Close" aria-label="Close">✕</button>
+            </div>
         </h3>
         
         <div id="mix-content">

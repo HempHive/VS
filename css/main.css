@@ -1158,6 +1158,18 @@
             letter-spacing: 1px; text-transform: uppercase; color: #ddd;
             display:flex; align-items:center; justify-content:space-between;
         }
+        #mix-panel .mix-panel-visual-close {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        #mix-panel .mix-panel-visual-close .btn {
+            padding: 4px 10px;
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            text-transform: none;
+        }
         #mix-content { 
             padding: 12px; 
             display: flex; 
