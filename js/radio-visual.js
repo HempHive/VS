@@ -4651,6 +4651,7 @@
                 let btnXfadeStation = null;
                 let spectrumBg = null;
                 let dashStack = null;
+                let dashXfade = null;
                 let digitalCenterSpectrum = null;
                 let digitalCenterDeckB = null;
                 let spectrumSideL = null;
@@ -4843,7 +4844,7 @@
                 digitalCarDashCanvas = document.createElement('canvas');
                 digitalCarDashCanvas.className = 'radio-visual-digital-car-dash-canvas';
                 digitalCarDashCanvas.id = 'radio-visual-digital-car-dash';
-                const dashXfade = document.createElement('div');
+                dashXfade = document.createElement('div');
                 dashXfade.className = 'radio-visual-digital-dash-xfade';
                 const xfLblA = document.createElement('span');
                 xfLblA.className = 'radio-visual-digital-dash-xfade-end radio-visual-digital-dash-xfade-end--a';
