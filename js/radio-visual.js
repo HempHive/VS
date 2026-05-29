@@ -1069,6 +1069,9 @@
 
             _applyDigitalStagingVideoPayload(vid, cur) {
                 if (!vid || !cur || !cur.url) return;
+                if (!cur.syncFrom) {
+                    this._setDigitalStagingVideoOpacity(vid, 1);
+                }
                 const want = String(cur.url);
                 const had = String(vid.currentSrc || vid.src || '');
                 const same = (typeof urlsMediaMatch === 'function')
