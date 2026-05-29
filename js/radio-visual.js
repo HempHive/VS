@@ -1774,8 +1774,6 @@
                 this._syncCrossfadeKnob();
                 try { this._applyDigitalStagingVideoCrossfadeOpacities(); } catch (_) {}
             }
-
-            /** Right-click hold on digital crossfader: cut to pointer; release restores (DJ Deck behaviour). */
             _wireDigitalCrossfadeCutHold(crossEl, sig) {
                 if (!crossEl || crossEl.dataset.cutFadeHold === '1') return;
                 crossEl.dataset.cutFadeHold = '1';
@@ -1837,7 +1835,34 @@
                     this._setKnobRotation(this.els.crossKnob, (x * 270) - 135);
                 }
                 if (this.els.crossDigital) this.els.crossDigital.value = String(x);
+                try { this._syncDigitalCrossfadeLabels(); } catch (_) {}
                 if (this._isRadioVisualActive()) this._updateHudModeLines();
+            }
+
+            /** Scale A/B labels beside the digital dash crossfader with fader position. */
+            _syncDigitalCrossfadeLabels() {
+                const wrap = this.els.digitalDashXfade;
+                if (!wrap) return;
+                const x = Math.max(0, Math.min(1, this._getCrossfadeX()));
+                const minScale = 0.78;
+                const maxScale = 1.42;
+                const span = maxScale - minScale;
+                wrap.style.setProperty('--xf-label-scale-a', String(minScale + ((1 - x) * span)));
+                wrap.style.setProperty('--xf-label-scale-b', String(minScale + (x * span)));
+            }
+
+            /** Deck B has a local track cued/loaded (may be paused while crossfader favours A). */
+            _deckBLcdLineReady() {
+                if (this._deckBActive()) return true;
+                try {
+                    if (state.deckSourceMode && state.deckSourceMode.b === 'local') {
+                        const el = this._deckBPlaybackMedia();
+                        if (this._deckHasSource(el)) return true;
+                        const dn = state.deckLocalDisplayName && state.deckLocalDisplayName.b;
+                        if (dn && String(dn).trim()) return true;
+                    }
+                } catch (_) {}
+                return false;
             }
 
             _crossfaderAudibleDeckKey() {
@@ -1945,7 +1970,7 @@
             }
 
             _digitalLcdSecondaryLine() {
-                if (!this._deckBActive()) return 'STEREO · EQ';
+                if (!this._deckBLcdLineReady()) return 'STEREO · EQ';
                 const name = this._deckStationDisplayName('b');
                 if (name && name !== '—') return name;
                 return 'STEREO · EQ';
@@ -3863,6 +3888,7 @@
                 this._drawDigitalSpectrumFlower(cL, pack.layersL, pack.n, this._donutCoreHueA, pack.t);
                 this._drawDigitalSpectrumFlower(cR, pack.layersR, pack.n, this._donutCoreHueB, pack.t);
                 if (this._digitalSpectrumLayout === 'full') {
+                    try { this._syncDigitalCrossfadeLabels(); } catch (_) {}
                     this._drawDigitalCarDash(
                         pack.eqHeights,
                         pack.t,
@@ -5016,6 +5042,7 @@
                     digitalSpectrumCanvasR,
                     digitalCarDashCanvas,
                     digitalDeckBVideo,
+                    digitalDashXfade: dashXfade,
                     volDigitalReadout,
                     digitalClock: dClk,
                     digitalAutoMixTimer,
@@ -5134,6 +5161,7 @@
                         crossDig.addEventListener('change', stopXfadePointerBubble, sig);
                         this._wireDigitalCrossfadeCutHold(crossDig, sig);
                     }
+                    try { this._syncDigitalCrossfadeLabels(); } catch (_) {}
                     if (btnDigitalMix) this._wireDigitalMixButton(btnDigitalMix, sig);
                     if (digitalAutoMixSlider) {
                         const applyAutoMixMax = () => {
