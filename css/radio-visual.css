@@ -894,23 +894,30 @@
             opacity: 1;
         }
         #radio-visual-root .radio-visual-digital-dash-xfade-end {
-            flex: 0 0 auto;
-            min-width: 1.1em;
+            flex: 0 0 2em;
+            width: 2em;
+            min-width: 2em;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
+            font-size: clamp(10px, 1.46cqw, 14px);
             font-weight: 800;
             letter-spacing: 0.06em;
+            line-height: 1;
             text-shadow: 0 0 8px rgba(0, 0, 0, 0.75);
-            transition: font-size 0.12s ease-out;
+            transform-origin: center center;
+            transition: transform 0.12s ease-out;
         }
         #radio-visual-root .radio-visual-digital-dash-xfade-end--a {
             color: #ff0b55;
             text-shadow: 0 0 10px rgba(255, 11, 85, 0.55);
-            font-size: calc(clamp(10px, 1.46cqw, 14px) * var(--xf-label-scale-a, 1));
+            transform: scale(var(--xf-label-scale-a, 1));
         }
         #radio-visual-root .radio-visual-digital-dash-xfade-end--b {
             color: #5800ff;
             text-shadow: 0 0 10px rgba(88, 0, 255, 0.45);
-            font-size: calc(clamp(10px, 1.46cqw, 14px) * var(--xf-label-scale-b, 1));
+            transform: scale(var(--xf-label-scale-b, 1));
         }
         #radio-visual-root .radio-visual-digital-dash-xfade-wrap {
             container-type: inline-size;

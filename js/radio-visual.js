@@ -1847,7 +1847,7 @@
                 const wrap = this.els.digitalDashXfade;
                 if (!wrap) return;
                 const x = Math.max(0, Math.min(1, this._getCrossfadeX()));
-                const minScale = 0.78;
+                const minScale = 0.88;
                 const maxScale = 1.42;
                 const span = maxScale - minScale;
                 wrap.style.setProperty('--xf-label-scale-a', String(minScale + ((1 - x) * span)));
