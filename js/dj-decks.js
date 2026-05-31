@@ -2840,6 +2840,7 @@
                     <button type="button" class="dj-queue-shuffle" id="dj-queue-shuffle-a" title="Shuffle Deck A queue" aria-label="Shuffle Deck A queue">🔀</button>
                     <button type="button" class="dj-queue-folder" id="dj-queue-folder-a" title="Add all audio/video files from a folder">Folder…</button>
                     <button type="button" class="dj-queue-add-url" id="dj-queue-url-deck-a" title="Add a URL (radio streams go to Station cycle)">Add URL…</button>
+                    <button type="button" class="dj-queue-clear-all" id="dj-queue-clear-a" title="Clear Deck A queue" aria-label="Clear Deck A queue">X</button>
                   </div>
                 </div>
                 <ul id="dj-queue-list-a" class="dj-queue-list"></ul>
@@ -2852,6 +2853,7 @@
                     <button type="button" class="dj-queue-shuffle" id="dj-queue-shuffle-b" title="Shuffle Deck B queue" aria-label="Shuffle Deck B queue">🔀</button>
                     <button type="button" class="dj-queue-folder" id="dj-queue-folder-b" title="Add all audio/video files from a folder">Folder…</button>
                     <button type="button" class="dj-queue-add-url" id="dj-queue-url-deck-b" title="Add a URL (radio streams go to Station cycle)">Add URL…</button>
+                    <button type="button" class="dj-queue-clear-all" id="dj-queue-clear-b" title="Clear Deck B queue" aria-label="Clear Deck B queue">X</button>
                   </div>
                 </div>
                 <ul id="dj-queue-list-b" class="dj-queue-list"></ul>
@@ -5072,6 +5074,26 @@
                     }
                     if (btnUrlDeckA) btnUrlDeckA.addEventListener('click', () => { try { promptAddUrlForDeck('a'); this.refreshQueueUi(); } catch (_) {} }, sig);
                     if (btnUrlDeckB) btnUrlDeckB.addEventListener('click', () => { try { promptAddUrlForDeck('b'); this.refreshQueueUi(); } catch (_) {} }, sig);
+                    const btnClearA = root.querySelector('#dj-queue-clear-a');
+                    const btnClearB = root.querySelector('#dj-queue-clear-b');
+                    const onClearQueue = (deckKey) => {
+                        try {
+                            if (typeof clearDeckFileQueue === 'function') clearDeckFileQueue(deckKey);
+                        } catch (_) {}
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    };
+                    if (btnClearA) {
+                        btnClearA.addEventListener('click', (ev) => {
+                            try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                            onClearQueue('a');
+                        }, sig);
+                    }
+                    if (btnClearB) {
+                        btnClearB.addEventListener('click', (ev) => {
+                            try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                            onClearQueue('b');
+                        }, sig);
+                    }
                     const applyDeckLocalFilePick = (deckKey, files, forceNow) => {
                         if (!files || !files.length) return;
                         if (forceNow) ingestLocalFilesToDeckAndPlay(deckKey, files);
