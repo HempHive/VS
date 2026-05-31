@@ -1485,6 +1485,18 @@
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
 
+        function shuffleDeckFileQueue(deckKey) {
+            const q = deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
+            if (!q || q.length < 2) return;
+            for (let i = q.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const tmp = q[i];
+                q[i] = q[j];
+                q[j] = tmp;
+            }
+            try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+        }
+
         function moveQueuedTrackToOtherDeck(deckKey, index) {
             const src = deckKey === 'b' ? deckFileQueues.b : deckFileQueues.a;
             const dstKey = deckKey === 'b' ? 'a' : 'b';

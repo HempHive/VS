@@ -228,6 +228,9 @@ const QUALITY = {
         const radioQuickBtn = document.getElementById('radio-quick');
         const radioPanel = document.getElementById('radio-panel');
         const radioListEl = document.getElementById('radio-list');
+        const radioListElB = document.getElementById('radio-list-b');
+        const topMenuStationsWrap = document.getElementById('top-menu-stations-wrap');
+        let topMenuStationsBSplitManual = false;
         const radioInputEl = document.getElementById('radio-url') || document.getElementById('station-url');
         const audioEl = document.getElementById('radio-element');
         const audioElRadioAAlt = document.getElementById('radio-element-a-alt');
@@ -600,9 +603,6 @@ const QUALITY = {
                 }
             } catch(_) {}
         }
-        const mixStationB = document.getElementById('mix-station-b');
-        const mixPlayB = document.getElementById('mix-b-play');
-        const mixStopB = document.getElementById('mix-b-stop');
         const mixCross = document.getElementById('mix-crossfader');
         // Sample player
         const audioElSample = new Audio();
@@ -653,8 +653,6 @@ const QUALITY = {
         try { audioElSample4.volume = 1; } catch(_) {}
         try { audioElSample5.volume = 1; } catch(_) {}
         try { audioElSample6.volume = 1; } catch(_) {}
-        const mixBStatusDot = document.getElementById('mix-b-status-dot');
-        const mixBStatusText = document.getElementById('mix-b-status-text');
         function updateMixBStatus() {
             // Check the active dynamic audio object first, fallback to the static element
             const activeB = state.audioElB || audioElB;
@@ -669,9 +667,7 @@ const QUALITY = {
                 (audioElSample5 && !audioElSample5.paused && !audioElSample5.ended) ||
                 (audioElSample6 && !audioElSample6.paused && !audioElSample6.ended)
             );
-            
-            if (mixBStatusDot) mixBStatusDot.classList.toggle('on', playing);
-            if (mixBStatusText) mixBStatusText.textContent = playing ? 'B: Playing' : 'B: Stopped';
+            try { syncTopMenuStationsLayout(); } catch (_) {}
         }
         const inpShuffleMin = document.getElementById('inp-shuffle-min');
         const inpShuffleMax = document.getElementById('inp-shuffle-max');
@@ -1349,28 +1345,6 @@ const QUALITY = {
             a: { gain: 1.0, high: 0, mid: 0, low: 0 },
             b: { gain: 1.0, high: 0, mid: 0, low: 0 }
         };
-        // --- RANDOM B BUTTON LOGIC ---
-        const mixRandomB = document.getElementById('mix-b-random');
-        if (mixRandomB) {
-            mixRandomB.addEventListener('click', (e) => {
-                e.preventDefault(); 
-                e.stopPropagation();
-                
-                if (!stations || stations.length === 0) return;
-                const current = parseInt(mixStationB?.value || '-1', 10);
-                const eligible = getCycleEligibleStationIndexes(current);
-                if (!eligible.length) return;
-                const idx = eligible[Math.floor(Math.random() * eligible.length)];
-
-                // Update the Dropdown Visuals
-                if (mixStationB) {
-                    mixStationB.value = String(idx);
-                }
-
-                // Play the new station
-                playRadioB();
-            });
-        }
         // --- BPM scope + detection ---
         function drawScopeAndUpdateBpm() {
             if (!scopeCanvas || !scopeCtx) return;
@@ -3356,10 +3330,6 @@ function exposeAppBindingsToGlobal() {
     try { g.mixCross = mixCross; } catch (_) {}
     try { g.mixOpen = mixOpen; } catch (_) {}
     try { g.mixPanel = mixPanel; } catch (_) {}
-    try { g.mixPlayB = mixPlayB; } catch (_) {}
-    try { g.mixRandomB = mixRandomB; } catch (_) {}
-    try { g.mixStationB = mixStationB; } catch (_) {}
-    try { g.mixStopB = mixStopB; } catch (_) {}
     try { g.mixerEl = mixerEl; } catch (_) {}
     try { g.modeShuffleOn = modeShuffleOn; } catch (_) {}
     try { g.modeShuffleTimer = modeShuffleTimer; } catch (_) {}
@@ -3499,6 +3469,9 @@ function exposeAppBindingsToGlobal() {
     try { g.setLayer = setLayer; } catch (_) {}
     try { g.setLbl = setLbl; } catch (_) {}
     try { g.setStation = setStation; } catch (_) {}
+    try { g.setStationB = setStationB; } catch (_) {}
+    try { g.syncTopMenuStationsLayout = syncTopMenuStationsLayout; } catch (_) {}
+    try { g.deckBHasLoadedContent = deckBHasLoadedContent; } catch (_) {}
     try { g.setVolume = setVolume; } catch (_) {}
     try { g.setWebmSpeed = setWebmSpeed; } catch (_) {}
     try { g.settingsApplyBtn = settingsApplyBtn; } catch (_) {}
@@ -4157,41 +4130,12 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                 setTimeout(() => { mixPanel.classList.add('display-none'); }, 350);
             });
         }
-        // Populate second station select
+        // Populate second station select (legacy no-op; lists live in top menu)
         function refreshMixStationB() {
-            if (!mixStationB) return;
-            mixStationB.innerHTML = '';
-            
-            if (Array.isArray(stations) && stations.length > 0) {
-                // Ensure index is valid
-                if (typeof currentStationBIndex !== 'number' || currentStationBIndex < 0) {
-                    currentStationBIndex = 0;
-                }
-                
-                stations.forEach((s, i) => {
-                    const opt = document.createElement('option');
-                    opt.value = String(i);
-                    opt.textContent = s.name || ('Station ' + (i+1));
-                    mixStationB.appendChild(opt);
-                });
-
-                // RESTORE THE SAVED SELECTION
-                mixStationB.value = String(currentStationBIndex);
-            }
+            try { updateStationActiveHighlight(); } catch (_) {}
+            try { syncTopMenuStationsLayout(); } catch (_) {}
         }
         refreshMixStationB();
-        if (mixStationB) {
-            mixStationB.addEventListener('change', () => {
-                try {
-                    const idx = Math.max(0, Math.min(stations.length - 1, parseInt(mixStationB.value || '0', 10) || 0));
-                    currentStationBIndex = idx;
-                    mixStationB.value = String(idx);
-                    if (typeof playRadioB === 'function') playRadioB();
-                    if (typeof resetIdleTimer === 'function') resetIdleTimer();
-                    try { updateModeSubStationLine(); } catch (_) {}
-                } catch (_) {}
-            });
-        }
         // Crossfader handler (equal-power)
         function applyCrossfade(val) {
             let x = Math.max(0, Math.min(1, Number(val)||0));
@@ -4657,9 +4601,9 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             state.deckSourceMode.b = 'radio';
             try { state.deckLocalDisplayName.b = ''; } catch (_) {}
 
-            let val = parseInt((mixStationB?.value) || '0', 10);
-            if (isNaN(val)) val = 0;
-            const idx = Math.max(0, Math.min(stations.length - 1, val));
+            let idx = (typeof currentStationBIndex === 'number' && currentStationBIndex >= 0)
+                ? currentStationBIndex : 0;
+            idx = Math.max(0, Math.min(stations.length - 1, idx));
             currentStationBIndex = idx;
 
             const sel = stations[idx];
@@ -4697,6 +4641,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                 radioBRetryAttempts = 0;
                 try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
                 updateMixBStatus();
+                try { updateStationActiveHighlight(); } catch (_) {}
             };
 
             const onPlayFail = (e) => {
@@ -4759,10 +4704,8 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                 try { audioElB.load(); } catch (_) {}
             }
             updateMixBStatus();
+            try { syncTopMenuStationsLayout(); } catch (_) {}
         }
-        if (mixPlayB) mixPlayB.addEventListener('click', playRadioB);
-        if (mixStopB) mixStopB.addEventListener('click', stopRadioB);
-        // Monitor B status
         try {
             ['play','pause','ended','stalled','error','suspend','abort'].forEach(ev => {
                 audioElB.addEventListener(ev, updateMixBStatus);
@@ -4885,24 +4828,68 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             }
         }
 
+        function deckBHasLoadedContent() {
+            try {
+                if (state.deckSourceMode && state.deckSourceMode.b === 'local') {
+                    const q = state.deckLocalQueue && state.deckLocalQueue.b;
+                    if (Array.isArray(q) && q.length > 0) return true;
+                    const dn = state.deckLocalDisplayName && state.deckLocalDisplayName.b;
+                    if (dn && String(dn).trim()) return true;
+                }
+                const activeB = state.audioElB || audioElB;
+                if (typeof deckHasSource === 'function' && deckHasSource(activeB)) return true;
+            } catch (_) {}
+            return false;
+        }
+
+        function syncTopMenuStationsLayout() {
+            const wrap = topMenuStationsWrap || document.getElementById('top-menu-stations-wrap');
+            if (!wrap) return;
+            const loaded = deckBHasLoadedContent();
+            if (loaded) topMenuStationsBSplitManual = false;
+            const split = loaded || topMenuStationsBSplitManual;
+            wrap.classList.toggle('is-split', split);
+            wrap.classList.toggle('is-focus-a', !split);
+            wrap.classList.toggle('is-deck-b-loaded', loaded);
+            const expandBtn = document.getElementById('topmenu-stations-b-expand');
+            if (expandBtn) {
+                expandBtn.setAttribute('aria-pressed', split ? 'true' : 'false');
+                expandBtn.title = loaded
+                    ? 'Deck B expanded (active deck)'
+                    : (split ? 'Collapse Deck B column' : 'Expand Deck B column');
+            }
+        }
+
         function renderStationList() {
+            if (!radioListEl) return;
+            const listB = radioListElB || document.getElementById('radio-list-b');
             radioListEl.innerHTML = '';
+            if (listB) listB.innerHTML = '';
             stations.forEach((s, i) => {
-                const item = document.createElement('div');
-                item.className = 'radio-item';
-                item.dataset.index = String(i);
-                if(i === currentStationIndex) item.classList.add('active');
-                const nameEl = document.createElement('div');
-                nameEl.textContent = s.name;
-                const goEl = document.createElement('div');
-                goEl.textContent = '➤';
-                item.appendChild(nameEl);
-                item.appendChild(goEl);
-                item.addEventListener('click', () => {
-                    if (!uiLocked) setStation(i);
-                });
-                radioListEl.appendChild(item);
+                const mkItem = (deckKey) => {
+                    const item = document.createElement('div');
+                    item.className = 'radio-item';
+                    item.dataset.index = String(i);
+                    item.dataset.deck = deckKey;
+                    const activeIdx = deckKey === 'b' ? currentStationBIndex : currentStationIndex;
+                    if (i === activeIdx) item.classList.add('active');
+                    const nameEl = document.createElement('div');
+                    nameEl.textContent = s.name;
+                    const goEl = document.createElement('div');
+                    goEl.textContent = '➤';
+                    item.appendChild(nameEl);
+                    item.appendChild(goEl);
+                    item.addEventListener('click', () => {
+                        if (uiLocked) return;
+                        if (deckKey === 'b') setStationB(i);
+                        else setStation(i);
+                    });
+                    return item;
+                };
+                radioListEl.appendChild(mkItem('a'));
+                if (listB) listB.appendChild(mkItem('b'));
             });
+            try { syncTopMenuStationsLayout(); } catch (_) {}
         }
 
         function setStation(index, opts) {
@@ -4926,13 +4913,28 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             playRadio();
         }
 
+        function setStationB(index, opts) {
+            const force = opts && opts.force === true;
+            if (uiLocked && !force) return;
+            if (index < 0 || index >= stations.length) return;
+            currentStationBIndex = index;
+            updateStationActiveHighlight();
+            try { syncTopMenuStationsLayout(); } catch (_) {}
+            try { playRadioB(); } catch (_) {}
+            try { updateModeSubStationLine(); } catch (_) {}
+            try { resetIdleTimer(); } catch (_) {}
+        }
+
         function updateStationActiveHighlight() {
-            const children = Array.from(radioListEl.children);
-            children.forEach((el) => {
-                const idx = Number(el.dataset.index || -1);
-                if(idx === currentStationIndex) el.classList.add('active');
-                else el.classList.remove('active');
-            });
+            const apply = (root, activeIdx) => {
+                if (!root) return;
+                Array.from(root.children).forEach((el) => {
+                    const idx = Number(el.dataset.index || -1);
+                    el.classList.toggle('active', idx === activeIdx);
+                });
+            };
+            apply(radioListEl, currentStationIndex);
+            apply(radioListElB || document.getElementById('radio-list-b'), currentStationBIndex);
         }
 
         function pickRandomStation() {
@@ -5595,12 +5597,8 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 }
                 if (!Array.isArray(stations) || !stations.length) return '—';
                 if (dk === 'b') {
-                    let idx = (typeof currentStationBIndex === 'number' && currentStationBIndex >= 0)
+                    const idx = (typeof currentStationBIndex === 'number' && currentStationBIndex >= 0)
                         ? currentStationBIndex : -1;
-                    if (typeof mixStationB !== 'undefined' && mixStationB && mixStationB.value !== '') {
-                        const pv = parseInt(mixStationB.value, 10);
-                        if (!isNaN(pv)) idx = pv;
-                    }
                     if (idx >= 0 && stations[idx]) return stations[idx].name || '—';
                 } else {
                     const idx = (typeof currentStationIndex === 'number' && currentStationIndex >= 0)
@@ -6560,6 +6558,8 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 // Ensure volume slider is visible when opening the panel
                 const vs = document.getElementById('volume-slider-container');
                 if (vs) vs.style.display = 'flex';
+                try { updateStationActiveHighlight(); } catch (_) {}
+                try { syncTopMenuStationsLayout(); } catch (_) {}
             } catch(_) {}
             p.classList.remove('display-none');
             requestAnimationFrame(() => { p.classList.add('open'); });
@@ -6625,6 +6625,18 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 const btnNextVis = document.getElementById('topmenu-next-visual');
                 if (btnPrevVis) btnPrevVis.addEventListener('click', (e)=>{ e.stopPropagation(); loadMode(state.currentModeIdx - 1); });
                 if (btnNextVis) btnNextVis.addEventListener('click', (e)=>{ e.stopPropagation(); loadMode(state.currentModeIdx + 1); });
+                const btnRandB = document.getElementById('topmenu-station-b-random');
+                if (btnRandB) btnRandB.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    try { pickRandomStationB(); } catch (_) {}
+                });
+                const btnExpandB = document.getElementById('topmenu-stations-b-expand');
+                if (btnExpandB) btnExpandB.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof deckBHasLoadedContent === 'function' && deckBHasLoadedContent()) return;
+                    topMenuStationsBSplitManual = !topMenuStationsBSplitManual;
+                    try { syncTopMenuStationsLayout(); } catch (_) {}
+                });
             } catch(e) {}
         })();
         // expose for inline handlers

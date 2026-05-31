@@ -2326,10 +2326,6 @@
                     if (radioModeB) {
                         if (stations && stations.length) {
                             let idxB = (typeof currentStationBIndex === 'number' && !isNaN(currentStationBIndex)) ? currentStationBIndex : 0;
-                            if (typeof mixStationB !== 'undefined' && mixStationB && mixStationB.value !== undefined && mixStationB.value !== '') {
-                                const pv = parseInt(mixStationB.value, 10);
-                                if (!isNaN(pv)) idxB = pv;
-                            }
                             idxB = Math.max(0, Math.min(stations.length - 1, idxB));
                             const stB = stations[idxB];
                             if (stB) {
@@ -2841,6 +2837,7 @@
                   <div class="dj-queue-col-title">Deck A queue</div>
                   <div class="dj-queue-col-head-btns">
                     <button type="button" class="dj-queue-add" id="dj-queue-add-a">Add files…</button>
+                    <button type="button" class="dj-queue-shuffle" id="dj-queue-shuffle-a" title="Shuffle Deck A queue" aria-label="Shuffle Deck A queue">🔀</button>
                     <button type="button" class="dj-queue-folder" id="dj-queue-folder-a" title="Add all audio/video files from a folder">Folder…</button>
                     <button type="button" class="dj-queue-add-url" id="dj-queue-url-deck-a" title="Add a URL (radio streams go to Station cycle)">Add URL…</button>
                   </div>
@@ -2852,6 +2849,7 @@
                   <div class="dj-queue-col-title">Deck B queue</div>
                   <div class="dj-queue-col-head-btns">
                     <button type="button" class="dj-queue-add" id="dj-queue-add-b">Add files…</button>
+                    <button type="button" class="dj-queue-shuffle" id="dj-queue-shuffle-b" title="Shuffle Deck B queue" aria-label="Shuffle Deck B queue">🔀</button>
                     <button type="button" class="dj-queue-folder" id="dj-queue-folder-b" title="Add all audio/video files from a folder">Folder…</button>
                     <button type="button" class="dj-queue-add-url" id="dj-queue-url-deck-b" title="Add a URL (radio streams go to Station cycle)">Add URL…</button>
                   </div>
@@ -3902,7 +3900,6 @@
                                 return next;
                             }
                             currentStationBIndex = next;
-                            if (mixStationB) mixStationB.value = String(next);
                             try { if (typeof refreshMixStationB === 'function') refreshMixStationB(); } catch (_) {}
                             try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
                             return next;
@@ -5037,12 +5034,32 @@
                     root.appendChild(fiQBFolder);
                     const btnAddA = root.querySelector('#dj-queue-add-a');
                     const btnAddB = root.querySelector('#dj-queue-add-b');
+                    const btnShuffleA = root.querySelector('#dj-queue-shuffle-a');
+                    const btnShuffleB = root.querySelector('#dj-queue-shuffle-b');
                     const btnFolderA = root.querySelector('#dj-queue-folder-a');
                     const btnFolderB = root.querySelector('#dj-queue-folder-b');
                     const btnUrlDeckA = root.querySelector('#dj-queue-url-deck-a');
                     const btnUrlDeckB = root.querySelector('#dj-queue-url-deck-b');
                     if (btnAddA) btnAddA.addEventListener('click', () => { try { __djLocalPickImmediateDeck = null; fiQA.click(); } catch (_) {} }, sig);
                     if (btnAddB) btnAddB.addEventListener('click', () => { try { __djLocalPickImmediateDeck = null; fiQB.click(); } catch (_) {} }, sig);
+                    const onShuffleQueue = (deckKey) => {
+                        try {
+                            if (typeof shuffleDeckFileQueue === 'function') shuffleDeckFileQueue(deckKey);
+                        } catch (_) {}
+                        try { this.refreshQueueUi(); } catch (_) {}
+                    };
+                    if (btnShuffleA) {
+                        btnShuffleA.addEventListener('click', (ev) => {
+                            try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                            onShuffleQueue('a');
+                        }, sig);
+                    }
+                    if (btnShuffleB) {
+                        btnShuffleB.addEventListener('click', (ev) => {
+                            try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                            onShuffleQueue('b');
+                        }, sig);
+                    }
                     if (btnFolderA) {
                         btnFolderA.addEventListener('click', () => {
                             openDeckLocalFolderPicker('a', fiQAFolder).catch(() => {});
@@ -5595,7 +5612,7 @@
                         let i = (typeof currentStationBIndex === 'number') ? currentStationBIndex : 0;
                         i = (((i + delta) % n) + n) % n;
                         currentStationBIndex = i;
-                        if (mixStationB) mixStationB.value = String(i);
+                        try { if (typeof refreshMixStationB === 'function') refreshMixStationB(); } catch (_) {}
                         if (typeof playRadioB === 'function') playRadioB();
                     } catch (_) {}
                 };
@@ -5613,7 +5630,7 @@
                         if (!eligible.length) return;
                         const idx = eligible[Math.floor(Math.random() * eligible.length)];
                         currentStationBIndex = idx;
-                        if (mixStationB) mixStationB.value = String(idx);
+                        try { if (typeof refreshMixStationB === 'function') refreshMixStationB(); } catch (_) {}
                         if (typeof playRadioB === 'function') playRadioB();
                     } catch (_) {}
                 };

@@ -449,6 +449,14 @@
                         return b;
                     };
                     btns.appendChild(mkBtn(`rv-digital-queue-add-${deck}`, 'Add files…', 'dj-queue-add'));
+                    const shuffleBtn = mkBtn(
+                        `rv-digital-queue-shuffle-${deck}`,
+                        '🔀',
+                        'dj-queue-shuffle'
+                    );
+                    shuffleBtn.title = deck === 'b' ? 'Shuffle Deck B queue' : 'Shuffle Deck A queue';
+                    shuffleBtn.setAttribute('aria-label', shuffleBtn.title);
+                    btns.appendChild(shuffleBtn);
                     btns.appendChild(mkBtn(
                         `rv-digital-queue-folder-${deck}`,
                         'Folder…',
@@ -696,6 +704,14 @@
                 }
                 const btnClearA = this.root.querySelector('#rv-digital-queue-clear-a');
                 const btnClearB = this.root.querySelector('#rv-digital-queue-clear-b');
+                const btnShuffleA = this.root.querySelector('#rv-digital-queue-shuffle-a');
+                const btnShuffleB = this.root.querySelector('#rv-digital-queue-shuffle-b');
+                const onShuffleQueue = (deckKey) => {
+                    try {
+                        if (typeof shuffleDeckFileQueue === 'function') shuffleDeckFileQueue(deckKey);
+                    } catch (_) {}
+                    try { this._refreshDigitalLocalQueueUi(); } catch (_) {}
+                };
                 const onClearQueue = (deckKey) => {
                     try {
                         if (typeof clearDeckFileQueue === 'function') clearDeckFileQueue(deckKey);
@@ -712,6 +728,18 @@
                     btnClearB.addEventListener('click', (ev) => {
                         try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
                         onClearQueue('b');
+                    }, sig);
+                }
+                if (btnShuffleA) {
+                    btnShuffleA.addEventListener('click', (ev) => {
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        onShuffleQueue('a');
+                    }, sig);
+                }
+                if (btnShuffleB) {
+                    btnShuffleB.addEventListener('click', (ev) => {
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        onShuffleQueue('b');
                     }, sig);
                 }
             }

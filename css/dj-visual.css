@@ -772,12 +772,27 @@
             flex-shrink: 0;
         }
         .dj-deck-b-queue-panel .dj-queue-col-head .dj-queue-add,
+        .dj-deck-b-queue-panel .dj-queue-col-head .dj-queue-shuffle,
         .dj-deck-b-queue-panel .dj-queue-col-head .dj-queue-folder,
         .dj-deck-b-queue-panel .dj-queue-col-head .dj-queue-add-url,
         .dj-deck-b-queue-panel .dj-queue-col-head .dj-queue-clear-all {
             padding: 4px 8px;
             font-size: 10px;
             align-self: auto;
+        }
+        .dj-deck-b-queue-panel .dj-queue-shuffle {
+            min-width: 26px;
+            padding: 4px 7px;
+            font-weight: 700;
+            color: #c8e6ff;
+            border: 1px solid rgba(100, 180, 255, 0.45);
+            background: rgba(8, 24, 40, 0.55);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .dj-deck-b-queue-panel .dj-queue-shuffle:hover {
+            filter: brightness(1.15);
+            border-color: rgba(140, 200, 255, 0.7);
         }
         .dj-deck-b-queue-panel .dj-queue-clear-all {
             min-width: 26px;

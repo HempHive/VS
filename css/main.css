@@ -1799,20 +1799,126 @@
 			background: rgba(212,175,55,0.28);
 			color: #fff;
 		}
-		/* Scrollbar styling for stations list */
-		#top-menu-stations {
+		/* Top menu: dual Deck A / Deck B station columns */
+		.top-menu-stations-wrap {
+			display: grid;
+			gap: 8px;
+			flex: 1;
+			min-height: 0;
+			overflow: hidden;
+			border: 1px solid rgba(255,255,255,0.15);
+			border-radius: 8px;
+			padding: 8px;
+			background: rgba(255,255,255,0.04);
+		}
+		.top-menu-stations-wrap.is-focus-a {
+			grid-template-columns: minmax(0, 1fr) minmax(68px, 21%);
+		}
+		.top-menu-stations-wrap.is-split {
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		}
+		.top-menu-stations-col {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			min-height: 0;
+			overflow: hidden;
+			border-radius: 6px;
+			background: rgba(0, 0, 0, 0.18);
+			border: 1px solid rgba(255, 255, 255, 0.08);
+		}
+		.top-menu-stations-head {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 6px 8px;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+			flex-shrink: 0;
+		}
+		.top-menu-stations-deck {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 1.35em;
+			height: 1.35em;
+			border-radius: 4px;
+			font-size: 11px;
+			font-weight: 800;
+			letter-spacing: 0.04em;
+			flex-shrink: 0;
+		}
+		.top-menu-stations-deck--a {
+			color: #ff0b55;
+			background: rgba(255, 11, 85, 0.14);
+			border: 1px solid rgba(255, 11, 85, 0.35);
+		}
+		.top-menu-stations-deck--b {
+			color: #5800ff;
+			background: rgba(88, 0, 255, 0.14);
+			border: 1px solid rgba(88, 0, 255, 0.35);
+		}
+		.top-menu-stations-title {
+			font-size: 11px;
+			font-weight: 600;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			color: rgba(255, 255, 255, 0.72);
+			flex: 1;
+			min-width: 0;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		.top-menu-stations-wrap.is-focus-a .top-menu-stations-col--b .top-menu-stations-title {
+			display: none;
+		}
+		.top-menu-stations-b-tools {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			margin-left: auto;
+			flex-shrink: 0;
+		}
+		.topmenu-stations-mini-btn {
+			min-width: 28px;
+			height: 28px;
+			padding: 0 6px;
+			font-size: 13px;
+			line-height: 1;
+		}
+		.top-menu-stations-wrap.is-deck-b-loaded #topmenu-stations-b-expand {
+			opacity: 0.45;
+			pointer-events: none;
+		}
+		.top-menu-stations-scroll {
+			flex: 1;
+			min-height: 0;
+			overflow: auto;
+			padding: 6px;
 			scrollbar-color: rgba(255,255,255,0.35) rgba(255,255,255,0.08);
 			scrollbar-width: thin;
 		}
-		#top-menu-stations::-webkit-scrollbar { width: 10px; height: 10px; }
-		#top-menu-stations::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 8px; }
-		#top-menu-stations::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.32); border-radius: 8px; border: 2px solid rgba(0,0,0,0.15); }
-        #top-menu-stations::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.45); }
-        /* Larger station names in the top menu list only (2× vs default .radio-item) */
-        #top-menu-stations .radio-item {
-            font-size: 26px;
-            padding: 14px 14px;
-        }
+		.top-menu-stations-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+		.top-menu-stations-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 8px; }
+		.top-menu-stations-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.32); border-radius: 8px; border: 2px solid rgba(0,0,0,0.15); }
+		.top-menu-stations-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.45); }
+		#top-menu-stations-wrap .radio-item {
+			font-size: 26px;
+			padding: 14px 14px;
+		}
+		.top-menu-stations-wrap.is-focus-a .top-menu-stations-col--b .radio-item {
+			font-size: 11px;
+			padding: 8px 6px;
+			margin: 4px 0;
+		}
+		.top-menu-stations-wrap.is-focus-a .top-menu-stations-col--b .radio-item > div:last-child {
+			display: none;
+		}
+		#radio-list-b .radio-item.active {
+			border-color: #5800ff;
+			box-shadow: 0 0 0 2px rgba(88, 0, 255, 0.28) inset, 0 0 16px rgba(88, 0, 255, 0.12);
+			background: rgba(88, 0, 255, 0.08);
+		}
 		/* Make the volume slider clearly visible inside the top menu footer */
 		#top-menu-footer #volume-slider {
 			height: 16px;
