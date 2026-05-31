@@ -4108,12 +4108,14 @@
                 if (!this.els.digitalClock) return;
                 try {
                     const d = new Date();
-                    this.els.digitalClock.textContent = d.toLocaleString(undefined, {
-                        weekday: 'short',
+                    const day = d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
+                    const time = d.toLocaleTimeString(undefined, {
                         hour: '2-digit',
                         minute: '2-digit',
-                        second: '2-digit'
+                        second: '2-digit',
+                        hour12: false
                     });
+                    this.els.digitalClock.textContent = `${day}  ${time}`;
                 } catch (_) {}
             }
 
@@ -5329,15 +5331,8 @@
                 }
                 const designW = RadioVisualEngine.DIGITAL_STAGE_DESIGN_W;
                 const host = this.root || document.getElementById('radio-visual-root');
-                let gutter = 24;
-                try {
-                    if (host) {
-                        const raw = getComputedStyle(host).getPropertyValue('--rv-digital-fs-gutter').trim();
-                        if (raw.endsWith('px')) gutter = parseFloat(raw) || gutter;
-                    }
-                } catch (_) {}
-                const availW = Math.max(1, (host ? host.clientWidth : window.innerWidth) - (gutter * 2));
-                const availH = Math.max(1, (host ? host.clientHeight : window.innerHeight) - (gutter * 2));
+                const availW = Math.max(1, host ? host.clientWidth : window.innerWidth);
+                const availH = Math.max(1, host ? host.clientHeight : window.innerHeight);
                 stage.style.maxWidth = '';
                 stage.style.maxHeight = '';
                 stage.style.width = `${designW}px`;

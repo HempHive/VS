@@ -4192,6 +4192,21 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             try { refreshActiveDeckVideoDisplays(); } catch (_) {}
             try { updateModeSubStationLine(); } catch (_) {}
         }
+
+        const CROSSFADE_KEY_STEP = 0.04;
+        function nudgeCrossfade(delta) {
+            const d = Number(delta);
+            if (!Number.isFinite(d) || d === 0) return;
+            const cur = getAppCrossfade01();
+            applyCrossfade(Math.max(0, Math.min(1, cur + d)));
+            try { resumeDecksForCrossfadeLevels(); } catch (_) {}
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (rv && typeof rv._syncCrossfadeKnob === 'function') rv._syncCrossfadeKnob();
+            } catch (_) {}
+            try { resetIdleTimer(); } catch (_) {}
+        }
+
         if (mixCross) {
             mixCross.addEventListener('input', () => applyCrossfade(mixCross.value));
             try { applyCrossfade(mixCross.value); } catch(_) {}
@@ -6090,10 +6105,18 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 }
             } else if (e.key === 'ArrowLeft') {
                 e.preventDefault();
-                adjustWebmPosition(-2, 0);
+                if (typeof webmOn !== 'undefined' && webmOn) {
+                    adjustWebmPosition(-2, 0);
+                } else {
+                    nudgeCrossfade(-CROSSFADE_KEY_STEP);
+                }
             } else if (e.key === 'ArrowRight') {
                 e.preventDefault();
-                adjustWebmPosition(2, 0);
+                if (typeof webmOn !== 'undefined' && webmOn) {
+                    adjustWebmPosition(2, 0);
+                } else {
+                    nudgeCrossfade(CROSSFADE_KEY_STEP);
+                }
             } else if (e.key === 'v' || e.key === 'V') {
                 // V → toggle play / pause on Deck A (or boot it via playRadio() if
                 // no source is loaded yet). e.repeat is suppressed so a held key
