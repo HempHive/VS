@@ -5,6 +5,9 @@
                     || name === 'Radio' || name === 'Radio Visual';
             }
 
+            /** Fixed layout width for Digital Radio (container-query scaling). */
+            static get DIGITAL_STAGE_DESIGN_W() { return 960; }
+
             constructor(options = {}) {
                 const lockedSkin = options.skin === 'digital' ? 'digital'
                     : (options.skin === 'analogue' ? 'analogue' : null);
@@ -5257,7 +5260,9 @@
 
                 window.addEventListener('resize', this.resizeHandler, sig);
                 const onRvFsResize = () => {
-                    try { this.onResize(); } catch (_) {}
+                    requestAnimationFrame(() => {
+                        try { this.onResize(); } catch (_) {}
+                    });
                 };
                 document.addEventListener('fullscreenchange', onRvFsResize, sig);
                 document.addEventListener('webkitfullscreenchange', onRvFsResize, sig);
@@ -5302,7 +5307,48 @@
                 } catch (_) {}
             }
 
+            _isDigitalPageFullscreen() {
+                if (this.skin !== 'digital') return false;
+                try {
+                    const fs = document.fullscreenElement || document.webkitFullscreenElement;
+                    if (!fs) return false;
+                    return fs === document.documentElement || fs === document.body;
+                } catch (_) {}
+                return false;
+            }
+
+            /** In page fullscreen, scale the 960px-wide digital stage to fit the viewport (contain). */
+            _syncDigitalFullscreenLayout() {
+                const stage = this.els && this.els.stageDigital;
+                if (!stage) return;
+                if (!this._isDigitalPageFullscreen()) {
+                    stage.style.width = '';
+                    stage.style.maxWidth = '';
+                    stage.style.maxHeight = '';
+                    return;
+                }
+                const designW = RadioVisualEngine.DIGITAL_STAGE_DESIGN_W;
+                const host = this.root || document.getElementById('radio-visual-root');
+                let gutter = 24;
+                try {
+                    if (host) {
+                        const raw = getComputedStyle(host).getPropertyValue('--rv-digital-fs-gutter').trim();
+                        if (raw.endsWith('px')) gutter = parseFloat(raw) || gutter;
+                    }
+                } catch (_) {}
+                const availW = Math.max(1, (host ? host.clientWidth : window.innerWidth) - (gutter * 2));
+                const availH = Math.max(1, (host ? host.clientHeight : window.innerHeight) - (gutter * 2));
+                stage.style.maxWidth = '';
+                stage.style.maxHeight = '';
+                stage.style.width = `${designW}px`;
+                const naturalH = Math.max(1, stage.offsetHeight);
+                const scale = Math.min(1, availW / designW, availH / naturalH);
+                const fitW = Math.max(1, Math.round(designW * scale * 100) / 100);
+                stage.style.width = `${fitW}px`;
+            }
+
             onResize() {
+                try { this._syncDigitalFullscreenLayout(); } catch (_) {}
                 try { this._resizeCanvases(); } catch (_) {}
                 if (this._rvDigitalPmResize) {
                     try { this._rvDigitalPmResize(); } catch (_) {}

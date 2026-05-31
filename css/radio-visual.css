@@ -1366,7 +1366,7 @@
             }
         }
 
-        /* Fullscreen: stretch Digital Radio to the full display (page fullscreen via double-click / F). */
+        /* Fullscreen: fit Digital Radio at its design ratio (960px-wide layout); scale to viewport (contain). */
         html:fullscreen #radio-visual-root.radio-visual-root--digital-active,
         html:fullscreen #radio-visual-root.radio-visual-root--digital-only,
         html:fullscreen #radio-visual-root:has(.radio-visual-skin--digital.is-active),
@@ -1381,8 +1381,8 @@
             max-width: none;
             padding: var(--rv-digital-fs-gutter);
             overflow: hidden;
-            justify-content: stretch;
-            align-items: stretch;
+            justify-content: center;
+            align-items: center;
         }
         html:fullscreen #radio-visual-root.radio-visual-root--digital-active .radio-visual-stage.radio-visual-skin--digital,
         html:fullscreen #radio-visual-root.radio-visual-root--digital-only .radio-visual-stage.radio-visual-skin--digital,
@@ -1390,11 +1390,12 @@
         html:-webkit-full-screen #radio-visual-root.radio-visual-root--digital-active .radio-visual-stage.radio-visual-skin--digital,
         html:-webkit-full-screen #radio-visual-root.radio-visual-root--digital-only .radio-visual-stage.radio-visual-skin--digital,
         html:-webkit-full-screen #radio-visual-root:has(.radio-visual-skin--digital.is-active) .radio-visual-stage.radio-visual-skin--digital {
-            width: 100%;
-            max-width: none;
-            flex: 1 1 auto;
+            flex: 0 0 auto;
             min-height: 0;
-            height: 100%;
+            height: auto;
+            max-height: none;
+            margin-left: auto;
+            margin-right: auto;
             gap: clamp(16px, 2.4vmin, 32px);
         }
         html:fullscreen #radio-visual-root.radio-visual-root--digital-active .radio-visual-digital-panel,
@@ -1405,9 +1406,9 @@
         html:-webkit-full-screen #radio-visual-root:has(.radio-visual-skin--digital.is-active) .radio-visual-digital-panel {
             display: flex;
             flex-direction: column;
-            flex: 1 1 auto;
+            flex: 0 0 auto;
             min-height: 0;
-            height: 100%;
+            height: auto;
             width: 100%;
             padding: clamp(10px, 1.5vmin, 16px);
             border-width: 4px;
@@ -1418,9 +1419,8 @@
         html:-webkit-full-screen #radio-visual-root.radio-visual-root--digital-active .radio-visual-digital-center,
         html:-webkit-full-screen #radio-visual-root.radio-visual-root--digital-only .radio-visual-digital-center,
         html:-webkit-full-screen #radio-visual-root:has(.radio-visual-skin--digital.is-active) .radio-visual-digital-center {
-            flex: 1 1 auto;
+            flex: 0 0 auto;
             min-height: 0;
-            aspect-ratio: unset;
             height: auto;
             margin-top: 12px;
             margin-bottom: 16px;
