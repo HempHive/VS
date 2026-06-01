@@ -776,8 +776,6 @@
             pointer-events: none;
         }
         #radio-visual-root .radio-visual-digital-dash-stack {
-            container-type: inline-size;
-            container-name: rv-dash;
             flex: 0 0 clamp(130px, 29.17cqw, 280px);
             min-width: clamp(110px, 15.63cqw, 150px);
             max-width: clamp(150px, 31.25cqw, 300px);
@@ -826,6 +824,8 @@
             color: rgba(150, 210, 255, 0.92);
         }
         #radio-visual-root .radio-visual-digital-clock-row {
+            container-type: inline-size;
+            container-name: rv-clock;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -846,11 +846,11 @@
             width: 100%;
             max-width: 100%;
             font-family: 'Orbitron', 'Share Tech Mono', ui-monospace, monospace;
-            /* Scale with dash column (rv-dash), not full 960px stage — matches crossfader/button cqi pattern */
-            font-size: clamp(6px, 4.8cqi, 13px);
+            /* rv-clock: scale with dash column width without affecting crossfader A/B (rv-digital cqw) */
+            font-size: clamp(7px, 6.2cqi, 16px);
             font-weight: 700;
             font-variant-numeric: tabular-nums;
-            letter-spacing: clamp(0.02em, 0.35cqi, 0.08em);
+            letter-spacing: clamp(0.03em, 0.4cqi, 0.09em);
             color: #fff566;
             text-align: center;
             white-space: nowrap;
@@ -859,9 +859,7 @@
             text-overflow: ellipsis;
             opacity: 1;
             text-shadow:
-                0 0 8px rgba(255, 245, 120, 0.95),
-                0 0 18px rgba(255, 230, 80, 0.65),
-                0 0 28px rgba(255, 210, 50, 0.35),
+                0 0 12px rgba(0, 0, 0, 0.9),
                 0 1px 3px rgba(0, 0, 0, 0.85);
         }
         #radio-visual-root .radio-visual-digital-automix-timer {
@@ -1087,11 +1085,38 @@
             grid-template-columns: repeat(9, minmax(0, 1fr));
             gap: clamp(2px, 0.63cqw, 8px);
             max-width: none;
-            margin: 0 0 10px;
+            margin: clamp(6px, 1.04cqw, 12px) clamp(10px, 2.5cqw, 28px) 10px;
+            padding: clamp(10px, 1.46cqw, 16px) clamp(6px, 1.04cqw, 12px) 0;
             position: relative;
             z-index: 12;
             flex-shrink: 0;
-            width: 100%;
+            width: auto;
+            box-sizing: border-box;
+            border-top: 1px solid rgba(0, 200, 255, 0.28);
+            background:
+                linear-gradient(180deg, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0.12) 10px, transparent 18px),
+                linear-gradient(90deg, rgba(0, 220, 255, 0.06) 0%, transparent 8%, transparent 92%, rgba(88, 0, 255, 0.08) 100%);
+            box-shadow:
+                inset 0 3px 8px rgba(0, 0, 0, 0.55),
+                inset 0 1px 0 rgba(0, 220, 255, 0.12);
+        }
+        #radio-visual-root .radio-visual-digital-feature-btns::before {
+            content: '';
+            position: absolute;
+            left: clamp(8px, 2.08cqw, 24px);
+            right: clamp(8px, 2.08cqw, 24px);
+            top: clamp(4px, 0.63cqw, 8px);
+            height: 3px;
+            pointer-events: none;
+            border-radius: 1px;
+            background: repeating-linear-gradient(
+                90deg,
+                rgba(0, 220, 255, 0.45) 0 2px,
+                rgba(0, 0, 0, 0.35) 2px 4px,
+                rgba(88, 0, 255, 0.35) 4px 6px,
+                transparent 6px 10px
+            );
+            box-shadow: 0 1px 0 rgba(0, 220, 255, 0.2);
         }
         #radio-visual-root .radio-visual-digital-feature-btns .radio-visual-btn {
             container-type: size;

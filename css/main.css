@@ -1903,12 +1903,13 @@
 		.top-menu-stations-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.32); border-radius: 8px; border: 2px solid rgba(0,0,0,0.15); }
 		.top-menu-stations-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.45); }
 		#top-menu-stations-wrap .radio-item {
-			font-size: 26px;
-			padding: 14px 14px;
+			font-size: 13px;
+			padding: 8px 10px;
+			margin: 4px 0;
 		}
 		.top-menu-stations-wrap.is-focus-a .top-menu-stations-col--b .radio-item {
-			font-size: 11px;
-			padding: 8px 6px;
+			font-size: 10px;
+			padding: 6px 5px;
 			margin: 4px 0;
 		}
 		.top-menu-stations-wrap.is-focus-a .top-menu-stations-col--b .radio-item > div:last-child {
