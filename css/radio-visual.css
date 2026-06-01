@@ -1085,38 +1085,28 @@
             grid-template-columns: repeat(9, minmax(0, 1fr));
             gap: clamp(2px, 0.63cqw, 8px);
             max-width: none;
-            margin: clamp(6px, 1.04cqw, 12px) clamp(10px, 2.5cqw, 28px) 10px;
-            padding: clamp(10px, 1.46cqw, 16px) clamp(6px, 1.04cqw, 12px) 0;
+            margin: clamp(2px, 0.42cqw, 5px) 0 10px;
+            padding: 0;
             position: relative;
             z-index: 12;
             flex-shrink: 0;
-            width: auto;
+            width: 100%;
             box-sizing: border-box;
-            border-top: 1px solid rgba(0, 200, 255, 0.28);
-            background:
-                linear-gradient(180deg, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0.12) 10px, transparent 18px),
-                linear-gradient(90deg, rgba(0, 220, 255, 0.06) 0%, transparent 8%, transparent 92%, rgba(88, 0, 255, 0.08) 100%);
-            box-shadow:
-                inset 0 3px 8px rgba(0, 0, 0, 0.55),
-                inset 0 1px 0 rgba(0, 220, 255, 0.12);
         }
         #radio-visual-root .radio-visual-digital-feature-btns::before {
             content: '';
-            position: absolute;
-            left: clamp(8px, 2.08cqw, 24px);
-            right: clamp(8px, 2.08cqw, 24px);
-            top: clamp(4px, 0.63cqw, 8px);
-            height: 3px;
+            grid-column: 1 / -1;
+            width: 100%;
+            height: 2px;
+            margin: 0 0 clamp(3px, 0.52cqw, 6px);
             pointer-events: none;
-            border-radius: 1px;
             background: repeating-linear-gradient(
                 90deg,
-                rgba(0, 220, 255, 0.45) 0 2px,
-                rgba(0, 0, 0, 0.35) 2px 4px,
-                rgba(88, 0, 255, 0.35) 4px 6px,
+                rgba(0, 220, 255, 0.5) 0 2px,
+                rgba(0, 0, 0, 0.4) 2px 4px,
+                rgba(88, 0, 255, 0.4) 4px 6px,
                 transparent 6px 10px
             );
-            box-shadow: 0 1px 0 rgba(0, 220, 255, 0.2);
         }
         #radio-visual-root .radio-visual-digital-feature-btns .radio-visual-btn {
             container-type: size;
@@ -1267,7 +1257,7 @@
             gap: clamp(1px, 0.31cqw, 3px);
             width: 100%;
             min-width: 0;
-            margin: 8px 0 6px;
+            margin: 8px 0 clamp(2px, 0.42cqw, 4px);
             overflow: hidden;
         }
         /* Centre strip: Spectrum · A> · Fade · vol · Mix · B> · VIDEO (original order). */
