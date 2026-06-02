@@ -5033,12 +5033,19 @@
                 stageD.appendChild(dPanel);
                 }
 
+                let digitalFitHost = null;
                 if (stageA) root.appendChild(stageA);
-                if (stageD) root.appendChild(stageD);
+                if (stageD) {
+                    digitalFitHost = document.createElement('div');
+                    digitalFitHost.className = 'radio-visual-digital-fit-host';
+                    digitalFitHost.appendChild(stageD);
+                    root.appendChild(digitalFitHost);
+                }
 
                 this.els = {
                     btnSkinAnalog: btnA,
                     btnSkinDigital: btnD,
+                    digitalFitHost,
                     stageAnalog: stageA,
                     stageDigital: stageD,
                     digitalDeckBMount,
@@ -5261,6 +5268,12 @@
                 root.addEventListener('pointerup', stopRv, sig);
 
                 window.addEventListener('resize', this.resizeHandler, sig);
+                try {
+                    if (window.visualViewport) {
+                        window.visualViewport.addEventListener('resize', this.resizeHandler, sig);
+                        window.visualViewport.addEventListener('scroll', this.resizeHandler, sig);
+                    }
+                } catch (_) {}
                 const onRvFsResize = () => {
                     requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
@@ -5312,40 +5325,83 @@
             }
 
             _isDigitalPageFullscreen() {
-                if (this.skin !== 'digital') return false;
+                const stage = this.els && this.els.stageDigital;
+                if (!stage || !stage.classList.contains('is-active')) return false;
                 try {
                     const fs = document.fullscreenElement || document.webkitFullscreenElement;
                     if (!fs) return false;
-                    return fs === document.documentElement || fs === document.body;
+                    if (fs === document.documentElement || fs === document.body) return true;
+                    if (fs.id === 'canvas-container' || fs.closest?.('#canvas-container')) return true;
                 } catch (_) {}
                 return false;
             }
 
-            /** In page fullscreen, scale the 960px-wide digital stage to fit the host (contain; may scale up on large displays). */
+            _digitalFullscreenAvailSize() {
+                const root = this.root || document.getElementById('radio-visual-root');
+                let w = 0;
+                let h = 0;
+                try {
+                    const vv = window.visualViewport;
+                    if (vv) {
+                        w = vv.width;
+                        h = vv.height;
+                    }
+                } catch (_) {}
+                if (!w || !h) {
+                    w = window.innerWidth;
+                    h = window.innerHeight;
+                }
+                if (root) {
+                    const rw = root.clientWidth;
+                    const rh = root.clientHeight;
+                    if (rw > 0) w = Math.min(w, rw);
+                    if (rh > 0) h = Math.min(rh, rh);
+                }
+                return { w: Math.max(1, w), h: Math.max(1, h) };
+            }
+
+            /** Page fullscreen: clip host to scaled box; stage stays 960px design width, scaled with transform. */
             _syncDigitalFullscreenLayout() {
                 const stage = this.els && this.els.stageDigital;
+                const fitHost = this.els && this.els.digitalFitHost;
                 if (!stage) return;
-                if (!this._isDigitalPageFullscreen()) {
+
+                const reset = () => {
+                    if (fitHost) {
+                        fitHost.style.width = '';
+                        fitHost.style.height = '';
+                    }
                     stage.style.width = '';
                     stage.style.maxWidth = '';
                     stage.style.maxHeight = '';
                     stage.style.transform = '';
                     stage.style.transformOrigin = '';
+                };
+
+                if (!this._isDigitalPageFullscreen()) {
+                    reset();
                     return;
                 }
+
                 const designW = RadioVisualEngine.DIGITAL_STAGE_DESIGN_W;
-                const host = this.root || document.getElementById('radio-visual-root');
-                const availW = Math.max(1, host ? host.clientWidth : window.innerWidth);
-                const availH = Math.max(1, host ? host.clientHeight : window.innerHeight);
+                const { w: availW, h: availH } = this._digitalFullscreenAvailSize();
+
                 stage.style.transform = '';
-                stage.style.transformOrigin = '';
-                stage.style.maxWidth = `${availW}px`;
-                stage.style.maxHeight = `${availH}px`;
+                stage.style.transformOrigin = 'top left';
+                stage.style.maxWidth = '';
+                stage.style.maxHeight = '';
                 stage.style.width = `${designW}px`;
+
                 const naturalH = Math.max(1, stage.offsetHeight);
                 const scale = Math.min(availW / designW, availH / naturalH);
-                const fitW = Math.max(1, Math.round(designW * scale * 100) / 100);
-                stage.style.width = `${fitW}px`;
+                const fitW = Math.max(1, Math.round(designW * scale * 1000) / 1000);
+                const fitH = Math.max(1, Math.round(naturalH * scale * 1000) / 1000);
+
+                if (fitHost) {
+                    fitHost.style.width = `${fitW}px`;
+                    fitHost.style.height = `${fitH}px`;
+                }
+                stage.style.transform = `scale(${scale})`;
             }
 
             onResize() {
