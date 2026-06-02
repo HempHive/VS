@@ -5263,7 +5263,9 @@
                 window.addEventListener('resize', this.resizeHandler, sig);
                 const onRvFsResize = () => {
                     requestAnimationFrame(() => {
-                        try { this.onResize(); } catch (_) {}
+                        requestAnimationFrame(() => {
+                            try { this.onResize(); } catch (_) {}
+                        });
                     });
                 };
                 document.addEventListener('fullscreenchange', onRvFsResize, sig);
@@ -5319,7 +5321,7 @@
                 return false;
             }
 
-            /** In page fullscreen, scale the 960px-wide digital stage to fit the viewport (contain). */
+            /** In page fullscreen, scale the 960px-wide digital stage to fit the host (contain; may scale up on large displays). */
             _syncDigitalFullscreenLayout() {
                 const stage = this.els && this.els.stageDigital;
                 if (!stage) return;
@@ -5327,17 +5329,21 @@
                     stage.style.width = '';
                     stage.style.maxWidth = '';
                     stage.style.maxHeight = '';
+                    stage.style.transform = '';
+                    stage.style.transformOrigin = '';
                     return;
                 }
                 const designW = RadioVisualEngine.DIGITAL_STAGE_DESIGN_W;
                 const host = this.root || document.getElementById('radio-visual-root');
                 const availW = Math.max(1, host ? host.clientWidth : window.innerWidth);
                 const availH = Math.max(1, host ? host.clientHeight : window.innerHeight);
-                stage.style.maxWidth = '';
-                stage.style.maxHeight = '';
+                stage.style.transform = '';
+                stage.style.transformOrigin = '';
+                stage.style.maxWidth = `${availW}px`;
+                stage.style.maxHeight = `${availH}px`;
                 stage.style.width = `${designW}px`;
                 const naturalH = Math.max(1, stage.offsetHeight);
-                const scale = Math.min(1, availW / designW, availH / naturalH);
+                const scale = Math.min(availW / designW, availH / naturalH);
                 const fitW = Math.max(1, Math.round(designW * scale * 100) / 100);
                 stage.style.width = `${fitW}px`;
             }
