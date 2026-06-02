@@ -5033,19 +5033,12 @@
                 stageD.appendChild(dPanel);
                 }
 
-                let digitalFitHost = null;
                 if (stageA) root.appendChild(stageA);
-                if (stageD) {
-                    digitalFitHost = document.createElement('div');
-                    digitalFitHost.className = 'radio-visual-digital-fit-host';
-                    digitalFitHost.appendChild(stageD);
-                    root.appendChild(digitalFitHost);
-                }
+                if (stageD) root.appendChild(stageD);
 
                 this.els = {
                     btnSkinAnalog: btnA,
                     btnSkinDigital: btnD,
-                    digitalFitHost,
                     stageAnalog: stageA,
                     stageDigital: stageD,
                     digitalDeckBMount,
@@ -5325,83 +5318,51 @@
             }
 
             _isDigitalPageFullscreen() {
-                const stage = this.els && this.els.stageDigital;
-                if (!stage || !stage.classList.contains('is-active')) return false;
+                if (this.skin !== 'digital') return false;
                 try {
                     const fs = document.fullscreenElement || document.webkitFullscreenElement;
                     if (!fs) return false;
-                    if (fs === document.documentElement || fs === document.body) return true;
-                    if (fs.id === 'canvas-container' || fs.closest?.('#canvas-container')) return true;
+                    return fs === document.documentElement || fs === document.body;
                 } catch (_) {}
                 return false;
             }
 
-            _digitalFullscreenAvailSize() {
-                const root = this.root || document.getElementById('radio-visual-root');
-                let w = 0;
-                let h = 0;
-                try {
-                    const vv = window.visualViewport;
-                    if (vv) {
-                        w = vv.width;
-                        h = vv.height;
-                    }
-                } catch (_) {}
-                if (!w || !h) {
-                    w = window.innerWidth;
-                    h = window.innerHeight;
-                }
-                if (root) {
-                    const rw = root.clientWidth;
-                    const rh = root.clientHeight;
-                    if (rw > 0) w = Math.min(w, rw);
-                    if (rh > 0) h = Math.min(rh, rh);
-                }
-                return { w: Math.max(1, w), h: Math.max(1, h) };
+            _clearDigitalFullscreenLayout() {
+                const root = this.root;
+                const stage = this.els && this.els.stageDigital;
+                if (root) root.classList.remove('radio-visual-root--digital-fs');
+                if (!stage) return;
+                stage.style.removeProperty('width');
+                stage.style.removeProperty('max-width');
+                stage.style.removeProperty('max-height');
+                stage.style.removeProperty('transform');
+                stage.style.removeProperty('transform-origin');
             }
 
-            /** Page fullscreen: clip host to scaled box; stage stays 960px design width, scaled with transform. */
+            /** Page fullscreen: scale stage width to fit root (contain). Normal view uses CSS min(960px, 100%) only. */
             _syncDigitalFullscreenLayout() {
                 const stage = this.els && this.els.stageDigital;
-                const fitHost = this.els && this.els.digitalFitHost;
+                const root = this.root;
                 if (!stage) return;
 
-                const reset = () => {
-                    if (fitHost) {
-                        fitHost.style.width = '';
-                        fitHost.style.height = '';
-                    }
-                    stage.style.width = '';
-                    stage.style.maxWidth = '';
-                    stage.style.maxHeight = '';
-                    stage.style.transform = '';
-                    stage.style.transformOrigin = '';
-                };
-
                 if (!this._isDigitalPageFullscreen()) {
-                    reset();
+                    this._clearDigitalFullscreenLayout();
                     return;
                 }
 
+                if (root) root.classList.add('radio-visual-root--digital-fs');
+
                 const designW = RadioVisualEngine.DIGITAL_STAGE_DESIGN_W;
-                const { w: availW, h: availH } = this._digitalFullscreenAvailSize();
+                const host = root || document.getElementById('radio-visual-root');
+                const availW = Math.max(1, host ? host.clientWidth : window.innerWidth);
+                const availH = Math.max(1, host ? host.clientHeight : window.innerHeight);
 
-                stage.style.transform = '';
-                stage.style.transformOrigin = 'top left';
-                stage.style.maxWidth = '';
-                stage.style.maxHeight = '';
                 stage.style.width = `${designW}px`;
-
+                stage.style.maxWidth = '100%';
                 const naturalH = Math.max(1, stage.offsetHeight);
                 const scale = Math.min(availW / designW, availH / naturalH);
-                const fitW = Math.max(1, Math.round(designW * scale * 1000) / 1000);
-                const fitH = Math.max(1, Math.round(naturalH * scale * 1000) / 1000);
-
-                if (fitHost) {
-                    fitHost.style.width = `${fitW}px`;
-                    fitHost.style.height = `${fitH}px`;
-                }
-                stage.style.transform = `scale(${scale})`;
+                const fitW = Math.max(1, Math.round(designW * scale * 100) / 100);
+                stage.style.width = `${fitW}px`;
             }
 
             onResize() {
@@ -5450,6 +5411,7 @@
                 try {
                     window.removeEventListener('resize', this.resizeHandler);
                 } catch (_) {}
+                try { this._clearDigitalFullscreenLayout(); } catch (_) {}
                 this.root = null;
                 this.els = {};
                 try { container.innerHTML = ''; } catch (_) {}

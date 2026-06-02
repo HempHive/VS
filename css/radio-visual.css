@@ -534,23 +534,9 @@
                 radial-gradient(ellipse 90% 70% at 50% 100%, rgba(20, 40, 80, 0.35), transparent 60%),
                 linear-gradient(165deg, #0c0a08 0%, #1a1410 38%, #0a0e14 100%);
         }
-        #radio-visual-root.radio-visual-root--analogue-only .radio-visual-stage.is-active,
-        #radio-visual-root.radio-visual-root--digital-only .radio-visual-stage.is-active {
+        #radio-visual-root.radio-visual-root--analogue-only .radio-visual-stage,
+        #radio-visual-root.radio-visual-root--digital-only .radio-visual-stage {
             display: flex;
-        }
-        #radio-visual-root.radio-visual-root--analogue-only .radio-visual-stage:not(.is-active),
-        #radio-visual-root.radio-visual-root--digital-only .radio-visual-stage:not(.is-active) {
-            display: none !important;
-        }
-        #radio-visual-root .radio-visual-digital-fit-host {
-            flex: 0 1 auto;
-            flex-shrink: 1;
-            min-width: 0;
-            max-width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            overflow: hidden;
         }
         #radio-visual-root .radio-visual-digital-spectrum-bg {
             position: absolute;
@@ -1407,15 +1393,8 @@
             }
         }
 
-        /* Page fullscreen: root fills viewport; JS scales 960px stage inside .radio-visual-digital-fit-host. */
-        html:fullscreen:has(#radio-visual-root.radio-visual-root--digital-active),
-        html:fullscreen:has(#radio-visual-root.radio-visual-root--digital-only),
-        html:fullscreen:has(#radio-visual-root .radio-visual-skin--digital.is-active),
-        html:-webkit-full-screen:has(#radio-visual-root.radio-visual-root--digital-active),
-        html:-webkit-full-screen:has(#radio-visual-root.radio-visual-root--digital-only),
-        html:-webkit-full-screen:has(#radio-visual-root .radio-visual-skin--digital.is-active) {
-            overflow: hidden !important;
-        }
+        /* Page fullscreen (class toggled from JS + html:fullscreen for fixed positioning). */
+        #radio-visual-root.radio-visual-root--digital-fs,
         html:fullscreen #radio-visual-root.radio-visual-root--digital-active,
         html:fullscreen #radio-visual-root.radio-visual-root--digital-only,
         html:fullscreen #radio-visual-root:has(.radio-visual-skin--digital.is-active),
@@ -1434,27 +1413,32 @@
             justify-content: center;
             align-items: center;
         }
-        html:fullscreen #radio-visual-root.radio-visual-root--digital-active .radio-visual-digital-fit-host,
-        html:fullscreen #radio-visual-root.radio-visual-root--digital-only .radio-visual-digital-fit-host,
-        html:fullscreen #radio-visual-root:has(.radio-visual-skin--digital.is-active) .radio-visual-digital-fit-host,
-        html:-webkit-full-screen #radio-visual-root.radio-visual-root--digital-active .radio-visual-digital-fit-host,
-        html:-webkit-full-screen #radio-visual-root.radio-visual-root--digital-only .radio-visual-digital-fit-host,
-        html:-webkit-full-screen #radio-visual-root:has(.radio-visual-skin--digital.is-active) .radio-visual-digital-fit-host {
-            flex: 0 1 auto;
-            max-width: 100%;
-            max-height: 100%;
-            margin: 0 auto;
-        }
+        #radio-visual-root.radio-visual-root--digital-fs .radio-visual-stage.radio-visual-skin--digital,
         html:fullscreen #radio-visual-root.radio-visual-root--digital-active .radio-visual-stage.radio-visual-skin--digital,
         html:fullscreen #radio-visual-root.radio-visual-root--digital-only .radio-visual-stage.radio-visual-skin--digital,
         html:fullscreen #radio-visual-root:has(.radio-visual-skin--digital.is-active) .radio-visual-stage.radio-visual-skin--digital,
         html:-webkit-full-screen #radio-visual-root.radio-visual-root--digital-active .radio-visual-stage.radio-visual-skin--digital,
         html:-webkit-full-screen #radio-visual-root.radio-visual-root--digital-only .radio-visual-stage.radio-visual-skin--digital,
         html:-webkit-full-screen #radio-visual-root:has(.radio-visual-skin--digital.is-active) .radio-visual-stage.radio-visual-skin--digital {
-            flex-shrink: 0;
-            width: 960px;
-            max-width: none;
-            margin: 0;
+            flex: 0 0 auto;
+            align-self: center;
+            width: auto;
+            max-width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            overflow-x: clip;
+        }
+        #radio-visual-root.radio-visual-root--digital-fs .radio-visual-digital-panel,
+        html:fullscreen #radio-visual-root.radio-visual-root--digital-active .radio-visual-digital-panel,
+        html:fullscreen #radio-visual-root.radio-visual-root--digital-only .radio-visual-digital-panel,
+        html:fullscreen #radio-visual-root:has(.radio-visual-skin--digital.is-active) .radio-visual-digital-panel,
+        html:-webkit-full-screen #radio-visual-root.radio-visual-root--digital-active .radio-visual-digital-panel,
+        html:-webkit-full-screen #radio-visual-root.radio-visual-root--digital-only .radio-visual-digital-panel,
+        html:-webkit-full-screen #radio-visual-root:has(.radio-visual-skin--digital.is-active) .radio-visual-digital-panel {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow-x: clip;
         }
         #radio-visual-root .radio-visual-digital-staging-mount:fullscreen,
         #radio-visual-root .radio-visual-digital-staging-mount:-webkit-full-screen,
