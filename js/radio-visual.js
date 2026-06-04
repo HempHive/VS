@@ -10,13 +10,21 @@
             static get DIGITAL_HUB_CYCLE() {
                 return ['equaliser', 'volume', 'effects', 'ai', 'ai-off', 'spectrum'];
             }
-            /** Centre column in EFFECTS hub: 4×1 mixer FX toggles. */
-            static get DIGITAL_HUB_MIX_FX() {
+            /** EFFECTS hub centre: two 4×1 columns (mixer FX + sample pads). */
+            static get DIGITAL_HUB_MIX_FX_COLS() {
                 return [
-                    { label: 'Low-pass', mixId: 'fx-lowpass' },
-                    { label: 'Bass', mixId: 'fx-bass' },
-                    { label: 'High-pass', mixId: 'fx-highpass' },
-                    { label: '~Echo~', mixId: 'fx-echo' }
+                    [
+                        { label: 'Low-pass', mixId: 'fx-lowpass' },
+                        { label: 'Bass', mixId: 'fx-bass' },
+                        { label: 'High-pass', mixId: 'fx-highpass' },
+                        { label: 'TK-FILTER', mixId: 'fx-tk' }
+                    ],
+                    [
+                        { label: 'AIR📢', sample: 'assets/audio/wav6.mp3' },
+                        { label: 'WAA', sample: 'assets/audio/wav4.mp3' },
+                        { label: 'WAAA', sample: 'assets/audio/wav5.mp3' },
+                        { label: 'FX1', sample: 'assets/audio/wav1.mp3' }
+                    ]
                 ];
             }
             static get SPECTRUM_STAGING_SCALE_MIN() { return 0.35; }
@@ -3138,6 +3146,24 @@
                 this._hideDigitalSpectrumStagingSlider(false);
             }
 
+            /** Scale entire spectrum row (both flowers) as one unit — not per-ribbon radii. */
+            _syncSpectrumStagingScale() {
+                const row = this.els.digitalSpectrumRow;
+                if (!row) return;
+                const scale = (this._digitalHubMode === 'spectrum')
+                    ? Math.max(
+                        RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN,
+                        Math.min(
+                            RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX,
+                            Number(this._spectrumStagingScale) || 1
+                        )
+                    )
+                    : 1;
+                try {
+                    row.style.setProperty('--rv-spectrum-staging-scale', String(scale));
+                } catch (_) {}
+            }
+
             _wireDigitalSpectrumStagingSlider(abortSignal) {
                 const pane = this.els.digitalCenterSpectrum;
                 const wrap = this.els.digitalSpectrumStagingSlider;
@@ -3150,6 +3176,7 @@
                     const min = RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN;
                     const max = RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX;
                     this._spectrumStagingScale = Math.max(min, Math.min(max, v / 100));
+                    this._syncSpectrumStagingScale();
                 };
                 applyScaleFromSlider();
 
@@ -3238,7 +3265,7 @@
                     lbl.textContent = label;
                     const slider = document.createElement('input');
                     slider.type = 'range';
-                    slider.className = 'radio-visual-digital-hub-gain-slider';
+                    slider.className = 'radio-visual-digital-hub-gain-slider radio-visual-digital-range';
                     slider.min = '0';
                     slider.max = '200';
                     slider.step = '1';
@@ -3296,14 +3323,21 @@
                 fxKnobs.b.forEach((k) => fxDeckB.appendChild(mkBeatFxKnob('b', k.suffix, k.label, k.color)));
                 const fxCenter = document.createElement('div');
                 fxCenter.className = 'radio-visual-digital-hub-fx-center';
-                fxCenter.setAttribute('aria-label', 'Mixer effects');
-                RadioVisualEngine.DIGITAL_HUB_MIX_FX.forEach((fx) => {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'radio-visual-digital-hub-fx-btn';
-                    btn.textContent = fx.label;
-                    btn.dataset.mixFx = fx.mixId;
-                    fxCenter.appendChild(btn);
+                fxCenter.setAttribute('aria-label', 'Mixer effects and samples');
+                RadioVisualEngine.DIGITAL_HUB_MIX_FX_COLS.forEach((col, colIdx) => {
+                    const colEl = document.createElement('div');
+                    colEl.className = 'radio-visual-digital-hub-fx-col';
+                    colEl.dataset.fxCol = String(colIdx);
+                    col.forEach((fx) => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'radio-visual-digital-hub-fx-btn';
+                        btn.textContent = fx.label;
+                        if (fx.mixId) btn.dataset.mixFx = fx.mixId;
+                        if (fx.sample) btn.dataset.hubSample = fx.sample;
+                        colEl.appendChild(btn);
+                    });
+                    fxCenter.appendChild(colEl);
                 });
                 effects.append(fxDeckA, fxCenter, fxDeckB);
 
@@ -3368,7 +3402,15 @@
                     }
                 } catch (_) {}
                 this.els.digitalHubMixFx?.querySelectorAll('.radio-visual-digital-hub-fx-btn').forEach((btn) => {
-                    btn.addEventListener('click', () => {
+                    btn.addEventListener('click', (ev) => {
+                        try { ev.stopPropagation(); } catch (_) {}
+                        if (btn.dataset.hubSample) {
+                            try {
+                                const a = new Audio(btn.dataset.hubSample);
+                                a.play().catch(() => {});
+                            } catch (_) {}
+                            return;
+                        }
                         const mixId = btn.dataset.mixFx;
                         if (!mixId) return;
                         document.getElementById(mixId)?.click();
@@ -3414,6 +3456,7 @@
                 const dash = this.els.digitalDashStack;
                 if (dash) dash.classList.remove('is-spectrum-hud-hidden');
                 try { this._syncDigitalSpectrumLayout(); } catch (_) {}
+                try { this._syncSpectrumStagingScale(); } catch (_) {}
                 this._scheduleDigitalSpectrumLayoutSync();
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
@@ -3456,8 +3499,10 @@
                     try { this._syncDigitalHubMixFxButtons(); } catch (_) {}
                 }
                 if (mode === 'spectrum') {
+                    try { this._syncSpectrumStagingScale(); } catch (_) {}
                     try { this._showDigitalSpectrumStagingSlider(); } catch (_) {}
                 } else {
+                    try { this._syncSpectrumStagingScale(); } catch (_) {}
                     try { this._hideDigitalSpectrumStagingSlider(true); } catch (_) {}
                 }
                 this._syncDigitalHubAiVideo();
@@ -3893,12 +3938,6 @@
                 const smoothMix = [];
                 const spectrumActive = this._isSpectrumAudioActive();
                 let lowSmoothForHue = null;
-                const stagingScale = (this._digitalHubMode === 'spectrum')
-                    ? Math.max(
-                        RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN,
-                        Math.min(RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX, Number(this._spectrumStagingScale) || 1)
-                    )
-                    : 1;
                 for (const layer of RadioVisualEngine.SPECTRUM_FLOWER_LAYERS) {
                     const levels = sampled[layer.key] || [];
                     const smooth = this._smoothSpectrumBandLevels(levels, sampled.fromAnalyser);
@@ -3906,22 +3945,13 @@
                     let radii;
                     if (layer.key === 'high' && !spectrumActive) {
                         radii = this._fullBandRadii(n, layer.maxRing);
-                        if (stagingScale !== 1) {
-                            const cap = layer.maxRing || 0.64;
-                            radii = radii.map((r) => Math.min(cap, r * stagingScale));
-                        }
                         if (!this._spectrumRingSmooth.high || this._spectrumRingSmooth.high.length !== n) {
                             this._spectrumRingSmooth.high = radii.slice();
                         } else {
-                            const cap = (layer.maxRing || 0.64) * stagingScale;
-                            for (let i = 0; i < n; i++) this._spectrumRingSmooth.high[i] = cap;
+                            for (let i = 0; i < n; i++) this._spectrumRingSmooth.high[i] = layer.maxRing;
                         }
                     } else {
                         radii = this._radiiFromSpectrumSmooth(smooth, t, layer.key, layer);
-                    }
-                    if (stagingScale !== 1) {
-                        const cap = layer.maxRing || 0.64;
-                        radii = radii.map((r) => Math.min(cap, Math.max(0.04, r * stagingScale)));
                     }
                     const bassLevel = layer.key === 'low' ? this._bassLevelFromSmooth(smooth) : 0;
                     layersL.push({ ...layer, radii, bassLevel });
@@ -4246,7 +4276,7 @@
                 const lcdClipX = ix + lcdPad;
                 const lcdClipW = iw - lcdPad * 2;
                 const lcdLine = lcdPrimaryLine || 'DIGITAL TUNER';
-                const lcdBasePx = Math.max(8, Math.min(w, h) * 0.075);
+                const lcdStationPx = Math.max(10, Math.min(w, h) * 0.10);
                 this._drawCanvasLcdScrollText(
                     ctx,
                     lcdLine,
@@ -4255,7 +4285,7 @@
                     lcdClipW,
                     lcdH,
                     lcdY + lcdH * 0.38,
-                    lcdBasePx,
+                    lcdStationPx,
                     t,
                     {
                         marqueeKey: 'digital-lcd-primary',
@@ -4267,7 +4297,7 @@
                 ctx.shadowBlur = 0;
                 const lcdSub = lcdSecondaryLine || 'STEREO · EQ';
                 const lcdSubIsStation = lcdSub !== 'STEREO · EQ';
-                const lcdSubBasePx = Math.max(7, Math.min(w, h) * 0.055);
+                const lcdStatusPx = Math.max(8, Math.min(w, h) * 0.062);
                 if (lcdSubIsStation) {
                     this._drawCanvasLcdScrollText(
                         ctx,
@@ -4277,7 +4307,7 @@
                         lcdClipW,
                         lcdH,
                         lcdY + lcdH * 0.72,
-                        lcdSubBasePx,
+                        lcdStationPx,
                         t,
                         {
                             weight: 600,
@@ -4288,7 +4318,7 @@
                         }
                     );
                 } else {
-                    ctx.font = `600 ${lcdSubBasePx}px ui-monospace, Menlo, Consolas, monospace`;
+                    ctx.font = `600 ${lcdStatusPx}px ui-monospace, Menlo, Consolas, monospace`;
                     ctx.fillStyle = 'rgba(120, 255, 200, 0.35)';
                     ctx.fillText(lcdSub, ix + iw * 0.5, lcdY + lcdH * 0.72);
                 }
@@ -5132,6 +5162,7 @@
                 let digitalHubPanel = null;
                 let spectrumStagingSlider = null;
                 let spectrumScaleSlider = null;
+                let digitalSpectrumRow = null;
                 let digitalDeckBVideo = null;
                 let digitalDeckBMount = null;
                 let digitalDeckBContent = null;
@@ -5298,8 +5329,8 @@
                 spectrumBg = document.createElement('div');
                 spectrumBg.className = 'radio-visual-digital-spectrum-bg';
                 spectrumBg.setAttribute('aria-hidden', 'true');
-                const spectrumRow = document.createElement('div');
-                spectrumRow.className = 'radio-visual-digital-spectrum-row';
+                digitalSpectrumRow = document.createElement('div');
+                digitalSpectrumRow.className = 'radio-visual-digital-spectrum-row';
                 spectrumSideL = document.createElement('div');
                 spectrumSideL.className = 'radio-visual-digital-spectrum-side radio-visual-digital-spectrum-side--left';
                 digitalSpectrumCanvasL = document.createElement('canvas');
@@ -5363,23 +5394,23 @@
                 spectrumStagingSlider.setAttribute('aria-hidden', 'true');
                 spectrumScaleSlider = document.createElement('input');
                 spectrumScaleSlider.type = 'range';
-                spectrumScaleSlider.className = 'radio-visual-digital-spectrum-scale-range';
+                spectrumScaleSlider.className = 'radio-visual-digital-spectrum-scale-range radio-visual-digital-range';
                 spectrumScaleSlider.min = '35';
                 spectrumScaleSlider.max = '280';
                 spectrumScaleSlider.step = '1';
                 spectrumScaleSlider.value = '100';
                 spectrumScaleSlider.setAttribute('aria-label', 'Spectrum flower size');
                 spectrumStagingSlider.appendChild(spectrumScaleSlider);
-                spectrumRow.appendChild(spectrumSideL);
-                spectrumRow.appendChild(dashStack);
-                spectrumRow.appendChild(spectrumSideR);
-                spectrumRow.appendChild(spectrumStagingSlider);
+                digitalSpectrumRow.appendChild(spectrumSideL);
+                digitalSpectrumRow.appendChild(dashStack);
+                digitalSpectrumRow.appendChild(spectrumSideR);
+                digitalSpectrumRow.appendChild(spectrumStagingSlider);
                 digitalStagingMount = document.createElement('div');
                 digitalStagingMount.className = 'radio-visual-digital-staging-mount';
                 digitalStagingMount.setAttribute('aria-hidden', 'true');
                 digitalLocalQueuePanel = this._buildDigitalLocalQueuePanel();
                 digitalCenterSpectrum.appendChild(spectrumBg);
-                digitalCenterSpectrum.appendChild(spectrumRow);
+                digitalCenterSpectrum.appendChild(digitalSpectrumRow);
                 digitalCenterSpectrum.appendChild(digitalStagingMount);
                 digitalCenterSpectrum.appendChild(digitalLocalQueuePanel);
                 digitalCenterDeckB = document.createElement('div');
@@ -5537,6 +5568,7 @@
                     digitalHubPanel,
                     digitalHubEffects: digitalHubPanel?.querySelector('.radio-visual-digital-hub-effects'),
                     digitalHubMixFx: digitalHubPanel?.querySelector('.radio-visual-digital-hub-fx-center'),
+                    digitalSpectrumRow,
                     digitalSpectrumStagingSlider: spectrumStagingSlider,
                     digitalSpectrumScaleSlider: spectrumScaleSlider,
                     digitalHubAiVideo: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai-video'),

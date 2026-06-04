@@ -526,6 +526,12 @@
             justify-content: stretch;
             overflow: hidden;
         }
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"] {
+            overflow: visible;
+        }
+        #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-center-pane[data-hub-mode="spectrum"].is-active) {
+            overflow: visible;
+        }
         #radio-visual-root:has(.radio-visual-skin--digital.is-active),
         #radio-visual-root.radio-visual-root--digital-only,
         #radio-visual-root.radio-visual-root--digital-active {
@@ -758,6 +764,13 @@
             gap: clamp(6px, 1.25cqw, 12px);
             padding: clamp(8px, 1.46cqw, 14px);
             box-sizing: border-box;
+            transform: scale(var(--rv-spectrum-staging-scale, 1));
+            transform-origin: center center;
+            transition: transform 0.15s ease-out;
+            will-change: transform;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane:not([data-hub-mode="spectrum"]) .radio-visual-digital-spectrum-row {
+            transform: none;
         }
         #radio-visual-root .radio-visual-digital-spectrum-side {
             flex: 1 1 0;
@@ -987,14 +1000,14 @@
             gap: clamp(1px, 0.31cqw, 3px);
             flex: 1 1 0;
             min-height: 0;
-            max-height: 34%;
+            max-height: 36%;
             width: 100%;
             min-width: 0;
         }
         #radio-visual-root .radio-visual-digital-hub-knob.knob-wrap,
         #radio-visual-root .radio-visual-digital-hub-beatfx-knob.knob-wrap {
-            width: min(34px, 88cqh, 22cqw);
-            height: min(34px, 88cqh, 22cqw);
+            width: min(46px, 96cqh, 30cqw);
+            height: min(46px, 96cqh, 30cqw);
             max-width: 100%;
             max-height: 100%;
             flex-shrink: 1;
@@ -1038,32 +1051,65 @@
             color: var(--gain-color, #fff);
             text-shadow: 0 0 8px color-mix(in srgb, var(--gain-color, #fff) 45%, transparent);
         }
-        #radio-visual-root .radio-visual-digital-hub-gain-slider {
+        /* Hub gain + spectrum staging sliders: same vol.png thumb as crossfader / DJ vol */
+        #radio-visual-root .radio-visual-digital-range {
             -webkit-appearance: none;
             appearance: none;
-            writing-mode: vertical-lr;
-            direction: rtl;
-            width: clamp(14px, 2.5cqw, 22px);
-            height: clamp(48px, 12cqw, 96px);
             margin: 0;
-            background: transparent;
+            padding: 0;
+            background: transparent !important;
+            border: none;
+            box-shadow: none;
+            accent-color: transparent;
+            --rv-range-thumb: clamp(28px, 5.5cqw, 42px);
+            --rv-range-rail: clamp(6px, 1.25cqw, 10px);
             cursor: pointer;
         }
-        #radio-visual-root .radio-visual-digital-hub-gain-slider::-webkit-slider-runnable-track {
-            width: clamp(6px, 1.25cqw, 10px);
+        #radio-visual-root .radio-visual-digital-hub-gain-slider.radio-visual-digital-range {
+            writing-mode: vertical-lr;
+            direction: rtl;
+            width: var(--rv-range-thumb);
+            height: clamp(48px, 14cqh, 100px);
+            max-height: 100%;
+        }
+        #radio-visual-root .radio-visual-digital-range::-webkit-slider-runnable-track {
             background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(255,255,255,0.08));
             border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.12);
+            border: 1px solid rgba(212, 175, 55, 0.35);
         }
-        #radio-visual-root .radio-visual-digital-hub-gain-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: clamp(14px, 2.5cqw, 18px);
-            height: clamp(14px, 2.5cqw, 18px);
+        #radio-visual-root .radio-visual-digital-hub-gain-slider.radio-visual-digital-range::-webkit-slider-runnable-track {
+            width: var(--rv-range-rail);
+        }
+        #radio-visual-root .radio-visual-digital-range::-moz-range-track {
+            background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(255,255,255,0.08));
+            border-radius: 6px;
+            border: 1px solid rgba(212, 175, 55, 0.35);
+        }
+        #radio-visual-root .radio-visual-digital-range::-moz-range-progress {
+            background: transparent !important;
+        }
+        #radio-visual-root .radio-visual-digital-range::-webkit-slider-thumb {
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            width: var(--rv-range-thumb) !important;
+            height: var(--rv-range-thumb) !important;
+            background: transparent url('../assets/images/vol.png') center center / 100% 100% no-repeat !important;
+            border: none !important;
             border-radius: 50%;
-            background: var(--gain-color, #fff);
-            border: 1px solid rgba(255,255,255,0.35);
-            box-shadow: 0 0 10px color-mix(in srgb, var(--gain-color, #fff) 50%, transparent);
-            margin-left: calc((clamp(14px, 2.5cqw, 22px) - clamp(6px, 1.25cqw, 10px)) / -2);
+            box-shadow: none !important;
+            cursor: pointer;
+        }
+        #radio-visual-root .radio-visual-digital-range::-moz-range-thumb {
+            width: var(--rv-range-thumb) !important;
+            height: var(--rv-range-thumb) !important;
+            background: transparent url('../assets/images/vol.png') center center / 100% 100% no-repeat !important;
+            border: none !important;
+            border-radius: 50%;
+            box-shadow: none !important;
+            cursor: pointer;
+        }
+        #radio-visual-root .radio-visual-digital-hub-gain-slider.radio-visual-digital-range::-webkit-slider-thumb {
+            margin-left: calc((var(--rv-range-thumb) - var(--rv-range-rail)) / -2);
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="effects"] .radio-visual-digital-hub-effects {
             display: flex !important;
@@ -1090,19 +1136,29 @@
         }
         #radio-visual-root .radio-visual-digital-hub-fx-center {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: stretch;
-            justify-content: space-evenly;
-            gap: clamp(2px, 0.42cqw, 4px);
-            flex: 0 0 clamp(52px, 10cqw, 88px);
-            min-width: clamp(48px, 9cqw, 80px);
-            max-width: clamp(64px, 12cqw, 96px);
+            justify-content: center;
+            gap: clamp(3px, 0.63cqw, 6px);
+            flex: 0 1 auto;
+            min-width: clamp(88px, 18cqw, 160px);
+            max-width: min(42%, 180px);
             height: 100%;
             min-height: 0;
             max-height: 100%;
             overflow: hidden;
-            padding: clamp(2px, 0.42cqw, 4px) 0;
+            padding: clamp(2px, 0.42cqw, 4px);
             box-sizing: border-box;
+        }
+        #radio-visual-root .radio-visual-digital-hub-fx-col {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: space-evenly;
+            gap: clamp(2px, 0.42cqw, 4px);
+            flex: 1 1 0;
+            min-width: 0;
+            min-height: 0;
         }
         #radio-visual-root .radio-visual-digital-hub-fx-btn {
             flex: 1 1 0;
@@ -1168,36 +1224,21 @@
             opacity: 1;
             pointer-events: auto;
         }
-        #radio-visual-root .radio-visual-digital-spectrum-scale-range {
-            -webkit-appearance: none;
-            appearance: none;
+        #radio-visual-root .radio-visual-digital-spectrum-scale-range.radio-visual-digital-range {
             writing-mode: vertical-lr;
             direction: rtl;
-            width: clamp(14px, 2.5cqw, 22px);
+            width: var(--rv-range-thumb);
             height: 100%;
             min-height: clamp(72px, 32cqh, 160px);
             max-height: 100%;
-            margin: 0;
-            padding: 0;
-            background: transparent;
-            accent-color: #0fc;
-            cursor: ns-resize;
             flex: 1 1 auto;
+            cursor: ns-resize;
         }
-        #radio-visual-root .radio-visual-digital-spectrum-scale-range::-webkit-slider-runnable-track {
-            width: clamp(6px, 1.25cqw, 10px);
-            background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(255,255,255,0.08));
-            border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.12);
+        #radio-visual-root .radio-visual-digital-spectrum-scale-range.radio-visual-digital-range::-webkit-slider-runnable-track {
+            width: var(--rv-range-rail);
         }
-        #radio-visual-root .radio-visual-digital-spectrum-scale-range::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: clamp(14px, 2.5cqw, 18px);
-            height: clamp(14px, 2.5cqw, 18px);
-            border-radius: 50%;
-            background: #0fc;
-            border: 1px solid rgba(255,255,255,0.35);
-            box-shadow: 0 0 10px rgba(0, 255, 200, 0.45);
+        #radio-visual-root .radio-visual-digital-spectrum-scale-range.radio-visual-digital-range::-webkit-slider-thumb {
+            margin-left: calc((var(--rv-range-thumb) - var(--rv-range-rail)) / -2);
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai"] .radio-visual-digital-hub-ai {
             display: flex !important;
