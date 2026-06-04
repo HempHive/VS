@@ -959,6 +959,12 @@
             display: flex !important;
             pointer-events: auto;
         }
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai"] .radio-visual-digital-hub-panel {
+            pointer-events: none;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai"] .radio-visual-digital-hub-ai {
+            pointer-events: auto;
+        }
         #radio-visual-root .radio-visual-digital-hub-volume,
         #radio-visual-root .radio-visual-digital-hub-effects,
         #radio-visual-root .radio-visual-digital-hub-ai,

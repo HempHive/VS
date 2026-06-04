@@ -8,7 +8,7 @@
             /** Fixed layout width for Digital Radio (container-query scaling). */
             static get DIGITAL_STAGE_DESIGN_W() { return 960; }
             static get DIGITAL_HUB_CYCLE() {
-                return ['equaliser', 'volume', 'effects', 'ai', 'ai-off', 'spectrum'];
+                return ['equaliser', 'volume', 'effects', 'live', 'ai-off', 'spectrum'];
             }
             /** EFFECTS hub centre: two 4×1 columns (mixer FX + sample pads). */
             static get DIGITAL_HUB_MIX_FX_COLS() {
@@ -35,7 +35,7 @@
                     spectrum: 'SPECTRUM',
                     volume: 'VOLUME',
                     effects: 'EFFECTS',
-                    ai: 'AI',
+                    live: 'LIVE',
                     'ai-off': 'OFF'
                 };
             }
@@ -82,8 +82,9 @@
                 this._volDrag = false;
                 this._rvAutoFadeRaf = null;
                 this.digitalCenterMode = 'spectrum';
-                /** Centre hub: equaliser → volume → effects → ai → ai-off → spectrum → equaliser */
+                /** Centre hub: equaliser → volume → effects → live → ai-off → spectrum (AI video = toolbar only). */
                 this._digitalHubMode = 'equaliser';
+                this._digitalHubAiReturnMode = 'equaliser';
                 /** Derived from hub mode for spectrum flower / HUD layout. */
                 this._digitalSpectrumLayout = 'full';
                 /** Spectrum hub staging scale (1 = default flower size). */
@@ -2832,9 +2833,9 @@
                     this.els.autoMixKnob.classList.toggle('is-on', on);
                     this.els.autoMixKnob.setAttribute('aria-pressed', on ? 'true' : 'false');
                 }
-                if (this.els.btnDigitalMix) {
-                    this.els.btnDigitalMix.classList.toggle('is-active', on);
-                    this.els.btnDigitalMix.setAttribute('aria-pressed', on ? 'true' : 'false');
+                if (this.els.btnDigitalFade) {
+                    this.els.btnDigitalFade.classList.toggle('is-active', on);
+                    this.els.btnDigitalFade.setAttribute('aria-pressed', on ? 'true' : 'false');
                 }
             }
 
@@ -2927,7 +2928,17 @@
                 btn.addEventListener('click', (ev) => this._stopClick(ev), sig);
             }
 
-            _wireDigitalMixButton(btn, sig) {
+            _wireDigitalAiButton(btn, sig) {
+                if (!btn) return;
+                try { btn.removeAttribute('title'); } catch (_) {}
+                btn.setAttribute('aria-label', 'Toggle AI video');
+                btn.addEventListener('click', (ev) => {
+                    this._stopClick(ev);
+                    this._toggleDigitalHubAiMode();
+                }, sig);
+            }
+
+            _wireDigitalFadeButton(btn, sig) {
                 if (!btn) return;
                 let longPressTimer = null;
                 let longPressHandled = false;
@@ -2954,7 +2965,7 @@
                 btn.addEventListener('pointerup', (ev) => {
                     this._stopClick(ev);
                     clearLongPress();
-                    if (!longPressHandled) this._toggleAutoMix();
+                    if (!longPressHandled) this._triggerAutoFade();
                     longPressHandled = false;
                 }, sig);
                 btn.addEventListener('pointercancel', () => {
@@ -2971,8 +2982,8 @@
                     const t = ev.target;
                     if (!t || typeof t.closest !== 'function') return;
                     if (panel.contains(t)) return;
-                    const mixBtn = this.els.btnDigitalMix;
-                    if (mixBtn && (mixBtn === t || mixBtn.contains(t))) return;
+                    const fadeBtn = this.els.btnDigitalFade;
+                    if (fadeBtn && (fadeBtn === t || fadeBtn.contains(t))) return;
                     this._closeDigitalAutoMixPanel();
                 };
                 document.addEventListener('pointerdown', dismissIfOutside, { capture: true, ...sig });
@@ -3352,10 +3363,33 @@
                     case 'spectrum': return 'focus';
                     case 'volume':
                     case 'effects':
-                    case 'ai': return 'full';
+                    case 'live': return 'full';
                     case 'ai-off': return 'blank';
                     default: return 'full';
                 }
+            }
+
+            _enterDigitalHubAiMode() {
+                if (this._digitalHubMode === 'ai') return;
+                this._digitalHubAiReturnMode = this._digitalHubMode || 'equaliser';
+                if (this.digitalCenterMode !== 'spectrum') {
+                    try { this._setDigitalCenterMode('spectrum'); } catch (_) {}
+                }
+                this._digitalHubMode = 'ai';
+                try { this._syncDigitalSpectrumLayout(); } catch (_) {}
+            }
+
+            _exitDigitalHubAiMode() {
+                if (this._digitalHubMode !== 'ai') return;
+                const back = this._digitalHubAiReturnMode || 'equaliser';
+                this._digitalHubMode = back;
+                this._digitalHubAiReturnMode = 'equaliser';
+                try { this._syncDigitalSpectrumLayout(); } catch (_) {}
+            }
+
+            _toggleDigitalHubAiMode() {
+                if (this._digitalHubMode === 'ai') this._exitDigitalHubAiMode();
+                else this._enterDigitalHubAiMode();
             }
 
             _buildDigitalHubPanel() {
@@ -3618,6 +3652,7 @@
                 pane.classList.toggle('is-hub-volume', mode === 'volume');
                 pane.classList.toggle('is-hub-effects', mode === 'effects');
                 pane.classList.toggle('is-hub-ai', mode === 'ai');
+                pane.classList.toggle('is-hub-live', mode === 'live');
                 pane.classList.toggle('is-hub-off', mode === 'ai-off');
 
                 const showHub = mode === 'volume' || mode === 'effects' || mode === 'ai' || mode === 'ai-off';
@@ -3646,6 +3681,15 @@
                     try { this._hideDigitalSpectrumStagingSlider(true); } catch (_) {}
                 }
                 this._syncDigitalHubAiVideo();
+                this._syncDigitalHubAiButton();
+            }
+
+            _syncDigitalHubAiButton() {
+                const btn = this.els.btnDigitalAi;
+                if (!btn) return;
+                const on = this._digitalHubMode === 'ai';
+                btn.classList.toggle('is-active', on);
+                btn.setAttribute('aria-pressed', on ? 'true' : 'false');
             }
 
             _syncDigitalSpectrumLayout() {
@@ -3673,19 +3717,23 @@
                 if (!btn) return;
                 const inSpectrumCenter = this.digitalCenterMode === 'spectrum' && !this._digitalStagingView;
                 const hubMode = this._digitalHubMode;
+                const labelMode = hubMode === 'ai'
+                    ? (this._digitalHubAiReturnMode || 'equaliser')
+                    : hubMode;
                 const spectrumsVisible = hubMode !== 'ai-off';
                 btn.classList.toggle('is-active', inSpectrumCenter && spectrumsVisible);
                 btn.setAttribute('aria-pressed', inSpectrumCenter ? 'true' : 'false');
-                btn.setAttribute('aria-label', `Centre display: ${this._digitalHubModeLabel(hubMode)}`);
+                btn.setAttribute('aria-label', `Centre display: ${this._digitalHubModeLabel(labelMode)}`);
                 const labelEl = btn.querySelector('.radio-visual-btn-label');
-                const hubLabel = this._digitalHubModeLabel(hubMode);
+                const hubLabel = this._digitalHubModeLabel(labelMode);
                 if (labelEl) labelEl.textContent = hubLabel;
                 else this._appendRvButtonLabel(btn, hubLabel);
                 try { btn.removeAttribute('title'); } catch (_) {}
             }
 
-            /** equaliser → volume → effects → ai → off → spectrum → equaliser */
+            /** equaliser → volume → effects → live → off → spectrum → equaliser */
             _cycleDigitalSpectrumLayout() {
+                if (this._digitalHubMode === 'ai') this._exitDigitalHubAiMode();
                 const cycle = RadioVisualEngine.DIGITAL_HUB_CYCLE;
                 let i = cycle.indexOf(this._digitalHubMode);
                 if (i < 0) i = 0;
@@ -4731,6 +4779,15 @@
                 const sig = this.abortCtrl.signal;
                 digitalCenterEl.addEventListener('click', (ev) => {
                     if (this.skin !== 'digital') return;
+                    if (this._digitalHubMode === 'ai') {
+                        const t = ev.target;
+                        if (t && typeof t.closest === 'function') {
+                            if (t.closest('.radio-visual-digital-hub-ai-video')) return;
+                            if (t.closest('[data-rv-digital="ai"]')) return;
+                        }
+                        this._exitDigitalHubAiMode();
+                        return;
+                    }
                     if (this._isDigitalStageUiTarget(ev.target)) return;
                     clearTimeout(this._digitalStageClickTimer);
                     this._digitalStageClickTimer = setTimeout(() => {
@@ -5311,7 +5368,8 @@
                 let volDown = null;
                 let volUp = null;
                 let digitalToolbar = null;
-                let btnDigitalMix = null;
+                let btnDigitalAi = null;
+                let btnDigitalFade = null;
                 let digitalStagingMount = null;
                 let digitalLocalQueuePanel = null;
                 let digitalAutoMixPanel = null;
@@ -5634,9 +5692,12 @@
                     b.className = rvToolbarTextBtnClass;
                     b.dataset.rvDigital = act;
                     this._appendRvButtonLabel(b, lab);
-                    if (act === 'mix') {
-                        btnDigitalMix = b;
-                        b.title = 'Tap: toggle auto-mix · Hold: max interval';
+                    if (act === 'ai') {
+                        btnDigitalAi = b;
+                    }
+                    if (act === 'fade') {
+                        btnDigitalFade = b;
+                        b.title = 'Tap: auto-fade · Hold: auto-mix interval';
                     }
                     return b;
                 };
@@ -5649,8 +5710,8 @@
                     return b;
                 };
                 const btnDeckATransport = mkRvStationBtn('A >', 'a');
+                const btnAi = mkRvDigitalBtn('ai', 'AI');
                 const btnFade = mkRvDigitalBtn('fade', 'Fade');
-                const btnMix = mkRvDigitalBtn('mix', 'Mix');
                 const btnDeckBTransport = mkRvStationBtn('B >', 'b');
                 btnXfadeStation = document.createElement('button');
                 btnXfadeStation.type = 'button';
@@ -5661,9 +5722,9 @@
                 btnXfadeStation.setAttribute('aria-label', 'Change station when auto-fading');
                 toolbarMain.appendChild(btnDigitalSpectrum);
                 toolbarMain.appendChild(btnDeckATransport);
-                toolbarMain.appendChild(btnFade);
+                toolbarMain.appendChild(btnAi);
                 toolbarMain.appendChild(volGroup);
-                toolbarMain.appendChild(btnMix);
+                toolbarMain.appendChild(btnFade);
                 toolbarMain.appendChild(btnDeckBTransport);
                 toolbarMain.appendChild(btnDigitalVideo);
                 digitalToolbar.appendChild(btnVis);
@@ -5705,7 +5766,8 @@
                     btnDigitalSpectrum,
                     btnDigitalVideo,
                     btnVis,
-                    btnDigitalMix,
+                    btnDigitalAi,
+                    btnDigitalFade,
                     btnXfadeStation,
                     digitalStagingMount,
                     digitalAutoMixPanel,
@@ -5852,7 +5914,8 @@
                         this._wireDigitalCrossfadeCutHold(crossDig, sig);
                     }
                     try { this._syncDigitalCrossfadeLabels(); } catch (_) {}
-                    if (btnDigitalMix) this._wireDigitalMixButton(btnDigitalMix, sig);
+                    if (btnDigitalAi) this._wireDigitalAiButton(btnDigitalAi, sig);
+                    if (btnDigitalFade) this._wireDigitalFadeButton(btnDigitalFade, sig);
                     if (digitalAutoMixSlider) {
                         const applyAutoMixMax = () => {
                             const mins = this._writeAutoMixMaxMin(Number(digitalAutoMixSlider.value));
@@ -5872,9 +5935,8 @@
                             b.addEventListener('click', (ev) => {
                                 this._stopClick(ev);
                                 const act = b.dataset.rvDigital;
-                                if (act === 'mix') return;
-                                if (act === 'fade') this._triggerAutoFade();
-                                else if (act === 'xfade-station') this._toggleAutoFadeChangeStation();
+                                if (act === 'ai' || act === 'fade') return;
+                                if (act === 'xfade-station') this._toggleAutoFadeChangeStation();
                                 this._syncDeckSwitches();
                             }, sig);
                         });
