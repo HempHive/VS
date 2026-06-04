@@ -892,21 +892,30 @@
                 inset 0 1px 0 rgba(255, 255, 255, 0.06),
                 inset 0 -2px 8px rgba(0, 0, 0, 0.25);
         }
+        #radio-visual-root .radio-visual-digital-car-main {
+            flex: 1 1 auto;
+            min-height: clamp(56px, 11.5cqw, 110px);
+            width: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
         #radio-visual-root .radio-visual-digital-car-dash-canvas {
             flex: 1 1 auto;
             width: 100%;
             min-height: 56px;
             display: block;
         }
-        #radio-visual-root .radio-visual-digital-center-pane:not(.is-hub-equaliser) .radio-visual-digital-car-dash-canvas {
-            display: none !important;
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-car-dash-canvas,
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="effects"] .radio-visual-digital-car-dash-canvas,
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai"] .radio-visual-digital-car-dash-canvas,
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai-off"] .radio-visual-digital-car-dash-canvas {
+            visibility: hidden;
+            pointer-events: none;
         }
         #radio-visual-root .radio-visual-digital-hub-panel {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: clamp(38px, 9cqw, 58px);
+            inset: 0;
             z-index: 3;
             display: none !important;
             align-items: center;
@@ -915,10 +924,10 @@
             box-sizing: border-box;
             pointer-events: none;
         }
-        #radio-visual-root .radio-visual-digital-center-pane.is-hub-volume .radio-visual-digital-hub-panel,
-        #radio-visual-root .radio-visual-digital-center-pane.is-hub-effects .radio-visual-digital-hub-panel,
-        #radio-visual-root .radio-visual-digital-center-pane.is-hub-ai .radio-visual-digital-hub-panel,
-        #radio-visual-root .radio-visual-digital-center-pane.is-hub-off .radio-visual-digital-hub-panel {
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-panel,
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="effects"] .radio-visual-digital-hub-panel,
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai"] .radio-visual-digital-hub-panel,
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai-off"] .radio-visual-digital-hub-panel {
             display: flex !important;
             pointer-events: auto;
         }
@@ -931,7 +940,7 @@
             height: 100%;
             min-height: 0;
         }
-        #radio-visual-root .radio-visual-digital-center-pane.is-hub-volume .radio-visual-digital-hub-volume {
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-volume {
             display: flex !important;
             flex-direction: row;
             align-items: stretch;
@@ -1019,7 +1028,7 @@
             box-shadow: 0 0 10px color-mix(in srgb, var(--gain-color, #fff) 50%, transparent);
             margin-left: calc((clamp(14px, 2.5cqw, 22px) - clamp(6px, 1.25cqw, 10px)) / -2);
         }
-        #radio-visual-root .radio-visual-digital-center-pane.is-hub-effects .radio-visual-digital-hub-effects {
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="effects"] .radio-visual-digital-hub-effects {
             display: grid !important;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             grid-template-rows: repeat(2, minmax(0, 1fr));
@@ -1056,7 +1065,7 @@
             border-color: rgba(245, 210, 15, 0.3);
             color: #f5d20f;
         }
-        #radio-visual-root .radio-visual-digital-center-pane.is-hub-ai .radio-visual-digital-hub-ai {
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai"] .radio-visual-digital-hub-ai {
             display: flex !important;
             align-items: center;
             justify-content: center;
@@ -1071,7 +1080,7 @@
             display: block;
             background: #000;
         }
-        #radio-visual-root .radio-visual-digital-center-pane.is-hub-off .radio-visual-digital-hub-off {
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai-off"] .radio-visual-digital-hub-off {
             display: flex !important;
             align-items: center;
             justify-content: center;
@@ -1081,7 +1090,7 @@
             color: rgba(160, 170, 190, 0.45);
             text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
         }
-        #radio-visual-root .radio-visual-digital-center-pane.is-hub-off .radio-visual-digital-dash-stack {
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai-off"] .radio-visual-digital-dash-stack {
             display: flex !important;
         }
         #radio-visual-root .radio-visual-digital-dash-xfade {

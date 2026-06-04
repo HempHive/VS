@@ -3277,12 +3277,26 @@
                 }
             }
 
+            _resetDigitalHubForStartup() {
+                this._digitalHubMode = 'equaliser';
+                this._digitalSpectrumLayout = 'full';
+                const pane = this.els.digitalCenterSpectrum;
+                if (pane) pane.dataset.hubMode = 'equaliser';
+                if (this.digitalCenterMode !== 'spectrum') {
+                    try { this._setDigitalCenterMode('spectrum'); } catch (_) {}
+                } else {
+                    try { this._syncDigitalSpectrumLayout(); } catch (_) {}
+                }
+                this._scheduleDigitalSpectrumLayoutSync();
+            }
+
             _syncDigitalHubPanel() {
-                const mode = this._digitalHubMode;
+                const mode = this._digitalHubMode || 'equaliser';
                 const panel = this.els.digitalHubPanel;
                 const pane = this.els.digitalCenterSpectrum;
                 if (!panel || !pane) return;
 
+                pane.dataset.hubMode = mode;
                 pane.classList.toggle('is-hub-equaliser', mode === 'equaliser');
                 pane.classList.toggle('is-hub-spectrum', mode === 'spectrum');
                 pane.classList.toggle('is-hub-volume', mode === 'volume');
@@ -4174,7 +4188,9 @@
                 this._syncDonutCoreHues();
                 this._drawDigitalSpectrumFlower(cL, pack.layersL, pack.n, this._donutCoreHueA, pack.t);
                 this._drawDigitalSpectrumFlower(cR, pack.layersR, pack.n, this._donutCoreHueB, pack.t);
-                if (this._digitalHubMode === 'equaliser') {
+                const hubMode = this._digitalHubMode || 'equaliser';
+                const dashCanvas = this.els.digitalCarDashCanvas;
+                if (hubMode === 'equaliser') {
                     try { this._syncDigitalCrossfadeLabels(); } catch (_) {}
                     this._drawDigitalCarDash(
                         pack.eqHeights,
@@ -4182,6 +4198,11 @@
                         this._digitalLcdPrimaryLine(),
                         this._digitalLcdSecondaryLine()
                     );
+                } else if (dashCanvas) {
+                    const ctx = dashCanvas.getContext('2d');
+                    if (ctx && dashCanvas.width > 0 && dashCanvas.height > 0) {
+                        ctx.clearRect(0, 0, dashCanvas.width, dashCanvas.height);
+                    }
                 }
             }
 
@@ -4456,8 +4477,11 @@
                     this.root.classList.toggle('radio-visual-root--digital-active', next === 'digital');
                 }
                 try { this.onResize(); } catch (_) {}
-                if (next === 'digital' && this.digitalCenterMode === 'deckB') {
-                    this._syncDigitalDeckBVideo();
+                if (next === 'digital') {
+                    try { this._syncDigitalSpectrumLayout(); } catch (_) {}
+                    if (this.digitalCenterMode === 'deckB') {
+                        this._syncDigitalDeckBVideo();
+                    }
                 }
             }
 
@@ -5111,6 +5135,7 @@
                 digitalCenter.className = 'radio-visual-digital-center';
                 digitalCenterSpectrum = document.createElement('div');
                 digitalCenterSpectrum.className = 'radio-visual-digital-center-pane is-active is-hub-equaliser';
+                digitalCenterSpectrum.dataset.hubMode = 'equaliser';
                 spectrumBg = document.createElement('div');
                 spectrumBg.className = 'radio-visual-digital-spectrum-bg';
                 spectrumBg.setAttribute('aria-hidden', 'true');
@@ -5160,8 +5185,11 @@
                 dashXfade.appendChild(xfLblA);
                 dashXfade.appendChild(dashXfadeWrap);
                 dashXfade.appendChild(xfLblB);
-                carDisplay.appendChild(digitalCarDashCanvas);
-                carDisplay.appendChild(digitalHubPanel);
+                const carMain = document.createElement('div');
+                carMain.className = 'radio-visual-digital-car-main';
+                carMain.appendChild(digitalCarDashCanvas);
+                carMain.appendChild(digitalHubPanel);
+                carDisplay.appendChild(carMain);
                 carDisplay.appendChild(dashXfade);
                 dashStack.appendChild(centerInfo);
                 dashStack.appendChild(carDisplay);
@@ -5365,9 +5393,9 @@
                 if (showDigital) {
                     this._digitalStagingView = null;
                     try { this._tearDownDigitalStagingView(); } catch (_) {}
-                    try { this._setDigitalCenterMode(this.digitalCenterMode); } catch (_) {}
-                    try { this._syncDigitalSpectrumLayout(); } catch (_) {}
                     try { this._wireDigitalHubPanel(this.abortCtrl.signal); } catch (_) {}
+                    try { this._setDigitalCenterMode(this.digitalCenterMode); } catch (_) {}
+                    try { this._resetDigitalHubForStartup(); } catch (_) {}
                     try { this._initDigitalSpectrumBg(); } catch (_) {}
                     try {
                         if (localStorage.getItem(RadioVisualEngine.AUTOMIX_ENABLED_KEY) === '1') {
