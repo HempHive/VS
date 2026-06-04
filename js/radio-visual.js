@@ -8,8 +8,19 @@
             /** Fixed layout width for Digital Radio (container-query scaling). */
             static get DIGITAL_STAGE_DESIGN_W() { return 960; }
             static get DIGITAL_HUB_CYCLE() {
-                return ['equaliser', 'spectrum', 'volume', 'effects', 'ai', 'ai-off'];
+                return ['equaliser', 'volume', 'effects', 'ai', 'ai-off', 'spectrum'];
             }
+            /** Centre column in EFFECTS hub: 4×1 mixer FX toggles. */
+            static get DIGITAL_HUB_MIX_FX() {
+                return [
+                    { label: 'Low-pass', mixId: 'fx-lowpass' },
+                    { label: 'Bass', mixId: 'fx-bass' },
+                    { label: 'High-pass', mixId: 'fx-highpass' },
+                    { label: '~Echo~', mixId: 'fx-echo' }
+                ];
+            }
+            static get SPECTRUM_STAGING_SCALE_MIN() { return 0.35; }
+            static get SPECTRUM_STAGING_SCALE_MAX() { return 2.8; }
             static get DIGITAL_HUB_LABELS() {
                 return {
                     equaliser: 'EQUALISER',
@@ -63,7 +74,7 @@
                 this._volDrag = false;
                 this._rvAutoFadeRaf = null;
                 this.digitalCenterMode = 'spectrum';
-                /** Centre hub: equaliser → spectrum → volume → effects → ai → ai-off → equaliser */
+                /** Centre hub: equaliser → volume → effects → ai → ai-off → spectrum → equaliser */
                 this._digitalHubMode = 'equaliser';
                 /** Derived from hub mode for spectrum flower / HUD layout. */
                 this._digitalSpectrumLayout = 'full';
@@ -3136,7 +3147,9 @@
 
                 const applyScaleFromSlider = () => {
                     const v = Number(slider.value);
-                    this._spectrumStagingScale = Math.max(0.35, Math.min(1.65, v / 100));
+                    const min = RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN;
+                    const max = RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX;
+                    this._spectrumStagingScale = Math.max(min, Math.min(max, v / 100));
                 };
                 applyScaleFromSlider();
 
@@ -3281,7 +3294,18 @@
                 fxDeckB.className = 'radio-visual-digital-hub-fx-deck radio-visual-digital-hub-fx-deck--b';
                 fxDeckB.setAttribute('aria-label', 'Deck B beat FX');
                 fxKnobs.b.forEach((k) => fxDeckB.appendChild(mkBeatFxKnob('b', k.suffix, k.label, k.color)));
-                effects.append(fxDeckA, fxDeckB);
+                const fxCenter = document.createElement('div');
+                fxCenter.className = 'radio-visual-digital-hub-fx-center';
+                fxCenter.setAttribute('aria-label', 'Mixer effects');
+                RadioVisualEngine.DIGITAL_HUB_MIX_FX.forEach((fx) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'radio-visual-digital-hub-fx-btn';
+                    btn.textContent = fx.label;
+                    btn.dataset.mixFx = fx.mixId;
+                    fxCenter.appendChild(btn);
+                });
+                effects.append(fxDeckA, fxCenter, fxDeckB);
 
                 const aiWrap = document.createElement('div');
                 aiWrap.className = 'radio-visual-digital-hub-ai';
@@ -3343,6 +3367,24 @@
                         try { globalThis.syncDjBeatFxKnobActiveDom?.(this.root); } catch (_) {}
                     }
                 } catch (_) {}
+                this.els.digitalHubMixFx?.querySelectorAll('.radio-visual-digital-hub-fx-btn').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const mixId = btn.dataset.mixFx;
+                        if (!mixId) return;
+                        document.getElementById(mixId)?.click();
+                        requestAnimationFrame(() => this._syncDigitalHubMixFxButtons());
+                    }, opts);
+                });
+                try { this._syncDigitalHubMixFxButtons(); } catch (_) {}
+            }
+
+            _syncDigitalHubMixFxButtons() {
+                const root = this.els.digitalHubMixFx;
+                if (!root) return;
+                root.querySelectorAll('[data-mix-fx]').forEach((btn) => {
+                    const mix = document.getElementById(btn.dataset.mixFx);
+                    btn.classList.toggle('on', !!(mix && mix.classList.contains('on')));
+                });
             }
 
             _syncDigitalHubAiVideo() {
@@ -3411,6 +3453,7 @@
 
                 if (mode === 'effects') {
                     try { globalThis.syncDjBeatFxKnobActiveDom?.(this.root || document.getElementById('radio-visual-root')); } catch (_) {}
+                    try { this._syncDigitalHubMixFxButtons(); } catch (_) {}
                 }
                 if (mode === 'spectrum') {
                     try { this._showDigitalSpectrumStagingSlider(); } catch (_) {}
@@ -3456,7 +3499,7 @@
                 try { btn.removeAttribute('title'); } catch (_) {}
             }
 
-            /** equaliser → spectrum → volume → effects → ai → off → equaliser */
+            /** equaliser → volume → effects → ai → off → spectrum → equaliser */
             _cycleDigitalSpectrumLayout() {
                 const cycle = RadioVisualEngine.DIGITAL_HUB_CYCLE;
                 let i = cycle.indexOf(this._digitalHubMode);
@@ -3851,7 +3894,10 @@
                 const spectrumActive = this._isSpectrumAudioActive();
                 let lowSmoothForHue = null;
                 const stagingScale = (this._digitalHubMode === 'spectrum')
-                    ? Math.max(0.35, Math.min(1.65, Number(this._spectrumStagingScale) || 1))
+                    ? Math.max(
+                        RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN,
+                        Math.min(RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX, Number(this._spectrumStagingScale) || 1)
+                    )
                     : 1;
                 for (const layer of RadioVisualEngine.SPECTRUM_FLOWER_LAYERS) {
                     const levels = sampled[layer.key] || [];
@@ -5319,7 +5365,7 @@
                 spectrumScaleSlider.type = 'range';
                 spectrumScaleSlider.className = 'radio-visual-digital-spectrum-scale-range';
                 spectrumScaleSlider.min = '35';
-                spectrumScaleSlider.max = '165';
+                spectrumScaleSlider.max = '280';
                 spectrumScaleSlider.step = '1';
                 spectrumScaleSlider.value = '100';
                 spectrumScaleSlider.setAttribute('aria-label', 'Spectrum flower size');
@@ -5490,6 +5536,7 @@
                     digitalCarDashCanvas,
                     digitalHubPanel,
                     digitalHubEffects: digitalHubPanel?.querySelector('.radio-visual-digital-hub-effects'),
+                    digitalHubMixFx: digitalHubPanel?.querySelector('.radio-visual-digital-hub-fx-center'),
                     digitalSpectrumStagingSlider: spectrumStagingSlider,
                     digitalSpectrumScaleSlider: spectrumScaleSlider,
                     digitalHubAiVideo: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai-video'),
