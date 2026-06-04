@@ -3186,7 +3186,7 @@
                     )
                 );
                 const paneW = pane ? Math.max(1, pane.clientWidth || 0) : 400;
-                const maxPan = Math.max(0, (scale - 1) * paneW * 0.5);
+                const maxPan = Math.max(paneW * 0.2, (scale - 1) * paneW * 0.55);
                 const px = (panNorm - 0.5) * 2 * maxPan;
                 try { row.style.setProperty('--rv-spectrum-staging-pan-x', `${px}px`); } catch (_) {}
             }
@@ -3208,6 +3208,14 @@
                 const panSlider = this.els.digitalSpectrumPanSlider;
                 if (!pane || !wrap || !slider) return;
                 const opts = abortSignal ? { signal: abortSignal } : {};
+                const scaleWrap = wrap.querySelector('.radio-visual-digital-spectrum-staging-scale-wrap');
+                const panWrap = wrap.querySelector('.radio-visual-digital-spectrum-staging-pan-wrap');
+
+                const clearStagingDrag = () => {
+                    wrap.classList.remove('is-dragging-scale', 'is-dragging-pan');
+                    if (panWrap) panWrap.style.pointerEvents = '';
+                    if (scaleWrap) scaleWrap.style.pointerEvents = '';
+                };
 
                 const applyScaleFromSlider = () => {
                     const v = Number(slider.value);
@@ -3225,32 +3233,31 @@
                 }, opts);
 
                 if (panSlider) {
-                    panSlider.addEventListener('input', () => {
+                    const applyPanFromSlider = () => {
                         this._applySpectrumStagingPanNorm(Number(panSlider.value) / 100, { skipSlider: true });
                         this._showDigitalSpectrumStagingSlider();
-                    }, opts);
+                    };
+                    panSlider.addEventListener('input', applyPanFromSlider, opts);
+                    panSlider.addEventListener('change', applyPanFromSlider, opts);
                     panSlider.addEventListener('pointerdown', (ev) => {
                         try { ev.stopPropagation(); } catch (_) {}
                         wrap.classList.add('is-dragging-pan');
+                        if (scaleWrap) scaleWrap.style.pointerEvents = 'none';
+                        try { panSlider.setPointerCapture(ev.pointerId); } catch (_) {}
                         this._showDigitalSpectrumStagingSlider();
                     }, opts);
-                    const endPanDrag = () => {
-                        wrap.classList.remove('is-dragging-pan');
-                    };
-                    panSlider.addEventListener('pointerup', endPanDrag, opts);
-                    panSlider.addEventListener('pointercancel', endPanDrag, opts);
                 }
 
                 slider.addEventListener('pointerdown', (ev) => {
                     try { ev.stopPropagation(); } catch (_) {}
                     wrap.classList.add('is-dragging-scale');
+                    if (panWrap) panWrap.style.pointerEvents = 'none';
+                    try { slider.setPointerCapture(ev.pointerId); } catch (_) {}
                     this._showDigitalSpectrumStagingSlider();
                 }, opts);
-                const endScaleDrag = () => {
-                    wrap.classList.remove('is-dragging-scale');
-                };
-                slider.addEventListener('pointerup', endScaleDrag, opts);
-                slider.addEventListener('pointercancel', endScaleDrag, opts);
+
+                document.addEventListener('pointerup', clearStagingDrag, opts);
+                document.addEventListener('pointercancel', clearStagingDrag, opts);
 
                 const applyPanFromPointer = (ev) => {
                     if (this._digitalHubMode !== 'spectrum') return;
@@ -3270,9 +3277,9 @@
                     this._scheduleHideDigitalSpectrumStagingSlider();
                 };
                 pane.addEventListener('pointermove', onPaneMove, opts);
-                pane.addEventListener('pointerenter', onPaneMove, opts);
                 wrap.addEventListener('pointermove', (ev) => {
                     if (wrap.classList.contains('is-dragging-scale') || wrap.classList.contains('is-dragging-pan')) return;
+                    if (ev.target && ev.target.closest('.radio-visual-digital-spectrum-staging-scale-wrap')) return;
                     this._showDigitalSpectrumStagingSlider();
                     this._scheduleHideDigitalSpectrumStagingSlider();
                 }, opts);
