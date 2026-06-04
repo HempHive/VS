@@ -3206,17 +3206,17 @@
                 return panel;
             }
 
-            _wireDigitalHubPanel(signal) {
+            _wireDigitalHubPanel(abortSignal) {
                 const wireKnob = globalThis.wireDjKnobMirror;
                 if (typeof wireKnob === 'function') {
                     ['knob-a-low', 'knob-a-mid', 'knob-a-high', 'knob-b-low', 'knob-b-mid', 'knob-b-high'].forEach((id) => {
                         const hub = document.getElementById(`digital-hub-${id}`);
-                        if (hub) wireKnob(hub, id, signal);
+                        if (hub) wireKnob(hub, id, abortSignal);
                     });
                 }
 
                 const eqState = globalThis.eqState;
-                const opts = signal ? { signal } : {};
+                const opts = abortSignal ? { signal: abortSignal } : {};
                 this.els.digitalHubPanel?.querySelectorAll('[data-deck-gain]').forEach((slider) => {
                     const deck = slider.dataset.deckGain;
                     const cfgKey = `knob-${deck}-gain`;
@@ -3277,17 +3277,28 @@
                 }
             }
 
-            _resetDigitalHubForStartup() {
+            _finalizeDigitalRadioInit() {
                 this._digitalHubMode = 'equaliser';
                 this._digitalSpectrumLayout = 'full';
+                this.digitalCenterMode = 'spectrum';
                 const pane = this.els.digitalCenterSpectrum;
-                if (pane) pane.dataset.hubMode = 'equaliser';
-                if (this.digitalCenterMode !== 'spectrum') {
-                    try { this._setDigitalCenterMode('spectrum'); } catch (_) {}
-                } else {
-                    try { this._syncDigitalSpectrumLayout(); } catch (_) {}
+                const deckB = this.els.digitalCenterDeckB;
+                if (pane) {
+                    pane.classList.add('is-active');
+                    pane.dataset.hubMode = 'equaliser';
+                    pane.classList.remove('is-spectrum-hud-hidden', 'is-spectrum-sides-hidden');
                 }
+                if (deckB) deckB.classList.remove('is-active');
+                const dash = this.els.digitalDashStack;
+                if (dash) dash.classList.remove('is-spectrum-hud-hidden');
+                try { this._syncDigitalSpectrumLayout(); } catch (_) {}
                 this._scheduleDigitalSpectrumLayoutSync();
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        try { this._resizeCanvases(); } catch (_) {}
+                        try { this._drawDigitalSpectrum(); } catch (_) {}
+                    });
+                });
             }
 
             _syncDigitalHubPanel() {
@@ -4972,6 +4983,7 @@
                 let digitalSpectrumCanvasL = null;
                 let digitalSpectrumCanvasR = null;
                 let digitalCarDashCanvas = null;
+                let digitalCarDisplay = null;
                 let digitalHubPanel = null;
                 let digitalDeckBVideo = null;
                 let digitalDeckBMount = null;
@@ -5154,8 +5166,8 @@
                 centerInfo.className = 'radio-visual-digital-center-info';
                 centerInfo.setAttribute('aria-live', 'polite');
                 centerInfo.appendChild(clockRow);
-                const carDisplay = document.createElement('div');
-                carDisplay.className = 'radio-visual-digital-car-display';
+                digitalCarDisplay = document.createElement('div');
+                digitalCarDisplay.className = 'radio-visual-digital-car-display';
                 digitalCarDashCanvas = document.createElement('canvas');
                 digitalCarDashCanvas.className = 'radio-visual-digital-car-dash-canvas';
                 digitalCarDashCanvas.id = 'radio-visual-digital-car-dash';
@@ -5189,10 +5201,10 @@
                 carMain.className = 'radio-visual-digital-car-main';
                 carMain.appendChild(digitalCarDashCanvas);
                 carMain.appendChild(digitalHubPanel);
-                carDisplay.appendChild(carMain);
-                carDisplay.appendChild(dashXfade);
+                digitalCarDisplay.appendChild(carMain);
+                digitalCarDisplay.appendChild(dashXfade);
                 dashStack.appendChild(centerInfo);
-                dashStack.appendChild(carDisplay);
+                dashStack.appendChild(digitalCarDisplay);
                 spectrumSideR = document.createElement('div');
                 spectrumSideR.className = 'radio-visual-digital-spectrum-side radio-visual-digital-spectrum-side--right';
                 digitalSpectrumCanvasR = document.createElement('canvas');
@@ -5365,7 +5377,7 @@
                     digitalHubPanel,
                     digitalHubEffects: digitalHubPanel?.querySelector('.radio-visual-digital-hub-effects'),
                     digitalHubAiVideo: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai-video'),
-                    digitalCarDisplay: carDisplay,
+                    digitalCarDisplay,
                     digitalDeckBVideo,
                     digitalDashXfade: dashXfade,
                     volDigitalReadout,
@@ -5394,8 +5406,7 @@
                     this._digitalStagingView = null;
                     try { this._tearDownDigitalStagingView(); } catch (_) {}
                     try { this._wireDigitalHubPanel(this.abortCtrl.signal); } catch (_) {}
-                    try { this._setDigitalCenterMode(this.digitalCenterMode); } catch (_) {}
-                    try { this._resetDigitalHubForStartup(); } catch (_) {}
+                    try { this._finalizeDigitalRadioInit(); } catch (_) {}
                     try { this._initDigitalSpectrumBg(); } catch (_) {}
                     try {
                         if (localStorage.getItem(RadioVisualEngine.AUTOMIX_ENABLED_KEY) === '1') {
