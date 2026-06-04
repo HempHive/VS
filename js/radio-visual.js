@@ -3106,11 +3106,10 @@
             _buildDigitalHubPanel() {
                 const panel = document.createElement('div');
                 panel.className = 'radio-visual-digital-hub-panel';
-                panel.hidden = true;
+                panel.setAttribute('aria-hidden', 'true');
 
                 const volume = document.createElement('div');
                 volume.className = 'radio-visual-digital-hub-volume';
-                volume.hidden = true;
 
                 const mkKnob = (mixId, label, color) => {
                     const wrap = document.createElement('div');
@@ -3176,7 +3175,6 @@
 
                 const effects = document.createElement('div');
                 effects.className = 'radio-visual-digital-hub-effects';
-                effects.hidden = true;
                 RadioVisualEngine.DIGITAL_HUB_EFFECTS.forEach((fx, i) => {
                     const btn = document.createElement('button');
                     btn.type = 'button';
@@ -3190,7 +3188,6 @@
 
                 const aiWrap = document.createElement('div');
                 aiWrap.className = 'radio-visual-digital-hub-ai';
-                aiWrap.hidden = true;
                 const aiVideo = document.createElement('video');
                 aiVideo.className = 'radio-visual-digital-hub-ai-video';
                 aiVideo.src = RadioVisualEngine.DIGITAL_AI_VIDEO_SRC;
@@ -3203,7 +3200,6 @@
 
                 const off = document.createElement('div');
                 off.className = 'radio-visual-digital-hub-off';
-                off.hidden = true;
                 off.textContent = 'OFF';
 
                 panel.append(volume, effects, aiWrap, off);
@@ -3285,7 +3281,6 @@
                 const mode = this._digitalHubMode;
                 const panel = this.els.digitalHubPanel;
                 const pane = this.els.digitalCenterSpectrum;
-                const canvas = this.els.digitalCarDashCanvas;
                 if (!panel || !pane) return;
 
                 pane.classList.toggle('is-hub-equaliser', mode === 'equaliser');
@@ -3296,13 +3291,7 @@
                 pane.classList.toggle('is-hub-off', mode === 'ai-off');
 
                 const showHub = mode === 'volume' || mode === 'effects' || mode === 'ai' || mode === 'ai-off';
-                panel.hidden = !showHub;
-                panel.querySelector('.radio-visual-digital-hub-volume').hidden = mode !== 'volume';
-                panel.querySelector('.radio-visual-digital-hub-effects').hidden = mode !== 'effects';
-                panel.querySelector('.radio-visual-digital-hub-ai').hidden = mode !== 'ai';
-                panel.querySelector('.radio-visual-digital-hub-off').hidden = mode !== 'ai-off';
-
-                if (canvas) canvas.hidden = mode !== 'equaliser';
+                panel.setAttribute('aria-hidden', showHub ? 'false' : 'true');
 
                 if (mode === 'volume') {
                     const eqState = globalThis.eqState;
@@ -3394,9 +3383,9 @@
                 }
                 this.digitalCenterMode = next;
                 try { localStorage.setItem('radioVisual.digitalCenter.v1', next); } catch (_) {}
-                if (next === 'spectrum' && wasDeckB) {
-                    this._digitalHubMode = 'equaliser';
-                    this._syncDigitalSpectrumLayout();
+                if (next === 'spectrum') {
+                    if (wasDeckB) this._digitalHubMode = 'equaliser';
+                    try { this._syncDigitalSpectrumLayout(); } catch (_) {}
                 }
                 if (this.els.digitalCenterSpectrum) {
                     this.els.digitalCenterSpectrum.classList.toggle('is-active', next === 'spectrum');
@@ -5121,7 +5110,7 @@
                 digitalCenter = document.createElement('div');
                 digitalCenter.className = 'radio-visual-digital-center';
                 digitalCenterSpectrum = document.createElement('div');
-                digitalCenterSpectrum.className = 'radio-visual-digital-center-pane is-active';
+                digitalCenterSpectrum.className = 'radio-visual-digital-center-pane is-active is-hub-equaliser';
                 spectrumBg = document.createElement('div');
                 spectrumBg.className = 'radio-visual-digital-spectrum-bg';
                 spectrumBg.setAttribute('aria-hidden', 'true');
