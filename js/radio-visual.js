@@ -88,6 +88,8 @@
                 this._digitalSpectrumLayout = 'full';
                 /** Spectrum hub staging scale (1 = default flower size). */
                 this._spectrumStagingScale = 1;
+                /** Spectrum hub horizontal pan (0 = left, 0.5 = centre, 1 = right). */
+                this._spectrumStagingPanNorm = 0.5;
                 this._spectrumSliderHideTimer = null;
                 this._digitalDeckBView = 'video';
                 /** Staging overlay in spectrum pane: null | video | projectm | bars | queue | karaoke */
@@ -3162,12 +3164,46 @@
                 try {
                     row.style.setProperty('--rv-spectrum-staging-scale', String(scale));
                 } catch (_) {}
+                this._syncSpectrumStagingPan();
+            }
+
+            _syncSpectrumStagingPan() {
+                const row = this.els.digitalSpectrumRow;
+                const pane = this.els.digitalCenterSpectrum;
+                if (!row) return;
+                if (this._digitalHubMode !== 'spectrum') {
+                    try { row.style.setProperty('--rv-spectrum-staging-pan-x', '0px'); } catch (_) {}
+                    return;
+                }
+                const panNorm = Math.max(0, Math.min(1, Number(this._spectrumStagingPanNorm) || 0.5));
+                const scale = Math.max(
+                    RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN,
+                    Math.min(
+                        RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX,
+                        Number(this._spectrumStagingScale) || 1
+                    )
+                );
+                const paneW = pane ? Math.max(1, pane.clientWidth || 0) : 400;
+                const maxPan = Math.max(0, (scale - 1) * paneW * 0.5);
+                const px = (panNorm - 0.5) * 2 * maxPan;
+                try { row.style.setProperty('--rv-spectrum-staging-pan-x', `${px}px`); } catch (_) {}
+            }
+
+            _applySpectrumStagingPanNorm(panNorm, opts = {}) {
+                const n = Math.max(0, Math.min(1, Number(panNorm) || 0));
+                this._spectrumStagingPanNorm = n;
+                const panSlider = this.els.digitalSpectrumPanSlider;
+                if (panSlider && !opts.skipSlider) {
+                    panSlider.value = String(Math.round(n * 100));
+                }
+                this._syncSpectrumStagingPan();
             }
 
             _wireDigitalSpectrumStagingSlider(abortSignal) {
                 const pane = this.els.digitalCenterSpectrum;
                 const wrap = this.els.digitalSpectrumStagingSlider;
                 const slider = this.els.digitalSpectrumScaleSlider;
+                const panSlider = this.els.digitalSpectrumPanSlider;
                 if (!pane || !wrap || !slider) return;
                 const opts = abortSignal ? { signal: abortSignal } : {};
 
@@ -3179,6 +3215,7 @@
                     this._syncSpectrumStagingScale();
                 };
                 applyScaleFromSlider();
+                this._applySpectrumStagingPanNorm(this._spectrumStagingPanNorm, { skipSlider: !panSlider });
 
                 slider.addEventListener('input', () => {
                     applyScaleFromSlider();
@@ -3189,9 +3226,29 @@
                     this._showDigitalSpectrumStagingSlider();
                 }, opts);
 
+                if (panSlider) {
+                    panSlider.addEventListener('input', () => {
+                        this._applySpectrumStagingPanNorm(Number(panSlider.value) / 100, { skipSlider: true });
+                        this._showDigitalSpectrumStagingSlider();
+                    }, opts);
+                    panSlider.addEventListener('pointerdown', (ev) => {
+                        try { ev.stopPropagation(); } catch (_) {}
+                        this._showDigitalSpectrumStagingSlider();
+                    }, opts);
+                }
+
+                const applyPanFromPointer = (ev) => {
+                    if (this._digitalHubMode !== 'spectrum') return;
+                    if (ev.target && wrap.contains(ev.target)) return;
+                    const rect = pane.getBoundingClientRect();
+                    const panNorm = Math.max(0, Math.min(1, (ev.clientX - rect.left) / Math.max(1, rect.width)));
+                    this._applySpectrumStagingPanNorm(panNorm);
+                };
+
                 const onPaneMove = (ev) => {
                     if (this._digitalHubMode !== 'spectrum') return;
                     if (ev.target && wrap.contains(ev.target)) return;
+                    applyPanFromPointer(ev);
                     this._showDigitalSpectrumStagingSlider();
                     this._scheduleHideDigitalSpectrumStagingSlider();
                 };
@@ -3259,7 +3316,7 @@
                 gainCol.className = 'radio-visual-digital-hub-gain-col';
                 const mkGain = (deck, label, color) => {
                     const wrap = document.createElement('div');
-                    wrap.className = 'radio-visual-digital-hub-gain-wrap';
+                    wrap.className = 'radio-visual-digital-hub-gain-wrap radio-visual-digital-hub-gain-wrap--' + deck;
                     const lbl = document.createElement('span');
                     lbl.className = 'radio-visual-digital-hub-gain-label';
                     lbl.textContent = label;
@@ -3276,8 +3333,8 @@
                     return wrap;
                 };
                 gainCol.append(
-                    mkGain('a', 'DECK A', '#4a9eff'),
-                    mkGain('b', 'DECK B', '#ff6b4a')
+                    mkGain('a', 'A', '#FF0B55'),
+                    mkGain('b', 'B', '#5800FF')
                 );
 
                 const deckB = document.createElement('div');
@@ -5162,6 +5219,7 @@
                 let digitalHubPanel = null;
                 let spectrumStagingSlider = null;
                 let spectrumScaleSlider = null;
+                let spectrumPanSlider = null;
                 let digitalSpectrumRow = null;
                 let digitalDeckBVideo = null;
                 let digitalDeckBMount = null;
@@ -5400,7 +5458,16 @@
                 spectrumScaleSlider.step = '1';
                 spectrumScaleSlider.value = '100';
                 spectrumScaleSlider.setAttribute('aria-label', 'Spectrum flower size');
+                const spectrumPanSlider = document.createElement('input');
+                spectrumPanSlider.type = 'range';
+                spectrumPanSlider.className = 'radio-visual-digital-spectrum-pan-range radio-visual-digital-range';
+                spectrumPanSlider.min = '0';
+                spectrumPanSlider.max = '100';
+                spectrumPanSlider.step = '1';
+                spectrumPanSlider.value = '50';
+                spectrumPanSlider.setAttribute('aria-label', 'Spectrum horizontal position');
                 spectrumStagingSlider.appendChild(spectrumScaleSlider);
+                spectrumStagingSlider.appendChild(spectrumPanSlider);
                 digitalSpectrumRow.appendChild(spectrumSideL);
                 digitalSpectrumRow.appendChild(dashStack);
                 digitalSpectrumRow.appendChild(spectrumSideR);
@@ -5571,6 +5638,7 @@
                     digitalSpectrumRow,
                     digitalSpectrumStagingSlider: spectrumStagingSlider,
                     digitalSpectrumScaleSlider: spectrumScaleSlider,
+                    digitalSpectrumPanSlider: spectrumPanSlider,
                     digitalHubAiVideo: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai-video'),
                     digitalCarDisplay,
                     digitalDeckBVideo,
@@ -5864,6 +5932,9 @@
             onResize() {
                 try { this._syncDigitalFullscreenLayout(); } catch (_) {}
                 try { this._resizeCanvases(); } catch (_) {}
+                if (this.skin === 'digital' && this._digitalHubMode === 'spectrum') {
+                    try { this._syncSpectrumStagingScale(); } catch (_) {}
+                }
                 if (this._rvDigitalPmResize) {
                     try { this._rvDigitalPmResize(); } catch (_) {}
                 }

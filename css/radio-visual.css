@@ -764,7 +764,8 @@
             gap: clamp(6px, 1.25cqw, 12px);
             padding: clamp(8px, 1.46cqw, 14px);
             box-sizing: border-box;
-            transform: scale(var(--rv-spectrum-staging-scale, 1));
+            transform: scale(var(--rv-spectrum-staging-scale, 1))
+                translateX(var(--rv-spectrum-staging-pan-x, 0px));
             transform-origin: center center;
             transition: transform 0.15s ease-out;
             will-change: transform;
@@ -970,9 +971,9 @@
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-deck,
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="effects"] .radio-visual-digital-hub-fx-deck {
             flex-direction: column;
-            align-items: center;
-            justify-content: space-evenly;
-            gap: clamp(2px, 0.52cqw, 5px);
+            align-items: stretch;
+            justify-content: stretch;
+            gap: 0;
             flex: 1 1 0;
             min-width: 0;
             min-height: 0;
@@ -997,20 +998,21 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: clamp(1px, 0.31cqw, 3px);
+            gap: 0;
             flex: 1 1 0;
             min-height: 0;
-            max-height: 36%;
             width: 100%;
             min-width: 0;
         }
         #radio-visual-root .radio-visual-digital-hub-knob.knob-wrap,
         #radio-visual-root .radio-visual-digital-hub-beatfx-knob.knob-wrap {
-            width: min(46px, 96cqh, 30cqw);
-            height: min(46px, 96cqh, 30cqw);
+            width: min(100%, 100cqh, 32cqw);
+            height: min(100%, 100cqh, 32cqw);
             max-width: 100%;
             max-height: 100%;
-            flex-shrink: 1;
+            flex: 1 1 auto;
+            min-width: 0;
+            min-height: 0;
             cursor: ns-resize;
         }
         #radio-visual-root .radio-visual-digital-hub-knob-label {
@@ -1027,8 +1029,9 @@
             flex-direction: row;
             align-items: stretch;
             justify-content: center;
-            gap: clamp(8px, 1.67cqw, 16px);
+            gap: clamp(6px, 1.25cqw, 12px);
             flex: 0 0 auto;
+            align-self: stretch;
             padding: 0 clamp(4px, 0.83cqw, 8px);
             height: 100%;
             max-height: 100%;
@@ -1039,17 +1042,27 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: clamp(4px, 0.83cqw, 8px);
+            justify-content: stretch;
+            gap: clamp(2px, 0.42cqw, 4px);
+            flex: 1 1 0;
+            min-height: 0;
             height: 100%;
-            min-height: 48px;
         }
         #radio-visual-root .radio-visual-digital-hub-gain-label {
-            font-size: clamp(8px, 1.15cqw, 10px);
+            flex: 0 0 auto;
+            font-size: clamp(9px, 1.35cqw, 12px);
             font-weight: 800;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.1em;
             color: var(--gain-color, #fff);
             text-shadow: 0 0 8px color-mix(in srgb, var(--gain-color, #fff) 45%, transparent);
+        }
+        #radio-visual-root .radio-visual-digital-hub-gain-wrap--a .radio-visual-digital-hub-gain-label {
+            color: #ff0b55;
+            text-shadow: 0 0 10px rgba(255, 11, 85, 0.55);
+        }
+        #radio-visual-root .radio-visual-digital-hub-gain-wrap--b .radio-visual-digital-hub-gain-label {
+            color: #5800ff;
+            text-shadow: 0 0 10px rgba(88, 0, 255, 0.45);
         }
         /* Hub gain + spectrum staging sliders: same vol.png thumb as crossfader / DJ vol */
         #radio-visual-root .radio-visual-digital-range {
@@ -1069,8 +1082,11 @@
             writing-mode: vertical-lr;
             direction: rtl;
             width: var(--rv-range-thumb);
-            height: clamp(48px, 14cqh, 100px);
+            flex: 1 1 auto;
+            height: 100%;
+            min-height: clamp(64px, 28cqh, 200px);
             max-height: 100%;
+            align-self: stretch;
         }
         #radio-visual-root .radio-visual-digital-range::-webkit-slider-runnable-track {
             background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(255,255,255,0.08));
@@ -1127,12 +1143,14 @@
         #radio-visual-root .radio-visual-digital-hub-fx-deck {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: clamp(6px, 1.04cqw, 10px);
+            align-items: stretch;
+            justify-content: stretch;
+            gap: 0;
             flex: 1 1 0;
             min-width: 0;
             min-height: 0;
+            container-type: size;
+            container-name: rv-hub-knobs;
         }
         #radio-visual-root .radio-visual-digital-hub-fx-center {
             display: flex;
@@ -1206,15 +1224,16 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: clamp(36px, 7cqw, 52px);
-            height: clamp(100px, 42cqh, 200px);
-            max-height: min(72%, 220px);
-            padding: clamp(8px, 1.25cqw, 12px) clamp(6px, 1cqw, 10px);
+            gap: clamp(4px, 0.83cqw, 8px);
+            width: clamp(40px, 8cqw, 56px);
+            height: clamp(108px, 46cqh, 220px);
+            max-height: min(78%, 240px);
+            padding: 0;
             transform: translate(-50%, -50%);
-            border-radius: clamp(10px, 2cqw, 16px);
-            background: rgba(0, 12, 22, 0.72);
-            border: 1px solid rgba(0, 220, 255, 0.35);
-            box-shadow: 0 0 20px rgba(0, 180, 255, 0.2);
+            border: none;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.4s ease;
@@ -1229,16 +1248,40 @@
             direction: rtl;
             width: var(--rv-range-thumb);
             height: 100%;
-            min-height: clamp(72px, 32cqh, 160px);
+            min-height: clamp(72px, 36cqh, 180px);
             max-height: 100%;
             flex: 1 1 auto;
             cursor: ns-resize;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-scale-range.radio-visual-digital-range::-webkit-slider-runnable-track,
+        #radio-visual-root .radio-visual-digital-spectrum-pan-range.radio-visual-digital-range::-webkit-slider-runnable-track {
+            border: none;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-scale-range.radio-visual-digital-range::-moz-range-track,
+        #radio-visual-root .radio-visual-digital-spectrum-pan-range.radio-visual-digital-range::-moz-range-track {
+            border: none;
         }
         #radio-visual-root .radio-visual-digital-spectrum-scale-range.radio-visual-digital-range::-webkit-slider-runnable-track {
             width: var(--rv-range-rail);
         }
         #radio-visual-root .radio-visual-digital-spectrum-scale-range.radio-visual-digital-range::-webkit-slider-thumb {
             margin-left: calc((var(--rv-range-thumb) - var(--rv-range-rail)) / -2);
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-pan-range.radio-visual-digital-range {
+            writing-mode: horizontal-tb;
+            direction: ltr;
+            width: 100%;
+            height: var(--rv-range-thumb);
+            min-height: var(--rv-range-thumb);
+            max-height: var(--rv-range-thumb);
+            flex: 0 0 auto;
+            --rv-range-thumb: clamp(22px, 4.5cqw, 32px);
+            --rv-range-rail: clamp(5px, 1cqw, 8px);
+            cursor: ew-resize;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-pan-range.radio-visual-digital-range::-webkit-slider-thumb {
+            margin-left: 0;
+            margin-top: calc((var(--rv-range-thumb) - var(--rv-range-rail)) / -2);
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai"] .radio-visual-digital-hub-ai {
             display: flex !important;
