@@ -3381,6 +3381,7 @@
                     const lbl = document.createElement('span');
                     lbl.className = 'radio-visual-digital-hub-knob-label';
                     lbl.textContent = label;
+                    lbl.style.color = color;
                     wrap.append(knob, lbl);
                     return wrap;
                 };
@@ -3388,9 +3389,9 @@
                 const deckA = document.createElement('div');
                 deckA.className = 'radio-visual-digital-hub-deck radio-visual-digital-hub-deck--a';
                 deckA.append(
-                    mkKnob('knob-a-low', 'LO', '#4a9eff'),
-                    mkKnob('knob-a-mid', 'MED', '#4a9eff'),
-                    mkKnob('knob-a-high', 'HI', '#4a9eff')
+                    mkKnob('knob-a-high', 'HI', '#F94C10'),
+                    mkKnob('knob-a-mid', 'MED', '#9BEC00'),
+                    mkKnob('knob-a-low', 'LO', '#06D001')
                 );
                 deckA.setAttribute('aria-label', 'Deck A EQ');
 
@@ -3422,9 +3423,9 @@
                 const deckB = document.createElement('div');
                 deckB.className = 'radio-visual-digital-hub-deck radio-visual-digital-hub-deck--b';
                 deckB.append(
-                    mkKnob('knob-b-low', 'LO', '#ff6b4a'),
-                    mkKnob('knob-b-mid', 'MED', '#ff6b4a'),
-                    mkKnob('knob-b-high', 'HI', '#ff6b4a')
+                    mkKnob('knob-b-high', 'HI', '#f0f'),
+                    mkKnob('knob-b-mid', 'MED', '#0ff'),
+                    mkKnob('knob-b-low', 'LO', '#9AB3F5')
                 );
                 deckB.setAttribute('aria-label', 'Deck B EQ');
 
