@@ -9,7 +9,8 @@
             padding: clamp(10px, 2.5vw, 28px);
             box-sizing: border-box;
             max-width: 100%;
-            overflow: auto;
+            overflow-x: hidden;
+            overflow-y: auto;
             background:
                 radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255, 180, 90, 0.12), transparent 55%),
                 radial-gradient(ellipse 90% 70% at 50% 100%, rgba(20, 40, 80, 0.35), transparent 60%),
@@ -527,10 +528,8 @@
             overflow: hidden;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"] {
-            overflow: visible;
-        }
-        #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-center-pane[data-hub-mode="spectrum"].is-active) {
-            overflow: visible;
+            overflow: hidden;
+            contain: paint;
         }
         #radio-visual-root:has(.radio-visual-skin--digital.is-active),
         #radio-visual-root.radio-visual-root--digital-only,
@@ -753,6 +752,9 @@
             color: #8ef;
             min-width: 2.5em;
             text-align: right;
+        }
+        #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-center-pane[data-hub-mode="spectrum"].is-active) {
+            overflow: hidden;
         }
         #radio-visual-root .radio-visual-digital-spectrum-row {
             position: absolute;
