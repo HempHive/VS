@@ -898,6 +898,189 @@
             min-height: 56px;
             display: block;
         }
+        #radio-visual-root .radio-visual-digital-car-dash-canvas[hidden] {
+            display: none;
+        }
+        #radio-visual-root .radio-visual-digital-hub-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: clamp(38px, 9cqw, 58px);
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(4px, 1.04cqw, 10px);
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+        #radio-visual-root .radio-visual-digital-hub-panel:not([hidden]) {
+            pointer-events: auto;
+        }
+        #radio-visual-root .radio-visual-digital-hub-volume {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: center;
+            gap: clamp(6px, 1.46cqw, 14px);
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            min-height: 0;
+        }
+        #radio-visual-root .radio-visual-digital-hub-deck {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(4px, 0.83cqw, 8px);
+            flex: 1 1 0;
+            min-width: 0;
+        }
+        #radio-visual-root .radio-visual-digital-hub-knob-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            flex: 0 0 auto;
+        }
+        #radio-visual-root .radio-visual-digital-hub-knob.knob-wrap {
+            width: clamp(26px, 4.2cqw, 36px);
+            height: clamp(26px, 4.2cqw, 36px);
+            cursor: ns-resize;
+        }
+        #radio-visual-root .radio-visual-digital-hub-knob-label {
+            font-size: clamp(7px, 1.04cqw, 9px);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: rgba(200, 210, 230, 0.75);
+            text-transform: uppercase;
+        }
+        #radio-visual-root .radio-visual-digital-hub-gain-col {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: center;
+            gap: clamp(8px, 1.67cqw, 16px);
+            flex: 0 0 auto;
+            padding: 0 clamp(4px, 0.83cqw, 8px);
+        }
+        #radio-visual-root .radio-visual-digital-hub-gain-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(4px, 0.83cqw, 8px);
+            height: 100%;
+            min-height: 48px;
+        }
+        #radio-visual-root .radio-visual-digital-hub-gain-label {
+            font-size: clamp(8px, 1.15cqw, 10px);
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: var(--gain-color, #fff);
+            text-shadow: 0 0 8px color-mix(in srgb, var(--gain-color, #fff) 45%, transparent);
+        }
+        #radio-visual-root .radio-visual-digital-hub-gain-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            writing-mode: vertical-lr;
+            direction: rtl;
+            width: clamp(14px, 2.5cqw, 22px);
+            height: clamp(48px, 12cqw, 96px);
+            margin: 0;
+            background: transparent;
+            cursor: pointer;
+        }
+        #radio-visual-root .radio-visual-digital-hub-gain-slider::-webkit-slider-runnable-track {
+            width: clamp(6px, 1.25cqw, 10px);
+            background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(255,255,255,0.08));
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+        #radio-visual-root .radio-visual-digital-hub-gain-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: clamp(14px, 2.5cqw, 18px);
+            height: clamp(14px, 2.5cqw, 18px);
+            border-radius: 50%;
+            background: var(--gain-color, #fff);
+            border: 1px solid rgba(255,255,255,0.35);
+            box-shadow: 0 0 10px color-mix(in srgb, var(--gain-color, #fff) 50%, transparent);
+            margin-left: calc((clamp(14px, 2.5cqw, 22px) - clamp(6px, 1.25cqw, 10px)) / -2);
+        }
+        #radio-visual-root .radio-visual-digital-hub-effects {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-rows: repeat(2, minmax(0, 1fr));
+            gap: clamp(3px, 0.625cqw, 6px);
+            width: 100%;
+            height: 100%;
+            max-height: 100%;
+            padding: clamp(2px, 0.42cqw, 4px);
+            box-sizing: border-box;
+        }
+        #radio-visual-root .radio-visual-digital-hub-fx-btn {
+            position: relative;
+            overflow: hidden;
+            padding: clamp(4px, 0.83cqw, 8px);
+            border: 1px solid rgba(255, 0, 0, 0.25);
+            border-radius: 6px;
+            background-color: rgba(0, 0, 0, 0.35);
+            background-image: url('../assets/images/btn.png'), url('../assets/gifs/xim.gif');
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: 100% 100%, 100% 100%;
+            color: #fff;
+            font-size: clamp(9px, 1.35cqw, 13px);
+            font-weight: 700;
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.6);
+            cursor: pointer;
+            min-height: 0;
+        }
+        #radio-visual-root .radio-visual-digital-hub-fx-btn.on {
+            border-color: rgba(255, 55, 72, 0.65);
+            box-shadow: 0 0 12px rgba(255, 45, 60, 0.22) inset, 0 0 14px rgba(255, 40, 55, 0.18);
+            background-color: rgba(255, 35, 55, 0.08);
+            color: #ff2a3d;
+        }
+        #radio-visual-root .radio-visual-digital-hub-fx-btn:hover {
+            border-color: rgba(245, 210, 15, 0.3);
+            color: #f5d20f;
+        }
+        #radio-visual-root .radio-visual-digital-hub-ai {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #radio-visual-root .radio-visual-digital-hub-ai-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            background: #000;
+        }
+        #radio-visual-root .radio-visual-digital-hub-off {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            font-size: clamp(18px, 4.17cqw, 32px);
+            font-weight: 800;
+            letter-spacing: 0.35em;
+            color: rgba(160, 170, 190, 0.45);
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+        #radio-visual-root .radio-visual-digital-center-pane.is-hub-off .radio-visual-digital-dash-stack {
+            display: flex !important;
+        }
         #radio-visual-root .radio-visual-digital-dash-xfade {
             display: flex;
             flex-direction: row;

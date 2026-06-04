@@ -7,6 +7,32 @@
 
             /** Fixed layout width for Digital Radio (container-query scaling). */
             static get DIGITAL_STAGE_DESIGN_W() { return 960; }
+            static get DIGITAL_HUB_CYCLE() {
+                return ['equaliser', 'spectrum', 'volume', 'effects', 'ai', 'ai-off'];
+            }
+            static get DIGITAL_HUB_LABELS() {
+                return {
+                    equaliser: 'EQUALISER',
+                    spectrum: 'SPECTRUM',
+                    volume: 'VOLUME',
+                    effects: 'EFFECTS',
+                    ai: 'AI',
+                    'ai-off': 'OFF'
+                };
+            }
+            static get DIGITAL_AI_VIDEO_SRC() { return 'assets/ai/ai.mp4'; }
+            static get DIGITAL_HUB_EFFECTS() {
+                return [
+                    { label: 'AIR📢', kind: 'sample', src: 'assets/audio/wav6.mp3' },
+                    { label: 'Low-pass', kind: 'fx', mixId: 'fx-lowpass' },
+                    { label: 'Bass', kind: 'fx', mixId: 'fx-bass' },
+                    { label: 'High-pass', kind: 'fx', mixId: 'fx-highpass' },
+                    { label: '~Echo~', kind: 'fx', mixId: 'fx-echo' },
+                    { label: 'Treble', kind: 'fx', mixId: 'fx-treble' },
+                    { label: 'Distort', kind: 'fx', mixId: 'fx-distort' },
+                    { label: 'Reverb', kind: 'fx', mixId: 'fx-reverb' }
+                ];
+            }
 
             constructor(options = {}) {
                 const lockedSkin = options.skin === 'digital' ? 'digital'
@@ -34,7 +60,9 @@
                 this._volDrag = false;
                 this._rvAutoFadeRaf = null;
                 this.digitalCenterMode = 'spectrum';
-                /** Spectrum centre layout: full | focus (no dash, large flowers) | blank (no flowers). */
+                /** Centre hub: equaliser → spectrum → volume → effects → ai → ai-off → equaliser */
+                this._digitalHubMode = 'equaliser';
+                /** Derived from hub mode for spectrum flower / HUD layout. */
                 this._digitalSpectrumLayout = 'full';
                 this._digitalDeckBView = 'video';
                 /** Staging overlay in spectrum pane: null | video | projectm | bars | queue | karaoke */
@@ -2165,7 +2193,7 @@
                 try { this._onDigitalVisBgTap(); } catch (_) {}
             }
 
-            /** C: ProjectM staging → next preset; otherwise cycle SPECTRUM layout (same as the SPECTRUM button). */
+            /** C: ProjectM staging → next preset; otherwise cycle centre hub (Equaliser → … → Off). */
             triggerCFromShortcut() {
                 if (this._digitalStagingView === 'projectm' && typeof this.nextPreset === 'function') {
                     try { this.nextPreset(); } catch (_) {}
@@ -3059,13 +3087,244 @@
                 });
             }
 
+            _digitalHubModeLabel(mode) {
+                return RadioVisualEngine.DIGITAL_HUB_LABELS[mode] || 'EQUALISER';
+            }
+
+            _hubSpectrumLayout(hubMode) {
+                switch (hubMode) {
+                    case 'equaliser': return 'full';
+                    case 'spectrum': return 'focus';
+                    case 'volume':
+                    case 'effects':
+                    case 'ai': return 'full';
+                    case 'ai-off': return 'blank';
+                    default: return 'full';
+                }
+            }
+
+            _buildDigitalHubPanel() {
+                const panel = document.createElement('div');
+                panel.className = 'radio-visual-digital-hub-panel';
+                panel.hidden = true;
+
+                const volume = document.createElement('div');
+                volume.className = 'radio-visual-digital-hub-volume';
+                volume.hidden = true;
+
+                const mkKnob = (mixId, label, color) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'radio-visual-digital-hub-knob-wrap';
+                    const knob = document.createElement('div');
+                    knob.className = 'knob-wrap radio-visual-digital-hub-knob';
+                    knob.id = `digital-hub-${mixId}`;
+                    knob.style.setProperty('--knob-color', color);
+                    const indicator = document.createElement('div');
+                    indicator.className = 'knob-indicator';
+                    const val = document.createElement('div');
+                    val.className = 'knob-value';
+                    knob.append(indicator, val);
+                    const lbl = document.createElement('span');
+                    lbl.className = 'radio-visual-digital-hub-knob-label';
+                    lbl.textContent = label;
+                    wrap.append(knob, lbl);
+                    return wrap;
+                };
+
+                const deckA = document.createElement('div');
+                deckA.className = 'radio-visual-digital-hub-deck radio-visual-digital-hub-deck--a';
+                deckA.append(
+                    mkKnob('knob-a-low', 'LO', '#4a9eff'),
+                    mkKnob('knob-a-mid', 'MED', '#4a9eff'),
+                    mkKnob('knob-a-high', 'HI', '#4a9eff')
+                );
+
+                const gainCol = document.createElement('div');
+                gainCol.className = 'radio-visual-digital-hub-gain-col';
+                const mkGain = (deck, label, color) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'radio-visual-digital-hub-gain-wrap';
+                    const lbl = document.createElement('span');
+                    lbl.className = 'radio-visual-digital-hub-gain-label';
+                    lbl.textContent = label;
+                    const slider = document.createElement('input');
+                    slider.type = 'range';
+                    slider.className = 'radio-visual-digital-hub-gain-slider';
+                    slider.min = '0';
+                    slider.max = '200';
+                    slider.step = '1';
+                    slider.dataset.deckGain = deck;
+                    slider.style.setProperty('--gain-color', color);
+                    slider.setAttribute('aria-label', `${label} gain`);
+                    wrap.append(lbl, slider);
+                    return wrap;
+                };
+                gainCol.append(
+                    mkGain('a', 'DECK A', '#4a9eff'),
+                    mkGain('b', 'DECK B', '#ff6b4a')
+                );
+
+                const deckB = document.createElement('div');
+                deckB.className = 'radio-visual-digital-hub-deck radio-visual-digital-hub-deck--b';
+                deckB.append(
+                    mkKnob('knob-b-low', 'LO', '#ff6b4a'),
+                    mkKnob('knob-b-mid', 'MED', '#ff6b4a'),
+                    mkKnob('knob-b-high', 'HI', '#ff6b4a')
+                );
+
+                volume.append(deckA, gainCol, deckB);
+
+                const effects = document.createElement('div');
+                effects.className = 'radio-visual-digital-hub-effects';
+                effects.hidden = true;
+                RadioVisualEngine.DIGITAL_HUB_EFFECTS.forEach((fx, i) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'radio-visual-digital-hub-fx-btn';
+                    btn.textContent = fx.label;
+                    btn.dataset.hubFxIndex = String(i);
+                    if (fx.kind === 'fx') btn.dataset.mixFx = fx.mixId;
+                    if (fx.kind === 'sample') btn.dataset.hubSample = fx.src;
+                    effects.appendChild(btn);
+                });
+
+                const aiWrap = document.createElement('div');
+                aiWrap.className = 'radio-visual-digital-hub-ai';
+                aiWrap.hidden = true;
+                const aiVideo = document.createElement('video');
+                aiVideo.className = 'radio-visual-digital-hub-ai-video';
+                aiVideo.src = RadioVisualEngine.DIGITAL_AI_VIDEO_SRC;
+                aiVideo.loop = true;
+                aiVideo.muted = true;
+                aiVideo.playsInline = true;
+                aiVideo.setAttribute('playsinline', '');
+                aiVideo.preload = 'auto';
+                aiWrap.appendChild(aiVideo);
+
+                const off = document.createElement('div');
+                off.className = 'radio-visual-digital-hub-off';
+                off.hidden = true;
+                off.textContent = 'OFF';
+
+                panel.append(volume, effects, aiWrap, off);
+                return panel;
+            }
+
+            _wireDigitalHubPanel(signal) {
+                const wireKnob = globalThis.wireDjKnobMirror;
+                if (typeof wireKnob === 'function') {
+                    ['knob-a-low', 'knob-a-mid', 'knob-a-high', 'knob-b-low', 'knob-b-mid', 'knob-b-high'].forEach((id) => {
+                        const hub = document.getElementById(`digital-hub-${id}`);
+                        if (hub) wireKnob(hub, id, signal);
+                    });
+                }
+
+                const eqState = globalThis.eqState;
+                const opts = signal ? { signal } : {};
+                this.els.digitalHubPanel?.querySelectorAll('[data-deck-gain]').forEach((slider) => {
+                    const deck = slider.dataset.deckGain;
+                    const cfgKey = `knob-${deck}-gain`;
+                    const cfg = globalThis.__mixKnobConfig?.[cfgKey];
+                    const deckState = eqState?.[deck];
+                    const initial = deckState?.gain ?? cfg?.stateObj?.[cfg?.key] ?? 1;
+                    slider.value = String(Math.round(initial * 100));
+
+                    slider.addEventListener('input', () => {
+                        const v = parseInt(slider.value, 10) / 100;
+                        if (deckState) deckState.gain = v;
+                        if (cfg) {
+                            cfg.stateObj[cfg.key] = v;
+                            const mixKnob = document.getElementById(cfgKey);
+                            if (mixKnob && typeof globalThis.setKnobUi === 'function') {
+                                globalThis.setKnobUi(mixKnob, cfg.min, cfg.max, v);
+                            }
+                            if (cfg.callback) cfg.callback(v);
+                        }
+                    }, opts);
+                });
+
+                this.els.digitalHubEffects?.querySelectorAll('.radio-visual-digital-hub-fx-btn').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        if (btn.dataset.hubSample) {
+                            try {
+                                const a = new Audio(btn.dataset.hubSample);
+                                a.play().catch(() => {});
+                            } catch (_) {}
+                            return;
+                        }
+                        const mixId = btn.dataset.mixFx;
+                        if (!mixId) return;
+                        document.getElementById(mixId)?.click();
+                        requestAnimationFrame(() => this._syncDigitalHubFxButtonStates());
+                    }, opts);
+                });
+            }
+
+            _syncDigitalHubFxButtonStates() {
+                const root = this.els.digitalHubEffects;
+                if (!root) return;
+                root.querySelectorAll('[data-mix-fx]').forEach((btn) => {
+                    const mix = document.getElementById(btn.dataset.mixFx);
+                    btn.classList.toggle('on', !!(mix && mix.classList.contains('on')));
+                });
+            }
+
+            _syncDigitalHubAiVideo() {
+                const video = this.els.digitalHubAiVideo;
+                if (!video) return;
+                if (this._digitalHubMode === 'ai') {
+                    const p = video.play();
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                } else {
+                    video.pause();
+                    try { video.currentTime = 0; } catch (_) {}
+                }
+            }
+
+            _syncDigitalHubPanel() {
+                const mode = this._digitalHubMode;
+                const panel = this.els.digitalHubPanel;
+                const pane = this.els.digitalCenterSpectrum;
+                const canvas = this.els.digitalCarDashCanvas;
+                if (!panel || !pane) return;
+
+                pane.classList.toggle('is-hub-equaliser', mode === 'equaliser');
+                pane.classList.toggle('is-hub-spectrum', mode === 'spectrum');
+                pane.classList.toggle('is-hub-volume', mode === 'volume');
+                pane.classList.toggle('is-hub-effects', mode === 'effects');
+                pane.classList.toggle('is-hub-ai', mode === 'ai');
+                pane.classList.toggle('is-hub-off', mode === 'ai-off');
+
+                const showHub = mode === 'volume' || mode === 'effects' || mode === 'ai' || mode === 'ai-off';
+                panel.hidden = !showHub;
+                panel.querySelector('.radio-visual-digital-hub-volume').hidden = mode !== 'volume';
+                panel.querySelector('.radio-visual-digital-hub-effects').hidden = mode !== 'effects';
+                panel.querySelector('.radio-visual-digital-hub-ai').hidden = mode !== 'ai';
+                panel.querySelector('.radio-visual-digital-hub-off').hidden = mode !== 'ai-off';
+
+                if (canvas) canvas.hidden = mode !== 'equaliser';
+
+                if (mode === 'volume') {
+                    const eqState = globalThis.eqState;
+                    this.els.digitalHubPanel?.querySelectorAll('[data-deck-gain]').forEach((slider) => {
+                        const deck = slider.dataset.deckGain;
+                        const deckState = eqState?.[deck];
+                        const cfg = globalThis.__mixKnobConfig?.[`knob-${deck}-gain`];
+                        const initial = deckState?.gain ?? cfg?.stateObj?.[cfg?.key] ?? 1;
+                        slider.value = String(Math.round(initial * 100));
+                    });
+                }
+
+                if (mode === 'effects') this._syncDigitalHubFxButtonStates();
+                this._syncDigitalHubAiVideo();
+            }
+
             _syncDigitalSpectrumLayout() {
-                const mode = this._digitalSpectrumLayout === 'focus' || this._digitalSpectrumLayout === 'blank'
-                    ? this._digitalSpectrumLayout
-                    : 'full';
-                this._digitalSpectrumLayout = mode;
-                const hudHidden = mode !== 'full';
-                const sidesHidden = mode === 'blank';
+                const hubMode = this._digitalHubMode;
+                const layout = this._hubSpectrumLayout(hubMode);
+                this._digitalSpectrumLayout = layout;
+                const hudHidden = hubMode === 'spectrum';
+                const sidesHidden = hubMode === 'ai-off';
                 const pane = this.els.digitalCenterSpectrum;
                 if (pane) {
                     pane.classList.toggle('is-spectrum-hud-hidden', hudHidden);
@@ -3073,6 +3332,7 @@
                 }
                 const dash = this.els.digitalDashStack;
                 if (dash) dash.classList.toggle('is-spectrum-hud-hidden', hudHidden);
+                this._syncDigitalHubPanel();
                 this._syncDigitalSpectrumButtonState();
                 if (this.skin === 'digital' && this.digitalCenterMode === 'spectrum') {
                     this._scheduleDigitalSpectrumLayoutSync();
@@ -3083,21 +3343,24 @@
                 const btn = this.els.btnDigitalSpectrum;
                 if (!btn) return;
                 const inSpectrumCenter = this.digitalCenterMode === 'spectrum' && !this._digitalStagingView;
-                const layout = this._digitalSpectrumLayout === 'focus' || this._digitalSpectrumLayout === 'blank'
-                    ? this._digitalSpectrumLayout
-                    : 'full';
-                const spectrumsVisible = layout !== 'blank';
+                const hubMode = this._digitalHubMode;
+                const spectrumsVisible = hubMode !== 'ai-off';
                 btn.classList.toggle('is-active', inSpectrumCenter && spectrumsVisible);
-                btn.setAttribute('aria-pressed', (inSpectrumCenter && layout === 'full') ? 'true' : 'false');
+                btn.setAttribute('aria-pressed', inSpectrumCenter ? 'true' : 'false');
+                btn.setAttribute('aria-label', `Centre display: ${this._digitalHubModeLabel(hubMode)}`);
+                const labelEl = btn.querySelector('.radio-visual-btn-label');
+                const hubLabel = this._digitalHubModeLabel(hubMode);
+                if (labelEl) labelEl.textContent = hubLabel;
+                else this._appendRvButtonLabel(btn, hubLabel);
                 try { btn.removeAttribute('title'); } catch (_) {}
             }
 
-            /** full → focus (no centre) → blank (no spectrums) → full */
+            /** equaliser → spectrum → volume → effects → ai → off → equaliser */
             _cycleDigitalSpectrumLayout() {
-                const order = ['full', 'focus', 'blank'];
-                let i = order.indexOf(this._digitalSpectrumLayout);
+                const cycle = RadioVisualEngine.DIGITAL_HUB_CYCLE;
+                let i = cycle.indexOf(this._digitalHubMode);
                 if (i < 0) i = 0;
-                this._digitalSpectrumLayout = order[(i + 1) % order.length];
+                this._digitalHubMode = cycle[(i + 1) % cycle.length];
                 this._syncDigitalSpectrumLayout();
             }
 
@@ -3113,6 +3376,7 @@
                     this._setDigitalCenterMode('spectrum');
                     return;
                 }
+                this._digitalHubMode = 'equaliser';
                 this._digitalSpectrumLayout = 'full';
                 try { this._syncDigitalSpectrumLayout(); } catch (_) {}
                 const mount = this.els.digitalStagingMount;
@@ -3131,7 +3395,7 @@
                 this.digitalCenterMode = next;
                 try { localStorage.setItem('radioVisual.digitalCenter.v1', next); } catch (_) {}
                 if (next === 'spectrum' && wasDeckB) {
-                    this._digitalSpectrumLayout = 'full';
+                    this._digitalHubMode = 'equaliser';
                     this._syncDigitalSpectrumLayout();
                 }
                 if (this.els.digitalCenterSpectrum) {
@@ -3921,7 +4185,7 @@
                 this._syncDonutCoreHues();
                 this._drawDigitalSpectrumFlower(cL, pack.layersL, pack.n, this._donutCoreHueA, pack.t);
                 this._drawDigitalSpectrumFlower(cR, pack.layersR, pack.n, this._donutCoreHueB, pack.t);
-                if (this._digitalSpectrumLayout === 'full') {
+                if (this._digitalHubMode === 'equaliser') {
                     try { this._syncDigitalCrossfadeLabels(); } catch (_) {}
                     this._drawDigitalCarDash(
                         pack.eqHeights,
@@ -4695,6 +4959,7 @@
                 let digitalSpectrumCanvasL = null;
                 let digitalSpectrumCanvasR = null;
                 let digitalCarDashCanvas = null;
+                let digitalHubPanel = null;
                 let digitalDeckBVideo = null;
                 let digitalDeckBMount = null;
                 let digitalDeckBContent = null;
@@ -4880,6 +5145,7 @@
                 digitalCarDashCanvas = document.createElement('canvas');
                 digitalCarDashCanvas.className = 'radio-visual-digital-car-dash-canvas';
                 digitalCarDashCanvas.id = 'radio-visual-digital-car-dash';
+                digitalHubPanel = this._buildDigitalHubPanel();
                 dashXfade = document.createElement('div');
                 dashXfade.className = 'radio-visual-digital-dash-xfade';
                 const xfLblA = document.createElement('span');
@@ -4906,6 +5172,7 @@
                 dashXfade.appendChild(dashXfadeWrap);
                 dashXfade.appendChild(xfLblB);
                 carDisplay.appendChild(digitalCarDashCanvas);
+                carDisplay.appendChild(digitalHubPanel);
                 carDisplay.appendChild(dashXfade);
                 dashStack.appendChild(centerInfo);
                 dashStack.appendChild(carDisplay);
@@ -4949,7 +5216,7 @@
                 btnDigitalSpectrum = document.createElement('button');
                 btnDigitalSpectrum.type = 'button';
                 btnDigitalSpectrum.className = rvToolbarTextBtnClass;
-                this._appendRvButtonLabel(btnDigitalSpectrum, 'Spectrum');
+                this._appendRvButtonLabel(btnDigitalSpectrum, 'EQUALISER');
                 btnDigitalVideo = document.createElement('button');
                 btnDigitalVideo.type = 'button';
                 btnDigitalVideo.className = rvToolbarTextBtnClass;
@@ -5078,6 +5345,10 @@
                     digitalSpectrumCanvasL,
                     digitalSpectrumCanvasR,
                     digitalCarDashCanvas,
+                    digitalHubPanel,
+                    digitalHubEffects: digitalHubPanel?.querySelector('.radio-visual-digital-hub-effects'),
+                    digitalHubAiVideo: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai-video'),
+                    digitalCarDisplay: carDisplay,
                     digitalDeckBVideo,
                     digitalDashXfade: dashXfade,
                     volDigitalReadout,
@@ -5107,6 +5378,7 @@
                     try { this._tearDownDigitalStagingView(); } catch (_) {}
                     try { this._setDigitalCenterMode(this.digitalCenterMode); } catch (_) {}
                     try { this._syncDigitalSpectrumLayout(); } catch (_) {}
+                    try { this._wireDigitalHubPanel(this.abortCtrl.signal); } catch (_) {}
                     try { this._initDigitalSpectrumBg(); } catch (_) {}
                     try {
                         if (localStorage.getItem(RadioVisualEngine.AUTOMIX_ENABLED_KEY) === '1') {
@@ -5166,7 +5438,7 @@
                         };
                     } catch (_) {}
                     if (btnDigitalSpectrum) {
-                        btnDigitalSpectrum.setAttribute('aria-label', 'Spectrum layout');
+                        btnDigitalSpectrum.setAttribute('aria-label', 'Centre display mode');
                         try { this._syncDigitalSpectrumButtonState(); } catch (_) {}
                         btnDigitalSpectrum.addEventListener('click', (ev) => {
                             this._stopClick(ev);
