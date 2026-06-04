@@ -40,6 +40,10 @@
                 };
             }
             static get DIGITAL_AI_VIDEO_SRC() { return 'assets/ai/ai.mp4'; }
+            /** Centre hub modes that show and play {@link DIGITAL_AI_VIDEO_SRC}. */
+            static digitalHubShowsAiVideo(mode) {
+                return mode === 'ai' || mode === 'live';
+            }
             /** Deck A: TK / Loop / Arp · Deck B: Reverb / Flanger / CUT (mirrors DJ Deck beat FX). */
             static get DIGITAL_HUB_FX_KNOBS() {
                 return {
@@ -3606,7 +3610,7 @@
             _syncDigitalHubAiVideo() {
                 const video = this.els.digitalHubAiVideo;
                 if (!video) return;
-                if (this._digitalHubMode === 'ai') {
+                if (RadioVisualEngine.digitalHubShowsAiVideo(this._digitalHubMode)) {
                     const p = video.play();
                     if (p && typeof p.catch === 'function') p.catch(() => {});
                 } else {
@@ -3655,7 +3659,8 @@
                 pane.classList.toggle('is-hub-live', mode === 'live');
                 pane.classList.toggle('is-hub-off', mode === 'ai-off');
 
-                const showHub = mode === 'volume' || mode === 'effects' || mode === 'ai' || mode === 'ai-off';
+                const showHub = mode === 'volume' || mode === 'effects'
+                    || RadioVisualEngine.digitalHubShowsAiVideo(mode) || mode === 'ai-off';
                 panel.setAttribute('aria-hidden', showHub ? 'false' : 'true');
 
                 if (mode === 'volume') {
