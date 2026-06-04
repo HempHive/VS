@@ -764,11 +764,20 @@
             gap: clamp(6px, 1.25cqw, 12px);
             padding: clamp(8px, 1.46cqw, 14px);
             box-sizing: border-box;
-            transform: scale(var(--rv-spectrum-staging-scale, 1))
-                translateX(var(--rv-spectrum-staging-pan-x, 0px));
+            transform: scale(var(--rv-spectrum-staging-scale, 1));
             transform-origin: center center;
             transition: transform 0.15s ease-out;
             will-change: transform;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"]
+            .radio-visual-digital-spectrum-side--left {
+            transform: translateX(calc(-1 * var(--rv-spectrum-staging-spread, 0px)));
+            transition: transform 0.15s ease-out;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"]
+            .radio-visual-digital-spectrum-side--right {
+            transform: translateX(var(--rv-spectrum-staging-spread, 0px));
+            transition: transform 0.15s ease-out;
         }
         #radio-visual-root .radio-visual-digital-center-pane:not([data-hub-mode="spectrum"]) .radio-visual-digital-spectrum-row {
             transform: none;
@@ -1265,7 +1274,6 @@
             overflow: hidden;
             touch-action: none;
             position: relative;
-            z-index: 1;
             box-sizing: border-box;
             padding-bottom: calc(var(--rv-spectrum-scale-thumb, 32px) * 0.45);
         }
@@ -1279,16 +1287,24 @@
             overflow: hidden;
             touch-action: none;
             position: relative;
-            z-index: 2;
-            isolation: isolate;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-staging-slider.is-visible
+            .radio-visual-digital-spectrum-staging-scale-wrap,
+        #radio-visual-root .radio-visual-digital-spectrum-staging-slider.is-visible
+            .radio-visual-digital-spectrum-staging-pan-wrap {
+            pointer-events: auto;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-staging-scale-wrap,
+        #radio-visual-root .radio-visual-digital-spectrum-staging-pan-wrap {
+            pointer-events: none;
         }
         #radio-visual-root .radio-visual-digital-spectrum-staging-slider.is-dragging-scale
             .radio-visual-digital-spectrum-staging-pan-wrap {
-            pointer-events: none;
+            pointer-events: none !important;
         }
         #radio-visual-root .radio-visual-digital-spectrum-staging-slider.is-dragging-pan
             .radio-visual-digital-spectrum-staging-scale-wrap {
-            pointer-events: none;
+            pointer-events: none !important;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"] .radio-visual-digital-spectrum-staging-slider.is-visible {
             opacity: 1;

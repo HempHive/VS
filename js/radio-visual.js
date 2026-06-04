@@ -88,8 +88,8 @@
                 this._digitalSpectrumLayout = 'full';
                 /** Spectrum hub staging scale (1 = default flower size). */
                 this._spectrumStagingScale = 1;
-                /** Spectrum hub horizontal pan (0 = left, 0.5 = centre, 1 = right). */
-                this._spectrumStagingPanNorm = 0.5;
+                /** Spectrum hub horizontal spread (0 = together, 1 = max apart). */
+                this._spectrumStagingPanNorm = 0;
                 this._spectrumSliderHideTimer = null;
                 this._digitalDeckBView = 'video';
                 /** Staging overlay in spectrum pane: null | video | projectm | bars | queue | karaoke */
@@ -1790,6 +1790,73 @@
                 try { this._syncDeckSwitches(); } catch (_) {}
             }
 
+            /** A▶ / B▶ toolbar tap: resume paused output, else next local or random station. */
+            async _deckTransportTap(deckKey) {
+                const dk = deckKey === 'b' ? 'b' : 'a';
+                try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                try {
+                    if (typeof globalThis.cancelActiveAutoFade === 'function') {
+                        globalThis.cancelActiveAutoFade();
+                    }
+                } catch (_) {}
+                if (dk === 'a') {
+                    const media = (typeof getDeckAMediaForPlaybackState === 'function')
+                        ? getDeckAMediaForPlaybackState()
+                        : audioEl;
+                    if (media && this._deckHasSource(media) && media.paused && !media.ended) {
+                        this._deckEngClearSuppress();
+                        try {
+                            if (typeof releaseAutoMixDeferredLocal === 'function') {
+                                releaseAutoMixDeferredLocal('a', 'play');
+                            }
+                        } catch (_) {}
+                        try {
+                            await media.play();
+                        } catch (_) {
+                            try {
+                                if (typeof playDeckATrackFromQueue === 'function') {
+                                    playDeckATrackFromQueue({ forceImmediate: true });
+                                } else if (typeof playRadio === 'function') {
+                                    playRadio();
+                                }
+                            } catch (_) {}
+                        }
+                        try { this._updateStationUi(); } catch (_) {}
+                        try { this._syncDeckSwitches(); } catch (_) {}
+                        return;
+                    }
+                    this._deckANextOrStation();
+                    return;
+                }
+                const mediaB = this._deckBPlaybackMedia();
+                if (mediaB && this._deckHasSource(mediaB) && mediaB.paused && !mediaB.ended) {
+                    this._deckEngClearSuppress();
+                    try {
+                        if (typeof releaseAutoMixDeferredLocal === 'function') {
+                            releaseAutoMixDeferredLocal('b', 'play');
+                        }
+                    } catch (_) {}
+                    try {
+                        await mediaB.play();
+                        try {
+                            if (typeof connectDeckMediaToEq === 'function') connectDeckMediaToEq('b');
+                        } catch (_) {}
+                    } catch (_) {
+                        try {
+                            if (typeof playDeckBTrackFromQueue === 'function') {
+                                playDeckBTrackFromQueue({ forceImmediate: true });
+                            } else if (typeof playRadioB === 'function') {
+                                playRadioB();
+                            }
+                        } catch (_) {}
+                    }
+                    try { this._updateStationUi(); } catch (_) {}
+                    try { this._syncDeckSwitches(); } catch (_) {}
+                    return;
+                }
+                this._deckBNextOrStation();
+            }
+
             /** B▶: next queued local track, or random station when the Deck B queue is empty. */
             _deckBNextOrStation() {
                 try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
@@ -2849,8 +2916,7 @@
                     this._stopClick(ev);
                     clearLongPress();
                     if (!longPressHandled) {
-                        if (dk === 'b') this._deckBNextOrStation();
-                        else this._deckANextOrStation();
+                        try { this._deckTransportTap(dk); } catch (_) {}
                     }
                     longPressHandled = false;
                 }, sig);
@@ -3174,10 +3240,10 @@
                 const pane = this.els.digitalCenterSpectrum;
                 if (!row) return;
                 if (this._digitalHubMode !== 'spectrum') {
-                    try { row.style.setProperty('--rv-spectrum-staging-pan-x', '0px'); } catch (_) {}
+                    try { row.style.setProperty('--rv-spectrum-staging-spread', '0px'); } catch (_) {}
                     return;
                 }
-                const panNorm = Math.max(0, Math.min(1, Number(this._spectrumStagingPanNorm) || 0.5));
+                const spreadNorm = Math.max(0, Math.min(1, Number(this._spectrumStagingPanNorm) || 0));
                 const scale = Math.max(
                     RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN,
                     Math.min(
@@ -3186,9 +3252,9 @@
                     )
                 );
                 const paneW = pane ? Math.max(1, pane.clientWidth || 0) : 400;
-                const maxPan = Math.max(paneW * 0.2, (scale - 1) * paneW * 0.55);
-                const px = (panNorm - 0.5) * 2 * maxPan;
-                try { row.style.setProperty('--rv-spectrum-staging-pan-x', `${px}px`); } catch (_) {}
+                const maxSpread = Math.max(24, paneW * 0.22 * Math.max(1, scale * 0.85));
+                const spreadPx = spreadNorm * maxSpread;
+                try { row.style.setProperty('--rv-spectrum-staging-spread', `${spreadPx}px`); } catch (_) {}
             }
 
             _applySpectrumStagingPanNorm(panNorm, opts = {}) {
@@ -3243,6 +3309,7 @@
                         try { ev.stopPropagation(); } catch (_) {}
                         wrap.classList.add('is-dragging-pan');
                         if (scaleWrap) scaleWrap.style.pointerEvents = 'none';
+                        try { slider.blur(); } catch (_) {}
                         try { panSlider.setPointerCapture(ev.pointerId); } catch (_) {}
                         this._showDigitalSpectrumStagingSlider();
                     }, opts);
@@ -3252,6 +3319,9 @@
                     try { ev.stopPropagation(); } catch (_) {}
                     wrap.classList.add('is-dragging-scale');
                     if (panWrap) panWrap.style.pointerEvents = 'none';
+                    if (panSlider) {
+                        try { panSlider.blur(); } catch (_) {}
+                    }
                     try { slider.setPointerCapture(ev.pointerId); } catch (_) {}
                     this._showDigitalSpectrumStagingSlider();
                 }, opts);
@@ -3259,27 +3329,14 @@
                 document.addEventListener('pointerup', clearStagingDrag, opts);
                 document.addEventListener('pointercancel', clearStagingDrag, opts);
 
-                const applyPanFromPointer = (ev) => {
-                    if (this._digitalHubMode !== 'spectrum') return;
-                    if (wrap.classList.contains('is-dragging-scale') || wrap.classList.contains('is-dragging-pan')) return;
-                    if (ev.target && wrap.contains(ev.target)) return;
-                    const rect = pane.getBoundingClientRect();
-                    const panNorm = Math.max(0, Math.min(1, (ev.clientX - rect.left) / Math.max(1, rect.width)));
-                    this._applySpectrumStagingPanNorm(panNorm);
-                };
-
                 const onPaneMove = (ev) => {
                     if (this._digitalHubMode !== 'spectrum') return;
-                    if (wrap.classList.contains('is-dragging-scale') || wrap.classList.contains('is-dragging-pan')) return;
                     if (ev.target && wrap.contains(ev.target)) return;
-                    applyPanFromPointer(ev);
                     this._showDigitalSpectrumStagingSlider();
                     this._scheduleHideDigitalSpectrumStagingSlider();
                 };
                 pane.addEventListener('pointermove', onPaneMove, opts);
-                wrap.addEventListener('pointermove', (ev) => {
-                    if (wrap.classList.contains('is-dragging-scale') || wrap.classList.contains('is-dragging-pan')) return;
-                    if (ev.target && ev.target.closest('.radio-visual-digital-spectrum-staging-scale-wrap')) return;
+                wrap.addEventListener('pointermove', () => {
                     this._showDigitalSpectrumStagingSlider();
                     this._scheduleHideDigitalSpectrumStagingSlider();
                 }, opts);
@@ -5489,8 +5546,8 @@
                 spectrumPanSlider.min = '0';
                 spectrumPanSlider.max = '100';
                 spectrumPanSlider.step = '1';
-                spectrumPanSlider.value = '50';
-                spectrumPanSlider.setAttribute('aria-label', 'Spectrum horizontal position');
+                spectrumPanSlider.value = '0';
+                spectrumPanSlider.setAttribute('aria-label', 'Spread spectrum flowers apart');
                 const spectrumScaleWrap = document.createElement('div');
                 spectrumScaleWrap.className = 'radio-visual-digital-spectrum-staging-scale-wrap';
                 const spectrumPanWrap = document.createElement('div');
