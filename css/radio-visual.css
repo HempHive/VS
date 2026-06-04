@@ -960,19 +960,21 @@
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-volume {
             display: flex !important;
             flex-direction: row;
-            align-items: stretch;
+            align-items: center;
             justify-content: center;
             gap: clamp(4px, 1.04cqw, 10px);
             max-width: 100%;
             height: 100%;
+            max-height: 100%;
             min-height: 0;
             overflow: hidden;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-deck,
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="effects"] .radio-visual-digital-hub-fx-deck {
+            display: flex;
             flex-direction: column;
-            align-items: stretch;
-            justify-content: stretch;
+            align-items: center;
+            justify-content: space-evenly;
             gap: 0;
             flex: 1 1 0;
             min-width: 0;
@@ -998,21 +1000,23 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 0;
+            gap: 1px;
             flex: 1 1 0;
             min-height: 0;
             width: 100%;
             min-width: 0;
+            overflow: hidden;
         }
         #radio-visual-root .radio-visual-digital-hub-knob.knob-wrap,
         #radio-visual-root .radio-visual-digital-hub-beatfx-knob.knob-wrap {
-            width: min(100%, 100cqh, 32cqw);
-            height: min(100%, 100cqh, 32cqw);
-            max-width: 100%;
-            max-height: 100%;
-            flex: 1 1 auto;
-            min-width: 0;
-            min-height: 0;
+            flex: 0 0 auto;
+            width: min(52px, 27cqh, 88%);
+            height: min(52px, 27cqh, 88%);
+            max-width: min(52px, 27cqh, 88%);
+            max-height: min(52px, 27cqh, 88%);
+            aspect-ratio: 1 / 1;
+            border-radius: 50%;
+            box-sizing: border-box;
             cursor: ns-resize;
         }
         #radio-visual-root .radio-visual-digital-hub-knob-label {
@@ -1027,11 +1031,11 @@
         #radio-visual-root .radio-visual-digital-hub-gain-col {
             display: flex;
             flex-direction: row;
-            align-items: stretch;
+            align-items: center;
             justify-content: center;
             gap: clamp(6px, 1.25cqw, 12px);
             flex: 0 0 auto;
-            align-self: stretch;
+            align-self: center;
             padding: 0 clamp(4px, 0.83cqw, 8px);
             height: 100%;
             max-height: 100%;
@@ -1042,11 +1046,13 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: stretch;
+            justify-content: center;
             gap: clamp(2px, 0.42cqw, 4px);
             flex: 1 1 0;
             min-height: 0;
+            max-height: 100%;
             height: 100%;
+            overflow: hidden;
         }
         #radio-visual-root .radio-visual-digital-hub-gain-label {
             flex: 0 0 auto;
@@ -1082,11 +1088,11 @@
             writing-mode: vertical-lr;
             direction: rtl;
             width: var(--rv-range-thumb);
-            flex: 1 1 auto;
-            height: 100%;
-            min-height: clamp(64px, 28cqh, 200px);
-            max-height: 100%;
-            align-self: stretch;
+            flex: 1 1 0;
+            min-height: 0;
+            max-height: calc(100% - 1.1em);
+            height: auto;
+            align-self: center;
         }
         #radio-visual-root .radio-visual-digital-range::-webkit-slider-runnable-track {
             background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(255,255,255,0.08));
@@ -1143,12 +1149,14 @@
         #radio-visual-root .radio-visual-digital-hub-fx-deck {
             display: flex;
             flex-direction: column;
-            align-items: stretch;
-            justify-content: stretch;
+            align-items: center;
+            justify-content: space-evenly;
             gap: 0;
             flex: 1 1 0;
             min-width: 0;
             min-height: 0;
+            max-height: 100%;
+            overflow: hidden;
             container-type: size;
             container-name: rv-hub-knobs;
         }
@@ -1222,11 +1230,11 @@
             z-index: 8;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: stretch;
             justify-content: center;
-            gap: clamp(4px, 0.83cqw, 8px);
-            width: clamp(40px, 8cqw, 56px);
-            height: clamp(108px, 46cqh, 220px);
+            gap: clamp(8px, 1.25cqw, 12px);
+            width: clamp(56px, 10cqw, 76px);
+            height: clamp(120px, 48cqh, 240px);
             max-height: min(78%, 240px);
             padding: 0;
             transform: translate(-50%, -50%);
@@ -1238,6 +1246,36 @@
             pointer-events: none;
             transition: opacity 0.4s ease;
             box-sizing: border-box;
+            overflow: visible;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-staging-scale-wrap {
+            flex: 1 1 0;
+            min-height: 0;
+            max-height: 100%;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            touch-action: pan-y;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-staging-pan-wrap {
+            flex: 0 0 auto;
+            width: 100%;
+            height: clamp(26px, 5.5cqh, 34px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            touch-action: pan-x;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-staging-slider.is-dragging-scale
+            .radio-visual-digital-spectrum-staging-pan-wrap {
+            pointer-events: none;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-staging-slider.is-dragging-pan
+            .radio-visual-digital-spectrum-staging-scale-wrap {
+            pointer-events: none;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"] .radio-visual-digital-spectrum-staging-slider.is-visible {
             opacity: 1;
@@ -1248,10 +1286,11 @@
             direction: rtl;
             width: var(--rv-range-thumb);
             height: 100%;
-            min-height: clamp(72px, 36cqh, 180px);
+            min-height: 0;
             max-height: 100%;
-            flex: 1 1 auto;
+            flex: 0 0 auto;
             cursor: ns-resize;
+            touch-action: pan-y;
         }
         #radio-visual-root .radio-visual-digital-spectrum-scale-range.radio-visual-digital-range::-webkit-slider-runnable-track,
         #radio-visual-root .radio-visual-digital-spectrum-pan-range.radio-visual-digital-range::-webkit-slider-runnable-track {
@@ -1271,13 +1310,14 @@
             writing-mode: horizontal-tb;
             direction: ltr;
             width: 100%;
-            height: var(--rv-range-thumb);
-            min-height: var(--rv-range-thumb);
-            max-height: var(--rv-range-thumb);
+            height: 100%;
+            min-height: 0;
+            max-height: 100%;
             flex: 0 0 auto;
             --rv-range-thumb: clamp(22px, 4.5cqw, 32px);
             --rv-range-rail: clamp(5px, 1cqw, 8px);
             cursor: ew-resize;
+            touch-action: pan-x;
         }
         #radio-visual-root .radio-visual-digital-spectrum-pan-range.radio-visual-digital-range::-webkit-slider-thumb {
             margin-left: 0;

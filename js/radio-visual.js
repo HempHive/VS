@@ -157,6 +157,8 @@
                     if (t.closest('textarea')) return true;
                     if (t.closest('.radio-visual-digital-automix-panel')) return true;
                     if (t.closest('.radio-visual-digital-spectrum-staging-slider')) return true;
+                    if (t.closest('.radio-visual-digital-spectrum-staging-scale-wrap')) return true;
+                    if (t.closest('.radio-visual-digital-spectrum-staging-pan-wrap')) return true;
                     if (t.closest('.radio-visual-digital-hub-panel')) return true;
                 } catch (_) {}
                 return false;
@@ -3221,10 +3223,6 @@
                     applyScaleFromSlider();
                     this._showDigitalSpectrumStagingSlider();
                 }, opts);
-                slider.addEventListener('pointerdown', (ev) => {
-                    try { ev.stopPropagation(); } catch (_) {}
-                    this._showDigitalSpectrumStagingSlider();
-                }, opts);
 
                 if (panSlider) {
                     panSlider.addEventListener('input', () => {
@@ -3233,12 +3231,30 @@
                     }, opts);
                     panSlider.addEventListener('pointerdown', (ev) => {
                         try { ev.stopPropagation(); } catch (_) {}
+                        wrap.classList.add('is-dragging-pan');
                         this._showDigitalSpectrumStagingSlider();
                     }, opts);
+                    const endPanDrag = () => {
+                        wrap.classList.remove('is-dragging-pan');
+                    };
+                    panSlider.addEventListener('pointerup', endPanDrag, opts);
+                    panSlider.addEventListener('pointercancel', endPanDrag, opts);
                 }
+
+                slider.addEventListener('pointerdown', (ev) => {
+                    try { ev.stopPropagation(); } catch (_) {}
+                    wrap.classList.add('is-dragging-scale');
+                    this._showDigitalSpectrumStagingSlider();
+                }, opts);
+                const endScaleDrag = () => {
+                    wrap.classList.remove('is-dragging-scale');
+                };
+                slider.addEventListener('pointerup', endScaleDrag, opts);
+                slider.addEventListener('pointercancel', endScaleDrag, opts);
 
                 const applyPanFromPointer = (ev) => {
                     if (this._digitalHubMode !== 'spectrum') return;
+                    if (wrap.classList.contains('is-dragging-scale') || wrap.classList.contains('is-dragging-pan')) return;
                     if (ev.target && wrap.contains(ev.target)) return;
                     const rect = pane.getBoundingClientRect();
                     const panNorm = Math.max(0, Math.min(1, (ev.clientX - rect.left) / Math.max(1, rect.width)));
@@ -3247,6 +3263,7 @@
 
                 const onPaneMove = (ev) => {
                     if (this._digitalHubMode !== 'spectrum') return;
+                    if (wrap.classList.contains('is-dragging-scale') || wrap.classList.contains('is-dragging-pan')) return;
                     if (ev.target && wrap.contains(ev.target)) return;
                     applyPanFromPointer(ev);
                     this._showDigitalSpectrumStagingSlider();
@@ -3254,7 +3271,8 @@
                 };
                 pane.addEventListener('pointermove', onPaneMove, opts);
                 pane.addEventListener('pointerenter', onPaneMove, opts);
-                wrap.addEventListener('pointermove', () => {
+                wrap.addEventListener('pointermove', (ev) => {
+                    if (wrap.classList.contains('is-dragging-scale') || wrap.classList.contains('is-dragging-pan')) return;
                     this._showDigitalSpectrumStagingSlider();
                     this._scheduleHideDigitalSpectrumStagingSlider();
                 }, opts);
@@ -5458,7 +5476,7 @@
                 spectrumScaleSlider.step = '1';
                 spectrumScaleSlider.value = '100';
                 spectrumScaleSlider.setAttribute('aria-label', 'Spectrum flower size');
-                const spectrumPanSlider = document.createElement('input');
+                spectrumPanSlider = document.createElement('input');
                 spectrumPanSlider.type = 'range';
                 spectrumPanSlider.className = 'radio-visual-digital-spectrum-pan-range radio-visual-digital-range';
                 spectrumPanSlider.min = '0';
@@ -5466,8 +5484,14 @@
                 spectrumPanSlider.step = '1';
                 spectrumPanSlider.value = '50';
                 spectrumPanSlider.setAttribute('aria-label', 'Spectrum horizontal position');
-                spectrumStagingSlider.appendChild(spectrumScaleSlider);
-                spectrumStagingSlider.appendChild(spectrumPanSlider);
+                const spectrumScaleWrap = document.createElement('div');
+                spectrumScaleWrap.className = 'radio-visual-digital-spectrum-staging-scale-wrap';
+                const spectrumPanWrap = document.createElement('div');
+                spectrumPanWrap.className = 'radio-visual-digital-spectrum-staging-pan-wrap';
+                spectrumScaleWrap.appendChild(spectrumScaleSlider);
+                spectrumPanWrap.appendChild(spectrumPanSlider);
+                spectrumStagingSlider.appendChild(spectrumScaleWrap);
+                spectrumStagingSlider.appendChild(spectrumPanWrap);
                 digitalSpectrumRow.appendChild(spectrumSideL);
                 digitalSpectrumRow.appendChild(dashStack);
                 digitalSpectrumRow.appendChild(spectrumSideR);
