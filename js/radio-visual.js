@@ -21,17 +21,20 @@
                 };
             }
             static get DIGITAL_AI_VIDEO_SRC() { return 'assets/ai/ai.mp4'; }
-            static get DIGITAL_HUB_EFFECTS() {
-                return [
-                    { label: 'AIR📢', kind: 'sample', src: 'assets/audio/wav6.mp3' },
-                    { label: 'Low-pass', kind: 'fx', mixId: 'fx-lowpass' },
-                    { label: 'Bass', kind: 'fx', mixId: 'fx-bass' },
-                    { label: 'High-pass', kind: 'fx', mixId: 'fx-highpass' },
-                    { label: '~Echo~', kind: 'fx', mixId: 'fx-echo' },
-                    { label: 'Treble', kind: 'fx', mixId: 'fx-treble' },
-                    { label: 'Distort', kind: 'fx', mixId: 'fx-distort' },
-                    { label: 'Reverb', kind: 'fx', mixId: 'fx-reverb' }
-                ];
+            /** Deck A: TK / Loop / Arp · Deck B: Reverb / Flanger / CUT (mirrors DJ Deck beat FX). */
+            static get DIGITAL_HUB_FX_KNOBS() {
+                return {
+                    a: [
+                        { suffix: 'tk', label: 'TK', color: '#b8980c' },
+                        { suffix: 'loop', label: 'Loop', color: '#2a8fa0' },
+                        { suffix: 'arp', label: 'Arp', color: '#8647a8' }
+                    ],
+                    b: [
+                        { suffix: 'reverb', label: 'Reverb', color: '#ff4040' },
+                        { suffix: 'flanger', label: 'Flanger', color: '#3fff00' },
+                        { suffix: 'cut', label: 'CUT', color: '#bada55' }
+                    ]
+                };
             }
 
             constructor(options = {}) {
@@ -64,6 +67,9 @@
                 this._digitalHubMode = 'equaliser';
                 /** Derived from hub mode for spectrum flower / HUD layout. */
                 this._digitalSpectrumLayout = 'full';
+                /** Spectrum hub staging scale (1 = default flower size). */
+                this._spectrumStagingScale = 1;
+                this._spectrumSliderHideTimer = null;
                 this._digitalDeckBView = 'video';
                 /** Staging overlay in spectrum pane: null | video | projectm | bars | queue | karaoke */
                 this._digitalStagingView = null;
@@ -129,6 +135,8 @@
                     if (t.closest('select')) return true;
                     if (t.closest('textarea')) return true;
                     if (t.closest('.radio-visual-digital-automix-panel')) return true;
+                    if (t.closest('.radio-visual-digital-spectrum-staging-slider')) return true;
+                    if (t.closest('.radio-visual-digital-hub-panel')) return true;
                 } catch (_) {}
                 return false;
             }
@@ -3087,6 +3095,74 @@
                 });
             }
 
+            _showDigitalSpectrumStagingSlider() {
+                const wrap = this.els.digitalSpectrumStagingSlider;
+                if (!wrap) return;
+                wrap.classList.add('is-visible');
+                if (this._spectrumSliderHideTimer) {
+                    clearTimeout(this._spectrumSliderHideTimer);
+                    this._spectrumSliderHideTimer = null;
+                }
+            }
+
+            _hideDigitalSpectrumStagingSlider(immediate = false) {
+                const wrap = this.els.digitalSpectrumStagingSlider;
+                if (!wrap) return;
+                if (immediate) {
+                    if (this._spectrumSliderHideTimer) {
+                        clearTimeout(this._spectrumSliderHideTimer);
+                        this._spectrumSliderHideTimer = null;
+                    }
+                    wrap.classList.remove('is-visible');
+                    return;
+                }
+                if (this._spectrumSliderHideTimer) clearTimeout(this._spectrumSliderHideTimer);
+                this._spectrumSliderHideTimer = setTimeout(() => {
+                    this._spectrumSliderHideTimer = null;
+                    if (this._digitalHubMode === 'spectrum') wrap.classList.remove('is-visible');
+                }, 1400);
+            }
+
+            _scheduleHideDigitalSpectrumStagingSlider() {
+                this._hideDigitalSpectrumStagingSlider(false);
+            }
+
+            _wireDigitalSpectrumStagingSlider(abortSignal) {
+                const pane = this.els.digitalCenterSpectrum;
+                const wrap = this.els.digitalSpectrumStagingSlider;
+                const slider = this.els.digitalSpectrumScaleSlider;
+                if (!pane || !wrap || !slider) return;
+                const opts = abortSignal ? { signal: abortSignal } : {};
+
+                const applyScaleFromSlider = () => {
+                    const v = Number(slider.value);
+                    this._spectrumStagingScale = Math.max(0.35, Math.min(1.65, v / 100));
+                };
+                applyScaleFromSlider();
+
+                slider.addEventListener('input', () => {
+                    applyScaleFromSlider();
+                    this._showDigitalSpectrumStagingSlider();
+                }, opts);
+                slider.addEventListener('pointerdown', (ev) => {
+                    try { ev.stopPropagation(); } catch (_) {}
+                    this._showDigitalSpectrumStagingSlider();
+                }, opts);
+
+                const onPaneMove = (ev) => {
+                    if (this._digitalHubMode !== 'spectrum') return;
+                    if (ev.target && wrap.contains(ev.target)) return;
+                    this._showDigitalSpectrumStagingSlider();
+                    this._scheduleHideDigitalSpectrumStagingSlider();
+                };
+                pane.addEventListener('pointermove', onPaneMove, opts);
+                pane.addEventListener('pointerenter', onPaneMove, opts);
+                wrap.addEventListener('pointermove', () => {
+                    this._showDigitalSpectrumStagingSlider();
+                    this._scheduleHideDigitalSpectrumStagingSlider();
+                }, opts);
+            }
+
             _digitalHubModeLabel(mode) {
                 return RadioVisualEngine.DIGITAL_HUB_LABELS[mode] || 'EQUALISER';
             }
@@ -3137,6 +3213,7 @@
                     mkKnob('knob-a-mid', 'MED', '#4a9eff'),
                     mkKnob('knob-a-high', 'HI', '#4a9eff')
                 );
+                deckA.setAttribute('aria-label', 'Deck A EQ');
 
                 const gainCol = document.createElement('div');
                 gainCol.className = 'radio-visual-digital-hub-gain-col';
@@ -3170,21 +3247,41 @@
                     mkKnob('knob-b-mid', 'MED', '#ff6b4a'),
                     mkKnob('knob-b-high', 'HI', '#ff6b4a')
                 );
+                deckB.setAttribute('aria-label', 'Deck B EQ');
 
                 volume.append(deckA, gainCol, deckB);
 
+                const mkBeatFxKnob = (deck, suffix, label, color) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'radio-visual-digital-hub-knob-wrap radio-visual-digital-hub-beatfx-wrap';
+                    const knob = document.createElement('div');
+                    knob.className = 'knob-wrap radio-visual-digital-hub-knob radio-visual-digital-hub-beatfx-knob';
+                    knob.id = `digital-hub-dj-knob-${deck}-${suffix}`;
+                    knob.style.setProperty('--knob-color', color);
+                    const indicator = document.createElement('div');
+                    indicator.className = 'knob-indicator';
+                    const val = document.createElement('div');
+                    val.className = 'knob-value';
+                    knob.append(indicator, val);
+                    const lbl = document.createElement('span');
+                    lbl.className = 'radio-visual-digital-hub-knob-label';
+                    lbl.textContent = label;
+                    wrap.append(knob, lbl);
+                    return wrap;
+                };
+
                 const effects = document.createElement('div');
                 effects.className = 'radio-visual-digital-hub-effects';
-                RadioVisualEngine.DIGITAL_HUB_EFFECTS.forEach((fx, i) => {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'radio-visual-digital-hub-fx-btn';
-                    btn.textContent = fx.label;
-                    btn.dataset.hubFxIndex = String(i);
-                    if (fx.kind === 'fx') btn.dataset.mixFx = fx.mixId;
-                    if (fx.kind === 'sample') btn.dataset.hubSample = fx.src;
-                    effects.appendChild(btn);
-                });
+                const fxKnobs = RadioVisualEngine.DIGITAL_HUB_FX_KNOBS;
+                const fxDeckA = document.createElement('div');
+                fxDeckA.className = 'radio-visual-digital-hub-fx-deck radio-visual-digital-hub-fx-deck--a';
+                fxDeckA.setAttribute('aria-label', 'Deck A beat FX');
+                fxKnobs.a.forEach((k) => fxDeckA.appendChild(mkBeatFxKnob('a', k.suffix, k.label, k.color)));
+                const fxDeckB = document.createElement('div');
+                fxDeckB.className = 'radio-visual-digital-hub-fx-deck radio-visual-digital-hub-fx-deck--b';
+                fxDeckB.setAttribute('aria-label', 'Deck B beat FX');
+                fxKnobs.b.forEach((k) => fxDeckB.appendChild(mkBeatFxKnob('b', k.suffix, k.label, k.color)));
+                effects.append(fxDeckA, fxDeckB);
 
                 const aiWrap = document.createElement('div');
                 aiWrap.className = 'radio-visual-digital-hub-ai';
@@ -3239,30 +3336,13 @@
                     }, opts);
                 });
 
-                this.els.digitalHubEffects?.querySelectorAll('.radio-visual-digital-hub-fx-btn').forEach((btn) => {
-                    btn.addEventListener('click', () => {
-                        if (btn.dataset.hubSample) {
-                            try {
-                                const a = new Audio(btn.dataset.hubSample);
-                                a.play().catch(() => {});
-                            } catch (_) {}
-                            return;
-                        }
-                        const mixId = btn.dataset.mixFx;
-                        if (!mixId) return;
-                        document.getElementById(mixId)?.click();
-                        requestAnimationFrame(() => this._syncDigitalHubFxButtonStates());
-                    }, opts);
-                });
-            }
-
-            _syncDigitalHubFxButtonStates() {
-                const root = this.els.digitalHubEffects;
-                if (!root) return;
-                root.querySelectorAll('[data-mix-fx]').forEach((btn) => {
-                    const mix = document.getElementById(btn.dataset.mixFx);
-                    btn.classList.toggle('on', !!(mix && mix.classList.contains('on')));
-                });
+                try {
+                    const fxRoot = this.els.digitalHubEffects;
+                    if (fxRoot && typeof globalThis.wireDjBeatFxKnobs === 'function') {
+                        globalThis.wireDjBeatFxKnobs(fxRoot);
+                        try { globalThis.syncDjBeatFxKnobActiveDom?.(this.root); } catch (_) {}
+                    }
+                } catch (_) {}
             }
 
             _syncDigitalHubAiVideo() {
@@ -3329,7 +3409,14 @@
                     });
                 }
 
-                if (mode === 'effects') this._syncDigitalHubFxButtonStates();
+                if (mode === 'effects') {
+                    try { globalThis.syncDjBeatFxKnobActiveDom?.(this.root || document.getElementById('radio-visual-root')); } catch (_) {}
+                }
+                if (mode === 'spectrum') {
+                    try { this._showDigitalSpectrumStagingSlider(); } catch (_) {}
+                } else {
+                    try { this._hideDigitalSpectrumStagingSlider(true); } catch (_) {}
+                }
                 this._syncDigitalHubAiVideo();
             }
 
@@ -3763,6 +3850,9 @@
                 const smoothMix = [];
                 const spectrumActive = this._isSpectrumAudioActive();
                 let lowSmoothForHue = null;
+                const stagingScale = (this._digitalHubMode === 'spectrum')
+                    ? Math.max(0.35, Math.min(1.65, Number(this._spectrumStagingScale) || 1))
+                    : 1;
                 for (const layer of RadioVisualEngine.SPECTRUM_FLOWER_LAYERS) {
                     const levels = sampled[layer.key] || [];
                     const smooth = this._smoothSpectrumBandLevels(levels, sampled.fromAnalyser);
@@ -3770,13 +3860,22 @@
                     let radii;
                     if (layer.key === 'high' && !spectrumActive) {
                         radii = this._fullBandRadii(n, layer.maxRing);
+                        if (stagingScale !== 1) {
+                            const cap = layer.maxRing || 0.64;
+                            radii = radii.map((r) => Math.min(cap, r * stagingScale));
+                        }
                         if (!this._spectrumRingSmooth.high || this._spectrumRingSmooth.high.length !== n) {
                             this._spectrumRingSmooth.high = radii.slice();
                         } else {
-                            for (let i = 0; i < n; i++) this._spectrumRingSmooth.high[i] = layer.maxRing;
+                            const cap = (layer.maxRing || 0.64) * stagingScale;
+                            for (let i = 0; i < n; i++) this._spectrumRingSmooth.high[i] = cap;
                         }
                     } else {
                         radii = this._radiiFromSpectrumSmooth(smooth, t, layer.key, layer);
+                    }
+                    if (stagingScale !== 1) {
+                        const cap = layer.maxRing || 0.64;
+                        radii = radii.map((r) => Math.min(cap, Math.max(0.04, r * stagingScale)));
                     }
                     const bassLevel = layer.key === 'low' ? this._bassLevelFromSmooth(smooth) : 0;
                     layersL.push({ ...layer, radii, bassLevel });
@@ -4985,6 +5084,8 @@
                 let digitalCarDashCanvas = null;
                 let digitalCarDisplay = null;
                 let digitalHubPanel = null;
+                let spectrumStagingSlider = null;
+                let spectrumScaleSlider = null;
                 let digitalDeckBVideo = null;
                 let digitalDeckBMount = null;
                 let digitalDeckBContent = null;
@@ -5211,9 +5312,22 @@
                 digitalSpectrumCanvasR.className = 'radio-visual-digital-spectrum-canvas';
                 digitalSpectrumCanvasR.id = 'radio-visual-digital-spectrum-r';
                 spectrumSideR.appendChild(digitalSpectrumCanvasR);
+                spectrumStagingSlider = document.createElement('div');
+                spectrumStagingSlider.className = 'radio-visual-digital-spectrum-staging-slider';
+                spectrumStagingSlider.setAttribute('aria-hidden', 'true');
+                spectrumScaleSlider = document.createElement('input');
+                spectrumScaleSlider.type = 'range';
+                spectrumScaleSlider.className = 'radio-visual-digital-spectrum-scale-range';
+                spectrumScaleSlider.min = '35';
+                spectrumScaleSlider.max = '165';
+                spectrumScaleSlider.step = '1';
+                spectrumScaleSlider.value = '100';
+                spectrumScaleSlider.setAttribute('aria-label', 'Spectrum flower size');
+                spectrumStagingSlider.appendChild(spectrumScaleSlider);
                 spectrumRow.appendChild(spectrumSideL);
                 spectrumRow.appendChild(dashStack);
                 spectrumRow.appendChild(spectrumSideR);
+                spectrumRow.appendChild(spectrumStagingSlider);
                 digitalStagingMount = document.createElement('div');
                 digitalStagingMount.className = 'radio-visual-digital-staging-mount';
                 digitalStagingMount.setAttribute('aria-hidden', 'true');
@@ -5376,6 +5490,8 @@
                     digitalCarDashCanvas,
                     digitalHubPanel,
                     digitalHubEffects: digitalHubPanel?.querySelector('.radio-visual-digital-hub-effects'),
+                    digitalSpectrumStagingSlider: spectrumStagingSlider,
+                    digitalSpectrumScaleSlider: spectrumScaleSlider,
                     digitalHubAiVideo: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai-video'),
                     digitalCarDisplay,
                     digitalDeckBVideo,
@@ -5406,6 +5522,7 @@
                     this._digitalStagingView = null;
                     try { this._tearDownDigitalStagingView(); } catch (_) {}
                     try { this._wireDigitalHubPanel(this.abortCtrl.signal); } catch (_) {}
+                    try { this._wireDigitalSpectrumStagingSlider(this.abortCtrl.signal); } catch (_) {}
                     try { this._finalizeDigitalRadioInit(); } catch (_) {}
                     try { this._initDigitalSpectrumBg(); } catch (_) {}
                     try {
@@ -5699,6 +5816,10 @@
                 this._rvFadeTargetDeck = null;
                 try { if (this._digitalStageClickTimer) clearTimeout(this._digitalStageClickTimer); } catch (_) {}
                 this._digitalStageClickTimer = null;
+                if (this._spectrumSliderHideTimer) {
+                    try { clearTimeout(this._spectrumSliderHideTimer); } catch (_) {}
+                    this._spectrumSliderHideTimer = null;
+                }
                 this._spectrumRingSmooth = { low: null, mid: null, high: null };
                 try { if (this.animId) cancelAnimationFrame(this.animId); } catch (_) {}
                 this.animId = null;

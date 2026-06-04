@@ -948,6 +948,12 @@
             gap: clamp(6px, 1.46cqw, 14px);
             max-width: 100%;
         }
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-deck {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(6px, 1.04cqw, 10px);
+        }
         #radio-visual-root .radio-visual-digital-hub-deck {
             display: flex;
             flex-direction: row;
@@ -1029,41 +1035,61 @@
             margin-left: calc((clamp(14px, 2.5cqw, 22px) - clamp(6px, 1.25cqw, 10px)) / -2);
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="effects"] .radio-visual-digital-hub-effects {
-            display: grid !important;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            grid-template-rows: repeat(2, minmax(0, 1fr));
-            gap: clamp(3px, 0.625cqw, 6px);
+            display: flex !important;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: center;
+            gap: clamp(10px, 2.5cqw, 24px);
             max-height: 100%;
-            padding: clamp(2px, 0.42cqw, 4px);
+            padding: clamp(4px, 0.83cqw, 8px);
             box-sizing: border-box;
         }
-        #radio-visual-root .radio-visual-digital-hub-fx-btn {
-            position: relative;
-            overflow: hidden;
-            padding: clamp(4px, 0.83cqw, 8px);
-            border: 1px solid rgba(255, 0, 0, 0.25);
-            border-radius: 6px;
-            background-color: rgba(0, 0, 0, 0.35);
-            background-image: url('../assets/images/btn.png'), url('../assets/gifs/xim.gif');
-            background-position: center, center;
-            background-repeat: no-repeat, no-repeat;
-            background-size: 100% 100%, 100% 100%;
-            color: #fff;
-            font-size: clamp(9px, 1.35cqw, 13px);
-            font-weight: 700;
-            text-shadow: 0 0 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.6);
-            cursor: pointer;
-            min-height: 0;
+        #radio-visual-root .radio-visual-digital-hub-fx-deck {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(6px, 1.04cqw, 10px);
+            flex: 1 1 0;
+            min-width: 0;
         }
-        #radio-visual-root .radio-visual-digital-hub-fx-btn.on {
-            border-color: rgba(255, 55, 72, 0.65);
-            box-shadow: 0 0 12px rgba(255, 45, 60, 0.22) inset, 0 0 14px rgba(255, 40, 55, 0.18);
-            background-color: rgba(255, 35, 55, 0.08);
-            color: #ff2a3d;
+        #radio-visual-root .radio-visual-digital-hub-beatfx-knob.knob-wrap {
+            width: clamp(28px, 4.6cqw, 40px);
+            height: clamp(28px, 4.6cqw, 40px);
         }
-        #radio-visual-root .radio-visual-digital-hub-fx-btn:hover {
-            border-color: rgba(245, 210, 15, 0.3);
-            color: #f5d20f;
+        #radio-visual-root .radio-visual-digital-hub-beatfx-knob.dj-beatfx-on {
+            box-shadow:
+                0 0 0 2px rgba(255, 220, 80, 0.55),
+                0 0 14px rgba(255, 200, 60, 0.35);
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-staging-slider {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: clamp(72px, 16cqw, 140px);
+            padding: clamp(6px, 1.25cqw, 12px) clamp(10px, 2cqw, 18px);
+            transform: translate(-50%, -50%);
+            border-radius: 999px;
+            background: rgba(0, 12, 22, 0.72);
+            border: 1px solid rgba(0, 220, 255, 0.35);
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.2);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"] .radio-visual-digital-spectrum-staging-slider.is-visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-scale-range {
+            width: 100%;
+            margin: 0;
+            accent-color: #0fc;
+            cursor: ew-resize;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai"] .radio-visual-digital-hub-ai {
             display: flex !important;
