@@ -2622,6 +2622,9 @@
                 this._rvFadeActive = true;
                 this._syncFadeKnobs();
                 if (this._isRadioVisualActive()) {
+                    if (this._isAutoMixEnabled()) {
+                        try { this._scheduleRadioAutoMix(); } catch (_) {}
+                    }
                     this._runLocalAutoFade();
                     return;
                 }
@@ -3051,10 +3054,7 @@
                 btn.addEventListener('pointerup', (ev) => {
                     this._stopClick(ev);
                     clearLongPress();
-                    if (!longPressHandled) {
-                        if (this._isAutoMixEnabled()) this._scheduleRadioAutoMix();
-                        this._triggerAutoFade();
-                    }
+                    if (!longPressHandled) this._triggerAutoFade();
                     longPressHandled = false;
                 }, sig);
                 btn.addEventListener('pointercancel', () => {
