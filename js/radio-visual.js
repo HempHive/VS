@@ -3465,6 +3465,21 @@
                 }
             }
 
+            _enterDigitalHubLiveMode() {
+                if (this._digitalHubMode === 'live') return;
+                if (this.digitalCenterMode !== 'spectrum') {
+                    try { this._setDigitalCenterMode('spectrum'); } catch (_) {}
+                }
+                this._digitalHubMode = 'live';
+                try { this._syncDigitalSpectrumLayout(); } catch (_) {}
+            }
+
+            _exitDigitalHubLiveToEqualiser() {
+                if (this._digitalHubMode !== 'live') return;
+                this._digitalHubMode = 'equaliser';
+                try { this._syncDigitalSpectrumLayout(); } catch (_) {}
+            }
+
             _enterDigitalHubAiMode() {
                 if (this._digitalHubMode === 'ai') return;
                 this._digitalHubAiReturnMode = this._digitalHubMode || 'equaliser';
@@ -4868,6 +4883,48 @@
                 } catch (_) {}
             }
 
+            _isDigitalEqualiserLiveTapTarget(el) {
+                if (!el || !el.closest) return false;
+                if (el.closest('.radio-visual-digital-dash-xfade')) return false;
+                if (el.closest('.radio-visual-digital-hub-panel')) return false;
+                return !!el.closest(
+                    '.radio-visual-digital-car-main, .radio-visual-digital-car-dash-canvas'
+                );
+            }
+
+            _wireDigitalHubAiVideoInteractions(sig) {
+                const video = this.els.digitalHubAiVideo;
+                const wrap = this.els.digitalHubAi;
+                if (!video || video.dataset.rvHubAiVideoWired === '1') return;
+                video.dataset.rvHubAiVideoWired = '1';
+                try { video.removeAttribute('title'); } catch (_) {}
+                if (wrap) try { wrap.removeAttribute('title'); } catch (_) {}
+                let clickTimer = null;
+                const opts = sig ? { signal: sig } : {};
+                video.addEventListener('click', (ev) => {
+                    if (this.skin !== 'digital' || this._digitalHubMode !== 'live') return;
+                    try { ev.stopPropagation(); } catch (_) {}
+                    clearTimeout(clickTimer);
+                    clickTimer = setTimeout(() => {
+                        clickTimer = null;
+                        try { this._exitDigitalHubLiveToEqualiser(); } catch (_) {}
+                    }, 280);
+                }, opts);
+                video.addEventListener('dblclick', (ev) => {
+                    if (this.skin !== 'digital' || !RadioVisualEngine.digitalHubShowsAiVideo(this._digitalHubMode)) {
+                        return;
+                    }
+                    try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                    clearTimeout(clickTimer);
+                    clickTimer = null;
+                    try {
+                        if (typeof toggleVideoSurfaceFullscreen === 'function') {
+                            toggleVideoSurfaceFullscreen(video, wrap || video.parentElement);
+                        }
+                    } catch (_) {}
+                }, opts);
+            }
+
             _isDigitalStageUiTarget(el) {
                 if (!el || !el.closest) return false;
                 return !!el.closest(
@@ -4880,6 +4937,11 @@
                 const sig = this.abortCtrl.signal;
                 digitalCenterEl.addEventListener('click', (ev) => {
                     if (this.skin !== 'digital') return;
+                    if (this._digitalHubMode === 'equaliser' && this._isDigitalEqualiserLiveTapTarget(ev.target)) {
+                        try { this._enterDigitalHubLiveMode(); } catch (_) {}
+                        return;
+                    }
+                    if (this._digitalHubMode === 'live') return;
                     if (this._digitalHubMode === 'ai') {
                         const t = ev.target;
                         if (t && typeof t.closest === 'function') {
@@ -5925,6 +5987,7 @@
                     digitalSpectrumScaleSlider: spectrumScaleSlider,
                     digitalSpectrumPanSlider: spectrumPanSlider,
                     digitalHubAiVideo: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai-video'),
+                    digitalHubAi: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai'),
                     digitalCarDisplay,
                     digitalDeckBVideo,
                     digitalDashXfade: dashXfade,
@@ -5940,6 +6003,7 @@
                 if (digBtns) this._buildFeatureButtons(digBtns, { deckBInPanel: true });
                 if (digitalToolbar) this._wireDigitalToolbarLabelFit(digitalToolbar);
                 if (digitalCenter) this._bindDigitalStageInteractions(digitalCenter);
+                try { this._wireDigitalHubAiVideoInteractions(sig); } catch (_) {}
                 try { this._applySkinUi(); } catch (_) {}
                 try { this._syncVolumeFromGlobal(); } catch (_) {}
                 try { this._wireGlobalVolumeSliderSync(sig); } catch (_) {}
