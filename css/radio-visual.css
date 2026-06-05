@@ -1414,13 +1414,28 @@
             border-radius: 8px;
             overflow: hidden;
         }
+        #radio-visual-root .radio-visual-digital-hub-ai-stack {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+        }
         #radio-visual-root .radio-visual-digital-hub-ai-video {
             width: 100%;
             height: 100%;
             object-fit: contain;
             display: block;
             background: #000;
-            position: relative;
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+        }
+        #radio-visual-root .radio-visual-digital-hub-ai-video.is-hidden {
+            opacity: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+        #radio-visual-root .radio-visual-digital-hub-ai-video:not(.is-hidden) {
             z-index: 1;
         }
         #radio-visual-root .radio-visual-digital-hub-ai-loader {
