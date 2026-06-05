@@ -2837,9 +2837,9 @@
                     this.els.autoMixKnob.classList.toggle('is-on', on);
                     this.els.autoMixKnob.setAttribute('aria-pressed', on ? 'true' : 'false');
                 }
-                if (this.els.btnDigitalFade) {
-                    this.els.btnDigitalFade.classList.toggle('is-active', on);
-                    this.els.btnDigitalFade.setAttribute('aria-pressed', on ? 'true' : 'false');
+                if (this.els.btnDigitalAi) {
+                    this.els.btnDigitalAi.classList.toggle('is-active', on);
+                    this.els.btnDigitalAi.setAttribute('aria-pressed', on ? 'true' : 'false');
                 }
             }
 
@@ -2934,16 +2934,6 @@
 
             _wireDigitalAiButton(btn, sig) {
                 if (!btn) return;
-                try { btn.removeAttribute('title'); } catch (_) {}
-                btn.setAttribute('aria-label', 'Toggle AI video');
-                btn.addEventListener('click', (ev) => {
-                    this._stopClick(ev);
-                    this._toggleDigitalHubAiMode();
-                }, sig);
-            }
-
-            _wireDigitalFadeButton(btn, sig) {
-                if (!btn) return;
                 let longPressTimer = null;
                 let longPressHandled = false;
                 const longPressMs = 500;
@@ -2954,6 +2944,7 @@
                     }
                 };
                 const pointer = { x: 0, y: 0 };
+                btn.setAttribute('aria-label', 'Toggle auto-mix; hold for max interval');
                 btn.addEventListener('pointerdown', (ev) => {
                     this._stopClick(ev);
                     longPressHandled = false;
@@ -2969,7 +2960,7 @@
                 btn.addEventListener('pointerup', (ev) => {
                     this._stopClick(ev);
                     clearLongPress();
-                    if (!longPressHandled) this._triggerAutoFade();
+                    if (!longPressHandled) this._toggleAutoMix();
                     longPressHandled = false;
                 }, sig);
                 btn.addEventListener('pointercancel', () => {
@@ -2979,6 +2970,16 @@
                 btn.addEventListener('click', (ev) => this._stopClick(ev), sig);
             }
 
+            _wireDigitalFadeButton(btn, sig) {
+                if (!btn) return;
+                btn.setAttribute('aria-label', 'Auto-fade');
+                btn.addEventListener('click', (ev) => {
+                    this._stopClick(ev);
+                    if (this._isAutoMixEnabled()) this._scheduleRadioAutoMix();
+                    this._triggerAutoFade();
+                }, sig);
+            }
+
             _wireDigitalAutoMixPanelDismiss(sig) {
                 const dismissIfOutside = (ev) => {
                     const panel = this.els.digitalAutoMixPanel;
@@ -2986,8 +2987,8 @@
                     const t = ev.target;
                     if (!t || typeof t.closest !== 'function') return;
                     if (panel.contains(t)) return;
-                    const fadeBtn = this.els.btnDigitalFade;
-                    if (fadeBtn && (fadeBtn === t || fadeBtn.contains(t))) return;
+                    const aiBtn = this.els.btnDigitalAi;
+                    if (aiBtn && (aiBtn === t || aiBtn.contains(t))) return;
                     this._closeDigitalAutoMixPanel();
                 };
                 document.addEventListener('pointerdown', dismissIfOutside, { capture: true, ...sig });
@@ -3686,15 +3687,6 @@
                     try { this._hideDigitalSpectrumStagingSlider(true); } catch (_) {}
                 }
                 this._syncDigitalHubAiVideo();
-                this._syncDigitalHubAiButton();
-            }
-
-            _syncDigitalHubAiButton() {
-                const btn = this.els.btnDigitalAi;
-                if (!btn) return;
-                const on = this._digitalHubMode === 'ai';
-                btn.classList.toggle('is-active', on);
-                btn.setAttribute('aria-pressed', on ? 'true' : 'false');
             }
 
             _syncDigitalSpectrumLayout() {
@@ -4668,6 +4660,16 @@
                 this._setKnobRotation(this.els.volKnob, (v * 270) - 135);
                 this._syncDigitalVolumeUi();
                 this._syncVolumeMuteLed();
+            }
+
+            _wireGlobalVolumeSliderSync(sig) {
+                const vs = document.getElementById('volume-slider');
+                if (!vs) return;
+                const sync = () => {
+                    try { this._syncVolumeFromGlobal(); } catch (_) {}
+                };
+                vs.addEventListener('input', sync, sig);
+                vs.addEventListener('change', sync, sig);
             }
 
             _toggleVolumeMute() {
@@ -5699,10 +5701,11 @@
                     this._appendRvButtonLabel(b, lab);
                     if (act === 'ai') {
                         btnDigitalAi = b;
+                        b.title = 'Tap: toggle auto-mix · Hold: max interval';
                     }
                     if (act === 'fade') {
                         btnDigitalFade = b;
-                        b.title = 'Tap: auto-fade · Hold: auto-mix interval';
+                        b.title = 'Tap: auto-fade';
                     }
                     return b;
                 };
@@ -5813,6 +5816,7 @@
                 if (digitalCenter) this._bindDigitalStageInteractions(digitalCenter);
                 try { this._applySkinUi(); } catch (_) {}
                 try { this._syncVolumeFromGlobal(); } catch (_) {}
+                try { this._wireGlobalVolumeSliderSync(sig); } catch (_) {}
                 if (showAnalogue) {
                     try { this._setAutoFadeDurationNorm(this._autoFadeDurationNorm()); } catch (_) {}
                     try { this._setAutoMixMaxNorm(this._autoMixMaxNorm()); } catch (_) {}
