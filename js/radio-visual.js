@@ -2944,7 +2944,7 @@
                     }
                 };
                 const pointer = { x: 0, y: 0 };
-                btn.setAttribute('aria-label', 'Toggle auto-mix; hold for max interval');
+                btn.setAttribute('aria-label', 'Toggle auto-mix and AI video; hold for max interval');
                 btn.addEventListener('pointerdown', (ev) => {
                     this._stopClick(ev);
                     longPressHandled = false;
@@ -2960,7 +2960,11 @@
                 btn.addEventListener('pointerup', (ev) => {
                     this._stopClick(ev);
                     clearLongPress();
-                    if (!longPressHandled) this._toggleAutoMix();
+                    if (!longPressHandled) {
+                        this._toggleAutoMix();
+                        if (this._isAutoMixEnabled()) this._enterDigitalHubAiMode();
+                        else this._exitDigitalHubAiMode();
+                    }
                     longPressHandled = false;
                 }, sig);
                 btn.addEventListener('pointercancel', () => {
@@ -5701,7 +5705,7 @@
                     this._appendRvButtonLabel(b, lab);
                     if (act === 'ai') {
                         btnDigitalAi = b;
-                        b.title = 'Tap: toggle auto-mix · Hold: max interval';
+                        b.title = 'Tap: toggle auto-mix + AI video · Hold: max interval';
                     }
                     if (act === 'fade') {
                         btnDigitalFade = b;
