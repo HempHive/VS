@@ -3734,7 +3734,10 @@
 
             /** equaliser → volume → effects → live → off → spectrum → equaliser */
             _cycleDigitalSpectrumLayout() {
-                if (this._digitalHubMode === 'ai') this._exitDigitalHubAiMode();
+                if (this._digitalHubMode === 'ai') {
+                    this._exitDigitalHubAiMode();
+                    return;
+                }
                 const cycle = RadioVisualEngine.DIGITAL_HUB_CYCLE;
                 let i = cycle.indexOf(this._digitalHubMode);
                 if (i < 0) i = 0;
