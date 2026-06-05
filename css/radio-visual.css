@@ -1006,6 +1006,7 @@
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="live"] .radio-visual-digital-hub-ai {
             pointer-events: auto;
             position: relative;
+            z-index: 6;
             touch-action: manipulation;
         }
         #radio-visual-root .radio-visual-digital-hub-volume,

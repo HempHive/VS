@@ -165,6 +165,8 @@
                     if (t.closest('.radio-visual-digital-spectrum-staging-scale-wrap')) return true;
                     if (t.closest('.radio-visual-digital-spectrum-staging-pan-wrap')) return true;
                     if (t.closest('.radio-visual-digital-hub-panel')) return true;
+                    if (t.closest('.radio-visual-digital-hub-ai')) return true;
+                    if (t.closest('.radio-visual-digital-hub-ai-video')) return true;
                 } catch (_) {}
                 return false;
             }
@@ -3761,6 +3763,37 @@
                 else if (this._digitalHubMode === 'ai') this._exitDigitalHubAiMode();
             }
 
+            _isDigitalHubAiVideoTarget(el) {
+                if (!el || !el.closest) return false;
+                return !!el.closest('.radio-visual-digital-hub-ai-video, .radio-visual-digital-hub-ai');
+            }
+
+            _clearDigitalHubAiVideoTapTimer() {
+                if (this._digitalHubAiTapTimer) {
+                    clearTimeout(this._digitalHubAiTapTimer);
+                    this._digitalHubAiTapTimer = null;
+                }
+            }
+
+            /** Single click → dismiss overlay; double click → fullscreen the ai.mp4 surface. */
+            _onDigitalHubAiVideoClick(ev) {
+                if (this.skin !== 'digital') return false;
+                if (!RadioVisualEngine.digitalHubShowsAiVideo(this._digitalHubMode)) return false;
+                try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                try { window.__suppressNextClick = true; } catch (_) {}
+                if (ev.detail >= 2) {
+                    this._clearDigitalHubAiVideoTapTimer();
+                    try { this._toggleDigitalHubAiVideoFullscreen(); } catch (_) {}
+                    return true;
+                }
+                this._clearDigitalHubAiVideoTapTimer();
+                this._digitalHubAiTapTimer = setTimeout(() => {
+                    this._digitalHubAiTapTimer = null;
+                    try { this._dismissDigitalHubAiVideoOverlay(); } catch (_) {}
+                }, 280);
+                return true;
+            }
+
             _toggleDigitalHubAiVideoFullscreen() {
                 const video = this.els.digitalHubAiVideo;
                 const wrap = this.els.digitalHubAi;
@@ -4956,38 +4989,20 @@
                 wrap.dataset.rvHubAiVideoWired = '1';
                 try { video.removeAttribute('title'); } catch (_) {}
                 try { wrap.removeAttribute('title'); } catch (_) {}
-                let tapTimer = null;
                 const opts = sig ? { signal: sig } : {};
-                const clearTap = () => {
-                    if (tapTimer) {
-                        clearTimeout(tapTimer);
-                        tapTimer = null;
-                    }
-                };
-                const onTap = (ev) => {
-                    if (this.skin !== 'digital') return;
-                    if (!RadioVisualEngine.digitalHubShowsAiVideo(this._digitalHubMode)) return;
-                    try { ev.stopPropagation(); } catch (_) {}
-                    clearTap();
-                    tapTimer = setTimeout(() => {
-                        tapTimer = null;
-                        try { this._dismissDigitalHubAiVideoOverlay(); } catch (_) {}
-                    }, 280);
-                };
+                const capOpts = sig ? { signal: sig, capture: true } : { capture: true };
+                const onClick = (ev) => { this._onDigitalHubAiVideoClick(ev); };
                 const onDbl = (ev) => {
                     if (this.skin !== 'digital') return;
                     if (!RadioVisualEngine.digitalHubShowsAiVideo(this._digitalHubMode)) return;
                     try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
-                    clearTap();
+                    this._clearDigitalHubAiVideoTapTimer();
                     try { this._toggleDigitalHubAiVideoFullscreen(); } catch (_) {}
                 };
-                wrap.addEventListener('pointerup', onTap, opts);
-                wrap.addEventListener('click', (ev) => {
-                    if (!RadioVisualEngine.digitalHubShowsAiVideo(this._digitalHubMode)) return;
-                    try { ev.stopPropagation(); } catch (_) {}
-                }, opts);
-                wrap.addEventListener('dblclick', onDbl, opts);
-                video.addEventListener('dblclick', onDbl, opts);
+                wrap.addEventListener('click', onClick, capOpts);
+                video.addEventListener('click', onClick, capOpts);
+                wrap.addEventListener('dblclick', onDbl, capOpts);
+                video.addEventListener('dblclick', onDbl, capOpts);
                 const syncLoad = () => {
                     try { this._syncDigitalHubAiVideoLoadingState(); } catch (_) {}
                 };
@@ -5016,11 +5031,23 @@
                         try { this._enterDigitalHubLiveMode(); } catch (_) {}
                         return;
                     }
-                    if (this._digitalHubMode === 'live') return;
+                    if (this._digitalHubMode === 'live') {
+                        if (this._isDigitalHubAiVideoTarget(ev.target)) {
+                            this._onDigitalHubAiVideoClick(ev);
+                        }
+                        return;
+                    }
                     if (this._digitalHubMode === 'ai') {
                         const t = ev.target;
                         if (t && typeof t.closest === 'function') {
-                            if (t.closest('.radio-visual-digital-hub-ai-video')) return;
+                            if (t.closest('.radio-visual-digital-hub-ai-video')) {
+                                this._onDigitalHubAiVideoClick(ev);
+                                return;
+                            }
+                            if (t.closest('.radio-visual-digital-hub-ai')) {
+                                this._onDigitalHubAiVideoClick(ev);
+                                return;
+                            }
                             if (t.closest('[data-rv-digital="ai"]')) return;
                         }
                         this._exitDigitalHubAiMode();

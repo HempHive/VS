@@ -2854,6 +2854,9 @@ function randomGlowColor() {
                 canvasEl.addEventListener('dblclick', (e) => {
                     if (!state || !state.isPlaying) return;
                     try {
+                        if (e.target && typeof e.target.closest === 'function' && e.target.closest('.radio-visual-digital-hub-ai')) return;
+                    } catch (_) {}
+                    try {
                         if (e.target && typeof e.target.closest === 'function' && e.target.closest('.dj-jog-wrap')) return;
                     } catch (_) {}
                     if (shouldToggleDeckBVizMountFullscreenFromPointer(e)) {
