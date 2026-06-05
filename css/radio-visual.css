@@ -733,7 +733,8 @@
             border-color: rgba(220, 160, 255, 0.75);
             box-shadow: 0 0 14px rgba(160, 80, 255, 0.45);
         }
-        #radio-visual-root .radio-visual-digital-automix-panel {
+        #radio-visual-root .radio-visual-digital-automix-panel,
+        #radio-visual-root .radio-visual-digital-autofade-panel {
             position: absolute;
             z-index: 30;
             min-width: 200px;
@@ -744,29 +745,35 @@
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
             display: none;
         }
-        #radio-visual-root .radio-visual-digital-automix-panel.is-open {
+        #radio-visual-root .radio-visual-digital-automix-panel.is-open,
+        #radio-visual-root .radio-visual-digital-autofade-panel.is-open {
             display: block;
         }
-        #radio-visual-root .radio-visual-digital-automix-panel.is-fixed-popup {
+        #radio-visual-root .radio-visual-digital-automix-panel.is-fixed-popup,
+        #radio-visual-root .radio-visual-digital-autofade-panel.is-fixed-popup {
             position: fixed;
         }
-        #radio-visual-root .radio-visual-digital-automix-title {
+        #radio-visual-root .radio-visual-digital-automix-title,
+        #radio-visual-root .radio-visual-digital-autofade-title {
             font-size: 10px;
             color: rgba(140, 220, 255, 0.85);
             letter-spacing: 0.06em;
             text-transform: uppercase;
             margin-bottom: 6px;
         }
-        #radio-visual-root .radio-visual-digital-automix-row {
+        #radio-visual-root .radio-visual-digital-automix-row,
+        #radio-visual-root .radio-visual-digital-autofade-row {
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        #radio-visual-root .radio-visual-digital-automix-range {
+        #radio-visual-root .radio-visual-digital-automix-range,
+        #radio-visual-root .radio-visual-digital-autofade-range {
             flex: 1;
             min-width: 0;
         }
-        #radio-visual-root .radio-visual-digital-automix-readout {
+        #radio-visual-root .radio-visual-digital-automix-readout,
+        #radio-visual-root .radio-visual-digital-autofade-readout {
             font-size: 11px;
             color: #8ef;
             min-width: 2.5em;

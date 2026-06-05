@@ -2582,7 +2582,20 @@
                 try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
                 this._retuneIncomingDeckForAutoFade(targetDeck);
                 this._ensureIncomingDeckPlaybackForAutoFade(targetDeck);
-                const durMs = this._readAutoFadeDurationMs();
+                const fullDurMs = this._readAutoFadeDurationMs();
+                const travel = Math.abs(endVal - startVal);
+                const durMs = Math.max(300, Math.round(fullDurMs * travel));
+                if (this._rvFadeLedTimer) {
+                    try { clearTimeout(this._rvFadeLedTimer); } catch (_) {}
+                    this._rvFadeLedTimer = null;
+                }
+                this._rvFadeLedTimer = setTimeout(() => {
+                    if (!this._rvAutoFadeRaf) {
+                        this._rvFadeActive = false;
+                        this._syncFadeKnobs();
+                    }
+                    this._rvFadeLedTimer = null;
+                }, durMs + 120);
                 const startTs = performance.now();
                 const tick = (ts) => {
                     const t = Math.max(0, Math.min(1, (ts - startTs) / durMs));
@@ -2843,8 +2856,7 @@
                 }
             }
 
-            _closeDigitalAutoMixPanel() {
-                const panel = this.els.digitalAutoMixPanel;
+            _closeDigitalToolbarSliderPanel(panel) {
                 if (!panel) return;
                 panel.classList.remove('is-open');
                 panel.setAttribute('aria-hidden', 'true');
@@ -2855,13 +2867,17 @@
                 panel.style.right = '';
             }
 
-            _openDigitalAutoMixPanel(clientX, clientY) {
-                const panel = this.els.digitalAutoMixPanel;
+            _closeDigitalAutoMixPanel() {
+                this._closeDigitalToolbarSliderPanel(this.els.digitalAutoMixPanel);
+            }
+
+            _closeDigitalAutoFadePanel() {
+                this._closeDigitalToolbarSliderPanel(this.els.digitalAutoFadePanel);
+            }
+
+            _openDigitalToolbarSliderPanel(panel, syncFn, clientX, clientY) {
                 if (!panel) return;
-                const slider = this.els.digitalAutoMixSlider;
-                if (slider) slider.value = String(this._readAutoMixMaxMin());
-                const readout = this.els.digitalAutoMixReadout;
-                if (readout) readout.textContent = `${this._readAutoMixMaxMin()}m`;
+                try { syncFn(); } catch (_) {}
                 panel.classList.add('is-open');
                 panel.setAttribute('aria-hidden', 'false');
                 const px = Number(clientX);
@@ -2882,6 +2898,39 @@
                     panel.style.top = `${Math.round(top)}px`;
                 };
                 requestAnimationFrame(() => requestAnimationFrame(place));
+            }
+
+            _syncDigitalAutoMixPanelUi() {
+                const slider = this.els.digitalAutoMixSlider;
+                if (slider) slider.value = String(this._readAutoMixMaxMin());
+                const readout = this.els.digitalAutoMixReadout;
+                if (readout) readout.textContent = `${this._readAutoMixMaxMin()}m`;
+            }
+
+            _openDigitalAutoMixPanel(clientX, clientY) {
+                this._openDigitalToolbarSliderPanel(
+                    this.els.digitalAutoMixPanel,
+                    () => this._syncDigitalAutoMixPanelUi(),
+                    clientX,
+                    clientY
+                );
+            }
+
+            _syncDigitalAutoFadePanelUi() {
+                const ms = this._readAutoFadeDurationMs();
+                const slider = this.els.digitalAutoFadeSlider;
+                if (slider) slider.value = String(ms / 1000);
+                const readout = this.els.digitalAutoFadeReadout;
+                if (readout) readout.textContent = `${(ms / 1000).toFixed(1)}s`;
+            }
+
+            _openDigitalAutoFadePanel(clientX, clientY) {
+                this._openDigitalToolbarSliderPanel(
+                    this.els.digitalAutoFadePanel,
+                    () => this._syncDigitalAutoFadePanelUi(),
+                    clientX,
+                    clientY
+                );
             }
 
             _wireDigitalDeckTransportBtn(btn, deckKey, sig) {
@@ -2976,29 +3025,67 @@
 
             _wireDigitalFadeButton(btn, sig) {
                 if (!btn) return;
-                btn.setAttribute('aria-label', 'Auto-fade');
-                btn.addEventListener('click', (ev) => {
+                let longPressTimer = null;
+                let longPressHandled = false;
+                const longPressMs = 500;
+                const clearLongPress = () => {
+                    if (longPressTimer) {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                };
+                const pointer = { x: 0, y: 0 };
+                btn.setAttribute('aria-label', 'Auto-fade; hold for fade duration');
+                btn.addEventListener('pointerdown', (ev) => {
                     this._stopClick(ev);
-                    if (this._isAutoMixEnabled()) this._scheduleRadioAutoMix();
-                    this._triggerAutoFade();
+                    longPressHandled = false;
+                    pointer.x = ev.clientX;
+                    pointer.y = ev.clientY;
+                    clearLongPress();
+                    longPressTimer = setTimeout(() => {
+                        longPressTimer = null;
+                        longPressHandled = true;
+                        this._openDigitalAutoFadePanel(pointer.x, pointer.y);
+                    }, longPressMs);
                 }, sig);
+                btn.addEventListener('pointerup', (ev) => {
+                    this._stopClick(ev);
+                    clearLongPress();
+                    if (!longPressHandled) {
+                        if (this._isAutoMixEnabled()) this._scheduleRadioAutoMix();
+                        this._triggerAutoFade();
+                    }
+                    longPressHandled = false;
+                }, sig);
+                btn.addEventListener('pointercancel', () => {
+                    clearLongPress();
+                    longPressHandled = false;
+                }, sig);
+                btn.addEventListener('click', (ev) => this._stopClick(ev), sig);
             }
 
             _wireDigitalAutoMixPanelDismiss(sig) {
                 const dismissIfOutside = (ev) => {
-                    const panel = this.els.digitalAutoMixPanel;
-                    if (!panel || !panel.classList.contains('is-open')) return;
                     const t = ev.target;
                     if (!t || typeof t.closest !== 'function') return;
-                    if (panel.contains(t)) return;
-                    const aiBtn = this.els.btnDigitalAi;
-                    if (aiBtn && (aiBtn === t || aiBtn.contains(t))) return;
-                    this._closeDigitalAutoMixPanel();
+                    const panels = [
+                        { panel: this.els.digitalAutoMixPanel, btn: this.els.btnDigitalAi, close: () => this._closeDigitalAutoMixPanel() },
+                        { panel: this.els.digitalAutoFadePanel, btn: this.els.btnDigitalFade, close: () => this._closeDigitalAutoFadePanel() }
+                    ];
+                    panels.forEach(({ panel, btn, close }) => {
+                        if (!panel || !panel.classList.contains('is-open')) return;
+                        if (panel.contains(t)) return;
+                        if (btn && (btn === t || btn.contains(t))) return;
+                        close();
+                    });
                 };
                 document.addEventListener('pointerdown', dismissIfOutside, { capture: true, ...sig });
                 document.addEventListener('click', dismissIfOutside, { capture: true, ...sig });
                 document.addEventListener('keydown', (ev) => {
-                    if (ev.key === 'Escape') this._closeDigitalAutoMixPanel();
+                    if (ev.key === 'Escape') {
+                        this._closeDigitalAutoMixPanel();
+                        this._closeDigitalAutoFadePanel();
+                    }
                 }, sig);
             }
 
@@ -5389,6 +5476,9 @@
                 let digitalAutoMixPanel = null;
                 let digitalAutoMixSlider = null;
                 let digitalAutoMixReadout = null;
+                let digitalAutoFadePanel = null;
+                let digitalAutoFadeSlider = null;
+                let digitalAutoFadeReadout = null;
                 if (showAnalogue) {
                 stageA = document.createElement('section');
                 stageA.className = 'radio-visual-stage radio-visual-skin--analogue is-active';
@@ -5531,6 +5621,30 @@
                 autoMixPanelRow.appendChild(digitalAutoMixReadout);
                 digitalAutoMixPanel.appendChild(autoMixPanelTitle);
                 digitalAutoMixPanel.appendChild(autoMixPanelRow);
+                digitalAutoFadePanel = document.createElement('div');
+                digitalAutoFadePanel.className = 'radio-visual-digital-autofade-panel';
+                digitalAutoFadePanel.id = 'radio-visual-digital-autofade-panel';
+                digitalAutoFadePanel.setAttribute('aria-hidden', 'true');
+                const autoFadePanelTitle = document.createElement('div');
+                autoFadePanelTitle.className = 'radio-visual-digital-autofade-title';
+                autoFadePanelTitle.textContent = 'Auto-fade duration';
+                const autoFadePanelRow = document.createElement('div');
+                autoFadePanelRow.className = 'radio-visual-digital-autofade-row';
+                digitalAutoFadeSlider = document.createElement('input');
+                digitalAutoFadeSlider.type = 'range';
+                digitalAutoFadeSlider.className = 'radio-visual-digital-autofade-range';
+                digitalAutoFadeSlider.min = String(RadioVisualEngine.AUTOFADE_MIN_MS / 1000);
+                digitalAutoFadeSlider.max = String(RadioVisualEngine.AUTOFADE_MAX_MS / 1000);
+                digitalAutoFadeSlider.step = '0.5';
+                digitalAutoFadeSlider.value = String(this._readAutoFadeDurationMs() / 1000);
+                digitalAutoFadeSlider.setAttribute('aria-label', 'Auto-fade duration in seconds');
+                digitalAutoFadeReadout = document.createElement('span');
+                digitalAutoFadeReadout.className = 'radio-visual-digital-autofade-readout';
+                digitalAutoFadeReadout.textContent = `${(this._readAutoFadeDurationMs() / 1000).toFixed(1)}s`;
+                autoFadePanelRow.appendChild(digitalAutoFadeSlider);
+                autoFadePanelRow.appendChild(digitalAutoFadeReadout);
+                digitalAutoFadePanel.appendChild(autoFadePanelTitle);
+                digitalAutoFadePanel.appendChild(autoFadePanelRow);
                 digBtns = document.createElement('div');
                 digBtns.className = 'radio-visual-btn-grid radio-visual-digital-feature-btns';
                 digBtns.id = 'radio-visual-digital-btns';
@@ -5712,7 +5826,7 @@
                     }
                     if (act === 'fade') {
                         btnDigitalFade = b;
-                        b.title = 'Tap: auto-fade';
+                        b.title = 'Tap: auto-fade · Hold: fade duration';
                     }
                     return b;
                 };
@@ -5748,6 +5862,7 @@
                 dPanel.appendChild(digitalCenter);
                 dPanel.appendChild(digitalToolbar);
                 dPanel.appendChild(digitalAutoMixPanel);
+                dPanel.appendChild(digitalAutoFadePanel);
                 dPanel.appendChild(digBtns);
                 stageD.appendChild(dPanel);
                 }
@@ -5788,6 +5903,9 @@
                     digitalAutoMixPanel,
                     digitalAutoMixSlider,
                     digitalAutoMixReadout,
+                    digitalAutoFadePanel,
+                    digitalAutoFadeSlider,
+                    digitalAutoFadeReadout,
                     spectrumBg,
                     digitalDashStack: dashStack,
                     digitalCenterSpectrum,
@@ -5943,6 +6061,22 @@
                         digitalAutoMixSlider.addEventListener('change', () => {
                             applyAutoMixMax();
                             this._closeDigitalAutoMixPanel();
+                        }, sig);
+                    }
+                    if (digitalAutoFadeSlider) {
+                        const applyAutoFadeDuration = () => {
+                            const ms = this._writeAutoFadeDurationMs(Number(digitalAutoFadeSlider.value) * 1000);
+                            if (digitalAutoFadeReadout) {
+                                digitalAutoFadeReadout.textContent = `${(ms / 1000).toFixed(1)}s`;
+                            }
+                            try {
+                                this._setKnobRotation(this.els.autoFadeKnob, (this._autoFadeDurationNorm() * 270) - 135);
+                            } catch (_) {}
+                        };
+                        digitalAutoFadeSlider.addEventListener('input', applyAutoFadeDuration, sig);
+                        digitalAutoFadeSlider.addEventListener('change', () => {
+                            applyAutoFadeDuration();
+                            this._closeDigitalAutoFadePanel();
                         }, sig);
                     }
                     this._wireDigitalAutoMixPanelDismiss(sig);
