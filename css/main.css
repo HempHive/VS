@@ -288,6 +288,13 @@
             transition: opacity 1s ease-in-out;
             opacity: 1;
         }
+        html.ui-hud-at-top #ui-layer {
+            top: 0;
+            bottom: auto;
+            padding: max(0px, env(safe-area-inset-top, 0px)) clamp(12px, 3vw, 40px) 2px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.35) 55%, transparent 100%);
+            background-position: top center;
+        }
 
         /* Center Control Group */
         .center-controls {

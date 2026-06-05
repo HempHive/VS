@@ -473,6 +473,51 @@ const QUALITY = {
         }
         if (btnOptionsClose) btnOptionsClose.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); closeOptionsPanel(); });
 
+        const UI_HUD_POSITION_KEY = 'ui.hud.position.v1';
+
+        function isDigitalRadioHudTapActive() {
+            try {
+                const av = state && state.activeVisualizer;
+                return !!(av && av.name === 'Digital Radio' && av.skin === 'digital');
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function syncModeInfoHudHintForDigitalRadio() {
+            const info = document.getElementById('mode-info');
+            if (!info) return;
+            if (!isDigitalRadioHudTapActive()) {
+                info.title = 'Hold for options';
+                info.setAttribute('aria-label', 'Visual mode and station. Hold for options.');
+                return;
+            }
+            const atTop = document.documentElement.classList.contains('ui-hud-at-top');
+            const hint = atTop
+                ? 'Tap title: move HUD to bottom · Hold: options'
+                : 'Tap title: move HUD to top · Hold: options';
+            info.title = hint;
+            info.setAttribute('aria-label', hint);
+        }
+
+        function applyUiHudPosition(atTop) {
+            document.documentElement.classList.toggle('ui-hud-at-top', !!atTop);
+            try { localStorage.setItem(UI_HUD_POSITION_KEY, atTop ? 'top' : 'bottom'); } catch (_) {}
+            syncModeInfoHudHintForDigitalRadio();
+        }
+
+        function toggleUiHudPosition() {
+            applyUiHudPosition(!document.documentElement.classList.contains('ui-hud-at-top'));
+            try { resetIdleTimer(); } catch (_) {}
+        }
+
+        function initUiHudPosition() {
+            let atTop = false;
+            try { atTop = localStorage.getItem(UI_HUD_POSITION_KEY) === 'top'; } catch (_) {}
+            document.documentElement.classList.toggle('ui-hud-at-top', atTop);
+            syncModeInfoHudHintForDigitalRadio();
+        }
+
         function wireModeInfoOptionsLongPress() {
             const info = document.getElementById('mode-info');
             if (!info || info.dataset.modeInfoHoldWired === '1') return;
@@ -480,6 +525,8 @@ const QUALITY = {
             const HOLD_MS = 500;
             let holdTimer = null;
             let pointerDown = false;
+            let holdFired = false;
+            let downAt = 0;
             const clearHold = () => {
                 if (holdTimer) {
                     clearTimeout(holdTimer);
@@ -491,21 +538,30 @@ const QUALITY = {
                 if (e.button !== 0) return;
                 try { e.stopPropagation(); } catch (_) {}
                 pointerDown = true;
+                holdFired = false;
+                downAt = performance.now();
                 clearHold();
                 holdTimer = setTimeout(() => {
                     holdTimer = null;
                     if (!pointerDown) return;
+                    holdFired = true;
                     try { toggleOptionsPanel(); } catch (_) {}
                     try { resetIdleTimer(); } catch (_) {}
                 }, HOLD_MS);
             });
             info.addEventListener('pointerup', (e) => {
                 try { e.stopPropagation(); } catch (_) {}
+                const held = downAt ? (performance.now() - downAt) : HOLD_MS;
                 pointerDown = false;
                 clearHold();
+                if (!holdFired && held < HOLD_MS && isDigitalRadioHudTapActive()) {
+                    try { toggleUiHudPosition(); } catch (_) {}
+                }
             });
             info.addEventListener('pointercancel', () => {
                 pointerDown = false;
+                holdFired = false;
+                downAt = 0;
                 clearHold();
             });
             info.addEventListener('click', (e) => {
@@ -515,6 +571,7 @@ const QUALITY = {
                 } catch (_) {}
             });
         }
+        initUiHudPosition();
         wireModeInfoOptionsLongPress();
         const optTop = document.getElementById('opt-top');
         const optLeft = document.getElementById('opt-left');
@@ -3147,6 +3204,8 @@ function exposeAppBindingsToGlobal() {
     try { g.clearNowPlayingICYBanner = clearNowPlayingICYBanner; } catch (_) {}
     try { g.showStationBanner = showStationBanner; } catch (_) {}
     try { g.updateModeSubStationLine = updateModeSubStationLine; } catch (_) {}
+    try { g.syncModeInfoHudHintForDigitalRadio = syncModeInfoHudHintForDigitalRadio; } catch (_) {}
+    try { g.toggleUiHudPosition = toggleUiHudPosition; } catch (_) {}
     try { g.getCrossfaderAudibleDeckKey = getCrossfaderAudibleDeckKey; } catch (_) {}
     try { g.getDeckStationDisplayName = getDeckStationDisplayName; } catch (_) {}
     try { g.hideStationBannerPermanently = hideStationBannerPermanently; } catch (_) {}
@@ -5636,6 +5695,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                     const vis = state.activeVisualizer;
                     if (titleEl && vis && vis.name) titleEl.textContent = vis.name;
                 }
+                syncModeInfoHudHintForDigitalRadio();
             } catch (_) {}
         }
 

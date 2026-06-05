@@ -4967,6 +4967,7 @@
                         this._syncDigitalDeckBVideo();
                     }
                 }
+                try { globalThis.syncModeInfoHudHintForDigitalRadio?.(); } catch (_) {}
             }
 
             _setSkin(skin) {

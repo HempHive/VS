@@ -14,6 +14,10 @@
             padding-bottom: var(--ui-bottom-hud-clearance);
             gap: 8px;
         }
+        html.ui-hud-at-top #dj-visual-root {
+            padding-bottom: clamp(8px, 2vmin, 16px);
+            padding-top: var(--ui-bottom-hud-clearance);
+        }
         #dj-visual-root button,
         #dj-visual-root input[type="range"] { cursor: pointer; }
         .dj-layout {
