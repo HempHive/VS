@@ -617,6 +617,25 @@
         #radio-visual-root .radio-visual-digital-local-queue-panel.display-none {
             display: none !important;
         }
+        #radio-visual-root .radio-visual-digital-local-queue-panel.dj-deck-b-queue-panel {
+            overflow: hidden;
+            padding-bottom: 8px;
+            height: 100%;
+        }
+        #radio-visual-root .radio-visual-digital-local-queue-panel .dj-queue-columns {
+            flex: 1 1 0;
+            min-height: 0;
+            height: 100%;
+        }
+        #radio-visual-root .radio-visual-digital-local-queue-panel .dj-queue-col {
+            min-height: 0;
+            height: 100%;
+        }
+        #radio-visual-root .radio-visual-digital-local-queue-panel ul.dj-queue-list {
+            flex: 1 1 0;
+            min-height: 0;
+            height: 100%;
+        }
         #radio-visual-root .radio-visual-digital-center-pane.is-local-queue-open .radio-visual-digital-spectrum-row,
         #radio-visual-root .radio-visual-digital-center-pane.is-local-queue-open .radio-visual-digital-staging-mount.is-active {
             visibility: hidden;

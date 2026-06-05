@@ -2837,9 +2837,9 @@
                   <div class="dj-queue-col-title">Deck A queue</div>
                   <div class="dj-queue-col-head-btns">
                     <button type="button" class="dj-queue-add" id="dj-queue-add-a">Add files…</button>
-                    <button type="button" class="dj-queue-shuffle" id="dj-queue-shuffle-a" title="Shuffle Deck A queue" aria-label="Shuffle Deck A queue">🔀</button>
                     <button type="button" class="dj-queue-folder" id="dj-queue-folder-a" title="Add all audio/video files from a folder">Folder…</button>
                     <button type="button" class="dj-queue-add-url" id="dj-queue-url-deck-a" title="Add a URL (radio streams go to Station cycle)">Add URL…</button>
+                    <button type="button" class="dj-queue-shuffle" id="dj-queue-shuffle-a" title="Shuffle Deck A queue" aria-label="Shuffle Deck A queue">🔀</button>
                     <button type="button" class="dj-queue-clear-all" id="dj-queue-clear-a" title="Clear Deck A queue" aria-label="Clear Deck A queue">X</button>
                   </div>
                 </div>
@@ -2850,9 +2850,9 @@
                   <div class="dj-queue-col-title">Deck B queue</div>
                   <div class="dj-queue-col-head-btns">
                     <button type="button" class="dj-queue-add" id="dj-queue-add-b">Add files…</button>
-                    <button type="button" class="dj-queue-shuffle" id="dj-queue-shuffle-b" title="Shuffle Deck B queue" aria-label="Shuffle Deck B queue">🔀</button>
                     <button type="button" class="dj-queue-folder" id="dj-queue-folder-b" title="Add all audio/video files from a folder">Folder…</button>
                     <button type="button" class="dj-queue-add-url" id="dj-queue-url-deck-b" title="Add a URL (radio streams go to Station cycle)">Add URL…</button>
+                    <button type="button" class="dj-queue-shuffle" id="dj-queue-shuffle-b" title="Shuffle Deck B queue" aria-label="Shuffle Deck B queue">🔀</button>
                     <button type="button" class="dj-queue-clear-all" id="dj-queue-clear-b" title="Clear Deck B queue" aria-label="Clear Deck B queue">X</button>
                   </div>
                 </div>

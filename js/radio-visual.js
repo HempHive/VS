@@ -516,14 +516,6 @@
                         return b;
                     };
                     btns.appendChild(mkBtn(`rv-digital-queue-add-${deck}`, 'Add files…', 'dj-queue-add'));
-                    const shuffleBtn = mkBtn(
-                        `rv-digital-queue-shuffle-${deck}`,
-                        '🔀',
-                        'dj-queue-shuffle'
-                    );
-                    shuffleBtn.title = deck === 'b' ? 'Shuffle Deck B queue' : 'Shuffle Deck A queue';
-                    shuffleBtn.setAttribute('aria-label', shuffleBtn.title);
-                    btns.appendChild(shuffleBtn);
                     btns.appendChild(mkBtn(
                         `rv-digital-queue-folder-${deck}`,
                         'Folder…',
@@ -534,6 +526,14 @@
                         'Add URL…',
                         'dj-queue-add-url'
                     ));
+                    const shuffleBtn = mkBtn(
+                        `rv-digital-queue-shuffle-${deck}`,
+                        '🔀',
+                        'dj-queue-shuffle'
+                    );
+                    shuffleBtn.title = deck === 'b' ? 'Shuffle Deck B queue' : 'Shuffle Deck A queue';
+                    shuffleBtn.setAttribute('aria-label', shuffleBtn.title);
+                    btns.appendChild(shuffleBtn);
                     const clearBtn = mkBtn(
                         `rv-digital-queue-clear-${deck}`,
                         'X',
