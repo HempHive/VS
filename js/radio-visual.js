@@ -5736,11 +5736,11 @@
                 btnXfadeStation.title = 'Change station when auto-fading (toggle)';
                 btnXfadeStation.setAttribute('aria-label', 'Change station when auto-fading');
                 toolbarMain.appendChild(btnDigitalSpectrum);
-                toolbarMain.appendChild(btnDeckATransport);
                 toolbarMain.appendChild(btnAi);
+                toolbarMain.appendChild(btnDeckATransport);
                 toolbarMain.appendChild(volGroup);
-                toolbarMain.appendChild(btnFade);
                 toolbarMain.appendChild(btnDeckBTransport);
+                toolbarMain.appendChild(btnFade);
                 toolbarMain.appendChild(btnDigitalVideo);
                 digitalToolbar.appendChild(btnVis);
                 digitalToolbar.appendChild(toolbarMain);
