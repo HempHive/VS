@@ -839,7 +839,7 @@
             z-index: 4;
         }
         #radio-visual-root .radio-visual-digital-center-info {
-            display: flex;
+            display: none !important;
             flex-direction: column;
             align-items: stretch;
             justify-content: center;
@@ -1940,7 +1940,8 @@
             font-size: clamp(8px, 1.45cqw, 12px);
             line-height: 1;
         }
-        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-vol-readout {
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-vol-readout,
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-center-readout {
             flex: 1 1 0;
             order: 1;
             min-width: 0;
@@ -1960,6 +1961,55 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+        #radio-visual-root .radio-visual-digital-center-readout {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            box-shadow: none;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        #radio-visual-root .radio-visual-digital-center-readout:hover {
+            color: #c5ffff;
+            text-shadow: 0 0 12px rgba(0, 255, 220, 0.65);
+        }
+        #radio-visual-root .radio-visual-digital-center-readout .radio-visual-center-readout-text {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="clock"] .radio-visual-center-readout-text {
+            font-family: 'Orbitron', 'Share Tech Mono', ui-monospace, monospace;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: clamp(0.02em, 0.25cqw, 0.06em);
+            color: #fff566;
+            text-shadow:
+                0 0 12px rgba(0, 0, 0, 0.9),
+                0 0 10px rgba(255, 245, 80, 0.35);
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-center-readout-text {
+            font-variant-numeric: tabular-nums;
+            color: #9ff;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="automix"] .radio-visual-center-readout-text {
+            font-family: 'Orbitron', 'Share Tech Mono', ui-monospace, monospace;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: clamp(0.03em, 0.3cqw, 0.08em);
+            color: #39ff14;
+            text-shadow:
+                0 0 8px rgba(57, 255, 20, 0.95),
+                0 0 18px rgba(57, 255, 20, 0.55);
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-digital-step-btn:first-of-type .radio-visual-btn-label {
+            color: #5800FF;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-digital-step-btn:last-of-type .radio-visual-btn-label {
+            color: #FF0B55;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn {
             container-type: size;

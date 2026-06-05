@@ -44,6 +44,11 @@
             static get DIGITAL_AI_VIDEO_LIST() {
                 return ['ai.mp4', 'ai1.mp4', 'ai2.mp4', 'ai3.mp4', 'ai4.mp4', 'ai5.mp4'];
             }
+            /** Toolbar centre strip: clock → crossfade → auto-mix countdown. */
+            static get DIGITAL_TOOLBAR_CENTER_CYCLE() {
+                return ['clock', 'crossfade', 'automix'];
+            }
+            static get DIGITAL_TOOLBAR_XFADE_STEP() { return 0.05; }
             static get DIGITAL_AI_VIDEO_SRC() { return 'assets/ai/ai.mp4'; }
             /** Centre hub modes that show and play {@link DIGITAL_AI_VIDEO_LIST}. */
             static digitalHubShowsAiVideo(mode) {
@@ -121,6 +126,8 @@
                 this._rvAutoMixNextFadeIntervalId = null;
                 this._rvAutoMixCyclePending = false;
                 this._digitalVolStep = 0.05;
+                /** Toolbar centre readout mode: clock | crossfade | automix */
+                this._digitalToolbarCenterMode = 'clock';
                 this._volMuted = false;
                 this._volUnmuteNorm = 0.5;
                 this._digitalStageClickTimer = null;
@@ -1952,6 +1959,9 @@
                 if (this.els.crossDigital) this.els.crossDigital.value = String(v);
                 this._syncCrossfadeKnob();
                 try { this._applyDigitalStagingVideoCrossfadeOpacities(); } catch (_) {}
+                if (this._digitalToolbarCenterMode === 'crossfade') {
+                    this._syncDigitalToolbarCenterReadout();
+                }
             }
             _wireDigitalCrossfadeCutHold(crossEl, sig) {
                 if (!crossEl || crossEl.dataset.cutFadeHold === '1') return;
@@ -2711,6 +2721,9 @@
                     this.els.digitalAutoMixTimer.classList.add('display-none');
                     this.els.digitalAutoMixTimer.setAttribute('aria-hidden', 'true');
                 }
+                if (this._digitalToolbarCenterMode === 'automix') {
+                    this._syncDigitalToolbarCenterReadout();
+                }
             }
 
             _updateAutoMixNextFadeUi() {
@@ -2718,14 +2731,9 @@
                     this._clearAutoMixNextFadeUi();
                     return;
                 }
-                const left = Math.max(0, this._rvAutoMixNextFadeAt - Date.now());
-                const clock = this._formatAutoMixCountdown(left);
-                const el = this.els.digitalAutoMixTimer;
-                if (!el) return;
-                el.textContent = `· ${clock}`;
-                el.classList.remove('display-none');
-                el.setAttribute('aria-hidden', 'false');
-                el.setAttribute('aria-label', `Next auto-mix crossfade in ${clock}`);
+                if (this._digitalToolbarCenterMode === 'automix') {
+                    this._syncDigitalToolbarCenterReadout();
+                }
             }
 
             _syncAutoMixNextFadeDisplay() {
@@ -3290,11 +3298,133 @@
             }
 
             _syncDigitalVolumeUi() {
-                const vs = document.getElementById('volume-slider');
-                const v = vs ? Number(vs.value) : 0.5;
-                if (this.els.volDigitalReadout) {
-                    this.els.volDigitalReadout.textContent = this._formatDigitalVolumeReadout(v);
+                if (this._digitalToolbarCenterMode === 'crossfade') {
+                    this._syncDigitalToolbarCenterReadout();
                 }
+            }
+
+            _formatDigitalClockReadout(date = new Date()) {
+                try {
+                    const day = date.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
+                    const time = date.toLocaleTimeString(undefined, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    });
+                    return `${day} ${time}`;
+                } catch (_) {
+                    return '—';
+                }
+            }
+
+            _formatCrossfadeToolbarReadout(x) {
+                const norm = Math.max(0, Math.min(1, Number(x) || 0));
+                return String(Math.round(norm * 200 - 100));
+            }
+
+            _digitalAutoMixToolbarReadoutText() {
+                if (!this._isAutoMixEnabled() || !this._rvAutoMixNextFadeAt) return '—:—';
+                const left = Math.max(0, this._rvAutoMixNextFadeAt - Date.now());
+                return this._formatAutoMixCountdown(left);
+            }
+
+            _syncDigitalToolbarCenterReadout() {
+                const label = this.els.digitalToolbarCenterReadoutLabel;
+                const readout = this.els.volDigitalReadout;
+                if (!label || !readout) return;
+                const mode = this._digitalToolbarCenterMode || 'clock';
+                let text = '—';
+                if (mode === 'clock') {
+                    text = this._formatDigitalClockReadout();
+                } else if (mode === 'crossfade') {
+                    text = this._formatCrossfadeToolbarReadout(this._getCrossfadeX());
+                } else if (mode === 'automix') {
+                    text = this._digitalAutoMixToolbarReadoutText();
+                }
+                label.textContent = text;
+                readout.dataset.centerMode = mode;
+                try {
+                    const toolbar = this.els.digitalToolbar || document.getElementById('radio-visual-digital-toolbar');
+                    if (toolbar) this._fitDigitalToolbarCenterReadout(toolbar);
+                } catch (_) {}
+            }
+
+            _updateDigitalToolbarStepButton(btn, text, ariaLabel) {
+                if (!btn) return;
+                let label = btn.querySelector('.radio-visual-btn-label');
+                if (!label) label = this._appendRvButtonLabel(btn, text);
+                else label.textContent = text;
+                if (ariaLabel) btn.setAttribute('aria-label', ariaLabel);
+            }
+
+            _syncDigitalToolbarCenterMode() {
+                const mode = this._digitalToolbarCenterMode || 'clock';
+                const group = this.els.digitalToolbarCenter;
+                const readout = this.els.volDigitalReadout;
+                if (group) group.dataset.centerMode = mode;
+                if (readout) {
+                    readout.setAttribute('aria-label', ({
+                        clock: 'Date and time — tap to change centre display',
+                        crossfade: 'Crossfade position — tap to change centre display',
+                        automix: 'Auto-mix countdown — tap to change centre display'
+                    })[mode] || 'Centre display — tap to change mode');
+                }
+                if (mode === 'crossfade') {
+                    this._updateDigitalToolbarStepButton(this.els.volDown, 'B', 'Crossfade toward deck B');
+                    this._updateDigitalToolbarStepButton(this.els.volUp, 'A', 'Crossfade toward deck A');
+                } else {
+                    this._updateDigitalToolbarStepButton(this.els.volDown, '−', 'Volume down');
+                    this._updateDigitalToolbarStepButton(this.els.volUp, '+', 'Volume up');
+                }
+                this._syncDigitalToolbarCenterReadout();
+                try {
+                    const toolbar = this.els.digitalToolbar || document.getElementById('radio-visual-digital-toolbar');
+                    if (toolbar) this._fitDigitalToolbarButtonLabels(toolbar);
+                } catch (_) {}
+            }
+
+            _cycleDigitalToolbarCenterMode() {
+                const cycle = RadioVisualEngine.DIGITAL_TOOLBAR_CENTER_CYCLE;
+                let i = cycle.indexOf(this._digitalToolbarCenterMode);
+                if (i < 0) i = 0;
+                this._digitalToolbarCenterMode = cycle[(i + 1) % cycle.length];
+                this._syncDigitalToolbarCenterMode();
+            }
+
+            _nudgeDigitalToolbarCrossfade(towardDeck) {
+                const step = RadioVisualEngine.DIGITAL_TOOLBAR_XFADE_STEP;
+                const x = this._getCrossfadeX();
+                if (towardDeck === 'a') this._setCrossfadeX(x - step);
+                else this._setCrossfadeX(x + step);
+            }
+
+            _onDigitalToolbarCenterStep(side) {
+                const mode = this._digitalToolbarCenterMode || 'clock';
+                if (mode === 'crossfade') {
+                    if (side < 0) this._nudgeDigitalToolbarCrossfade('b');
+                    else this._nudgeDigitalToolbarCrossfade('a');
+                    return;
+                }
+                this._stepDigitalVolume(side);
+            }
+
+            _fitDigitalToolbarCenterReadout(toolbarEl) {
+                const readout = toolbarEl?.querySelector('.radio-visual-digital-center-readout');
+                const label = readout?.querySelector('.radio-visual-center-readout-text');
+                if (!readout || !label) return;
+                label.style.fontSize = '';
+                if (readout.clientWidth < 8 || readout.clientHeight < 6) return;
+                const mode = this._digitalToolbarCenterMode || 'clock';
+                const maxCap = mode === 'clock' ? 11 : 13;
+                this._computeRvButtonLabelFitPx(readout, label, {
+                    fill: true,
+                    maxCap,
+                    heightFactor: 0.88,
+                    widthFactor: mode === 'clock' ? 0.92 : 0.55,
+                    minPx: 6,
+                    pad: 2
+                });
             }
 
             _scheduleDigitalSpectrumLayoutSync() {
@@ -5148,18 +5278,14 @@
             }
 
             _tickClock() {
-                if (!this.els.digitalClock) return;
-                try {
-                    const d = new Date();
-                    const day = d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
-                    const time = d.toLocaleTimeString(undefined, {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        hour12: false
-                    });
-                    this.els.digitalClock.textContent = `${day}  ${time}`;
-                } catch (_) {}
+                if (this.els.digitalClock) {
+                    try {
+                        this.els.digitalClock.textContent = this._formatDigitalClockReadout();
+                    } catch (_) {}
+                }
+                if (this._digitalToolbarCenterMode === 'clock') {
+                    this._syncDigitalToolbarCenterReadout();
+                }
             }
 
             _isDigitalEqualiserLiveTapTarget(el) {
@@ -5637,6 +5763,7 @@
                 toolbarEl.querySelectorAll('.radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn').forEach((btn) => {
                     fitBtn(btn, volOpts);
                 });
+                this._fitDigitalToolbarCenterReadout(toolbarEl);
             }
 
             _wireRvButtonLabelFit(rootEl, fitFn) {
@@ -5864,6 +5991,8 @@
                 let digitalDeckBMount = null;
                 let digitalDeckBContent = null;
                 let volDigitalReadout = null;
+                let volReadoutLabel = null;
+                let volGroup = null;
                 let volDown = null;
                 let volUp = null;
                 let digitalToolbar = null;
@@ -6188,18 +6317,24 @@
                 btnVis.textContent = ' 🔆 ';
                 btnVis.setAttribute('aria-label', 'Background visual');
                 btnVis.setAttribute('aria-pressed', 'false');
-                const volGroup = document.createElement('div');
-                volGroup.className = 'radio-visual-digital-toolbar-vol';
-                volGroup.setAttribute('aria-label', 'Volume');
+                volGroup = document.createElement('div');
+                volGroup.className = 'radio-visual-digital-toolbar-vol radio-visual-digital-toolbar-center';
+                volGroup.dataset.centerMode = 'clock';
+                volGroup.setAttribute('aria-label', 'Centre display');
                 volDown = document.createElement('button');
                 volDown.type = 'button';
                 volDown.className = 'radio-visual-btn radio-visual-digital-step-btn';
                 this._appendRvButtonLabel(volDown, '−');
                 volDown.setAttribute('aria-label', 'Volume down');
-                volDigitalReadout = document.createElement('span');
-                volDigitalReadout.className = 'radio-visual-digital-vol-readout';
+                volDigitalReadout = document.createElement('button');
+                volDigitalReadout.type = 'button';
+                volDigitalReadout.className = 'radio-visual-digital-vol-readout radio-visual-digital-center-readout';
                 volDigitalReadout.id = 'radio-visual-vol-readout';
-                volDigitalReadout.textContent = '50';
+                volDigitalReadout.setAttribute('aria-label', 'Date and time — tap to change centre display');
+                volReadoutLabel = document.createElement('span');
+                volReadoutLabel.className = 'radio-visual-center-readout-text';
+                volReadoutLabel.textContent = '—';
+                volDigitalReadout.appendChild(volReadoutLabel);
                 volUp = document.createElement('button');
                 volUp.type = 'button';
                 volUp.className = 'radio-visual-btn radio-visual-digital-step-btn';
@@ -6330,6 +6465,11 @@
                     digitalDeckBVideo,
                     digitalDashXfade: dashXfade,
                     volDigitalReadout,
+                    volDown,
+                    volUp,
+                    digitalToolbarCenterReadoutLabel: volReadoutLabel,
+                    digitalToolbarCenter: volGroup,
+                    digitalToolbar: digitalToolbar,
                     digitalClock: dClk,
                     digitalAutoMixTimer,
                     digitalCenter,
@@ -6344,6 +6484,7 @@
                 try { this._wireDigitalHubAiVideoInteractions(this.abortCtrl.signal); } catch (_) {}
                 try { this._applySkinUi(); } catch (_) {}
                 try { this._syncVolumeFromGlobal(); } catch (_) {}
+                try { this._syncDigitalToolbarCenterMode(); } catch (_) {}
                 try { this._wireGlobalVolumeSliderSync(sig); } catch (_) {}
                 if (showAnalogue) {
                     try { this._setAutoFadeDurationNorm(this._autoFadeDurationNorm()); } catch (_) {}
@@ -6383,13 +6524,19 @@
                     if (volDown) {
                         volDown.addEventListener('click', (ev) => {
                             this._stopClick(ev);
-                            this._stepDigitalVolume(-1);
+                            this._onDigitalToolbarCenterStep(-1);
                         }, sig);
                     }
                     if (volUp) {
                         volUp.addEventListener('click', (ev) => {
                             this._stopClick(ev);
-                            this._stepDigitalVolume(1);
+                            this._onDigitalToolbarCenterStep(1);
+                        }, sig);
+                    }
+                    if (volDigitalReadout) {
+                        volDigitalReadout.addEventListener('click', (ev) => {
+                            this._stopClick(ev);
+                            this._cycleDigitalToolbarCenterMode();
                         }, sig);
                     }
                     if (btnVis) this._wireDigitalVisBgButton(btnVis, sig);
