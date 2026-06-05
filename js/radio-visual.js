@@ -96,6 +96,8 @@
                 this._digitalHubAiReturnMode = 'equaliser';
                 /** Current hub AI clip path (relative), or null when overlay hidden. */
                 this._digitalHubAiVideoSrc = null;
+                /** Bumps on each hub AI src swap to ignore stale canplay callbacks. */
+                this._digitalHubAiVideoGen = 0;
                 /** Derived from hub mode for spectrum flower / HUD layout. */
                 this._digitalSpectrumLayout = 'full';
                 /** Spectrum hub staging scale (1 = default flower size). */
@@ -3745,33 +3747,73 @@
                 if (!video || !src) return;
                 this._digitalHubAiVideoSrc = src;
                 video.loop = false;
-                if (video.getAttribute('src') !== src) {
+                const changing = video.getAttribute('src') !== src;
+                if (changing) {
+                    this._digitalHubAiVideoGen = (this._digitalHubAiVideoGen || 0) + 1;
+                    this._setDigitalHubAiVideoLoading(true);
+                    try { video.pause(); } catch (_) {}
                     video.src = src;
                     try { video.load(); } catch (_) {}
                 } else {
                     try { video.currentTime = 0; } catch (_) {}
                 }
                 if (autoplay && RadioVisualEngine.digitalHubShowsAiVideo(this._digitalHubMode)) {
-                    this._syncDigitalHubAiVideoLoadingState();
+                    this._playDigitalHubAiVideoWhenReady(changing);
+                }
+            }
+
+            _playDigitalHubAiVideoWhenReady(waitForLoad) {
+                const video = this.els.digitalHubAiVideo;
+                if (!video || !RadioVisualEngine.digitalHubShowsAiVideo(this._digitalHubMode)) return;
+                const gen = this._digitalHubAiVideoGen || 0;
+                this._setDigitalHubAiVideoLoading(true);
+                const tryPlay = () => {
+                    if (gen !== this._digitalHubAiVideoGen) return;
+                    if (!RadioVisualEngine.digitalHubShowsAiVideo(this._digitalHubMode)) return;
                     const p = video.play();
                     if (p && typeof p.then === 'function') {
-                        p.then(() => this._setDigitalHubAiVideoLoading(false)).catch(() => {});
+                        p.then(() => {
+                            if (gen === this._digitalHubAiVideoGen) {
+                                this._setDigitalHubAiVideoLoading(false);
+                            }
+                        }).catch(() => {
+                            if (gen === this._digitalHubAiVideoGen) {
+                                this._syncDigitalHubAiVideoLoadingState();
+                            }
+                        });
                     }
+                };
+                if (!waitForLoad && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && !video.ended) {
+                    tryPlay();
+                    return;
                 }
+                const onReady = () => {
+                    if (gen !== this._digitalHubAiVideoGen) return;
+                    tryPlay();
+                };
+                try { video.addEventListener('canplay', onReady, { once: true }); } catch (_) {}
+                try { video.addEventListener('loadeddata', onReady, { once: true }); } catch (_) {}
             }
 
             _playDigitalHubAiVideo() {
                 const video = this.els.digitalHubAiVideo;
                 if (!video) return;
-                this._syncDigitalHubAiVideoLoadingState();
-                const p = video.play();
-                if (p && typeof p.then === 'function') {
-                    p.then(() => this._setDigitalHubAiVideoLoading(false)).catch(() => {});
+                if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && !video.ended) {
+                    this._syncDigitalHubAiVideoLoadingState();
+                    const p = video.play();
+                    if (p && typeof p.then === 'function') {
+                        p.then(() => this._setDigitalHubAiVideoLoading(false)).catch(() => {
+                            this._playDigitalHubAiVideoWhenReady(true);
+                        });
+                    }
+                    return;
                 }
+                this._playDigitalHubAiVideoWhenReady(true);
             }
 
             _advanceDigitalHubAiVideo() {
                 if (!RadioVisualEngine.digitalHubShowsAiVideo(this._digitalHubMode)) return;
+                this._setDigitalHubAiVideoLoading(true);
                 const next = this._pickRandomDigitalHubAiVideoSrc(this._digitalHubAiVideoSrc);
                 this._setDigitalHubAiVideoSrc(next, true);
             }
@@ -3790,8 +3832,9 @@
                     this._setDigitalHubAiVideoLoading(false);
                     return;
                 }
-                const buffering = video.readyState < 3
-                    || video.networkState === HTMLMediaElement.NETWORK_LOADING;
+                const buffering = video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA
+                    || video.networkState === HTMLMediaElement.NETWORK_LOADING
+                    || (video.paused && !video.ended && video.readyState < HTMLMediaElement.HAVE_ENOUGH_DATA);
                 this._setDigitalHubAiVideoLoading(buffering);
             }
 
@@ -5060,11 +5103,16 @@
                 const syncLoad = () => {
                     try { this._syncDigitalHubAiVideoLoadingState(); } catch (_) {}
                 };
-                video.addEventListener('loadstart', syncLoad, opts);
+                video.addEventListener('loadstart', () => {
+                    if (RadioVisualEngine.digitalHubShowsAiVideo(this._digitalHubMode)) {
+                        this._setDigitalHubAiVideoLoading(true);
+                    }
+                    syncLoad();
+                }, opts);
                 video.addEventListener('waiting', syncLoad, opts);
                 video.addEventListener('stalled', syncLoad, opts);
                 video.addEventListener('seeking', syncLoad, opts);
-                video.addEventListener('canplay', () => this._setDigitalHubAiVideoLoading(false), opts);
+                video.addEventListener('canplay', syncLoad, opts);
                 video.addEventListener('playing', () => this._setDigitalHubAiVideoLoading(false), opts);
                 video.addEventListener('ended', () => {
                     try { this._advanceDigitalHubAiVideo(); } catch (_) {}
