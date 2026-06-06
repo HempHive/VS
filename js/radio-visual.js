@@ -7386,7 +7386,6 @@
 
                 if (root) root.classList.add('radio-visual-root--digital-fs');
 
-                const designW = RadioVisualEngine.DIGITAL_STAGE_DESIGN_W;
                 const host = root || document.getElementById('radio-visual-root');
                 const availW = Math.max(1, host ? host.clientWidth : window.innerWidth);
                 const availH = Math.max(1, host ? host.clientHeight : window.innerHeight);
@@ -7399,7 +7398,7 @@
                 stage.style.removeProperty('margin-right');
                 stage.style.removeProperty('max-height');
 
-                const fitW = Math.max(1, Math.min(designW, availW));
+                const fitW = Math.max(1, availW);
                 stage.style.width = `${fitW}px`;
                 stage.style.maxWidth = '100%';
 
