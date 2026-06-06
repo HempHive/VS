@@ -1003,6 +1003,15 @@ const QUALITY = {
                     }
                 }
             } catch (_) {}
+            const idleUrl = DECK_B_IDLE_LOGO_URL;
+            const had = String(vid.currentSrc || vid.src || '');
+            if (urlsMediaMatch(idleUrl, had)) {
+                try { vid.loop = true; } catch (_) {}
+                try {
+                    if (vid.paused) vid.play().catch(() => {});
+                } catch (_) {}
+                return;
+            }
             try {
                 vid.pause();
                 vid.removeAttribute('src');
