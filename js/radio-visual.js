@@ -47,7 +47,7 @@
             }
             /** Toolbar centre strip: clock → volume → crossfade → auto-mix countdown. */
             static get DIGITAL_TOOLBAR_CENTER_CYCLE() {
-                return ['clock', 'volume', 'crossfade', 'automix'];
+                return ['clock', 'volume', 'crossfade', 'automix', 'remaining'];
             }
             static get DIGITAL_TOOLBAR_XFADE_STEP() { return 0.05; }
             static get DIGITAL_AI_VIDEO_SRC() { return 'assets/ai/ai.mp4'; }
@@ -138,7 +138,7 @@
                 this._rvAutoMixNextFadeIntervalId = null;
                 this._rvAutoMixCyclePending = false;
                 this._digitalVolStep = 0.05;
-                /** Toolbar centre readout mode: clock | volume | crossfade | automix */
+                /** Toolbar centre readout mode: clock | volume | crossfade | automix | remaining */
                 this._digitalToolbarCenterMode = 'clock';
                 this._digitalToolbarVolumePeekTimer = null;
                 this._digitalToolbarVolumePeekActive = false;
@@ -2869,7 +2869,7 @@
                     this.els.digitalAutoMixTimer.classList.add('display-none');
                     this.els.digitalAutoMixTimer.setAttribute('aria-hidden', 'true');
                 }
-                if (this._digitalToolbarCenterMode === 'automix') {
+                if (this._digitalToolbarCenterMode === 'automix' && !this._digitalToolbarVolumePeekActive) {
                     this._syncDigitalToolbarCenterReadout();
                 }
             }
@@ -2879,7 +2879,7 @@
                     this._clearAutoMixNextFadeUi();
                     return;
                 }
-                if (this._digitalToolbarCenterMode === 'automix') {
+                if (this._digitalToolbarCenterMode === 'automix' && !this._digitalToolbarVolumePeekActive) {
                     this._syncDigitalToolbarCenterReadout();
                 }
             }
@@ -3513,8 +3513,45 @@
                 this._digitalToolbarVolumePeekActive = false;
             }
 
+            _crossfadedDeckPlaybackMedia() {
+                const deck = this._crossfaderAudibleDeckKey();
+                try {
+                    if (deck === 'a') {
+                        if (typeof getDeckAMediaForPlaybackState === 'function') {
+                            return getDeckAMediaForPlaybackState();
+                        }
+                    } else if (typeof getDeckBJogSeekMedia === 'function') {
+                        return getDeckBJogSeekMedia();
+                    } else if (typeof getDeckBRadioAudibleEl === 'function') {
+                        return getDeckBRadioAudibleEl();
+                    }
+                } catch (_) {}
+                try {
+                    return deck === 'b'
+                        ? (typeof audioElB !== 'undefined' ? audioElB : null)
+                        : (typeof audioEl !== 'undefined' ? audioEl : null);
+                } catch (_) {}
+                return null;
+            }
+
+            _digitalTrackRemainingReadoutText() {
+                const media = this._crossfadedDeckPlaybackMedia();
+                if (!media) return '—:—';
+                try {
+                    if (!media.src && !media.currentSrc) return '—:—';
+                    const dur = Number(media.duration);
+                    if (!Number.isFinite(dur) || dur <= 0 || dur >= 86400) return '—:—';
+                    const t = Math.max(0, Number(media.currentTime) || 0);
+                    const leftMs = Math.max(0, (dur - t) * 1000);
+                    return `-${this._formatAutoMixCountdown(leftMs)}`;
+                } catch (_) {
+                    return '—:—';
+                }
+            }
+
             _peekDigitalToolbarVolumeReadout() {
-                if (this._digitalToolbarCenterMode !== 'volume') return;
+                const mode = this._digitalToolbarCenterMode;
+                if (mode !== 'volume' && mode !== 'automix') return;
                 if (this._digitalToolbarVolumePeekTimer) {
                     try { clearTimeout(this._digitalToolbarVolumePeekTimer); } catch (_) {}
                 }
@@ -3523,7 +3560,8 @@
                 this._digitalToolbarVolumePeekTimer = setTimeout(() => {
                     this._digitalToolbarVolumePeekTimer = null;
                     this._digitalToolbarVolumePeekActive = false;
-                    if (this._digitalToolbarCenterMode === 'volume') {
+                    if (this._digitalToolbarCenterMode === 'volume'
+                        || this._digitalToolbarCenterMode === 'automix') {
                         this._syncDigitalToolbarCenterReadout();
                     }
                 }, 5000);
@@ -3533,7 +3571,7 @@
                 const mode = this._digitalToolbarCenterMode;
                 if (mode === 'crossfade') {
                     this._syncDigitalToolbarCenterReadout();
-                } else if (mode === 'volume') {
+                } else if (mode === 'volume' || mode === 'automix') {
                     if (options.peekVolume) this._peekDigitalToolbarVolumeReadout();
                     else this._syncDigitalToolbarCenterReadout();
                 }
@@ -3589,11 +3627,18 @@
                         text = this._formatDigitalClockReadout();
                     }
                 } else if (mode === 'automix') {
-                    text = this._digitalAutoMixToolbarReadoutText();
+                    if (this._digitalToolbarVolumePeekActive) {
+                        const vs = document.getElementById('volume-slider');
+                        text = this._formatDigitalVolumeReadout(vs ? Number(vs.value) : 0.5);
+                    } else {
+                        text = this._digitalAutoMixToolbarReadoutText();
+                    }
+                } else if (mode === 'remaining') {
+                    text = this._digitalTrackRemainingReadoutText();
                 }
                 label.textContent = text;
                 readout.dataset.centerMode = mode;
-                if (mode === 'volume') {
+                if (mode === 'volume' || mode === 'automix') {
                     readout.dataset.volumePeek = this._digitalToolbarVolumePeekActive ? '1' : '0';
                 } else if (readout.dataset.volumePeek != null) {
                     delete readout.dataset.volumePeek;
@@ -3622,7 +3667,8 @@
                         clock: 'Date and time — tap to change centre display',
                         volume: 'Volume — date and time; level shown briefly when adjusted — tap to change centre display',
                         crossfade: 'Crossfade position — tap to change centre display',
-                        automix: 'Auto-mix countdown — tap for date and time'
+                        automix: 'Auto-mix countdown — tap for date and time; volume shown briefly when adjusted',
+                        remaining: 'Track time remaining on crossfader deck — tap to change centre display'
                     };
                     readout.setAttribute('aria-label', ariaLabels[mode] || 'Centre display — tap to change mode');
                 }
@@ -3796,7 +3842,7 @@
                     fill: true,
                     maxCap,
                     heightFactor: 0.88,
-                    widthFactor: (fitAsClock || mode === 'automix') ? 0.92 : 0.55,
+                    widthFactor: (fitAsClock || mode === 'automix' || mode === 'remaining') ? 0.92 : 0.55,
                     minPx: 6,
                     pad: 2
                 });
@@ -5666,7 +5712,8 @@
                 if (this.els.volAnalog) this.els.volAnalog.value = String(v);
                 this._setKnobRotation(this.els.volKnob, (v * 270) - 135);
                 this._syncDigitalVolumeUi({
-                    peekVolume: changed && this._digitalToolbarCenterMode === 'volume'
+                    peekVolume: changed && (this._digitalToolbarCenterMode === 'volume'
+                        || this._digitalToolbarCenterMode === 'automix')
                 });
                 this._syncVolumeMuteLed();
             }
@@ -5715,7 +5762,8 @@
                 if (this.els.volAnalog) this.els.volAnalog.value = String(v);
                 this._setKnobRotation(this.els.volKnob, (v * 270) - 135);
                 this._syncDigitalVolumeUi({
-                    peekVolume: changed && this._digitalToolbarCenterMode === 'volume'
+                    peekVolume: changed && (this._digitalToolbarCenterMode === 'volume'
+                        || this._digitalToolbarCenterMode === 'automix')
                 });
                 this._syncVolumeMuteLed();
             }
@@ -5780,7 +5828,9 @@
                     } catch (_) {}
                 }
                 const mode = this._digitalToolbarCenterMode;
-                if (mode === 'clock' || (mode === 'volume' && !this._digitalToolbarVolumePeekActive)) {
+                if (mode === 'clock' || (mode === 'volume' && !this._digitalToolbarVolumePeekActive)
+                    || mode === 'remaining'
+                    || (mode === 'automix' && !this._digitalToolbarVolumePeekActive)) {
                     this._syncDigitalToolbarCenterReadout();
                 }
             }

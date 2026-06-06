@@ -1551,8 +1551,9 @@ const QUALITY = {
             }
             return enabled;
         }
+        const WEBM_DEFAULT_SCALE_VW = 50;
         const webmSettings = {
-            scaleVw: 100,
+            scaleVw: WEBM_DEFAULT_SCALE_VW,
             posXvw: 50,
             posYvh: 50,
             rotationDeg: 0,
@@ -2701,7 +2702,7 @@ function randomGlowColor() {
                 const aOpacity = document.getElementById('avatar-inp-opacity');
                 const aDup = document.getElementById('avatar-inp-dup');
                 const updateFromAvatarInputs = () => {
-                    webmSettings.scaleVw = Number(aScale?.value) || 100;
+                    webmSettings.scaleVw = Number(aScale?.value) || WEBM_DEFAULT_SCALE_VW;
                     webmSettings.posXvw = Number(aX?.value) || 50;
                     webmSettings.posYvh = Number(aY?.value) || 50;
                     webmSettings.rotationDeg = Number(aRot?.value) || 0;
@@ -2736,14 +2737,14 @@ function randomGlowColor() {
                 const btnReset = document.getElementById('avatar-btn-reset');
                 if (btnReset) btnReset.addEventListener('click', (e)=>{ 
                     e.preventDefault(); e.stopPropagation();
-                    webmSettings.scaleVw = 100;
+                    webmSettings.scaleVw = WEBM_DEFAULT_SCALE_VW;
                     webmSettings.posXvw = 50;
                     webmSettings.posYvh = 50;
                     webmSettings.rotationDeg = 0;
                     webmSettings.playbackRate = 1.0;
                     webmSettings.opacity = 0.82;
                     webmSettings.duplicates = 0;
-                    if (aScale) aScale.value = '100';
+                    if (aScale) aScale.value = String(WEBM_DEFAULT_SCALE_VW);
                     if (aX) aX.value = '50';
                     if (aY) aY.value = '50';
                     if (aRot) aRot.value = '0';
@@ -6946,14 +6947,14 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             hideWebmSettingsPanel();
         }, true);
         document.getElementById('btn-webm-reset').addEventListener('click', () => {
-            webmSettings.scaleVw = 100;
+            webmSettings.scaleVw = WEBM_DEFAULT_SCALE_VW;
             webmSettings.posXvw = 50;
             webmSettings.posYvh = 50;
             webmSettings.rotationDeg = 0;
             webmSettings.playbackRate = 1.0;
             webmSettings.opacity = 0.82;
             webmSettings.duplicates = 0;
-            inpWebmScale.value = '100';
+            inpWebmScale.value = String(WEBM_DEFAULT_SCALE_VW);
             inpWebmX.value = '50';
             inpWebmY.value = '50';
             inpWebmRot.value = '0';
@@ -6964,7 +6965,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         });
         // Live-change on input
         function updateWebmSettingsFromInputs() {
-            webmSettings.scaleVw = Number(inpWebmScale.value) || 100;
+            webmSettings.scaleVw = Number(inpWebmScale.value) || WEBM_DEFAULT_SCALE_VW;
             webmSettings.posXvw = Number(inpWebmX.value) || 50;
             webmSettings.posYvh = Number(inpWebmY.value) || 50;
             webmSettings.rotationDeg = Number(inpWebmRot.value) || 0;
@@ -7034,7 +7035,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                         bindWebmDeckBLayoutWatchers();
                         const pxOff = ((Number(webmSettings.posXvw) || 50) - 50) / 100 * rect.width;
                         const pyOff = ((Number(webmSettings.posYvh) || 50) - 50) / 100 * rect.height;
-                        const sw = Number(webmSettings.scaleVw) || 100;
+                        const sw = Number(webmSettings.scaleVw) || WEBM_DEFAULT_SCALE_VW;
                         const wPx = Math.min(rect.width * 0.94, Math.max(72, rect.width * 0.34 * (sw / 50)));
                         if (mountFs) {
                             webmOverlayEl.style.position = 'absolute';
