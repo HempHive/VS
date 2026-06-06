@@ -44,9 +44,9 @@
             static get DIGITAL_AI_VIDEO_LIST() {
                 return ['ai.mp4', 'ai1.mp4', 'ai2.mp4', 'ai3.mp4', 'ai4.mp4', 'ai5.mp4'];
             }
-            /** Toolbar centre strip: clock → crossfade → auto-mix countdown. */
+            /** Toolbar centre strip: clock → volume → crossfade → auto-mix countdown. */
             static get DIGITAL_TOOLBAR_CENTER_CYCLE() {
-                return ['clock', 'crossfade', 'automix'];
+                return ['clock', 'volume', 'crossfade', 'automix'];
             }
             static get DIGITAL_TOOLBAR_XFADE_STEP() { return 0.05; }
             static get DIGITAL_AI_VIDEO_SRC() { return 'assets/ai/ai.mp4'; }
@@ -126,7 +126,7 @@
                 this._rvAutoMixNextFadeIntervalId = null;
                 this._rvAutoMixCyclePending = false;
                 this._digitalVolStep = 0.05;
-                /** Toolbar centre readout mode: clock | crossfade | automix */
+                /** Toolbar centre readout mode: clock | volume | crossfade | automix */
                 this._digitalToolbarCenterMode = 'clock';
                 this._volMuted = false;
                 this._volUnmuteNorm = 0.5;
@@ -2784,9 +2784,13 @@
                     if (next) {
                         try { this._setAutoFadeChangeStationEnabled(true); } catch (_) {}
                         this._scheduleRadioAutoMix();
+                        try { this._showDigitalToolbarAutomixCountdown(); } catch (_) {}
                     } else {
                         this._clearRadioAutoMixTimer();
                         this._rvAutoMixCyclePending = false;
+                        if (this._digitalToolbarCenterMode === 'automix') {
+                            try { this._setDigitalToolbarCenterMode('clock'); } catch (_) {}
+                        }
                     }
                     this._syncAutoMixKnob();
                     return;
@@ -3298,7 +3302,8 @@
             }
 
             _syncDigitalVolumeUi() {
-                if (this._digitalToolbarCenterMode === 'crossfade') {
+                const mode = this._digitalToolbarCenterMode;
+                if (mode === 'crossfade' || mode === 'volume') {
                     this._syncDigitalToolbarCenterReadout();
                 }
             }
@@ -3309,7 +3314,6 @@
                     const time = date.toLocaleTimeString(undefined, {
                         hour: '2-digit',
                         minute: '2-digit',
-                        second: '2-digit',
                         hour12: false
                     });
                     return `${day} ${time}`;
@@ -3337,6 +3341,9 @@
                 let text = '—';
                 if (mode === 'clock') {
                     text = this._formatDigitalClockReadout();
+                } else if (mode === 'volume') {
+                    const vs = document.getElementById('volume-slider');
+                    text = this._formatDigitalVolumeReadout(vs ? Number(vs.value) : 0.5);
                 } else if (mode === 'crossfade') {
                     text = this._formatCrossfadeToolbarReadout(this._getCrossfadeX());
                 } else if (mode === 'automix') {
@@ -3366,13 +3373,14 @@
                 if (readout) {
                     readout.setAttribute('aria-label', ({
                         clock: 'Date and time — tap to change centre display',
+                        volume: 'Volume level — tap to change centre display',
                         crossfade: 'Crossfade position — tap to change centre display',
-                        automix: 'Auto-mix countdown — tap to change centre display'
+                        automix: 'Auto-mix countdown — tap for date and time'
                     })[mode] || 'Centre display — tap to change mode');
                 }
                 if (mode === 'crossfade') {
-                    this._updateDigitalToolbarStepButton(this.els.volDown, 'B', 'Crossfade toward deck B');
-                    this._updateDigitalToolbarStepButton(this.els.volUp, 'A', 'Crossfade toward deck A');
+                    this._updateDigitalToolbarStepButton(this.els.volDown, 'A', 'Crossfade toward deck A');
+                    this._updateDigitalToolbarStepButton(this.els.volUp, 'B', 'Crossfade toward deck B');
                 } else {
                     this._updateDigitalToolbarStepButton(this.els.volDown, '−', 'Volume down');
                     this._updateDigitalToolbarStepButton(this.els.volUp, '+', 'Volume up');
@@ -3384,7 +3392,21 @@
                 } catch (_) {}
             }
 
+            _setDigitalToolbarCenterMode(mode) {
+                this._digitalToolbarCenterMode = mode;
+                this._syncDigitalToolbarCenterMode();
+            }
+
+            _showDigitalToolbarAutomixCountdown() {
+                if (this.skin !== 'digital') return;
+                this._setDigitalToolbarCenterMode('automix');
+            }
+
             _cycleDigitalToolbarCenterMode() {
+                if (this._digitalToolbarCenterMode === 'automix') {
+                    this._setDigitalToolbarCenterMode('clock');
+                    return;
+                }
                 const cycle = RadioVisualEngine.DIGITAL_TOOLBAR_CENTER_CYCLE;
                 let i = cycle.indexOf(this._digitalToolbarCenterMode);
                 if (i < 0) i = 0;
@@ -3402,8 +3424,8 @@
             _onDigitalToolbarCenterStep(side) {
                 const mode = this._digitalToolbarCenterMode || 'clock';
                 if (mode === 'crossfade') {
-                    if (side < 0) this._nudgeDigitalToolbarCrossfade('b');
-                    else this._nudgeDigitalToolbarCrossfade('a');
+                    if (side < 0) this._nudgeDigitalToolbarCrossfade('a');
+                    else this._nudgeDigitalToolbarCrossfade('b');
                     return;
                 }
                 this._stepDigitalVolume(side);
@@ -3421,7 +3443,7 @@
                     fill: true,
                     maxCap,
                     heightFactor: 0.88,
-                    widthFactor: mode === 'clock' ? 0.92 : 0.55,
+                    widthFactor: (mode === 'clock' || mode === 'automix') ? 0.92 : 0.55,
                     minPx: 6,
                     pad: 2
                 });
@@ -6507,7 +6529,10 @@
                         }
                     } catch (_) {}
                     try {
-                        if (this._isAutoMixEnabled()) this._scheduleRadioAutoMix();
+                        if (this._isAutoMixEnabled()) {
+                            this._scheduleRadioAutoMix();
+                            this._showDigitalToolbarAutomixCountdown();
+                        }
                     } catch (_) {}
                 }
                 try { this._updateStationUi(); } catch (_) {}

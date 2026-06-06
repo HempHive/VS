@@ -2006,10 +2006,10 @@
                 0 0 18px rgba(57, 255, 20, 0.55);
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-digital-step-btn:first-of-type .radio-visual-btn-label {
-            color: #5800FF;
+            color: #FF0B55;
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-digital-step-btn:last-of-type .radio-visual-btn-label {
-            color: #FF0B55;
+            color: #5800FF;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn {
             container-type: size;
