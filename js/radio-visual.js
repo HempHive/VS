@@ -2958,8 +2958,8 @@
                 this._digitalAiIntroRunning = true;
                 const timeouts = [];
                 this._digitalAiIntroTimeouts = timeouts;
-                const onMs = 320;
-                const offMs = 200;
+                const onMs = 600;
+                const offMs = 380;
                 let step = 0;
                 const pulse = () => {
                     const b = this.els.btnDigitalAi;
