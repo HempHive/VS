@@ -128,6 +128,9 @@
                 this._digitalVolStep = 0.05;
                 /** Toolbar centre readout mode: clock | volume | crossfade | automix */
                 this._digitalToolbarCenterMode = 'clock';
+                this._digitalToolbarVolumePeekTimer = null;
+                this._digitalToolbarVolumePeekActive = false;
+                this._rvLastGlobalVolumeNorm = undefined;
                 this._volMuted = false;
                 this._volUnmuteNorm = 0.5;
                 this._digitalStageClickTimer = null;
@@ -1766,8 +1769,8 @@
                     }
                 } catch (_) {}
                 try {
-                    if (state.deckSourceMode.a === 'local') {
-                        this._stationPrev();
+                    if (typeof globalThis.goPreviousDeckPlayback === 'function') {
+                        globalThis.goPreviousDeckPlayback('a');
                     } else if (typeof globalThis.goPreviousStation === 'function') {
                         globalThis.goPreviousStation();
                     } else {
@@ -1787,7 +1790,15 @@
                         globalThis.cancelActiveAutoFade();
                     }
                 } catch (_) {}
-                this._stationBPrev();
+                try {
+                    if (typeof globalThis.goPreviousDeckPlayback === 'function') {
+                        globalThis.goPreviousDeckPlayback('b');
+                    } else {
+                        this._stationBPrev();
+                    }
+                } catch (_) {
+                    this._stationBPrev();
+                }
                 try { this._updateStationUi(); } catch (_) {}
                 try { this._syncDeckSwitches(); } catch (_) {}
             }
@@ -1907,6 +1918,32 @@
                 const x = this._getCrossfadeX();
                 if (x < 0.5) this._deckANextOrStation();
                 else this._deckBNextOrStation();
+            }
+
+            /** Crossfader-winning deck: previous station or local file from deck history. */
+            _crossfadedDeckPrevOrStation() {
+                const x = this._getCrossfadeX();
+                const deck = x < 0.5 ? 'a' : 'b';
+                try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                try {
+                    if (typeof globalThis.cancelActiveAutoFade === 'function') {
+                        globalThis.cancelActiveAutoFade();
+                    }
+                } catch (_) {}
+                try {
+                    if (typeof globalThis.goPreviousDeckPlayback === 'function') {
+                        globalThis.goPreviousDeckPlayback(deck);
+                    } else if (deck === 'a') {
+                        this._deckAPrevOrStation();
+                    } else {
+                        this._deckBPrevOrStation();
+                    }
+                } catch (_) {
+                    if (deck === 'a') this._deckAPrevOrStation();
+                    else this._deckBPrevOrStation();
+                }
+                try { this._updateStationUi(); } catch (_) {}
+                try { this._syncDeckSwitches(); } catch (_) {}
             }
 
             triggerNextFromShortcut() {
@@ -3356,17 +3393,43 @@
                 const cur = vs ? Number(vs.value) : 0.5;
                 const step = Number(this._digitalVolStep) || 0.05;
                 this._applyVolume(cur + (Number(delta) || 0) * step);
-                this._syncDigitalVolumeUi();
             }
 
             _formatDigitalVolumeReadout(v) {
                 return String(Math.round(Math.max(0, Math.min(1, Number(v) || 0)) * 100));
             }
 
-            _syncDigitalVolumeUi() {
+            _cancelDigitalToolbarVolumePeek() {
+                if (this._digitalToolbarVolumePeekTimer) {
+                    try { clearTimeout(this._digitalToolbarVolumePeekTimer); } catch (_) {}
+                    this._digitalToolbarVolumePeekTimer = null;
+                }
+                this._digitalToolbarVolumePeekActive = false;
+            }
+
+            _peekDigitalToolbarVolumeReadout() {
+                if (this._digitalToolbarCenterMode !== 'volume') return;
+                if (this._digitalToolbarVolumePeekTimer) {
+                    try { clearTimeout(this._digitalToolbarVolumePeekTimer); } catch (_) {}
+                }
+                this._digitalToolbarVolumePeekActive = true;
+                this._syncDigitalToolbarCenterReadout();
+                this._digitalToolbarVolumePeekTimer = setTimeout(() => {
+                    this._digitalToolbarVolumePeekTimer = null;
+                    this._digitalToolbarVolumePeekActive = false;
+                    if (this._digitalToolbarCenterMode === 'volume') {
+                        this._syncDigitalToolbarCenterReadout();
+                    }
+                }, 5000);
+            }
+
+            _syncDigitalVolumeUi(options = {}) {
                 const mode = this._digitalToolbarCenterMode;
-                if (mode === 'crossfade' || mode === 'volume') {
+                if (mode === 'crossfade') {
                     this._syncDigitalToolbarCenterReadout();
+                } else if (mode === 'volume') {
+                    if (options.peekVolume) this._peekDigitalToolbarVolumeReadout();
+                    else this._syncDigitalToolbarCenterReadout();
                 }
             }
 
@@ -3413,8 +3476,12 @@
                 if (mode === 'clock') {
                     text = this._formatDigitalClockReadout();
                 } else if (mode === 'volume') {
-                    const vs = document.getElementById('volume-slider');
-                    text = this._formatDigitalVolumeReadout(vs ? Number(vs.value) : 0.5);
+                    if (this._digitalToolbarVolumePeekActive) {
+                        const vs = document.getElementById('volume-slider');
+                        text = this._formatDigitalVolumeReadout(vs ? Number(vs.value) : 0.5);
+                    } else {
+                        text = this._formatDigitalClockReadout();
+                    }
                 } else if (mode === 'automix') {
                     text = this._digitalAutoMixToolbarReadoutText();
                 }
@@ -3442,7 +3509,7 @@
                 if (readout) {
                     const ariaLabels = {
                         clock: 'Date and time — tap to change centre display',
-                        volume: 'Volume level — tap to change centre display',
+                        volume: 'Volume — date and time; level shown briefly when adjusted — tap to change centre display',
                         crossfade: 'Crossfade position — tap to change centre display',
                         automix: 'Auto-mix countdown — tap for date and time'
                     };
@@ -3456,6 +3523,9 @@
                 if (mode === 'crossfade') {
                     this._updateDigitalToolbarStepButton(this.els.volDown, 'A', 'Crossfade toward deck A');
                     this._updateDigitalToolbarStepButton(this.els.volUp, 'B', 'Crossfade toward deck B');
+                } else if (mode === 'clock') {
+                    this._updateDigitalToolbarStepButton(this.els.volDown, '<', 'Previous station or file on crossfader deck');
+                    this._updateDigitalToolbarStepButton(this.els.volUp, '>', 'Next station or file on crossfader deck');
                 } else {
                     this._updateDigitalToolbarStepButton(this.els.volDown, '−', 'Volume down');
                     this._updateDigitalToolbarStepButton(this.els.volUp, '+', 'Volume up');
@@ -3468,6 +3538,7 @@
             }
 
             _setDigitalToolbarCenterMode(mode) {
+                this._cancelDigitalToolbarVolumePeek();
                 this._digitalToolbarCenterMode = mode;
                 this._syncDigitalToolbarCenterMode();
             }
@@ -3485,8 +3556,7 @@
                 const cycle = RadioVisualEngine.DIGITAL_TOOLBAR_CENTER_CYCLE;
                 let i = cycle.indexOf(this._digitalToolbarCenterMode);
                 if (i < 0) i = 0;
-                this._digitalToolbarCenterMode = cycle[(i + 1) % cycle.length];
-                this._syncDigitalToolbarCenterMode();
+                this._setDigitalToolbarCenterMode(cycle[(i + 1) % cycle.length]);
             }
 
             _nudgeDigitalToolbarCrossfade(towardDeck) {
@@ -3498,6 +3568,11 @@
 
             _onDigitalToolbarCenterStep(side) {
                 const mode = this._digitalToolbarCenterMode || 'clock';
+                if (mode === 'clock') {
+                    if (side < 0) this._crossfadedDeckPrevOrStation();
+                    else this._crossfadedDeckNextOrStation();
+                    return;
+                }
                 if (mode === 'crossfade') {
                     if (side < 0) this._nudgeDigitalToolbarCrossfade('a');
                     else this._nudgeDigitalToolbarCrossfade('b');
@@ -5378,9 +5453,14 @@
             _syncVolumeFromGlobal() {
                 const vs = document.getElementById('volume-slider');
                 const v = vs ? Number(vs.value) : 0.5;
+                const prev = this._rvLastGlobalVolumeNorm;
+                const changed = prev !== undefined && Math.abs(prev - v) > 0.0001;
+                this._rvLastGlobalVolumeNorm = v;
                 if (this.els.volAnalog) this.els.volAnalog.value = String(v);
                 this._setKnobRotation(this.els.volKnob, (v * 270) - 135);
-                this._syncDigitalVolumeUi();
+                this._syncDigitalVolumeUi({
+                    peekVolume: changed && this._digitalToolbarCenterMode === 'volume'
+                });
                 this._syncVolumeMuteLed();
             }
 
@@ -5416,15 +5496,20 @@
 
             _applyVolume(val) {
                 const v = Math.max(0, Math.min(1, Number(val) || 0));
+                const vs = document.getElementById('volume-slider');
+                const prev = vs ? Number(vs.value) : 0.5;
+                const changed = Math.abs(prev - v) > 0.0001;
                 if (v > 0.001) this._volMuted = false;
                 try {
                     if (typeof setVolume === 'function') setVolume(v);
                 } catch (_) {}
-                const vs = document.getElementById('volume-slider');
                 if (vs) vs.value = String(v);
+                this._rvLastGlobalVolumeNorm = v;
                 if (this.els.volAnalog) this.els.volAnalog.value = String(v);
                 this._setKnobRotation(this.els.volKnob, (v * 270) - 135);
-                this._syncDigitalVolumeUi();
+                this._syncDigitalVolumeUi({
+                    peekVolume: changed && this._digitalToolbarCenterMode === 'volume'
+                });
                 this._syncVolumeMuteLed();
             }
 
@@ -5487,7 +5572,8 @@
                         this.els.digitalClock.textContent = this._formatDigitalClockReadout();
                     } catch (_) {}
                 }
-                if (this._digitalToolbarCenterMode === 'clock') {
+                const mode = this._digitalToolbarCenterMode;
+                if (mode === 'clock' || (mode === 'volume' && !this._digitalToolbarVolumePeekActive)) {
                     this._syncDigitalToolbarCenterReadout();
                 }
             }
@@ -7059,6 +7145,7 @@
                 try { if (this.animId) cancelAnimationFrame(this.animId); } catch (_) {}
                 this.animId = null;
                 try { this._cancelDigitalAiButtonIntroHint(); } catch (_) {}
+                try { this._cancelDigitalToolbarVolumePeek(); } catch (_) {}
                 if (this.clockTimerId) {
                     try { clearInterval(this.clockTimerId); } catch (_) {}
                     this.clockTimerId = null;

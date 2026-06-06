@@ -5658,7 +5658,18 @@
                 };
                 const djPrevB = root.querySelector('#dj-b-prev');
                 const djNextB = root.querySelector('#dj-b-next');
-                if (djPrevB) djPrevB.addEventListener('click', () => djAdvanceB(-1), sig);
+                if (djPrevB) {
+                    djPrevB.addEventListener('click', () => {
+                        try {
+                            if (typeof uiLocked !== 'undefined' && uiLocked) return;
+                            if (typeof globalThis.goPreviousDeckPlayback === 'function') {
+                                globalThis.goPreviousDeckPlayback('b');
+                            } else {
+                                djAdvanceB(-1);
+                            }
+                        } catch (_) {}
+                    }, sig);
+                }
                 if (djNextB) djNextB.addEventListener('click', djRandomB, sig);
 
                 try {

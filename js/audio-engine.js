@@ -1630,6 +1630,9 @@
         function playDeckATrackFromQueue(opts) {
             initAudio();
             try { stopNowPlayingPoll(); } catch (_) {}
+            if (!globalThis.suppressHistoryPush) {
+                try { globalThis.pushDeckPlaybackHistory('a'); } catch (_) {}
+            }
             const q = deckFileQueues.a;
             const deferForAutoMix = shouldDeferLocalPlayForAutoMix('a', opts);
             if (!q.length) {
@@ -1761,6 +1764,9 @@
             initAudio();
             prepareDeckBLocalPlayback();
             revokeBlobSrc(audioElB);
+            if (!globalThis.suppressHistoryPush) {
+                try { globalThis.pushDeckPlaybackHistory('b'); } catch (_) {}
+            }
             const q = deckFileQueues.b;
             const deferForAutoMix = shouldDeferLocalPlayForAutoMix('b', opts);
             if (!q.length) {

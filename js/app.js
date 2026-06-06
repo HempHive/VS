@@ -837,9 +837,29 @@ const QUALITY = {
             });
             saveUserRadioStations();
 
-            stationHistory = stationHistory
-                .filter((h) => h !== idx)
-                .map((h) => (h > idx ? h - 1 : h));
+            deckPlaybackHistory.a = deckPlaybackHistory.a
+                .filter((entry) => {
+                    if (!entry || entry.kind !== 'station') return true;
+                    return entry.index !== idx;
+                })
+                .map((entry) => {
+                    if (entry && entry.kind === 'station' && entry.index > idx) {
+                        return { kind: 'station', index: entry.index - 1 };
+                    }
+                    return entry;
+                });
+            deckPlaybackHistory.b = deckPlaybackHistory.b
+                .filter((entry) => {
+                    if (!entry || entry.kind !== 'station') return true;
+                    return entry.index !== idx;
+                })
+                .map((entry) => {
+                    if (entry && entry.kind === 'station' && entry.index > idx) {
+                        return { kind: 'station', index: entry.index - 1 };
+                    }
+                    return entry;
+                });
+            syncLegacyStationHistoryFromDeck();
 
             if (!stations.length) {
                 currentStationIndex = -1;
@@ -1299,10 +1319,153 @@ const QUALITY = {
         const shuffleToggle = document.getElementById('shuffle-toggle');
         let currentStationIndex = -1;
         let currentStationBIndex = 0;
-        // Keep up to 5 most recent stations to enable true "previous" navigation
+        // Per-deck playback history (radio station index or local file snapshot).
+        const DECK_PLAYBACK_HISTORY_MAX = 12;
+        const deckPlaybackHistory = { a: [], b: [] };
+        // Legacy Deck A station index stack (mirrors radio entries in deckPlaybackHistory.a).
         let stationHistory = [];
         // Guard to avoid pushing into history when navigating back
         let suppressHistoryPush = false;
+
+        function deckPlaybackEntriesEqual(a, b) {
+            if (!a || !b || a.kind !== b.kind) return false;
+            if (a.kind === 'station') return a.index === b.index;
+            return a.url === b.url;
+        }
+
+        function captureDeckPlaybackSnapshot(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            try {
+                if (state.deckSourceMode && state.deckSourceMode[dk] === 'local') {
+                    const el = dk === 'b'
+                        ? audioElB
+                        : ((typeof getDeckAMediaForPlaybackState === 'function')
+                            ? getDeckAMediaForPlaybackState()
+                            : audioEl);
+                    const url = el ? sanitizeUrlForAudio(String(el.currentSrc || el.src || '')) : '';
+                    if (!url || url === 'about:blank') return null;
+                    const name = (state.deckLocalDisplayName && state.deckLocalDisplayName[dk]) || '';
+                    const isVideo = !!(typeof isLikelyVideoUrl === 'function' && isLikelyVideoUrl(url));
+                    return { kind: 'local', url, name: String(name || ''), isVideo: !!isVideo };
+                }
+                const idx = dk === 'b' ? currentStationBIndex : currentStationIndex;
+                if (typeof idx !== 'number' || idx < 0) return null;
+                if (!Array.isArray(stations) || idx >= stations.length) return null;
+                return { kind: 'station', index: idx };
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function syncLegacyStationHistoryFromDeck() {
+            stationHistory = deckPlaybackHistory.a
+                .filter((e) => e && e.kind === 'station' && typeof e.index === 'number')
+                .map((e) => e.index);
+        }
+
+        function pushDeckPlaybackHistory(deckKey, snapshot) {
+            if (suppressHistoryPush) return;
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            const snap = snapshot || captureDeckPlaybackSnapshot(dk);
+            if (!snap) return;
+            if (snap.kind === 'station') {
+                if (snap.index < 0 || !Array.isArray(stations) || snap.index >= stations.length) return;
+            } else if (snap.kind === 'local') {
+                if (!snap.url) return;
+            } else {
+                return;
+            }
+            const hist = deckPlaybackHistory[dk];
+            const last = hist[hist.length - 1];
+            if (last && deckPlaybackEntriesEqual(last, snap)) return;
+            hist.push(snap);
+            while (hist.length > DECK_PLAYBACK_HISTORY_MAX) hist.shift();
+            if (dk === 'a') syncLegacyStationHistoryFromDeck();
+        }
+
+        function restoreDeckPlaybackSnapshot(deckKey, entry) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            if (!entry) return false;
+            if (entry.kind === 'station') {
+                const idx = entry.index;
+                if (typeof idx !== 'number' || idx < 0 || !Array.isArray(stations) || idx >= stations.length) {
+                    return false;
+                }
+                suppressHistoryPush = true;
+                try {
+                    if (dk === 'b') {
+                        currentStationBIndex = idx;
+                        try { state.deckSourceMode.b = 'radio'; } catch (_) {}
+                        try { state.deckLocalDisplayName.b = ''; } catch (_) {}
+                        try { if (typeof refreshMixStationB === 'function') refreshMixStationB(); } catch (_) {}
+                        try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
+                    } else {
+                        setStation(idx);
+                    }
+                } finally {
+                    suppressHistoryPush = false;
+                }
+                return true;
+            }
+            if (entry.kind === 'local' && entry.url) {
+                suppressHistoryPush = true;
+                try {
+                    try { initAudio(); } catch (_) {}
+                    const item = {
+                        url: entry.url,
+                        name: entry.name || 'Local track',
+                        isVideo: !!entry.isVideo
+                    };
+                    if (dk === 'b') {
+                        try { if (typeof prepareDeckBLocalPlayback === 'function') prepareDeckBLocalPlayback(); } catch (_) {}
+                        try { if (typeof revokeBlobSrc === 'function') revokeBlobSrc(audioElB); } catch (_) {}
+                        state.deckSourceMode.b = 'local';
+                        state.deckLocalDisplayName.b = item.name;
+                        try { audioElB.crossOrigin = 'anonymous'; } catch (_) {}
+                        audioElB.src = item.url;
+                        if (item.isVideo && typeof registerDeckVideoFeed === 'function') {
+                            registerDeckVideoFeed('b', item.url, item.name, true);
+                        } else {
+                            try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed('b'); } catch (_) {}
+                        }
+                        try { connectDeckMediaToEq('b'); } catch (_) {}
+                        audioElB.play().catch(() => {});
+                    } else {
+                        try { if (typeof abortRadioAHandoff === 'function') abortRadioAHandoff(); } catch (_) {}
+                        try { if (typeof resetRadioADualStreamHandoff === 'function') resetRadioADualStreamHandoff(); } catch (_) {}
+                        try { if (typeof revokeBlobSrc === 'function') revokeBlobSrc(audioEl); } catch (_) {}
+                        state.deckSourceMode.a = 'local';
+                        state.deckLocalDisplayName.a = item.name;
+                        try { audioEl.crossOrigin = 'anonymous'; } catch (_) {}
+                        audioEl.src = item.url;
+                        if (item.isVideo && typeof registerDeckVideoFeed === 'function') {
+                            registerDeckVideoFeed('a', item.url, item.name, true);
+                        } else {
+                            try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed('a'); } catch (_) {}
+                        }
+                        try { connectDeckMediaToEq('a'); } catch (_) {}
+                        audioEl.play().catch(() => {});
+                    }
+                    try { if (typeof showStationBanner === 'function') showStationBanner(item.name); } catch (_) {}
+                } finally {
+                    suppressHistoryPush = false;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        function goPreviousDeckPlayback(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            const hist = deckPlaybackHistory[dk];
+            while (hist.length) {
+                const prev = hist.pop();
+                if (dk === 'a') syncLegacyStationHistoryFromDeck();
+                if (restoreDeckPlaybackSnapshot(dk, prev)) return;
+            }
+            if (dk === 'a') pickRandomStation();
+            else pickRandomStationB();
+        }
         let panelIdleTimer = null;
         let webmList = [];
         let webmIndex = 0;
@@ -3572,6 +3735,10 @@ function exposeAppBindingsToGlobal() {
     try { g.stationBannerNowplayingEl = stationBannerNowplayingEl; } catch (_) {}
     try { g.stationBannerTimer = stationBannerTimer; } catch (_) {}
     try { g.stationCycleEnabledByUrl = stationCycleEnabledByUrl; } catch (_) {}
+    try { g.deckPlaybackHistory = deckPlaybackHistory; } catch (_) {}
+    try { g.pushDeckPlaybackHistory = pushDeckPlaybackHistory; } catch (_) {}
+    try { g.goPreviousDeckPlayback = goPreviousDeckPlayback; } catch (_) {}
+    try { g.captureDeckPlaybackSnapshot = captureDeckPlaybackSnapshot; } catch (_) {}
     try { g.stationHistory = stationHistory; } catch (_) {}
     try { g.stations = stations; } catch (_) {}
     try { g.status = status; } catch (_) {}
@@ -4973,14 +5140,8 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             const force = opts && opts.force === true;
             if (uiLocked && !force) return;
             if(index < 0 || index >= stations.length) return;
-            // Push current station into history if switching to a different one
             if (!suppressHistoryPush && currentStationIndex !== -1 && currentStationIndex !== index) {
-                // Avoid consecutive duplicates
-                if (stationHistory.length === 0 || stationHistory[stationHistory.length - 1] !== currentStationIndex) {
-                    stationHistory.push(currentStationIndex);
-                    // Cap history size to the last 5 stations
-                    if (stationHistory.length > 5) stationHistory.shift();
-                }
+                pushDeckPlaybackHistory('a');
             }
             currentStationIndex = index;
             const s = stations[index];
@@ -4994,6 +5155,9 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             const force = opts && opts.force === true;
             if (uiLocked && !force) return;
             if (index < 0 || index >= stations.length) return;
+            if (!suppressHistoryPush && currentStationBIndex !== index) {
+                pushDeckPlaybackHistory('b');
+            }
             currentStationBIndex = index;
             updateStationActiveHighlight();
             try { syncTopMenuStationsLayout(); } catch (_) {}
@@ -5028,6 +5192,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
          */
         function pickRandomStationB() {
             if (!Array.isArray(stations) || stations.length === 0) return;
+            if (!suppressHistoryPush) pushDeckPlaybackHistory('b');
             const cur = (typeof currentStationBIndex === 'number' && Number.isFinite(currentStationBIndex)) ? currentStationBIndex : 0;
             const eligible = (typeof getCycleEligibleStationIndexes === 'function') ? getCycleEligibleStationIndexes(cur) : [];
             if (!eligible.length) return;
@@ -5067,22 +5232,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             scheduleRadioPanelClose();
         }
         function goPreviousStation() {
-            // Pop from history; if empty, go random as a fail-safe
-            if (!Array.isArray(stationHistory) || stationHistory.length === 0) {
-                pickRandomStation();
-                return;
-            }
-            const prevIdx = stationHistory.pop();
-            if (typeof prevIdx === 'number' && prevIdx >= 0 && prevIdx < stations.length) {
-                suppressHistoryPush = true;
-                try {
-                    setStation(prevIdx);
-                } finally {
-                    suppressHistoryPush = false;
-                }
-            } else {
-                pickRandomStation();
-            }
+            goPreviousDeckPlayback('a');
         }
         function hideRadioPanel() { 
             if (radioPanelTimer) { clearTimeout(radioPanelTimer); radioPanelTimer = null; }
