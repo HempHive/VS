@@ -111,6 +111,8 @@
                 this._digitalVideoToolbarStep = 0;
                 this._digitalHubDeckVideoSrc = '';
                 this._digitalHubDeckVideoMode = 'idle';
+                this._digitalDeckBVideoSrc = '';
+                this._digitalDeckBVideoMode = 'idle';
                 /** Current hub AI clip path (relative), or null when overlay hidden. */
                 this._digitalHubAiVideoSrc = null;
                 /** Active ping-pong slot: 0 = video A, 1 = video B. */
@@ -1137,6 +1139,7 @@
                 if (step === 1 && this.digitalCenterMode === 'spectrum' && this._digitalHubMode === 'video') {
                     this._digitalVideoToolbarStep = 2;
                     this._setDigitalCenterMode('deckB');
+                    try { this._syncDigitalDeckBVideo(true); } catch (_) {}
                     this._syncDigitalVideoToolbarButton();
                     return;
                 }
@@ -4887,6 +4890,8 @@
 
             _tearDownDigitalDeckBPlayer() {
                 try { this._tearDownDigitalStagingView(); } catch (_) {}
+                this._digitalDeckBVideoSrc = '';
+                this._digitalDeckBVideoMode = 'idle';
                 try {
                     if (this.els.digitalDeckBVideo) {
                         this.els.digitalDeckBVideo.pause();
@@ -4895,13 +4900,44 @@
                 } catch (_) {}
             }
 
-            _syncDigitalDeckBVideo() {
+            _syncDigitalDeckBVideo(forceLoad) {
                 const vid = this.els.digitalDeckBVideo;
                 if (!vid || this.digitalCenterMode !== 'deckB') return;
                 try {
-                    if (typeof applyDeckVideoMirrorToElement === 'function') {
-                        applyDeckVideoMirrorToElement(vid);
+                    const payload = this._resolveDigitalStagingVideoPayload();
+                    const want = String(payload.url || '');
+                    if (!payload.syncFrom && payload.mode === 'idle') {
+                        const same = this._digitalDeckBVideoSrc && want && (
+                            (typeof urlsMediaMatch === 'function')
+                                ? urlsMediaMatch(this._digitalDeckBVideoSrc, want)
+                                : this._digitalDeckBVideoSrc === want
+                        );
+                        if (!forceLoad && same && !vid.paused) return;
+                        this._applyDigitalIdleLogoVideo(vid, want);
+                        this._digitalDeckBVideoSrc = want;
+                        this._digitalDeckBVideoMode = 'idle';
+                        return;
                     }
+                    if (!forceLoad && this._digitalDeckBVideoSrc && want && (
+                        (typeof urlsMediaMatch === 'function')
+                            ? urlsMediaMatch(this._digitalDeckBVideoSrc, want)
+                            : this._digitalDeckBVideoSrc === want
+                    )) {
+                        if (payload.syncFrom) {
+                            this._applyDigitalStagingVideoPayload(vid, payload);
+                        } else if (vid.paused) {
+                            vid.play().catch(() => {});
+                        }
+                        this._digitalDeckBVideoMode = payload.mode || 'idle';
+                        return;
+                    }
+                    this._digitalDeckBVideoMode = payload.mode || 'idle';
+                    if (!payload.syncFrom && payload.loop) {
+                        this._applyDigitalIdleLogoVideo(vid, want);
+                    } else {
+                        this._applyDigitalStagingVideoPayload(vid, payload);
+                    }
+                    this._digitalDeckBVideoSrc = want;
                 } catch (_) {}
             }
 

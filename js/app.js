@@ -1093,7 +1093,16 @@ const QUALITY = {
             if (!a || !b) return false;
             if (a === b) return true;
             try {
-                return sanitizeUrlForAudio(String(a)) === sanitizeUrlForAudio(String(b));
+                const sa = sanitizeUrlForAudio(String(a));
+                const sb = sanitizeUrlForAudio(String(b));
+                if (sa === sb) return true;
+                const pathKey = (u) => {
+                    const s = sanitizeUrlForAudio(String(u));
+                    if (!s) return '';
+                    if (s.startsWith('blob:') || s.startsWith('data:')) return s;
+                    return new URL(s, globalThis.location?.href || 'http://localhost/').pathname;
+                };
+                return pathKey(sa) === pathKey(sb);
             } catch (_) {
                 return false;
             }
