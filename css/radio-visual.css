@@ -1940,13 +1940,33 @@
             font-size: clamp(8px, 1.45cqw, 12px);
             line-height: 1;
         }
-        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-vol-readout,
-        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-center-readout {
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-center-slot {
             flex: 1 1 0;
             order: 1;
             min-width: 0;
             height: 100%;
             max-height: clamp(20px, 4.8cqw, 30px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: visible;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] {
+            height: clamp(24px, 5.6cqw, 34px);
+            max-height: clamp(24px, 5.6cqw, 34px);
+            overflow: visible;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-digital-center-slot {
+            max-height: clamp(24px, 5.6cqw, 34px);
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-vol-readout,
+        #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-center-readout {
+            flex: 1 1 auto;
+            width: 100%;
+            min-width: 0;
+            height: 100%;
+            max-height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1992,9 +2012,97 @@
                 0 0 12px rgba(0, 0, 0, 0.9),
                 0 0 10px rgba(255, 245, 80, 0.35);
         }
+        #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-digital-center-readout {
+            display: none;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-xfade-wrap {
+            container-type: inline-size;
+            container-name: rv-toolbar-xfade;
+            display: none;
+            position: relative;
+            flex: 1 1 auto;
+            width: 100%;
+            min-width: 0;
+            height: 100%;
+            align-items: center;
+            --cross-x: 0;
+            --cross-deck-a: rgba(208, 18, 18, 0.65);
+            --cross-deck-b: rgba(30, 26, 77, 0.65);
+            --xfade-thumb: clamp(18px, 115cqw, 28px);
+            --cross-thumb-half: calc(var(--xfade-thumb) / 2);
+            --xfade-rail-h: clamp(4px, 18cqw, 7px);
+            min-height: var(--xfade-thumb);
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-digital-toolbar-xfade-wrap {
+            display: flex;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-xfade-wrap::before {
+            content: '';
+            position: absolute;
+            left: var(--cross-thumb-half);
+            right: var(--cross-thumb-half);
+            top: 50%;
+            height: var(--xfade-rail-h);
+            transform: translateY(-50%);
+            border-radius: calc(var(--xfade-rail-h) / 2);
+            border: 1px solid rgba(212, 175, 55, 0.85);
+            box-sizing: border-box;
+            background: linear-gradient(
+                to right,
+                var(--cross-deck-b) 0%,
+                var(--cross-deck-b) calc(var(--cross-x) * 100%),
+                var(--cross-deck-a) calc(var(--cross-x) * 100%),
+                var(--cross-deck-a) 100%
+            );
+            box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.45), 0 0 8px rgba(212, 175, 55, 0.22);
+            pointer-events: none;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-xfade-range {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            min-width: 0;
+            height: var(--xfade-rail-h) !important;
+            position: relative;
+            z-index: 1;
+            margin: 0;
+            padding: 0;
+            background: transparent !important;
+            box-shadow: none;
+            border: none;
+            accent-color: transparent;
+            cursor: pointer;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-xfade-range::-webkit-slider-thumb {
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            width: var(--xfade-thumb) !important;
+            height: var(--xfade-thumb) !important;
+            background: transparent url('../assets/images/vol.png') center center / 100% 100% no-repeat !important;
+            border: none !important;
+            border-radius: 50%;
+            margin-top: calc((var(--xfade-rail-h) - var(--xfade-thumb)) / 2) !important;
+            box-shadow: none !important;
+            cursor: pointer;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-xfade-range::-moz-range-thumb {
+            width: var(--xfade-thumb) !important;
+            height: var(--xfade-thumb) !important;
+            background: transparent url('../assets/images/vol.png') center center / 100% 100% no-repeat !important;
+            border: none !important;
+            border-radius: 50%;
+            box-shadow: none !important;
+            cursor: pointer;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-xfade-range::-moz-range-progress {
+            background: transparent !important;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-xfade-range::-webkit-slider-runnable-track {
+            height: var(--xfade-rail-h);
+            background: transparent;
+        }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-center-readout-text {
-            font-variant-numeric: tabular-nums;
-            color: #9ff;
+            display: none;
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="automix"] .radio-visual-center-readout-text {
             font-family: 'Orbitron', 'Share Tech Mono', ui-monospace, monospace;

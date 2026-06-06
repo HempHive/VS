@@ -1961,7 +1961,10 @@
                 if (this.els.crossDigital) this.els.crossDigital.value = String(v);
                 this._syncCrossfadeKnob();
                 try { this._applyDigitalStagingVideoCrossfadeOpacities(); } catch (_) {}
-                if (this._digitalToolbarCenterMode === 'crossfade') {
+                if (this.els.digitalToolbarCenterXfade) {
+                    this._syncDigitalToolbarCenterXfadeSlider();
+                }
+                if (this._digitalToolbarCenterMode !== 'crossfade') {
                     this._syncDigitalToolbarCenterReadout();
                 }
             }
@@ -3381,15 +3384,19 @@
                 }
             }
 
-            _formatCrossfadeToolbarReadout(x) {
-                const norm = Math.max(0, Math.min(1, Number(x) || 0));
-                return String(Math.round(norm * 200 - 100));
-            }
-
             _digitalAutoMixToolbarReadoutText() {
                 if (!this._isAutoMixEnabled() || !this._rvAutoMixNextFadeAt) return '—:—';
                 const left = Math.max(0, this._rvAutoMixNextFadeAt - Date.now());
                 return this._formatAutoMixCountdown(left);
+            }
+
+            _syncDigitalToolbarCenterXfadeSlider() {
+                const wrap = this.els.digitalToolbarCenterXfadeWrap;
+                const range = this.els.digitalToolbarCenterXfade;
+                if (!wrap || !range) return;
+                const x = Math.max(0, Math.min(1, this._getCrossfadeX()));
+                range.value = String(x);
+                try { wrap.style.setProperty('--cross-x', String(x)); } catch (_) {}
             }
 
             _syncDigitalToolbarCenterReadout() {
@@ -3397,14 +3404,17 @@
                 const readout = this.els.volDigitalReadout;
                 if (!label || !readout) return;
                 const mode = this._digitalToolbarCenterMode || 'clock';
+                if (mode === 'crossfade') {
+                    readout.dataset.centerMode = mode;
+                    this._syncDigitalToolbarCenterXfadeSlider();
+                    return;
+                }
                 let text = '—';
                 if (mode === 'clock') {
                     text = this._formatDigitalClockReadout();
                 } else if (mode === 'volume') {
                     const vs = document.getElementById('volume-slider');
                     text = this._formatDigitalVolumeReadout(vs ? Number(vs.value) : 0.5);
-                } else if (mode === 'crossfade') {
-                    text = this._formatCrossfadeToolbarReadout(this._getCrossfadeX());
                 } else if (mode === 'automix') {
                     text = this._digitalAutoMixToolbarReadoutText();
                 }
@@ -3430,12 +3440,18 @@
                 const readout = this.els.volDigitalReadout;
                 if (group) group.dataset.centerMode = mode;
                 if (readout) {
-                    readout.setAttribute('aria-label', ({
+                    const ariaLabels = {
                         clock: 'Date and time — tap to change centre display',
                         volume: 'Volume level — tap to change centre display',
                         crossfade: 'Crossfade position — tap to change centre display',
                         automix: 'Auto-mix countdown — tap for date and time'
-                    })[mode] || 'Centre display — tap to change mode');
+                    };
+                    readout.setAttribute('aria-label', ariaLabels[mode] || 'Centre display — tap to change mode');
+                }
+                const xfadeRange = this.els.digitalToolbarCenterXfade;
+                if (xfadeRange) {
+                    xfadeRange.hidden = mode !== 'crossfade';
+                    xfadeRange.tabIndex = mode === 'crossfade' ? 0 : -1;
                 }
                 if (mode === 'crossfade') {
                     this._updateDigitalToolbarStepButton(this.els.volDown, 'A', 'Crossfade toward deck A');
@@ -3488,6 +3504,62 @@
                     return;
                 }
                 this._stepDigitalVolume(side);
+            }
+
+            _wireDigitalToolbarCenterCrossfadeSlider(rangeEl, sig) {
+                if (!rangeEl || rangeEl.dataset.rvToolbarXfadeWired === '1') return;
+                rangeEl.dataset.rvToolbarXfadeWired = '1';
+                const stopXfadePointerBubble = (ev) => {
+                    try { ev.stopPropagation(); } catch (_) {}
+                    try { window.__suppressNextClick = true; } catch (_) {}
+                };
+                rangeEl.addEventListener('input', () => {
+                    this._setCrossfadeX(rangeEl.value);
+                    try { this._resumeDecksForCrossfade(); } catch (_) {}
+                }, sig);
+                rangeEl.addEventListener('pointerdown', stopXfadePointerBubble, sig);
+                rangeEl.addEventListener('pointerup', stopXfadePointerBubble, sig);
+                rangeEl.addEventListener('pointercancel', stopXfadePointerBubble, sig);
+                rangeEl.addEventListener('change', stopXfadePointerBubble, sig);
+                this._wireDigitalCrossfadeCutHold(rangeEl, sig);
+            }
+
+            _wireDigitalToolbarCenterSlotCycle(slotEl, sig) {
+                if (!slotEl || slotEl.dataset.rvCenterSlotCycleWired === '1') return;
+                slotEl.dataset.rvCenterSlotCycleWired = '1';
+                let longPressTimer = null;
+                let longPressStartX = 0;
+                let crossfadeAdjusted = false;
+                const clearLongPress = () => {
+                    if (longPressTimer) {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                };
+                const range = () => this.els.digitalToolbarCenterXfade;
+                slotEl.addEventListener('pointerdown', (ev) => {
+                    if (this._digitalToolbarCenterMode !== 'crossfade' || ev.button !== 0) return;
+                    crossfadeAdjusted = false;
+                    longPressStartX = ev.clientX;
+                    clearLongPress();
+                    longPressTimer = setTimeout(() => {
+                        longPressTimer = null;
+                        if (crossfadeAdjusted || this._digitalToolbarCenterMode !== 'crossfade') return;
+                        try { this._cycleDigitalToolbarCenterMode(); } catch (_) {}
+                    }, 650);
+                }, sig);
+                slotEl.addEventListener('pointermove', (ev) => {
+                    if (Math.abs(ev.clientX - longPressStartX) > 8) crossfadeAdjusted = true;
+                }, sig);
+                slotEl.addEventListener('pointerup', () => clearLongPress(), sig);
+                slotEl.addEventListener('pointercancel', () => clearLongPress(), sig);
+                const r = range();
+                if (r) {
+                    r.addEventListener('input', () => { crossfadeAdjusted = true; clearLongPress(); }, sig);
+                }
+                if (sig && sig.signal) {
+                    sig.signal.addEventListener('abort', clearLongPress, { once: true });
+                }
             }
 
             _clearDigitalToolbarCenterStepRepeat(btn) {
@@ -3549,6 +3621,7 @@
                 label.style.fontSize = '';
                 if (readout.clientWidth < 8 || readout.clientHeight < 6) return;
                 const mode = this._digitalToolbarCenterMode || 'clock';
+                if (mode === 'crossfade') return;
                 const maxCap = mode === 'clock' ? 11 : 13;
                 this._computeRvButtonLabelFitPx(readout, label, {
                     fill: true,
@@ -6126,6 +6199,9 @@
                 let volDigitalReadout = null;
                 let volReadoutLabel = null;
                 let volGroup = null;
+                let digitalToolbarCenterSlot = null;
+                let digitalToolbarCenterXfadeWrap = null;
+                let digitalToolbarCenterXfade = null;
                 let volDown = null;
                 let volUp = null;
                 let digitalToolbar = null;
@@ -6468,13 +6544,32 @@
                 volReadoutLabel.className = 'radio-visual-center-readout-text';
                 volReadoutLabel.textContent = '—';
                 volDigitalReadout.appendChild(volReadoutLabel);
+                digitalToolbarCenterSlot = document.createElement('div');
+                digitalToolbarCenterSlot.className = 'radio-visual-digital-center-slot';
+                digitalToolbarCenterXfadeWrap = document.createElement('div');
+                digitalToolbarCenterXfadeWrap.className = 'radio-visual-digital-toolbar-xfade-wrap';
+                digitalToolbarCenterXfade = document.createElement('input');
+                digitalToolbarCenterXfade.type = 'range';
+                digitalToolbarCenterXfade.className = 'radio-visual-digital-toolbar-xfade-range radio-visual-digital-range';
+                digitalToolbarCenterXfade.id = 'radio-visual-toolbar-xfade';
+                digitalToolbarCenterXfade.min = '0';
+                digitalToolbarCenterXfade.max = '1';
+                digitalToolbarCenterXfade.step = '0.01';
+                digitalToolbarCenterXfade.value = String(this._getCrossfadeX());
+                digitalToolbarCenterXfade.setAttribute('aria-label', 'Crossfade between deck A and deck B');
+                try {
+                    digitalToolbarCenterXfadeWrap.style.setProperty('--cross-x', digitalToolbarCenterXfade.value);
+                } catch (_) {}
+                digitalToolbarCenterXfadeWrap.appendChild(digitalToolbarCenterXfade);
+                digitalToolbarCenterSlot.appendChild(volDigitalReadout);
+                digitalToolbarCenterSlot.appendChild(digitalToolbarCenterXfadeWrap);
                 volUp = document.createElement('button');
                 volUp.type = 'button';
                 volUp.className = 'radio-visual-btn radio-visual-digital-step-btn';
                 this._appendRvButtonLabel(volUp, '+');
                 volUp.setAttribute('aria-label', 'Volume up');
                 volGroup.appendChild(volDown);
-                volGroup.appendChild(volDigitalReadout);
+                volGroup.appendChild(digitalToolbarCenterSlot);
                 volGroup.appendChild(volUp);
                 const toolbarMain = document.createElement('div');
                 toolbarMain.className = 'radio-visual-digital-toolbar-main';
@@ -6600,6 +6695,9 @@
                     volDigitalReadout,
                     volDown,
                     volUp,
+                    digitalToolbarCenterSlot,
+                    digitalToolbarCenterXfadeWrap,
+                    digitalToolbarCenterXfade,
                     digitalToolbarCenterReadoutLabel: volReadoutLabel,
                     digitalToolbarCenter: volGroup,
                     digitalToolbar: digitalToolbar,
@@ -6660,6 +6758,12 @@
                 if (showDigital) {
                     if (volDown) this._wireDigitalToolbarCenterStepButton(volDown, -1, sig);
                     if (volUp) this._wireDigitalToolbarCenterStepButton(volUp, 1, sig);
+                    if (digitalToolbarCenterXfade) {
+                        this._wireDigitalToolbarCenterCrossfadeSlider(digitalToolbarCenterXfade, sig);
+                    }
+                    if (digitalToolbarCenterSlot) {
+                        this._wireDigitalToolbarCenterSlotCycle(digitalToolbarCenterSlot, sig);
+                    }
                     if (volDigitalReadout) {
                         volDigitalReadout.addEventListener('click', (ev) => {
                             this._stopClick(ev);
