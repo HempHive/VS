@@ -160,6 +160,8 @@
             static get DIGITAL_BG_GIF_MANIFEST() { return 'assets/gifs/digital/manifest.json'; }
             static get DIGITAL_BG_GIF_STORAGE_KEY() { return 'radioVisual.digitalBgGif.v1'; }
             static get DIGITAL_BG_GIF_ENABLED_KEY() { return 'radioVisual.digitalBgGif.enabled.v1'; }
+            /** Set after the one-time AI toolbar intro blink on first Digital Radio load. */
+            static get DIGITAL_AI_INTRO_SEEN_KEY() { return 'radioVisual.digitalAiIntroSeen.v1'; }
 
             _stopClick(ev) {
                 try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
@@ -2880,9 +2882,66 @@
                     this.els.autoMixKnob.setAttribute('aria-pressed', on ? 'true' : 'false');
                 }
                 if (this.els.btnDigitalAi) {
-                    this.els.btnDigitalAi.classList.toggle('is-active', on);
-                    this.els.btnDigitalAi.setAttribute('aria-pressed', on ? 'true' : 'false');
+                    if (!this._digitalAiIntroRunning) {
+                        this.els.btnDigitalAi.classList.toggle('is-active', on);
+                        this.els.btnDigitalAi.setAttribute('aria-pressed', on ? 'true' : 'false');
+                    }
                 }
+            }
+
+            _cancelDigitalAiButtonIntroHint() {
+                if (this._digitalAiIntroTimeouts) {
+                    this._digitalAiIntroTimeouts.forEach((t) => clearTimeout(t));
+                    this._digitalAiIntroTimeouts = null;
+                }
+                this._digitalAiIntroRunning = false;
+            }
+
+            _scheduleDigitalAiButtonIntroHint() {
+                if (this.skin !== 'digital') return;
+                this._cancelDigitalAiButtonIntroHint();
+                try {
+                    if (localStorage.getItem(RadioVisualEngine.DIGITAL_AI_INTRO_SEEN_KEY) === '1') return;
+                } catch (_) { return; }
+                const t = setTimeout(() => {
+                    try { this._playDigitalAiButtonIntroHint(); } catch (_) {}
+                }, 900);
+                this._digitalAiIntroTimeouts = [t];
+            }
+
+            _playDigitalAiButtonIntroHint() {
+                const btn = this.els.btnDigitalAi;
+                if (!btn || this._digitalAiIntroRunning) return;
+                try {
+                    if (localStorage.getItem(RadioVisualEngine.DIGITAL_AI_INTRO_SEEN_KEY) === '1') return;
+                } catch (_) { return; }
+                this._digitalAiIntroRunning = true;
+                const timeouts = [];
+                this._digitalAiIntroTimeouts = timeouts;
+                const onMs = 320;
+                const offMs = 200;
+                let step = 0;
+                const pulse = () => {
+                    const b = this.els.btnDigitalAi;
+                    if (!b) {
+                        this._cancelDigitalAiButtonIntroHint();
+                        return;
+                    }
+                    const highlight = step % 2 === 0;
+                    b.classList.toggle('is-active', highlight);
+                    b.setAttribute('aria-pressed', highlight ? 'true' : 'false');
+                    step += 1;
+                    if (step >= 6) {
+                        this._digitalAiIntroRunning = false;
+                        this._digitalAiIntroTimeouts = null;
+                        try { localStorage.setItem(RadioVisualEngine.DIGITAL_AI_INTRO_SEEN_KEY, '1'); } catch (_) {}
+                        try { this._syncAutoMixKnob(); } catch (_) {}
+                        return;
+                    }
+                    const t = setTimeout(pulse, highlight ? onMs : offMs);
+                    timeouts.push(t);
+                };
+                pulse();
             }
 
             _closeDigitalToolbarSliderPanel(panel) {
@@ -3431,8 +3490,8 @@
                 this._stepDigitalVolume(side);
             }
 
-            _clearDigitalToolbarCenterStepRepeat() {
-                const r = this._digitalToolbarCenterStepRepeat;
+            _clearDigitalToolbarCenterStepRepeat(btn) {
+                const r = btn && btn._rvCenterStepRepeat;
                 if (!r) return;
                 if (r.timer) {
                     clearTimeout(r.timer);
@@ -3442,18 +3501,15 @@
                     clearInterval(r.interval);
                     r.interval = null;
                 }
-                r.side = null;
             }
 
             _wireDigitalToolbarCenterStepButton(btn, side, sig) {
                 if (!btn || btn.dataset.rvCenterStepWired === '1') return;
                 btn.dataset.rvCenterStepWired = '1';
-                if (!this._digitalToolbarCenterStepRepeat) {
-                    this._digitalToolbarCenterStepRepeat = { timer: null, interval: null, side: null };
-                }
+                btn._rvCenterStepRepeat = { timer: null, interval: null };
                 const initialDelayMs = 400;
                 const repeatMs = 70;
-                const clearRepeat = () => this._clearDigitalToolbarCenterStepRepeat();
+                const clearRepeat = () => this._clearDigitalToolbarCenterStepRepeat(btn);
                 if (sig && sig.signal) {
                     sig.signal.addEventListener('abort', clearRepeat, { once: true });
                 }
@@ -3462,11 +3518,10 @@
                 };
                 const startRepeat = () => {
                     clearRepeat();
-                    this._digitalToolbarCenterStepRepeat.side = side;
                     runStep();
-                    this._digitalToolbarCenterStepRepeat.timer = setTimeout(() => {
-                        this._digitalToolbarCenterStepRepeat.timer = null;
-                        this._digitalToolbarCenterStepRepeat.interval = setInterval(runStep, repeatMs);
+                    btn._rvCenterStepRepeat.timer = setTimeout(() => {
+                        btn._rvCenterStepRepeat.timer = null;
+                        btn._rvCenterStepRepeat.interval = setInterval(runStep, repeatMs);
                     }, initialDelayMs);
                 };
                 const stopRepeat = (ev) => {
@@ -3476,8 +3531,8 @@
                     } catch (_) {}
                 };
                 btn.addEventListener('pointerdown', (ev) => {
-                    this._stopClick(ev);
                     if (ev.button !== 0) return;
+                    try { ev.stopPropagation(); } catch (_) {}
                     try { btn.setPointerCapture(ev.pointerId); } catch (_) {}
                     startRepeat();
                 }, sig);
@@ -5967,6 +6022,8 @@
             }
 
             init() {
+                try { this._cancelDigitalAiButtonIntroHint(); } catch (_) {}
+                try { if (this.abortCtrl) this.abortCtrl.abort(); } catch (_) {}
                 container.innerHTML = '';
                 try { initAudio(); } catch (_) {}
                 try { if (!state.isPlaying && typeof playRadio === 'function') playRadio(); } catch (_) {}
@@ -6588,6 +6645,7 @@
                             this._showDigitalToolbarAutomixCountdown();
                         }
                     } catch (_) {}
+                    try { this._scheduleDigitalAiButtonIntroHint(); } catch (_) {}
                 }
                 try { this._updateStationUi(); } catch (_) {}
                 try { this._tickClock(); } catch (_) {}
@@ -6896,6 +6954,7 @@
                 this._spectrumRingSmooth = { low: null, mid: null, high: null };
                 try { if (this.animId) cancelAnimationFrame(this.animId); } catch (_) {}
                 this.animId = null;
+                try { this._cancelDigitalAiButtonIntroHint(); } catch (_) {}
                 if (this.clockTimerId) {
                     try { clearInterval(this.clockTimerId); } catch (_) {}
                     this.clockTimerId = null;
