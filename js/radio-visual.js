@@ -1130,6 +1130,7 @@
                     if (this.digitalCenterMode !== 'spectrum') this._setDigitalCenterMode('spectrum');
                     this._digitalHubMode = 'video';
                     try { this._syncDigitalSpectrumLayout(); } catch (_) {}
+                    try { this._syncDigitalHubDeckVideo(true); } catch (_) {}
                     this._syncDigitalVideoToolbarButton();
                     return;
                 }
@@ -1155,7 +1156,11 @@
             _applyDigitalHubDeckVideoPayload(vid, cur) {
                 if (!vid || !cur || !cur.url) return;
                 this._digitalHubDeckVideoMode = cur.mode || 'idle';
-                this._applyDigitalStagingVideoPayload(vid, cur);
+                if (!cur.syncFrom && cur.mode === 'idle') {
+                    this._applyDigitalIdleLogoVideo(vid, cur.url);
+                } else {
+                    this._applyDigitalStagingVideoPayload(vid, cur);
+                }
                 this._digitalHubDeckVideoSrc = String(cur.url);
             }
 
@@ -1166,6 +1171,18 @@
                 try {
                     const payload = this._resolveDigitalStagingVideoPayload();
                     const want = String(payload.url || '');
+                    if (!payload.syncFrom && payload.mode === 'idle') {
+                        const same = this._digitalHubDeckVideoSrc && want && (
+                            (typeof urlsMediaMatch === 'function')
+                                ? urlsMediaMatch(this._digitalHubDeckVideoSrc, want)
+                                : this._digitalHubDeckVideoSrc === want
+                        );
+                        if (!forceLoad && same && !vid.paused) return;
+                        this._applyDigitalIdleLogoVideo(vid, want);
+                        this._digitalHubDeckVideoSrc = want;
+                        this._digitalHubDeckVideoMode = 'idle';
+                        return;
+                    }
                     if (!forceLoad && this._digitalHubDeckVideoSrc && want && (
                         (typeof urlsMediaMatch === 'function')
                             ? urlsMediaMatch(this._digitalHubDeckVideoSrc, want)
@@ -1227,6 +1244,31 @@
                     }
                 } catch (_) {}
                 return 'assets/video/logo.mp4';
+            }
+
+            /** Idle hub / staging surface: loop logo.mp4 (matches applyDeckVideoMirrorToElement). */
+            _applyDigitalIdleLogoVideo(vid, url) {
+                if (!vid) return;
+                const want = String(url || this._resolveDigitalStagingDefaultVideoUrl());
+                const had = String(vid.currentSrc || vid.src || '');
+                const same = (typeof urlsMediaMatch === 'function')
+                    ? urlsMediaMatch(want, had)
+                    : want === had;
+                try { vid.loop = true; } catch (_) {}
+                try { vid.muted = true; } catch (_) {}
+                try { vid.playsInline = true; } catch (_) {}
+                this._wireDigitalStagingVideoLoopFallback(vid);
+                const play = () => { try { vid.play().catch(() => {}); } catch (_) {} };
+                if (same) {
+                    play();
+                    return;
+                }
+                try { vid.pause(); } catch (_) {}
+                try { vid.removeAttribute('src'); vid.load(); } catch (_) {}
+                try { vid.src = want; } catch (_) {}
+                play();
+                try { vid.addEventListener('loadeddata', play, { once: true }); } catch (_) {}
+                try { vid.addEventListener('canplay', play, { once: true }); } catch (_) {}
             }
 
             _stagingVideoSyncFromIsViable(syncFrom, deckKey) {
@@ -1516,7 +1558,12 @@
                     this._digitalStagingVideoMode = 'idle';
                     this._setDigitalStagingVideoLayer(vidB, null, 0);
                     const payload = this._resolveDigitalStagingVideoPayload();
-                    this._applyDigitalStagingVideoPayload(vidA, payload);
+                    if (!payload.syncFrom && payload.mode === 'idle') {
+                        this._applyDigitalIdleLogoVideo(vidA, payload.url);
+                        this._digitalStagingVideoSrc = String(payload.url || '');
+                    } else {
+                        this._applyDigitalStagingVideoPayload(vidA, payload);
+                    }
                 } catch (_) {}
             }
 
