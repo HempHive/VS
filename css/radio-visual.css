@@ -2007,6 +2007,15 @@
                 0 0 12px rgba(0, 0, 0, 0.9),
                 0 0 10px rgba(255, 245, 80, 0.35);
         }
+        #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="volume"] .radio-visual-digital-center-readout[data-volume-peek="0"] .radio-visual-center-readout-text {
+            font-family: 'Orbitron', 'Share Tech Mono', ui-monospace, monospace;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: clamp(0.02em, 0.25cqw, 0.06em);
+            color: #fff566;
+            text-shadow:
+                0 0 12px rgba(0, 0, 0, 0.9),
+                0 0 10px rgba(255, 245, 80, 0.35);
+        }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-digital-center-readout {
             display: none;
         }
@@ -2028,18 +2037,35 @@
             --xfade-thumb: clamp(10px, min(34cqw, 78cqh), 18px);
             --cross-thumb-half: calc(var(--xfade-thumb) / 2);
             --xfade-rail-h: clamp(3px, min(22cqw, 34cqh), 5px);
+            --xfade-track-w: calc(100% - var(--xfade-thumb));
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-digital-toolbar-xfade-wrap {
             display: flex;
         }
+        #radio-visual-root .radio-visual-digital-toolbar-xfade-cycle-hit {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            box-shadow: none;
+        }
         #radio-visual-root .radio-visual-digital-toolbar-xfade-wrap::before {
             content: '';
             position: absolute;
-            left: var(--cross-thumb-half);
-            right: var(--cross-thumb-half);
+            left: 50%;
+            width: var(--xfade-track-w);
+            max-width: var(--xfade-track-w);
+            transform: translate(-50%, -50%);
             top: 50%;
             height: var(--xfade-rail-h);
-            transform: translateY(-50%);
             border-radius: calc(var(--xfade-rail-h) / 2);
             border: 1px solid rgba(212, 175, 55, 0.85);
             box-sizing: border-box;
@@ -2052,15 +2078,16 @@
             );
             box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.45), 0 0 8px rgba(212, 175, 55, 0.22);
             pointer-events: none;
+            z-index: 1;
         }
         #radio-visual-root .radio-visual-digital-toolbar-xfade-range {
             -webkit-appearance: none;
             appearance: none;
-            width: 100%;
+            width: var(--xfade-track-w);
             min-width: 0;
             height: var(--xfade-rail-h) !important;
             position: relative;
-            z-index: 1;
+            z-index: 2;
             margin: 0;
             padding: 0;
             background: transparent !important;
@@ -2076,7 +2103,7 @@
             appearance: none !important;
             width: var(--xfade-thumb) !important;
             height: var(--xfade-thumb) !important;
-            background: transparent url('../assets/images/vol.png') center center / contain no-repeat !important;
+            background: transparent url('../assets/images/vol.png') center center / 100% 100% no-repeat !important;
             border: none !important;
             border-radius: 50%;
             margin-top: calc((var(--xfade-rail-h) - var(--xfade-thumb)) / 2) !important;
@@ -2086,7 +2113,7 @@
         #radio-visual-root .radio-visual-digital-toolbar-xfade-range::-moz-range-thumb {
             width: var(--xfade-thumb) !important;
             height: var(--xfade-thumb) !important;
-            background: transparent url('../assets/images/vol.png') center center / contain no-repeat !important;
+            background: transparent url('../assets/images/vol.png') center center / 100% 100% no-repeat !important;
             border: none !important;
             border-radius: 50%;
             box-shadow: none !important;
@@ -2097,12 +2124,17 @@
         }
         #radio-visual-root .radio-visual-digital-toolbar-xfade-range::-webkit-slider-runnable-track {
             height: var(--xfade-rail-h);
-            background: transparent;
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0;
+            box-shadow: none;
         }
         #radio-visual-root .radio-visual-digital-toolbar-xfade-range::-moz-range-track {
             height: var(--xfade-rail-h);
-            background: transparent;
-            border: none;
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0;
+            box-shadow: none;
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-center-readout-text {
             display: none;
