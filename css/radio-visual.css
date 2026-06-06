@@ -2255,6 +2255,7 @@
             max-height: 100%;
             padding: var(--rv-digital-fs-gutter);
             overflow: hidden;
+            overflow-y: hidden;
             justify-content: center;
             align-items: center;
         }

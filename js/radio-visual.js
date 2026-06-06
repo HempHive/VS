@@ -7367,9 +7367,13 @@
                 stage.style.removeProperty('max-height');
                 stage.style.removeProperty('transform');
                 stage.style.removeProperty('transform-origin');
+                stage.style.removeProperty('margin-top');
+                stage.style.removeProperty('margin-bottom');
+                stage.style.removeProperty('margin-left');
+                stage.style.removeProperty('margin-right');
             }
 
-            /** Page fullscreen: scale stage width to fit root (contain). Normal view uses CSS min(960px, 100%) only. */
+            /** Page fullscreen: fit stage to available width; shrink uniformly only when height overflows. */
             _syncDigitalFullscreenLayout() {
                 const stage = this.els && this.els.stageDigital;
                 const root = this.root;
@@ -7387,12 +7391,31 @@
                 const availW = Math.max(1, host ? host.clientWidth : window.innerWidth);
                 const availH = Math.max(1, host ? host.clientHeight : window.innerHeight);
 
-                stage.style.width = `${designW}px`;
-                stage.style.maxWidth = '100%';
-                const naturalH = Math.max(1, stage.offsetHeight);
-                const scale = Math.min(availW / designW, availH / naturalH);
-                const fitW = Math.max(1, Math.round(designW * scale * 100) / 100);
+                stage.style.removeProperty('transform');
+                stage.style.removeProperty('transform-origin');
+                stage.style.removeProperty('margin-top');
+                stage.style.removeProperty('margin-bottom');
+                stage.style.removeProperty('margin-left');
+                stage.style.removeProperty('margin-right');
+                stage.style.removeProperty('max-height');
+
+                const fitW = Math.max(1, Math.min(designW, availW));
                 stage.style.width = `${fitW}px`;
+                stage.style.maxWidth = '100%';
+
+                const measuredH = Math.max(1, stage.offsetHeight);
+                const measuredW = Math.max(1, stage.offsetWidth);
+                if (measuredH <= availH) return;
+
+                const scale = Math.max(0.05, availH / measuredH);
+                stage.style.transform = `scale(${scale})`;
+                stage.style.transformOrigin = 'center center';
+                const excessH = measuredH * (1 - scale);
+                const excessW = measuredW * (1 - scale);
+                stage.style.marginTop = `${-excessH / 2}px`;
+                stage.style.marginBottom = `${-excessH / 2}px`;
+                stage.style.marginLeft = `${-excessW / 2}px`;
+                stage.style.marginRight = `${-excessW / 2}px`;
             }
 
             onResize() {
