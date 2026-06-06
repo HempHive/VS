@@ -3431,6 +3431,62 @@
                 this._stepDigitalVolume(side);
             }
 
+            _clearDigitalToolbarCenterStepRepeat() {
+                const r = this._digitalToolbarCenterStepRepeat;
+                if (!r) return;
+                if (r.timer) {
+                    clearTimeout(r.timer);
+                    r.timer = null;
+                }
+                if (r.interval) {
+                    clearInterval(r.interval);
+                    r.interval = null;
+                }
+                r.side = null;
+            }
+
+            _wireDigitalToolbarCenterStepButton(btn, side, sig) {
+                if (!btn || btn.dataset.rvCenterStepWired === '1') return;
+                btn.dataset.rvCenterStepWired = '1';
+                if (!this._digitalToolbarCenterStepRepeat) {
+                    this._digitalToolbarCenterStepRepeat = { timer: null, interval: null, side: null };
+                }
+                const initialDelayMs = 400;
+                const repeatMs = 70;
+                const clearRepeat = () => this._clearDigitalToolbarCenterStepRepeat();
+                if (sig && sig.signal) {
+                    sig.signal.addEventListener('abort', clearRepeat, { once: true });
+                }
+                const runStep = () => {
+                    try { this._onDigitalToolbarCenterStep(side); } catch (_) {}
+                };
+                const startRepeat = () => {
+                    clearRepeat();
+                    this._digitalToolbarCenterStepRepeat.side = side;
+                    runStep();
+                    this._digitalToolbarCenterStepRepeat.timer = setTimeout(() => {
+                        this._digitalToolbarCenterStepRepeat.timer = null;
+                        this._digitalToolbarCenterStepRepeat.interval = setInterval(runStep, repeatMs);
+                    }, initialDelayMs);
+                };
+                const stopRepeat = (ev) => {
+                    clearRepeat();
+                    try {
+                        if (ev && ev.pointerId != null) btn.releasePointerCapture(ev.pointerId);
+                    } catch (_) {}
+                };
+                btn.addEventListener('pointerdown', (ev) => {
+                    this._stopClick(ev);
+                    if (ev.button !== 0) return;
+                    try { btn.setPointerCapture(ev.pointerId); } catch (_) {}
+                    startRepeat();
+                }, sig);
+                btn.addEventListener('pointerup', stopRepeat, sig);
+                btn.addEventListener('pointercancel', stopRepeat, sig);
+                btn.addEventListener('lostpointercapture', stopRepeat, sig);
+                btn.addEventListener('click', (ev) => this._stopClick(ev), sig);
+            }
+
             _fitDigitalToolbarCenterReadout(toolbarEl) {
                 const readout = toolbarEl?.querySelector('.radio-visual-digital-center-readout');
                 const label = readout?.querySelector('.radio-visual-center-readout-text');
@@ -4251,9 +4307,7 @@
                 if (!btn) return;
                 const inSpectrumCenter = this.digitalCenterMode === 'spectrum' && !this._digitalStagingView;
                 const hubMode = this._digitalHubMode;
-                const labelMode = hubMode === 'ai'
-                    ? (this._digitalHubAiReturnMode || 'equaliser')
-                    : hubMode;
+                const labelMode = (hubMode === 'ai' || hubMode === 'live') ? 'live' : hubMode;
                 const spectrumsVisible = hubMode !== 'ai-off';
                 btn.classList.toggle('is-active', inSpectrumCenter && spectrumsVisible);
                 btn.setAttribute('aria-pressed', inSpectrumCenter ? 'true' : 'false');
@@ -6546,18 +6600,8 @@
                     btnD.addEventListener('click', (ev) => { this._stopClick(ev); this._setSkin('digital'); }, sig);
                 }
                 if (showDigital) {
-                    if (volDown) {
-                        volDown.addEventListener('click', (ev) => {
-                            this._stopClick(ev);
-                            this._onDigitalToolbarCenterStep(-1);
-                        }, sig);
-                    }
-                    if (volUp) {
-                        volUp.addEventListener('click', (ev) => {
-                            this._stopClick(ev);
-                            this._onDigitalToolbarCenterStep(1);
-                        }, sig);
-                    }
+                    if (volDown) this._wireDigitalToolbarCenterStepButton(volDown, -1, sig);
+                    if (volUp) this._wireDigitalToolbarCenterStepButton(volUp, 1, sig);
                     if (volDigitalReadout) {
                         volDigitalReadout.addEventListener('click', (ev) => {
                             this._stopClick(ev);
