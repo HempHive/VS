@@ -3602,39 +3602,21 @@
             _wireDigitalToolbarCenterSlotCycle(slotEl, sig) {
                 if (!slotEl || slotEl.dataset.rvCenterSlotCycleWired === '1') return;
                 slotEl.dataset.rvCenterSlotCycleWired = '1';
-                let longPressTimer = null;
-                let longPressStartX = 0;
-                let crossfadeAdjusted = false;
-                const clearLongPress = () => {
-                    if (longPressTimer) {
-                        clearTimeout(longPressTimer);
-                        longPressTimer = null;
-                    }
-                };
                 const range = () => this.els.digitalToolbarCenterXfade;
-                slotEl.addEventListener('pointerdown', (ev) => {
-                    if (this._digitalToolbarCenterMode !== 'crossfade' || ev.button !== 0) return;
-                    crossfadeAdjusted = false;
-                    longPressStartX = ev.clientX;
-                    clearLongPress();
-                    longPressTimer = setTimeout(() => {
-                        longPressTimer = null;
-                        if (crossfadeAdjusted || this._digitalToolbarCenterMode !== 'crossfade') return;
-                        try { this._cycleDigitalToolbarCenterMode(); } catch (_) {}
-                    }, 650);
+                const isRangeTarget = (ev) => {
+                    const r = range();
+                    if (!r || !ev || !ev.target) return false;
+                    return ev.target === r
+                        || (typeof ev.target.closest === 'function'
+                            && ev.target.closest('.radio-visual-digital-toolbar-xfade-range') === r);
+                };
+                slotEl.addEventListener('click', (ev) => {
+                    if (this._digitalToolbarCenterMode !== 'crossfade') return;
+                    if (isRangeTarget(ev)) return;
+                    try { if (window.__suppressNextClick) return; } catch (_) {}
+                    try { this._stopClick(ev); } catch (_) {}
+                    try { this._cycleDigitalToolbarCenterMode(); } catch (_) {}
                 }, sig);
-                slotEl.addEventListener('pointermove', (ev) => {
-                    if (Math.abs(ev.clientX - longPressStartX) > 8) crossfadeAdjusted = true;
-                }, sig);
-                slotEl.addEventListener('pointerup', () => clearLongPress(), sig);
-                slotEl.addEventListener('pointercancel', () => clearLongPress(), sig);
-                const r = range();
-                if (r) {
-                    r.addEventListener('input', () => { crossfadeAdjusted = true; clearLongPress(); }, sig);
-                }
-                if (sig && sig.signal) {
-                    sig.signal.addEventListener('abort', clearLongPress, { once: true });
-                }
             }
 
             _clearDigitalToolbarCenterStepRepeat(btn) {

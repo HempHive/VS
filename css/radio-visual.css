@@ -1950,15 +1950,10 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            overflow: visible;
-        }
-        #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] {
-            height: clamp(24px, 5.6cqw, 34px);
-            max-height: clamp(24px, 5.6cqw, 34px);
-            overflow: visible;
+            overflow: hidden;
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-digital-center-slot {
-            max-height: clamp(24px, 5.6cqw, 34px);
+            cursor: pointer;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-vol-readout,
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-center-readout {
@@ -2016,7 +2011,7 @@
             display: none;
         }
         #radio-visual-root .radio-visual-digital-toolbar-xfade-wrap {
-            container-type: inline-size;
+            container-type: size;
             container-name: rv-toolbar-xfade;
             display: none;
             position: relative;
@@ -2024,14 +2019,15 @@
             width: 100%;
             min-width: 0;
             height: 100%;
+            max-height: 100%;
             align-items: center;
+            justify-content: center;
             --cross-x: 0;
             --cross-deck-a: rgba(208, 18, 18, 0.65);
             --cross-deck-b: rgba(30, 26, 77, 0.65);
-            --xfade-thumb: clamp(18px, 115cqw, 28px);
+            --xfade-thumb: clamp(10px, min(34cqw, 78cqh), 18px);
             --cross-thumb-half: calc(var(--xfade-thumb) / 2);
-            --xfade-rail-h: clamp(4px, 18cqw, 7px);
-            min-height: var(--xfade-thumb);
+            --xfade-rail-h: clamp(3px, min(22cqw, 34cqh), 5px);
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-digital-toolbar-xfade-wrap {
             display: flex;
@@ -2071,28 +2067,30 @@
             box-shadow: none;
             border: none;
             accent-color: transparent;
-            cursor: pointer;
+            cursor: ew-resize;
+            flex: 0 0 auto;
+            align-self: center;
         }
         #radio-visual-root .radio-visual-digital-toolbar-xfade-range::-webkit-slider-thumb {
             -webkit-appearance: none !important;
             appearance: none !important;
             width: var(--xfade-thumb) !important;
             height: var(--xfade-thumb) !important;
-            background: transparent url('../assets/images/vol.png') center center / 100% 100% no-repeat !important;
+            background: transparent url('../assets/images/vol.png') center center / contain no-repeat !important;
             border: none !important;
             border-radius: 50%;
             margin-top: calc((var(--xfade-rail-h) - var(--xfade-thumb)) / 2) !important;
             box-shadow: none !important;
-            cursor: pointer;
+            cursor: ew-resize;
         }
         #radio-visual-root .radio-visual-digital-toolbar-xfade-range::-moz-range-thumb {
             width: var(--xfade-thumb) !important;
             height: var(--xfade-thumb) !important;
-            background: transparent url('../assets/images/vol.png') center center / 100% 100% no-repeat !important;
+            background: transparent url('../assets/images/vol.png') center center / contain no-repeat !important;
             border: none !important;
             border-radius: 50%;
             box-shadow: none !important;
-            cursor: pointer;
+            cursor: ew-resize;
         }
         #radio-visual-root .radio-visual-digital-toolbar-xfade-range::-moz-range-progress {
             background: transparent !important;
@@ -2100,6 +2098,11 @@
         #radio-visual-root .radio-visual-digital-toolbar-xfade-range::-webkit-slider-runnable-track {
             height: var(--xfade-rail-h);
             background: transparent;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-xfade-range::-moz-range-track {
+            height: var(--xfade-rail-h);
+            background: transparent;
+            border: none;
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-center-readout-text {
             display: none;
