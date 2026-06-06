@@ -3683,12 +3683,14 @@
                 if (readout.clientWidth < 8 || readout.clientHeight < 6) return;
                 const mode = this._digitalToolbarCenterMode || 'clock';
                 if (mode === 'crossfade') return;
-                const maxCap = mode === 'clock' ? 11 : 13;
+                const volumeShowsClock = mode === 'volume' && !this._digitalToolbarVolumePeekActive;
+                const fitAsClock = mode === 'clock' || volumeShowsClock;
+                const maxCap = fitAsClock ? 11 : 13;
                 this._computeRvButtonLabelFitPx(readout, label, {
                     fill: true,
                     maxCap,
                     heightFactor: 0.88,
-                    widthFactor: (mode === 'clock' || mode === 'automix') ? 0.92 : 0.55,
+                    widthFactor: (fitAsClock || mode === 'automix') ? 0.92 : 0.55,
                     minPx: 6,
                     pad: 2
                 });
