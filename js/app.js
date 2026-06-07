@@ -5033,6 +5033,14 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             visualSettings.shuffleMaxSec = maxS;
             visualSettings.transitionSec = trans;
             visualSettings.pixelRatio = px;
+            try {
+                if (typeof setKnobUi === 'function') {
+                    setKnobUi(document.getElementById('knob-tm-shuffle-min'), 3, 120, minS);
+                    setKnobUi(document.getElementById('knob-tm-shuffle-max'), 5, 180, maxS);
+                    setKnobUi(document.getElementById('knob-tm-transition'), 0, 10, trans);
+                    setKnobUi(document.getElementById('knob-tm-pixelratio'), 0.5, 3, px);
+                }
+            } catch (_) {}
             // Apply if active is v2
             if(state.activeVisualizer && state.activeVisualizer instanceof MilkdropEngineV2) {
                 state.activeVisualizer.applySettings?.();
@@ -6815,6 +6823,14 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 if (vs) vs.style.display = 'flex';
                 try { updateStationActiveHighlight(); } catch (_) {}
                 try { syncTopMenuStationsLayout(); } catch (_) {}
+                try {
+                    if (typeof setKnobUi === 'function') {
+                        setKnobUi(document.getElementById('knob-tm-shuffle-min'), 3, 120, visualSettings.shuffleMinSec);
+                        setKnobUi(document.getElementById('knob-tm-shuffle-max'), 5, 180, visualSettings.shuffleMaxSec);
+                        setKnobUi(document.getElementById('knob-tm-transition'), 0, 10, visualSettings.transitionSec);
+                        setKnobUi(document.getElementById('knob-tm-pixelratio'), 0.5, 3, visualSettings.pixelRatio);
+                    }
+                } catch (_) {}
             } catch(_) {}
             p.classList.remove('display-none');
             requestAnimationFrame(() => { p.classList.add('open'); });
@@ -6844,42 +6860,51 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                         playRadio();
                     }
                 });
-				// Visualization settings apply from top menu
-                const tmMin = document.getElementById('tm-inp-shuffle-min');
-                const tmMax = document.getElementById('tm-inp-shuffle-max');
-                const tmTrans = document.getElementById('tm-inp-transition');
-                const tmPx = document.getElementById('tm-inp-pixelratio');
-                const tmApply = document.getElementById('tm-btn-apply');
-                // Initialize with current values if available
-                try {
-                    if (tmMin) tmMin.value = String(visualSettings.shuffleMinSec ?? 30);
-                    if (tmMax) tmMax.value = String(visualSettings.shuffleMaxSec ?? 60);
-                    if (tmTrans) tmTrans.value = String(visualSettings.transitionSec ?? 2.7);
-                    if (tmPx) tmPx.value = String(visualSettings.pixelRatio ?? 1);
-                } catch(_){}
-                if (tmApply) tmApply.addEventListener('click', () => {
+                function applyTopMenuVisualSettings() {
                     try {
-                        const minS = Math.max(3, Math.min(120, Number(tmMin?.value) || 30));
-                        const maxS = Math.max(5, Math.min(180, Number(tmMax?.value) || 60));
-                        const trans = Math.max(0, Math.min(10, Number(tmTrans?.value) || 2.7));
-                        const px = Math.max(0.5, Math.min(3, Number(tmPx?.value) || 1));
-                        visualSettings.shuffleMinSec = minS;
-                        visualSettings.shuffleMaxSec = maxS;
-                        visualSettings.transitionSec = trans;
-                        visualSettings.pixelRatio = px;
-                        if(state.activeVisualizer && state.activeVisualizer instanceof MilkdropEngineV2) {
+                        if (inpShuffleMin) inpShuffleMin.value = String(visualSettings.shuffleMinSec ?? 30);
+                        if (inpShuffleMax) inpShuffleMax.value = String(visualSettings.shuffleMaxSec ?? 60);
+                        if (inpTransition) inpTransition.value = String(visualSettings.transitionSec ?? 2.7);
+                        if (inpPixelRatio) inpPixelRatio.value = String(visualSettings.pixelRatio ?? 1);
+                        if (state.activeVisualizer && state.activeVisualizer instanceof MilkdropEngineV2) {
                             state.activeVisualizer.applySettings?.();
                         }
-                    } catch(e) {}
+                    } catch (_) {}
+                }
+                if (typeof bindKnob === 'function') {
+                    bindKnob('knob-tm-shuffle-min', 3, 120, visualSettings.shuffleMinSec, visualSettings, 'shuffleMinSec', applyTopMenuVisualSettings);
+                    bindKnob('knob-tm-shuffle-max', 5, 180, visualSettings.shuffleMaxSec, visualSettings, 'shuffleMaxSec', applyTopMenuVisualSettings);
+                    bindKnob('knob-tm-transition', 0, 10, visualSettings.transitionSec, visualSettings, 'transitionSec', applyTopMenuVisualSettings);
+                    bindKnob('knob-tm-pixelratio', 0.5, 3, visualSettings.pixelRatio, visualSettings, 'pixelRatio', applyTopMenuVisualSettings);
+                }
+                const btnPrevStA = document.getElementById('topmenu-prev-station-a');
+                const btnNextStA = document.getElementById('topmenu-next-station-a');
+                if (btnPrevStA) btnPrevStA.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof setStation === 'function' && stations.length) {
+                        setStation((currentStationIndex - 1 + stations.length) % stations.length);
+                    }
                 });
-				const btnPrevSt = document.getElementById('topmenu-prev-station');
-                const btnNextSt = document.getElementById('topmenu-next-station');
-                if (btnPrevSt) btnPrevSt.addEventListener('click', (e)=>{ e.stopPropagation(); if (typeof setStation === 'function') setStation((currentStationIndex - 1 + stations.length) % stations.length); });
-                if (btnNextSt) btnNextSt.addEventListener('click', (e)=>{ e.stopPropagation(); if (typeof setStation === 'function') setStation((currentStationIndex + 1) % stations.length); });
-				const btnPrevVis = document.getElementById('topmenu-prev-visual');
-                const btnNextVis = document.getElementById('topmenu-next-visual');
-                if (btnPrevVis) btnPrevVis.addEventListener('click', (e)=>{ e.stopPropagation(); loadMode(state.currentModeIdx - 1); });
-                if (btnNextVis) btnNextVis.addEventListener('click', (e)=>{ e.stopPropagation(); loadMode(state.currentModeIdx + 1); });
+                if (btnNextStA) btnNextStA.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof setStation === 'function' && stations.length) {
+                        setStation((currentStationIndex + 1) % stations.length);
+                    }
+                });
+                const btnPrevStB = document.getElementById('topmenu-prev-station-b');
+                const btnNextStB = document.getElementById('topmenu-next-station-b');
+                if (btnPrevStB) btnPrevStB.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof setStationB === 'function' && stations.length) {
+                        setStationB((currentStationBIndex - 1 + stations.length) % stations.length);
+                    }
+                });
+                if (btnNextStB) btnNextStB.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof setStationB === 'function' && stations.length) {
+                        setStationB((currentStationBIndex + 1) % stations.length);
+                    }
+                });
                 const btnRandB = document.getElementById('topmenu-station-b-random');
                 if (btnRandB) btnRandB.addEventListener('click', (e) => {
                     e.stopPropagation();

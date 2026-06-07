@@ -114,45 +114,54 @@
 			<!-- Deck A / Deck B station lists (side by side) -->
 			<div id="top-menu-stations-wrap" class="top-menu-stations-wrap is-focus-a">
 				<section class="top-menu-stations-col top-menu-stations-col--a" aria-label="Deck A stations">
-					<header class="top-menu-stations-head">
+					<header class="top-menu-stations-head top-menu-stations-head--a">
 						<span class="top-menu-stations-deck top-menu-stations-deck--a">A</span>
 						<span class="top-menu-stations-title">Deck A</span>
+						<div class="top-menu-stations-head-tools">
+							<button type="button" class="btn topmenu-stations-nav-btn" id="topmenu-prev-station-a" title="Previous station on Deck A" aria-label="Previous station on Deck A">◀</button>
+							<button type="button" class="btn topmenu-stations-nav-btn" id="topmenu-next-station-a" title="Next station on Deck A" aria-label="Next station on Deck A">▶</button>
+							<div class="top-menu-stations-knobs" aria-label="Visual settings">
+								<div class="top-menu-knob-col">
+									<div class="knob-wrap top-menu-knob" id="knob-tm-shuffle-min" style="--knob-color:#06D001" title="Shuffle min (sec)"><div class="knob-indicator"></div><div class="knob-value">30</div></div>
+									<span class="eq-label">Min</span>
+								</div>
+								<div class="top-menu-knob-col">
+									<div class="knob-wrap top-menu-knob" id="knob-tm-shuffle-max" style="--knob-color:#9BEC00" title="Shuffle max (sec)"><div class="knob-indicator"></div><div class="knob-value">60</div></div>
+									<span class="eq-label">Max</span>
+								</div>
+								<div class="top-menu-knob-col">
+									<div class="knob-wrap top-menu-knob" id="knob-tm-transition" style="--knob-color:#F94C10" title="Transition (sec)"><div class="knob-indicator"></div><div class="knob-value">2.7</div></div>
+									<span class="eq-label">Trans</span>
+								</div>
+								<div class="top-menu-knob-col">
+									<div class="knob-wrap top-menu-knob" id="knob-tm-pixelratio" style="--knob-color:#5800FF" title="Pixel ratio"><div class="knob-indicator"></div><div class="knob-value">1</div></div>
+									<span class="eq-label">PR</span>
+								</div>
+							</div>
+							<button type="button" class="icon-btn interactive topmenu-stations-close-btn" id="btn-topmenu-close" title="Close" aria-label="Close">✕</button>
+						</div>
 					</header>
 					<div id="top-menu-stations-a" class="top-menu-stations-scroll">
 						<div id="radio-list"></div>
 					</div>
 				</section>
 				<section class="top-menu-stations-col top-menu-stations-col--b" aria-label="Deck B stations">
-					<header class="top-menu-stations-head">
+					<header class="top-menu-stations-head top-menu-stations-head--b">
 						<span class="top-menu-stations-deck top-menu-stations-deck--b">B</span>
 						<span class="top-menu-stations-title">Deck B</span>
-						<div class="top-menu-stations-b-tools">
-							<button type="button" class="btn topmenu-stations-mini-btn" id="topmenu-station-b-random" title="Random station on Deck B">↻</button>
-							<button type="button" class="btn topmenu-stations-mini-btn" id="topmenu-stations-b-expand" title="Expand Deck B list" aria-pressed="false">⟷</button>
+						<div class="top-menu-stations-head-tools">
+							<button type="button" class="btn topmenu-stations-nav-btn" id="topmenu-prev-station-b" title="Previous station on Deck B" aria-label="Previous station on Deck B">◀</button>
+							<button type="button" class="btn topmenu-stations-nav-btn" id="topmenu-next-station-b" title="Next station on Deck B" aria-label="Next station on Deck B">▶</button>
+							<div class="top-menu-stations-b-tools">
+								<button type="button" class="btn topmenu-stations-mini-btn" id="topmenu-station-b-random" title="Random station on Deck B">↻</button>
+								<button type="button" class="btn topmenu-stations-mini-btn" id="topmenu-stations-b-expand" title="Expand Deck B list" aria-pressed="false">⟷</button>
+							</div>
 						</div>
 					</header>
 					<div id="top-menu-stations-b" class="top-menu-stations-scroll">
 						<div id="radio-list-b"></div>
 					</div>
 				</section>
-			</div>
-			<!-- Single-row visualization sliders (minimal labels), above volume slider -->
-			<div class="row" style="display:grid; grid-template-columns: auto 1fr auto 1fr auto 1fr auto 1fr; gap:10px; align-items:center; margin-top:8px; width:100%;">
-				<label for="tm-inp-shuffle-min" style="font-size:11px; color:#ccc; min-width:28px; text-align:right">Min</label>
-				<input id="tm-inp-shuffle-min" type="range" min="3" max="120" step="1" value="30" style="width:100%;">
-				<label for="tm-inp-shuffle-max" style="font-size:11px; color:#ccc; min-width:28px; text-align:right">Max</label>
-				<input id="tm-inp-shuffle-max" type="range" min="5" max="180" step="1" value="60" style="width:100%;">
-				<label for="tm-inp-transition" style="font-size:11px; color:#ccc; min-width:36px; text-align:right">Trans</label>
-				<input id="tm-inp-transition" type="range" min="0" max="10" step="0.1" value="2.7" style="width:100%;">
-				<label for="tm-inp-pixelratio" style="font-size:11px; color:#ccc; min-width:20px; text-align:right">PR</label>
-				<input id="tm-inp-pixelratio" type="range" min="0.5" max="3" step="0.1" value="1" style="width:100%;">
-			</div>
-			<div id="top-menu-actions">
-				<button class="btn" id="topmenu-prev-station" title="Previous Station">⟵ Station</button>
-				<button class="btn" id="topmenu-next-station" title="Next Station">Station ⟶</button>
-				<button class="btn" id="topmenu-prev-visual" title="Previous Visual">⟵ Visual</button>
-				<button class="btn" id="topmenu-next-visual" title="Next Visual">Visual ⟶</button>
-				<button type="button" class="icon-btn interactive" id="btn-topmenu-close" title="Close" aria-label="Close">✕</button>
 			</div>
 			<!-- footer with volume slider will be appended below -->
 		</div>

@@ -1709,23 +1709,6 @@
 			padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.12);
 		}
 		#top-menu-content { padding: 12px; display: grid; gap: 10px; grid-template-columns: 1fr; flex: 1; overflow: auto; }
-		#top-menu-actions {
-			display: grid;
-			gap: 8px;
-			grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
-			align-items: center;
-		}
-		#top-menu-actions #btn-topmenu-close {
-			width: 42px;
-			height: 42px;
-			padding: 0;
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-			border-radius: 10px;
-			line-height: 1;
-			flex-shrink: 0;
-		}
 		#top-menu-webm { display: grid; gap: 8px; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; }
 		#top-menu-content .row { display: flex; gap: 8px; align-items: center; }
 		#top-menu-content input[type="text"] {
@@ -1841,6 +1824,83 @@
 			padding: 6px 8px;
 			border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 			flex-shrink: 0;
+			min-height: 36px;
+		}
+		.top-menu-stations-head-tools {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			margin-left: auto;
+			flex: 1;
+			min-width: 0;
+			justify-content: flex-end;
+		}
+		.top-menu-stations-head--a .top-menu-stations-title {
+			flex: 0 0 auto;
+		}
+		.topmenu-stations-nav-btn {
+			width: 24px;
+			height: 24px;
+			min-width: 24px;
+			padding: 0;
+			font-size: 10px;
+			line-height: 1;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 4px;
+			flex-shrink: 0;
+		}
+		.topmenu-stations-close-btn {
+			width: 24px;
+			height: 24px;
+			min-width: 24px;
+			padding: 0;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 4px;
+			line-height: 1;
+			flex-shrink: 0;
+			margin-left: 4px;
+			background: rgba(255,255,255,0.08);
+			border: 1px solid rgba(255,255,255,0.25);
+			color: #fff;
+			cursor: pointer;
+		}
+		.topmenu-stations-close-btn:hover {
+			background: rgba(212,175,55,0.28);
+			color: #fff;
+		}
+		.top-menu-stations-knobs {
+			display: flex;
+			align-items: flex-end;
+			gap: 2px;
+			flex: 1;
+			min-width: 0;
+			justify-content: center;
+			padding: 0 4px;
+		}
+		.top-menu-knob-col {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 1px;
+			flex-shrink: 0;
+		}
+		.top-menu-knob-col .eq-label {
+			font-size: 7px;
+			line-height: 1;
+			color: rgba(255, 255, 255, 0.45);
+		}
+		.top-menu-knob {
+			width: 22px;
+			height: 22px;
+		}
+		.top-menu-knob .knob-value {
+			top: -14px;
+			font-size: 9px;
+			padding: 1px 3px;
 		}
 		.top-menu-stations-deck {
 			display: inline-flex;
@@ -1883,7 +1943,6 @@
 			display: flex;
 			align-items: center;
 			gap: 4px;
-			margin-left: auto;
 			flex-shrink: 0;
 		}
 		.topmenu-stations-mini-btn {
