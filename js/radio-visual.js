@@ -142,8 +142,6 @@
                 this._digitalVolStep = 0.05;
                 /** Toolbar centre readout mode: clock | volume | crossfade | automix | remaining */
                 this._digitalToolbarCenterMode = 'clock';
-                /** In volume mode: 'volume' (default) or 'clock' (date/time via < >). */
-                this._digitalToolbarVolumeSubDisplay = 'volume';
                 this._digitalToolbarVolumePeekTimer = null;
                 this._digitalToolbarVolumePeekActive = false;
                 this._rvLastGlobalVolumeNorm = undefined;
@@ -3672,9 +3670,7 @@
                 if (mode === 'clock') {
                     text = this._formatDigitalClockReadout();
                 } else if (mode === 'volume') {
-                    const showVolume = this._digitalToolbarVolumePeekActive
-                        || this._digitalToolbarVolumeSubDisplay !== 'clock';
-                    if (showVolume) {
+                    if (this._digitalToolbarVolumePeekActive) {
                         const vs = document.getElementById('volume-slider');
                         text = this._formatDigitalVolumeReadout(vs ? Number(vs.value) : 0.5);
                     } else {
@@ -3692,14 +3688,7 @@
                 }
                 label.textContent = text;
                 readout.dataset.centerMode = mode;
-                if (mode === 'volume') {
-                    const view = (this._digitalToolbarVolumePeekActive
-                        || this._digitalToolbarVolumeSubDisplay !== 'clock') ? 'volume' : 'clock';
-                    readout.dataset.volumeView = view;
-                } else if (readout.dataset.volumeView != null) {
-                    delete readout.dataset.volumeView;
-                }
-                if (mode === 'automix') {
+                if (mode === 'volume' || mode === 'automix') {
                     readout.dataset.volumePeek = this._digitalToolbarVolumePeekActive ? '1' : '0';
                 } else if (readout.dataset.volumePeek != null) {
                     delete readout.dataset.volumePeek;
@@ -3726,7 +3715,7 @@
                 if (readout) {
                     const ariaLabels = {
                         clock: 'Date and time — tap to change centre display',
-                        volume: 'Volume level — use < for date and time, > for volume — tap to change centre display',
+                        volume: 'Volume — date and time; level shown briefly when adjusted — tap to change centre display',
                         crossfade: 'Crossfade position — tap to change centre display',
                         automix: 'Auto-mix countdown — tap for date and time; volume shown briefly when adjusted',
                         remaining: 'Track time remaining on crossfader deck — tap to change centre display'
@@ -3744,9 +3733,6 @@
                 } else if (mode === 'clock') {
                     this._updateDigitalToolbarStepButton(this.els.volDown, '<', 'Previous station or file on crossfader deck');
                     this._updateDigitalToolbarStepButton(this.els.volUp, '>', 'Next station or file on crossfader deck');
-                } else if (mode === 'volume') {
-                    this._updateDigitalToolbarStepButton(this.els.volDown, '<', 'Show date and time');
-                    this._updateDigitalToolbarStepButton(this.els.volUp, '>', 'Show volume level');
                 } else {
                     this._updateDigitalToolbarStepButton(this.els.volDown, '−', 'Volume down');
                     this._updateDigitalToolbarStepButton(this.els.volUp, '+', 'Volume up');
@@ -3760,9 +3746,9 @@
 
             _setDigitalToolbarCenterMode(mode) {
                 this._cancelDigitalToolbarVolumePeek();
-                if (mode === 'volume') this._digitalToolbarVolumeSubDisplay = 'volume';
                 this._digitalToolbarCenterMode = mode;
                 this._syncDigitalToolbarCenterMode();
+                if (mode === 'volume') this._peekDigitalToolbarVolumeReadout();
             }
 
             _showDigitalToolbarAutomixCountdown() {
@@ -3793,11 +3779,6 @@
                 if (mode === 'clock') {
                     if (side < 0) this._crossfadedDeckPrevOrStation();
                     else this._crossfadedDeckNextOrStation();
-                    return;
-                }
-                if (mode === 'volume') {
-                    this._digitalToolbarVolumeSubDisplay = side < 0 ? 'clock' : 'volume';
-                    this._syncDigitalToolbarCenterReadout();
                     return;
                 }
                 if (mode === 'crossfade') {
@@ -3905,9 +3886,7 @@
                 if (readout.clientWidth < 8 || readout.clientHeight < 6) return;
                 const mode = this._digitalToolbarCenterMode || 'clock';
                 if (mode === 'crossfade') return;
-                const volumeShowsClock = mode === 'volume'
-                    && !this._digitalToolbarVolumePeekActive
-                    && this._digitalToolbarVolumeSubDisplay === 'clock';
+                const volumeShowsClock = mode === 'volume' && !this._digitalToolbarVolumePeekActive;
                 const fitAsClock = mode === 'clock' || volumeShowsClock;
                 const maxCap = fitAsClock ? 11 : 13;
                 this._computeRvButtonLabelFitPx(readout, label, {
@@ -4195,7 +4174,7 @@
                     slider.dataset.deckGain = deck;
                     slider.style.setProperty('--gain-color', color);
                     slider.setAttribute('aria-label', `${label} gain`);
-                    wrap.append(lbl, slider);
+                    wrap.append(slider, lbl);
                     return wrap;
                 };
                 gainCol.append(
