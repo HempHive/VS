@@ -4784,7 +4784,7 @@
                 }
                 if (mode === 'spectrum') {
                     try { this._syncSpectrumStagingScale(); } catch (_) {}
-                    try { this._showDigitalSpectrumStagingSlider(); } catch (_) {}
+                    try { this._hideDigitalSpectrumStagingSlider(true); } catch (_) {}
                 } else {
                     try { this._syncSpectrumStagingScale(); } catch (_) {}
                     try { this._hideDigitalSpectrumStagingSlider(true); } catch (_) {}
