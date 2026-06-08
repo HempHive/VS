@@ -440,7 +440,7 @@
             width: 100%;
             overflow: hidden;
             border-radius: clamp(8px, 1.46cqw, 14px);
-            padding: clamp(12px, 1.67cqw, 24px);
+            padding: clamp(6px, 0.73cqw, 10px) clamp(12px, 1.67cqw, 24px);
             background:
                 linear-gradient(180deg, rgba(255, 210, 70, 0.14) 0%, transparent 28%),
                 linear-gradient(160deg, #0a1628 0%, #061018 50%, #0c1020 100%);
@@ -512,7 +512,7 @@
             aspect-ratio: 960 / 320;
             min-height: 0;
             height: auto;
-            margin: clamp(8px, 1.04cqw, 10px) 0 clamp(10px, 1.46cqw, 14px);
+            margin: clamp(2px, 0.31cqw, 4px) 0 clamp(4px, 0.52cqw, 6px);
             border-radius: clamp(8px, 1.25cqw, 12px);
             overflow: hidden;
             border: clamp(1px, 0.21cqw, 2px) solid rgba(0, 220, 255, 0.28);
@@ -1029,7 +1029,7 @@
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-volume {
             display: flex !important;
             flex-direction: row;
-            align-items: center;
+            align-items: stretch;
             justify-content: center;
             gap: clamp(2px, 0.6cqw, 8px);
             width: 100%;
@@ -1039,8 +1039,8 @@
             min-height: 0;
             min-width: 0;
             overflow: hidden;
-            container-type: size;
-            container-name: rv-hub-volume;
+            padding: clamp(2px, 0.42cqw, 4px);
+            box-sizing: border-box;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-deck,
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="effects"] .radio-visual-digital-hub-fx-deck {
@@ -1055,29 +1055,11 @@
             min-height: 0;
             height: 100%;
             max-height: 100%;
-            overflow: hidden;
+            overflow: visible;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-deck {
             flex: 1 1 0;
             min-width: 0;
-        }
-        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-knob-wrap {
-            container-type: normal;
-            container-name: unset;
-            flex: 1 1 0;
-            width: auto;
-            max-width: 100%;
-            min-width: 0;
-            min-height: 0;
-            overflow: hidden;
-        }
-        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-knob.knob-wrap {
-            --rv-hub-knob-size: clamp(14px, min(22cqh, 9.5cqw), 44px);
-            min-width: 0;
-            max-width: 100%;
-        }
-        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-knob-label {
-            font-size: clamp(5px, min(2.8cqh, 2.2cqw), 8px);
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-gain-col {
             flex: 0 0 auto;
@@ -1090,35 +1072,6 @@
             flex: 0 0 auto;
             width: clamp(36px, 7cqw, 60px);
             min-width: clamp(32px, 6cqw, 52px);
-            --rv-range-thumb: clamp(20px, min(14cqh, 12cqw), 40px);
-            --rv-range-rail: clamp(4px, 0.9cqw, 8px);
-        }
-        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-gain-label {
-            font-size: clamp(8px, min(2.8cqh, 2.4cqw), 12px);
-        }
-        @container rv-hub-volume (max-width: 220px) {
-            #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-knob.knob-wrap {
-                --rv-hub-knob-size: clamp(12px, min(20cqh, 8.5cqw), 32px);
-            }
-            #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-gain-col {
-                gap: clamp(3px, 1.2cqw, 10px);
-            }
-            #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-gain-wrap {
-                --rv-range-thumb: clamp(16px, min(12cqh, 10cqw), 30px);
-            }
-        }
-        @container rv-hub-volume (max-width: 160px) {
-            #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-gain-col {
-                min-width: clamp(60px, 12cqw, 96px);
-                gap: clamp(4px, 1.2cqw, 10px);
-            }
-            #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-gain-wrap {
-                width: clamp(28px, 6cqw, 48px);
-                min-width: clamp(26px, 5.5cqw, 44px);
-            }
-            #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="volume"] .radio-visual-digital-hub-knob.knob-wrap {
-                --rv-hub-knob-size: clamp(10px, min(18cqh, 7.5cqw), 26px);
-            }
         }
         #radio-visual-root .radio-visual-digital-hub-deck {
             display: flex;
@@ -1822,7 +1775,7 @@
             gap: clamp(1px, 0.31cqw, 3px);
             max-width: none;
             width: 100%;
-            margin: clamp(6px, 0.94cqw, 10px) 0 10px;
+            margin: clamp(2px, 0.31cqw, 4px) 0 0;
             padding: 0;
             align-self: stretch;
             position: relative;
@@ -1847,7 +1800,7 @@
             background: linear-gradient(180deg, #5a3488 0%, #2a1548 55%, #1a0c30 100%);
             color: #5cff9e;
             box-shadow:
-                0 3px 0 #120820,
+                0 2px 0 #120820,
                 inset 0 1px 0 rgba(200, 150, 255, 0.12);
             padding: clamp(1px, 0.35cqw, 4px) clamp(2px, 0.5cqw, 5px);
             overflow: hidden;
@@ -1981,8 +1934,8 @@
             gap: clamp(1px, 0.31cqw, 3px);
             width: 100%;
             min-width: 0;
-            margin: 8px 0 0;
-            padding-bottom: clamp(4px, 0.63cqw, 7px);
+            margin: clamp(4px, 0.52cqw, 6px) 0 0;
+            padding-bottom: clamp(3px, 0.42cqw, 5px);
             border-bottom: none;
             position: relative;
             overflow: visible;
@@ -2004,9 +1957,7 @@
                 rgba(0, 220, 255, 0.38) 58%,
                 rgba(160, 245, 255, 0.22) 100%
             );
-            box-shadow:
-                0 1px 0 rgba(0, 220, 255, 0.12),
-                inset 0 1px 0 rgba(0, 0, 0, 0.45);
+            box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.45);
         }
         /* Centre strip: Spectrum · A> · Fade · vol · Mix · B> · VIDEO (original order). */
         #radio-visual-root .radio-visual-digital-toolbar-main {
