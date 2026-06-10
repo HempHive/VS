@@ -701,14 +701,14 @@
             font-weight: 700;
         }
         #radio-visual-root .radio-visual-digital-stations-deck--a {
-            color: #9bec00;
-            border: 1px solid rgba(155, 236, 0, 0.45);
-            background: rgba(155, 236, 0, 0.08);
+            color: #ff0b55;
+            border: 1px solid rgba(255, 11, 85, 0.35);
+            background: rgba(255, 11, 85, 0.14);
         }
         #radio-visual-root .radio-visual-digital-stations-deck--b {
-            color: #f94c10;
-            border: 1px solid rgba(249, 76, 16, 0.45);
-            background: rgba(249, 76, 16, 0.08);
+            color: #5800ff;
+            border: 1px solid rgba(88, 0, 255, 0.35);
+            background: rgba(88, 0, 255, 0.14);
         }
         #radio-visual-root .radio-visual-digital-stations-title {
             flex: 1 1 auto;
