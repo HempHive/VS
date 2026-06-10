@@ -808,7 +808,33 @@
                     };
                     fill(this.root.querySelector('#rv-digital-stations-list-a'), 'a');
                     fill(this.root.querySelector('#rv-digital-stations-list-b'), 'b');
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            try { this._scrollDigitalStationsListsToActive(); } catch (_) {}
+                        });
+                    });
                 } catch (_) {}
+            }
+
+            _scrollDigitalStationsListToActive(deckKey) {
+                const dk = deckKey === 'b' ? 'b' : 'a';
+                const list = this.root?.querySelector(`#rv-digital-stations-list-${dk}`);
+                if (!list) return;
+                const scroll = list.closest('.radio-visual-digital-stations-scroll');
+                if (!scroll) return;
+                const active = list.querySelector('.radio-item.active');
+                if (!active) return;
+                const scrollRect = scroll.getBoundingClientRect();
+                const activeRect = active.getBoundingClientRect();
+                const delta = (activeRect.top + activeRect.height / 2)
+                    - (scrollRect.top + scrollRect.height / 2);
+                scroll.scrollTop += delta;
+            }
+
+            _scrollDigitalStationsListsToActive() {
+                if (!this._digitalStationsVisible) return;
+                try { this._scrollDigitalStationsListToActive('a'); } catch (_) {}
+                try { this._scrollDigitalStationsListToActive('b'); } catch (_) {}
             }
 
             _syncDigitalStationsActiveHighlight() {
@@ -824,6 +850,9 @@
                     };
                     apply(this.root.querySelector('#rv-digital-stations-list-a'), g.currentStationIndex);
                     apply(this.root.querySelector('#rv-digital-stations-list-b'), g.currentStationBIndex);
+                    requestAnimationFrame(() => {
+                        try { this._scrollDigitalStationsListsToActive(); } catch (_) {}
+                    });
                 } catch (_) {}
             }
 
