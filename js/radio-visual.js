@@ -135,6 +135,8 @@
                     : 'https://www.karaokenerds.com/#query';
                 /** Local playlists panel (Deck A & B) over the spectrum area */
                 this._digitalLocalQueueVisible = false;
+                /** Radio stations panel (Deck A & B) over the spectrum area */
+                this._digitalStationsVisible = false;
                 this._rvAutoMixTimerId = null;
                 this._rvAutoMixNextFadeAt = 0;
                 this._rvAutoMixNextFadeIntervalId = null;
@@ -677,6 +679,181 @@
                 });
             }
 
+            _buildDigitalStationsPanel() {
+                const panel = document.createElement('div');
+                panel.id = 'radio-visual-digital-stations-panel';
+                panel.className = 'radio-visual-digital-stations-panel display-none';
+                panel.setAttribute('aria-label', 'Radio stations');
+                const header = document.createElement('div');
+                header.className = 'radio-visual-digital-stations-header';
+                header.textContent = 'Radio stations · Deck A & B';
+                const cols = document.createElement('div');
+                cols.className = 'radio-visual-digital-stations-columns';
+                const wireNav = (deck, delta) => {
+                    const g = globalThis;
+                    if (g.uiLocked) return;
+                    const list = g.stations;
+                    if (!list || !list.length) return;
+                    const cur = deck === 'b' ? g.currentStationBIndex : g.currentStationIndex;
+                    const idx = (cur + delta + list.length) % list.length;
+                    if (deck === 'b') {
+                        if (typeof g.setStationB === 'function') g.setStationB(idx);
+                    } else if (typeof g.setStation === 'function') {
+                        g.setStation(idx);
+                    }
+                };
+                const mkCol = (deck) => {
+                    const col = document.createElement('div');
+                    col.className = 'radio-visual-digital-stations-col';
+                    col.dataset.deck = deck;
+                    const head = document.createElement('div');
+                    head.className = 'radio-visual-digital-stations-col-head';
+                    const deckBadge = document.createElement('span');
+                    deckBadge.className = `radio-visual-digital-stations-deck radio-visual-digital-stations-deck--${deck}`;
+                    deckBadge.textContent = deck === 'b' ? 'B' : 'A';
+                    const title = document.createElement('span');
+                    title.className = 'radio-visual-digital-stations-title';
+                    title.textContent = deck === 'b' ? 'Deck B' : 'Deck A';
+                    const nav = document.createElement('div');
+                    nav.className = 'radio-visual-digital-stations-nav';
+                    const prev = document.createElement('button');
+                    prev.type = 'button';
+                    prev.className = 'radio-visual-digital-stations-nav-btn';
+                    prev.textContent = '◀';
+                    prev.title = deck === 'b' ? 'Previous station on Deck B' : 'Previous station on Deck A';
+                    prev.setAttribute('aria-label', prev.title);
+                    const next = document.createElement('button');
+                    next.type = 'button';
+                    next.className = 'radio-visual-digital-stations-nav-btn';
+                    next.textContent = '▶';
+                    next.title = deck === 'b' ? 'Next station on Deck B' : 'Next station on Deck A';
+                    next.setAttribute('aria-label', next.title);
+                    prev.addEventListener('click', (ev) => {
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        wireNav(deck, -1);
+                    });
+                    next.addEventListener('click', (ev) => {
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        wireNav(deck, 1);
+                    });
+                    nav.appendChild(prev);
+                    nav.appendChild(next);
+                    head.appendChild(deckBadge);
+                    head.appendChild(title);
+                    head.appendChild(nav);
+                    const scroll = document.createElement('div');
+                    scroll.className = 'radio-visual-digital-stations-scroll';
+                    const list = document.createElement('div');
+                    list.id = `rv-digital-stations-list-${deck}`;
+                    list.className = 'radio-visual-digital-stations-list';
+                    scroll.appendChild(list);
+                    col.appendChild(head);
+                    col.appendChild(scroll);
+                    return col;
+                };
+                cols.appendChild(mkCol('a'));
+                cols.appendChild(mkCol('b'));
+                panel.appendChild(header);
+                panel.appendChild(cols);
+                return panel;
+            }
+
+            _refreshDigitalStationsUi() {
+                if (!this.root || !this._digitalStationsVisible) return;
+                try {
+                    const g = globalThis;
+                    const stationList = g.stations;
+                    if (!stationList || !stationList.length) return;
+                    const fill = (root, deckKey) => {
+                        if (!root) return;
+                        root.innerHTML = '';
+                        stationList.forEach((s, i) => {
+                            const item = document.createElement('div');
+                            item.className = 'radio-item';
+                            item.dataset.index = String(i);
+                            item.dataset.deck = deckKey;
+                            const activeIdx = deckKey === 'b' ? g.currentStationBIndex : g.currentStationIndex;
+                            if (i === activeIdx) item.classList.add('active');
+                            const nameEl = document.createElement('div');
+                            nameEl.textContent = s.name;
+                            const goEl = document.createElement('div');
+                            goEl.textContent = '➤';
+                            item.appendChild(nameEl);
+                            item.appendChild(goEl);
+                            item.addEventListener('click', () => {
+                                if (g.uiLocked) return;
+                                if (deckKey === 'b') {
+                                    if (typeof g.setStationB === 'function') g.setStationB(i);
+                                } else if (typeof g.setStation === 'function') {
+                                    g.setStation(i);
+                                }
+                            });
+                            root.appendChild(item);
+                        });
+                    };
+                    fill(this.root.querySelector('#rv-digital-stations-list-a'), 'a');
+                    fill(this.root.querySelector('#rv-digital-stations-list-b'), 'b');
+                } catch (_) {}
+            }
+
+            _syncDigitalStationsActiveHighlight() {
+                if (!this.root || !this._digitalStationsVisible) return;
+                try {
+                    const g = globalThis;
+                    const apply = (root, activeIdx) => {
+                        if (!root) return;
+                        Array.from(root.children).forEach((el) => {
+                            const idx = Number(el.dataset.index || -1);
+                            el.classList.toggle('active', idx === activeIdx);
+                        });
+                    };
+                    apply(this.root.querySelector('#rv-digital-stations-list-a'), g.currentStationIndex);
+                    apply(this.root.querySelector('#rv-digital-stations-list-b'), g.currentStationBIndex);
+                } catch (_) {}
+            }
+
+            _syncDigitalStationsButton() {
+                const grid = this.els.digitalBtns;
+                if (!grid) return;
+                const on = !!this._digitalStationsVisible;
+                grid.querySelectorAll('[data-rv-stations]').forEach((btn) => {
+                    btn.classList.toggle('is-active', on);
+                    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+            }
+
+            _closeDigitalStationsPanel() {
+                if (!this._digitalStationsVisible) return;
+                this._digitalStationsVisible = false;
+                const pane = this.els.digitalCenterSpectrum;
+                const panel = this.els.digitalStationsPanel;
+                if (pane) pane.classList.remove('is-stations-open');
+                if (panel) panel.classList.add('display-none');
+                try { this._syncDigitalStationsButton(); } catch (_) {}
+            }
+
+            _toggleDigitalStationsPanel() {
+                const opening = !this._digitalStationsVisible;
+                if (opening) {
+                    try { this._closeDigitalLocalQueuePanel(); } catch (_) {}
+                    if (this._digitalStagingView) {
+                        this._digitalStagingView = null;
+                        try { this._tearDownDigitalStagingView(); } catch (_) {}
+                        try { this._syncDigitalStagingButtons(); } catch (_) {}
+                    }
+                }
+                this._digitalStationsVisible = !this._digitalStationsVisible;
+                const pane = this.els.digitalCenterSpectrum;
+                const panel = this.els.digitalStationsPanel;
+                if (pane) pane.classList.toggle('is-stations-open', this._digitalStationsVisible);
+                if (panel) panel.classList.toggle('display-none', !this._digitalStationsVisible);
+                if (this._digitalStationsVisible) {
+                    try { this._refreshDigitalStationsUi(); } catch (_) {}
+                }
+                try { this._syncDigitalStationsButton(); } catch (_) {}
+                try { resetIdleTimer(); } catch (_) {}
+            }
+
             _closeDigitalLocalQueuePanel() {
                 if (!this._digitalLocalQueueVisible) return;
                 this._digitalLocalQueueVisible = false;
@@ -688,6 +865,10 @@
             }
 
             _toggleDigitalLocalQueuePanel() {
+                const opening = !this._digitalLocalQueueVisible;
+                if (opening) {
+                    try { this._closeDigitalStationsPanel(); } catch (_) {}
+                }
                 this._digitalLocalQueueVisible = !this._digitalLocalQueueVisible;
                 if (this._digitalLocalQueueVisible && this._digitalStagingView) {
                     this._digitalStagingView = null;
@@ -931,6 +1112,9 @@
                 if (this._digitalLocalQueueVisible) {
                     try { this._closeDigitalLocalQueuePanel(); } catch (_) {}
                 }
+                if (this._digitalStationsVisible) {
+                    try { this._closeDigitalStationsPanel(); } catch (_) {}
+                }
                 if (this._digitalStagingView === k) {
                     this._digitalStagingView = null;
                     this._tearDownDigitalStagingView();
@@ -1120,6 +1304,9 @@
             _toggleDigitalVideoToolbarButton() {
                 if (this._digitalLocalQueueVisible) {
                     try { this._closeDigitalLocalQueuePanel(); } catch (_) {}
+                }
+                if (this._digitalStationsVisible) {
+                    try { this._closeDigitalStationsPanel(); } catch (_) {}
                 }
                 if (this._digitalStagingView) {
                     this._digitalStagingView = null;
@@ -4837,6 +5024,7 @@
             /** Default spectrum layout: no staging overlay, central dash visible. */
             _returnToDefaultDigitalSpectrumView() {
                 try { this._closeDigitalLocalQueuePanel(); } catch (_) {}
+                try { this._closeDigitalStationsPanel(); } catch (_) {}
                 if (this._digitalStagingView) {
                     this._digitalStagingView = null;
                     try { this._tearDownDigitalStagingView(); } catch (_) {}
@@ -4863,6 +5051,7 @@
                 const wasDeckB = this.digitalCenterMode === 'deckB';
                 if (next !== 'spectrum') {
                     try { this._closeDigitalLocalQueuePanel(); } catch (_) {}
+                    try { this._closeDigitalStationsPanel(); } catch (_) {}
                 }
                 this.digitalCenterMode = next;
                 try { localStorage.setItem('radioVisual.digitalCenter.v1', next); } catch (_) {}
@@ -6293,6 +6482,10 @@
                         this._withDjDeck((dj) => dj.toggleDeckBQueuePanel());
                     }},
                     { label: 'Stations', fn: () => {
+                        if (deckBInPanel) {
+                            this._toggleDigitalStationsPanel();
+                            return;
+                        }
                         try {
                             if (g.uiLocked) return;
                             if (typeof g.toggleRadioPanel === 'function') g.toggleRadioPanel();
@@ -6328,12 +6521,18 @@
                         b.dataset.rvLocalQueue = '1';
                         b.title = 'Local playlists · Deck A & B';
                     }
+                    if (deckBInPanel && it.label === 'Stations') {
+                        b.dataset.rvStations = '1';
+                        b.title = 'Radio stations · Deck A & B';
+                        b.setAttribute('aria-label', 'Radio stations');
+                    }
                     this._bindAction(b, it.fn);
                     gridEl.appendChild(b);
                 });
                 if (deckBInPanel) {
                     this._syncDigitalStagingButtons();
                     this._syncDigitalLocalQueueButton();
+                    this._syncDigitalStationsButton();
                     this._wireDigitalFeatureButtonLabelFit(gridEl);
                 }
             }
@@ -6658,6 +6857,7 @@
                 let btnDigitalFade = null;
                 let digitalStagingMount = null;
                 let digitalLocalQueuePanel = null;
+                let digitalStationsPanel = null;
                 let digitalAutoMixPanel = null;
                 let digitalAutoMixSlider = null;
                 let digitalAutoMixReadout = null;
@@ -6936,10 +7136,12 @@
                 digitalStagingMount.className = 'radio-visual-digital-staging-mount';
                 digitalStagingMount.setAttribute('aria-hidden', 'true');
                 digitalLocalQueuePanel = this._buildDigitalLocalQueuePanel();
+                digitalStationsPanel = this._buildDigitalStationsPanel();
                 digitalCenterSpectrum.appendChild(spectrumBg);
                 digitalCenterSpectrum.appendChild(digitalSpectrumRow);
                 digitalCenterSpectrum.appendChild(digitalStagingMount);
                 digitalCenterSpectrum.appendChild(digitalLocalQueuePanel);
+                digitalCenterSpectrum.appendChild(digitalStationsPanel);
                 digitalCenterDeckB = document.createElement('div');
                 digitalCenterDeckB.className = 'radio-visual-digital-center-pane';
                 digitalDeckBMount = document.createElement('div');
@@ -7125,6 +7327,7 @@
                     digitalDashStack: dashStack,
                     digitalCenterSpectrum,
                     digitalLocalQueuePanel,
+                    digitalStationsPanel,
                     digitalCenterDeckB,
                     spectrumSideL,
                     spectrumSideR,
@@ -7251,6 +7454,12 @@
                                 if (typeof prevRefresh === 'function') prevRefresh();
                             } catch (_) {}
                             try { engine._refreshDigitalLocalQueueUi(); } catch (_) {}
+                        };
+                        window.__refreshDigitalStationsUi = () => {
+                            try { engine._refreshDigitalStationsUi(); } catch (_) {}
+                        };
+                        window.__syncDigitalStationsActiveHighlight = () => {
+                            try { engine._syncDigitalStationsActiveHighlight(); } catch (_) {}
                         };
                     } catch (_) {}
                     if (btnDigitalSpectrum) {

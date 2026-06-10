@@ -5168,6 +5168,9 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                 if (listB) listB.appendChild(mkItem('b'));
             });
             try { syncTopMenuStationsLayout(); } catch (_) {}
+            try {
+                if (typeof window.__refreshDigitalStationsUi === 'function') window.__refreshDigitalStationsUi();
+            } catch (_) {}
         }
 
         function setStation(index, opts) {
@@ -5210,6 +5213,11 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             };
             apply(radioListEl, currentStationIndex);
             apply(radioListElB || document.getElementById('radio-list-b'), currentStationBIndex);
+            try {
+                if (typeof window.__syncDigitalStationsActiveHighlight === 'function') {
+                    window.__syncDigitalStationsActiveHighlight();
+                }
+            } catch (_) {}
         }
 
         function pickRandomStation() {

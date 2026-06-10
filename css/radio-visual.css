@@ -642,6 +642,119 @@
             visibility: hidden;
             pointer-events: none;
         }
+        #radio-visual-root .radio-visual-digital-stations-panel {
+            position: absolute;
+            inset: 0;
+            z-index: 25;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            pointer-events: auto;
+            border-radius: inherit;
+            background: rgba(0, 10, 18, 0.94);
+        }
+        #radio-visual-root .radio-visual-digital-stations-panel.display-none {
+            display: none !important;
+        }
+        #radio-visual-root .radio-visual-digital-stations-header {
+            flex: 0 0 auto;
+            padding: 10px 14px 8px;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.72);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #radio-visual-root .radio-visual-digital-stations-columns {
+            flex: 1 1 0;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 8px 10px 10px;
+        }
+        #radio-visual-root .radio-visual-digital-stations-col {
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            overflow: hidden;
+        }
+        #radio-visual-root .radio-visual-digital-stations-col-head {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #radio-visual-root .radio-visual-digital-stations-deck {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        #radio-visual-root .radio-visual-digital-stations-deck--a {
+            color: #9bec00;
+            border: 1px solid rgba(155, 236, 0, 0.45);
+            background: rgba(155, 236, 0, 0.08);
+        }
+        #radio-visual-root .radio-visual-digital-stations-deck--b {
+            color: #f94c10;
+            border: 1px solid rgba(249, 76, 16, 0.45);
+            background: rgba(249, 76, 16, 0.08);
+        }
+        #radio-visual-root .radio-visual-digital-stations-title {
+            flex: 1 1 auto;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.88);
+        }
+        #radio-visual-root .radio-visual-digital-stations-nav {
+            display: flex;
+            gap: 4px;
+        }
+        #radio-visual-root .radio-visual-digital-stations-nav-btn {
+            min-width: 28px;
+            height: 24px;
+            padding: 0 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.85);
+            cursor: pointer;
+            font-size: 11px;
+        }
+        #radio-visual-root .radio-visual-digital-stations-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: rgba(255, 255, 255, 0.35);
+        }
+        #radio-visual-root .radio-visual-digital-stations-scroll {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow: auto;
+            padding: 8px;
+        }
+        #radio-visual-root .radio-visual-digital-stations-scroll::-webkit-scrollbar { width: 8px; }
+        #radio-visual-root .radio-visual-digital-stations-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 8px; }
+        #radio-visual-root .radio-visual-digital-stations-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.28); border-radius: 8px; }
+        #radio-visual-root .radio-visual-digital-stations-list .radio-item {
+            margin: 4px 0;
+            font-size: 12px;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane.is-stations-open .radio-visual-digital-spectrum-row,
+        #radio-visual-root .radio-visual-digital-center-pane.is-stations-open .radio-visual-digital-staging-mount.is-active {
+            visibility: hidden;
+            pointer-events: none;
+        }
         #radio-visual-root .radio-visual-digital-staging-mount:fullscreen,
         #radio-visual-root .radio-visual-digital-staging-mount:-webkit-full-screen {
             display: flex;
