@@ -5001,6 +5001,25 @@
             }
 
             /** equaliser → volume → effects → live → video → off → spectrum → equaliser */
+            _setDigitalHubModeOff() {
+                if (this._digitalStagingView) {
+                    this._digitalStagingView = null;
+                    try { this._tearDownDigitalStagingView(); } catch (_) {}
+                    try { this._syncDigitalStagingButtons(); } catch (_) {}
+                }
+                if (this.digitalCenterMode !== 'spectrum') {
+                    try { this._setDigitalCenterMode('spectrum'); } catch (_) {}
+                }
+                const prev = this._digitalHubMode;
+                if (prev === 'video') {
+                    this._pauseDigitalHubDeckVideo();
+                    if ((this._digitalVideoToolbarStep || 0) <= 1) this._resetDigitalVideoToolbarStep();
+                }
+                this._digitalHubMode = 'ai-off';
+                try { this._syncDigitalSpectrumLayout(); } catch (_) {}
+                try { resetIdleTimer(); } catch (_) {}
+            }
+
             _cycleDigitalSpectrumLayout() {
                 if (this._digitalHubMode === 'ai') {
                     this._exitDigitalHubAiMode();
@@ -7465,6 +7484,11 @@
                     if (btnDigitalSpectrum) {
                         btnDigitalSpectrum.setAttribute('aria-label', 'Centre display mode');
                         try { this._syncDigitalSpectrumButtonState(); } catch (_) {}
+                        btnDigitalSpectrum.addEventListener('contextmenu', (ev) => {
+                            this._stopClick(ev);
+                            try { ev.preventDefault(); } catch (_) {}
+                            this._setDigitalHubModeOff();
+                        }, sig);
                         btnDigitalSpectrum.addEventListener('click', (ev) => {
                             this._stopClick(ev);
                             if (this.digitalCenterMode !== 'spectrum' || this._digitalStagingView) {
