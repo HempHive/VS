@@ -2131,6 +2131,9 @@
             text-overflow: ellipsis;
             text-shadow: 0 0 6px rgba(0, 200, 255, 0.45);
         }
+        #radio-visual-root .radio-visual-digital-toolbar-text-btn[data-rv-digital="ai"] .radio-visual-btn-label {
+            text-transform: none;
+        }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-btn {
             display: flex;
             align-items: center;
