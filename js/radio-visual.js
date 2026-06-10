@@ -1897,29 +1897,49 @@
             _wireDigitalStagingEmbedFullscreen(mount, shell) {
                 if (!mount || !shell) return;
                 try {
-                    mount.title = 'Fullscreen button or double-click border · Esc to exit';
+                    mount.title = 'Video or staging fullscreen buttons · Esc to exit';
                 } catch (_) {}
-                const toggle = () => {
+                const mountToggle = () => {
                     try { this._toggleDigitalStagingMountFullscreen(); } catch (_) {}
                 };
-                if (!shell.querySelector('.radio-visual-digital-embed-fs-btn')) {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'radio-visual-digital-embed-fs-btn';
-                    btn.textContent = '⛶';
-                    btn.title = 'Fullscreen staging area (Esc to exit)';
-                    btn.setAttribute('aria-label', 'Fullscreen staging area');
-                    btn.addEventListener('click', (ev) => {
-                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
-                        toggle();
-                    });
-                    shell.appendChild(btn);
+                const iframeToggle = () => {
+                    try { this._toggleDigitalStagingEmbedIframeFullscreen(); } catch (_) {}
+                };
+                if (!shell.querySelector('.radio-visual-digital-embed-fs-toolbar')) {
+                    const toolbar = document.createElement('div');
+                    toolbar.className = 'radio-visual-digital-embed-fs-toolbar';
+                    const mkBtn = (className, text, title, handler) => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = `radio-visual-digital-embed-fs-btn ${className}`;
+                        btn.textContent = text;
+                        btn.title = title;
+                        btn.setAttribute('aria-label', title);
+                        btn.addEventListener('click', (ev) => {
+                            try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                            handler();
+                        });
+                        return btn;
+                    };
+                    toolbar.appendChild(mkBtn(
+                        'radio-visual-digital-embed-iframe-fs-btn',
+                        '⤢',
+                        'Fullscreen video (Esc to exit)',
+                        iframeToggle
+                    ));
+                    toolbar.appendChild(mkBtn(
+                        'radio-visual-digital-embed-mount-fs-btn',
+                        '⛶',
+                        'Fullscreen staging area (Esc to exit)',
+                        mountToggle
+                    ));
+                    shell.appendChild(toolbar);
                 }
                 if (shell.dataset.rvEmbedFsWired === '1') return;
                 shell.dataset.rvEmbedFsWired = '1';
                 const onDbl = (ev) => {
                     try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
-                    toggle();
+                    mountToggle();
                 };
                 shell.addEventListener('dblclick', onDbl);
                 if (mount.dataset.rvEmbedFsWired !== '1') {
@@ -1927,6 +1947,12 @@
                     const sig = this.abortCtrl ? { signal: this.abortCtrl.signal } : undefined;
                     mount.addEventListener('dblclick', onDbl, sig);
                 }
+            }
+
+            _getDigitalStagingEmbedIframe() {
+                const mount = this._stagingContentMount();
+                if (!mount) return null;
+                return mount.querySelector('.radio-visual-digital-embed-frame');
             }
 
             _getDigitalStagingMountFullscreenEl() {
@@ -1938,6 +1964,47 @@
                 return null;
             }
 
+            _isDigitalStagingEmbedIframeFullscreen() {
+                const iframe = this._getDigitalStagingEmbedIframe();
+                const fs = document.fullscreenElement || document.webkitFullscreenElement;
+                return !!(iframe && fs && fs === iframe);
+            }
+
+            _isDigitalStagingMountOnlyFullscreen() {
+                const mount = this._stagingContentMount();
+                const fs = document.fullscreenElement || document.webkitFullscreenElement;
+                return !!(mount && fs && fs === mount);
+            }
+
+            _requestStagingFullscreen(target) {
+                if (!target) return Promise.resolve(false);
+                const req = target.requestFullscreen || target.webkitRequestFullscreen;
+                if (!req) return Promise.resolve(false);
+                try {
+                    return Promise.resolve(req.call(target)).then(() => true).catch(() => false);
+                } catch (_) {
+                    return Promise.resolve(false);
+                }
+            }
+
+            _exitStagingFullscreen() {
+                try {
+                    if (!this._getDigitalStagingMountFullscreenEl()) return Promise.resolve();
+                    if (document.exitFullscreen) {
+                        return document.exitFullscreen()
+                            .then(() => this._afterDigitalStagingMountFullscreen())
+                            .catch(() => {
+                                this._afterDigitalStagingMountFullscreen();
+                            });
+                    }
+                    if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                        this._afterDigitalStagingMountFullscreen();
+                    }
+                } catch (_) {}
+                return Promise.resolve();
+            }
+
             _afterDigitalStagingMountFullscreen() {
                 setTimeout(() => {
                     try { if (this._rvDigitalPmResize) this._rvDigitalPmResize(); } catch (_) {}
@@ -1946,15 +2013,30 @@
             }
 
             _exitDigitalStagingMountFullscreen() {
-                try {
-                    if (!this._getDigitalStagingMountFullscreenEl()) return;
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen().then(() => this._afterDigitalStagingMountFullscreen()).catch(() => this._afterDigitalStagingMountFullscreen());
-                    } else if (document.webkitExitFullscreen) {
-                        document.webkitExitFullscreen();
-                        this._afterDigitalStagingMountFullscreen();
-                    }
-                } catch (_) {}
+                try { this._exitStagingFullscreen(); } catch (_) {}
+            }
+
+            _toggleDigitalStagingEmbedIframeFullscreen() {
+                const mount = this._stagingContentMount();
+                const iframe = this._getDigitalStagingEmbedIframe();
+                if (!mount || !iframe || this._digitalStagingView !== 'karaoke') return;
+                const now = Date.now();
+                if (now - (this._rvStagingEmbedIframeFsToggleAt || 0) < 450) return;
+                this._rvStagingEmbedIframeFsToggleAt = now;
+                if (this._isDigitalStagingEmbedIframeFullscreen()) {
+                    this._exitStagingFullscreen();
+                    return;
+                }
+                const enterIframeFs = () => {
+                    this._requestStagingFullscreen(iframe).then((ok) => {
+                        if (ok) this._afterDigitalStagingMountFullscreen();
+                    });
+                };
+                if (this._getDigitalStagingMountFullscreenEl()) {
+                    this._exitStagingFullscreen().then(enterIframeFs);
+                    return;
+                }
+                enterIframeFs();
             }
 
             _toggleDigitalStagingMountFullscreen() {
@@ -1966,16 +2048,20 @@
                 const now = Date.now();
                 if (now - (this._rvStagingPmFsToggleAt || 0) < 450) return;
                 this._rvStagingPmFsToggleAt = now;
-                try {
-                    if (this._getDigitalStagingMountFullscreenEl()) {
-                        this._exitDigitalStagingMountFullscreen();
-                        return;
-                    }
-                    const req = mount.requestFullscreen || mount.webkitRequestFullscreen;
-                    if (req) {
-                        req.call(mount).then(() => this._afterDigitalStagingMountFullscreen()).catch(() => {});
-                    }
-                } catch (_) {}
+                if (this._isDigitalStagingMountOnlyFullscreen()) {
+                    this._exitStagingFullscreen();
+                    return;
+                }
+                const enterMountFs = () => {
+                    this._requestStagingFullscreen(mount).then((ok) => {
+                        if (ok) this._afterDigitalStagingMountFullscreen();
+                    });
+                };
+                if (this._getDigitalStagingMountFullscreenEl()) {
+                    this._exitStagingFullscreen().then(enterMountFs);
+                    return;
+                }
+                enterMountFs();
             }
 
             _afterDigitalStagingPmFullscreen() {
