@@ -1569,7 +1569,8 @@ const QUALITY = {
             }
             return enabled;
         }
-        const WEBM_DEFAULT_SCALE_VW = 50;
+        const WEBM_SETTINGS_STORAGE_KEY = 'webm.avatar.settings.v1';
+        const WEBM_DEFAULT_SCALE_VW = 42;
         const WEBM_DEFAULT_DUP_SPACING = 0.6;
         const webmSettings = {
             scaleVw: WEBM_DEFAULT_SCALE_VW,
@@ -1581,6 +1582,44 @@ const QUALITY = {
             duplicates: 0,
             duplicateSpacing: WEBM_DEFAULT_DUP_SPACING
         };
+        function loadWebmSettingsFromStorage() {
+            try {
+                const raw = localStorage.getItem(WEBM_SETTINGS_STORAGE_KEY);
+                if (!raw) return;
+                const saved = JSON.parse(raw);
+                if (!saved || typeof saved !== 'object') return;
+                const num = (v, fallback, min, max) => {
+                    const n = Number(v);
+                    if (!Number.isFinite(n)) return fallback;
+                    if (min != null && n < min) return min;
+                    if (max != null && n > max) return max;
+                    return n;
+                };
+                webmSettings.scaleVw = num(saved.scaleVw, WEBM_DEFAULT_SCALE_VW, 10, 200);
+                webmSettings.posXvw = num(saved.posXvw, 50, 0, 100);
+                webmSettings.posYvh = num(saved.posYvh, 50, 0, 100);
+                webmSettings.rotationDeg = num(saved.rotationDeg, 0, -180, 180);
+                webmSettings.playbackRate = num(saved.playbackRate, 1.0, 0.1, 4);
+                webmSettings.opacity = num(saved.opacity, 0.82, 0, 1);
+                webmSettings.duplicates = Math.max(0, Math.min(2, Math.round(num(saved.duplicates, 0, 0, 2))));
+                webmSettings.duplicateSpacing = num(saved.duplicateSpacing, WEBM_DEFAULT_DUP_SPACING, 0.15, 1);
+            } catch (_) {}
+        }
+        function saveWebmSettingsToStorage() {
+            try {
+                localStorage.setItem(WEBM_SETTINGS_STORAGE_KEY, JSON.stringify({
+                    scaleVw: webmSettings.scaleVw,
+                    posXvw: webmSettings.posXvw,
+                    posYvh: webmSettings.posYvh,
+                    rotationDeg: webmSettings.rotationDeg,
+                    playbackRate: webmSettings.playbackRate,
+                    opacity: webmSettings.opacity,
+                    duplicates: webmSettings.duplicates,
+                    duplicateSpacing: webmSettings.duplicateSpacing
+                }));
+            } catch (_) {}
+        }
+        loadWebmSettingsFromStorage();
         // EQ State Storage
         const eqState = {
             a: { gain: 1.0, high: 0, mid: 0, low: 0 },
@@ -7245,6 +7284,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 webmVideoRightEl.style.left = `${offsetVw}vw`;
                 webmVideoRightEl.style.top = `0`;
             } catch (_) {}
+            try { saveWebmSettingsToStorage(); } catch (_) {}
         }
         // --- MODE SHUFFLE ---
         function setModeShuffle(on) {
