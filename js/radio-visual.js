@@ -2761,6 +2761,14 @@
                 try { this._onDigitalVisBgTap(); } catch (_) {}
             }
 
+            /** / — toggle Digital Radio Ai button (auto-mix + AI video hub). */
+            toggleDigitalAiFromShortcut() {
+                if (this.skin !== 'digital') return;
+                this._toggleAutoMix();
+                if (this._isAutoMixEnabled()) this._enterDigitalHubAiMode();
+                else this._exitDigitalHubAiMode();
+            }
+
             /** C: ProjectM staging → next preset; otherwise cycle centre hub (Equaliser → … → Off). */
             triggerCFromShortcut() {
                 if (this._digitalStagingView === 'projectm' && typeof this.nextPreset === 'function') {
@@ -6534,7 +6542,7 @@
                     ...(deckBInPanel ? [
                         { label: 'Audio:Bar', fn: () => { this._toggleDigitalStagingFeature('bars'); } },
                         { label: 'ProjectM', fn: () => { this._toggleDigitalStagingFeature('projectm'); } },
-                        { label: 'TEXT-IN', fn: () => { try { g.toggleTextInPanel?.(); } catch (_) {} } }
+                        { label: 'CHAT', fn: () => { try { g.toggleTextInPanel?.(); } catch (_) {} } }
                     ] : [
                         { label: 'Video', fn: () => {
                             this._withDjDeck((dj) => {
@@ -6581,9 +6589,9 @@
                         b.title = 'Open DJ Decks visual';
                         b.setAttribute('aria-label', 'Open DJ Decks visual');
                     }
-                    if (deckBInPanel && it.label === 'TEXT-IN') {
-                        b.title = 'Open or close TEXT-IN panel';
-                        b.setAttribute('aria-label', 'TEXT-IN panel');
+                    if (deckBInPanel && it.label === 'CHAT') {
+                        b.title = 'Open or close CHAT panel';
+                        b.setAttribute('aria-label', 'CHAT panel');
                     }
                     const stagingKind = stagingByLabel[it.label];
                     if (deckBInPanel && stagingKind) {
@@ -7331,7 +7339,7 @@
                     return b;
                 };
                 const btnDeckATransport = mkRvStationBtn('A >', 'a');
-                const btnAi = mkRvDigitalBtn('ai', 'AI');
+                const btnAi = mkRvDigitalBtn('ai', 'Ai');
                 const btnFade = mkRvDigitalBtn('fade', 'Fade');
                 const btnDeckBTransport = mkRvStationBtn('B >', 'b');
                 btnXfadeStation = document.createElement('button');

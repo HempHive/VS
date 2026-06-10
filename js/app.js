@@ -189,6 +189,8 @@ const QUALITY = {
             return true;
         }
         const USER_RADIO_STATIONS_KEY = 'djUserRadioStations.v1';
+        const LAST_STATION_A_STORAGE_KEY = 'dj.lastStation.a.v1';
+        const LAST_STATION_B_STORAGE_KEY = 'dj.lastStation.b.v1';
         let userRadioStations = [];
         const deckVideoFeeds = { a: null, b: null };
         const deckVideoHistory = { a: [], b: [] };
@@ -790,6 +792,61 @@ const QUALITY = {
         function saveUserRadioStations() {
             try { localStorage.setItem(USER_RADIO_STATIONS_KEY, JSON.stringify(userRadioStations.slice(0, 200))); } catch (_) {}
         }
+        function resolveStationIndexFromSaved(saved) {
+            if (!Array.isArray(stations) || !stations.length) return -1;
+            if (!saved || typeof saved !== 'object') return -1;
+            const url = saved.url ? sanitizeUrlForAudio(String(saved.url)) : '';
+            if (url) {
+                const byUrl = stations.findIndex((s) => s && sanitizeUrlForAudio(String(s.url || '')) === url);
+                if (byUrl >= 0) return byUrl;
+            }
+            const idx = Number(saved.index);
+            if (Number.isFinite(idx) && idx >= 0 && idx < stations.length) return idx;
+            return -1;
+        }
+        function saveLastStationSelection(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            const idx = dk === 'b' ? currentStationBIndex : currentStationIndex;
+            if (typeof idx !== 'number' || idx < 0 || !Array.isArray(stations) || idx >= stations.length || !stations[idx]) return;
+            const key = dk === 'b' ? LAST_STATION_B_STORAGE_KEY : LAST_STATION_A_STORAGE_KEY;
+            try {
+                localStorage.setItem(key, JSON.stringify({
+                    index: idx,
+                    url: sanitizeUrlForAudio(String(stations[idx].url || ''))
+                }));
+            } catch (_) {}
+        }
+        function loadLastStationSelections() {
+            let idxA = -1;
+            let idxB = -1;
+            try {
+                const rawA = localStorage.getItem(LAST_STATION_A_STORAGE_KEY);
+                if (rawA) idxA = resolveStationIndexFromSaved(JSON.parse(rawA));
+            } catch (_) {}
+            try {
+                const rawB = localStorage.getItem(LAST_STATION_B_STORAGE_KEY);
+                if (rawB) idxB = resolveStationIndexFromSaved(JSON.parse(rawB));
+            } catch (_) {}
+            return { a: idxA, b: idxB };
+        }
+        function applySavedStationSelections() {
+            if (!Array.isArray(stations) || !stations.length) return;
+            const saved = loadLastStationSelections();
+            if (saved.a >= 0) {
+                currentStationIndex = saved.a;
+                if (radioInputEl) radioInputEl.value = stations[saved.a].url;
+            } else if (typeof currentStationIndex !== 'number' || currentStationIndex < 0) {
+                currentStationIndex = 0;
+                if (radioInputEl) radioInputEl.value = stations[0].url;
+            }
+            if (saved.b >= 0) {
+                currentStationBIndex = saved.b;
+            } else if (typeof currentStationBIndex !== 'number' || currentStationBIndex < 0) {
+                currentStationBIndex = 0;
+            } else if (currentStationBIndex >= stations.length) {
+                currentStationBIndex = stations.length - 1;
+            }
+        }
         /** Add or enable a user station in the Radio station cycle list (from pasted stream URLs). */
         function addUserRadioStation(url, name) {
             const clean = sanitizeUrlForAudio(url);
@@ -899,6 +956,7 @@ const QUALITY = {
             try { renderStationList(); } catch (_) {}
             try { refreshMixStationB(); } catch (_) {}
             try { updateStationActiveHighlight(); } catch (_) {}
+            try { saveLastStationSelection('a'); saveLastStationSelection('b'); } catch (_) {}
             try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
         function upsertMediaVideoQueueEntry(url, label) {
@@ -3400,7 +3458,10 @@ function exposeAppBindingsToGlobal() {
     try {
         Object.defineProperty(g, 'currentStationBIndex', {
             get: () => currentStationBIndex,
-            set: (v) => { currentStationBIndex = v; },
+            set: (v) => {
+                currentStationBIndex = v;
+                try { saveLastStationSelection('b'); } catch (_) {}
+            },
             enumerable: true,
             configurable: true,
         });
@@ -3408,7 +3469,10 @@ function exposeAppBindingsToGlobal() {
     try {
         Object.defineProperty(g, 'currentStationIndex', {
             get: () => currentStationIndex,
-            set: (v) => { currentStationIndex = v; },
+            set: (v) => {
+                currentStationIndex = v;
+                try { saveLastStationSelection('a'); } catch (_) {}
+            },
             enumerable: true,
             configurable: true,
         });
@@ -5128,14 +5192,8 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                     if (!u || stations.some((s) => s && s.url === u)) return;
                     stations.push({ name: us.name || deriveNameFromUrl(u), url: u });
                 });
-                // Make the first station the default selection if none chosen yet
-                if ((typeof currentStationIndex !== 'number' || currentStationIndex < 0) && stations.length > 0) {
-                    currentStationIndex = 0;
-                    if (radioInputEl) radioInputEl.value = stations[0].url;
-                }
-                if (stations.length > 0 && typeof currentStationBIndex === 'number' && currentStationBIndex >= stations.length) {
-                    currentStationBIndex = stations.length - 1;
-                }
+                // Restore last played stations when saved, else default Deck A to the first entry.
+                applySavedStationSelections();
                 syncStationCycleSelection();
                 renderStationList();
                 try { refreshMixStationB(); } catch(_) {}
@@ -5224,6 +5282,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             if (radioInputEl) radioInputEl.value = s.url;
             showStationBanner(s.name);
             updateStationActiveHighlight();
+            try { saveLastStationSelection('a'); } catch (_) {}
             playRadio();
         }
 
@@ -5236,6 +5295,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             }
             currentStationBIndex = index;
             updateStationActiveHighlight();
+            try { saveLastStationSelection('b'); } catch (_) {}
             try { syncTopMenuStationsLayout(); } catch (_) {}
             try { playRadioB(); } catch (_) {}
             try { updateModeSubStationLine(); } catch (_) {}
@@ -5279,6 +5339,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             if (!eligible.length) return;
             const idx = eligible[Math.floor(Math.random() * eligible.length)];
             currentStationBIndex = Math.max(0, Math.min(stations.length - 1, Number(idx) || 0));
+            try { saveLastStationSelection('b'); } catch (_) {}
             try { if (typeof refreshMixStationB === 'function') refreshMixStationB(); } catch (_) {}
             try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
         }
@@ -6113,6 +6174,15 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             } catch (_) {}
         }
 
+        function toggleDigitalAiShortcut() {
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (rv && typeof rv.toggleDigitalAiFromShortcut === 'function') {
+                    rv.toggleDigitalAiFromShortcut();
+                }
+            } catch (_) {}
+        }
+
         /**
          * Space-bar long-press support.
          *
@@ -6429,6 +6499,10 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 e.preventDefault();
                 if (e.repeat) return;
                 toggleAutoMixShortcut();
+            } else if (e.key === '/' || e.code === 'Slash') {
+                e.preventDefault();
+                if (e.repeat) return;
+                if (isDigitalRadioVisualActive()) toggleDigitalAiShortcut();
             } else if (e.code === 'Space' || e.key === ' ') {
                 e.preventDefault();
                 if (e.repeat) return;

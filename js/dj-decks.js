@@ -2342,7 +2342,7 @@
                         const stage = this.root && this.root.querySelector('.dj-deck-b-stage');
                         const textBOn = !!(stage && stage.classList.contains('dj-deck-b-text-mode'));
                         const parts = [];
-                        if (textBOn) parts.push('TEXT-IN');
+                        if (textBOn) parts.push('CHAT');
                         const m = this.deckBVizMode || 'idle';
                         if (m === 'projectm') parts.push('PROJECTM');
                         else if (m === 'bars') parts.push('AUDIO:BAR');
@@ -2635,7 +2635,7 @@
 
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-w2" title="Open K-BOP in Deck B (toggle)">K-BOP</button>
             <button type="button" class="btn dj-sfx" id="dj-a-sfx-w1" title="Open Karaoke Nerds in Deck B (toggle)">KARAOKE</button>
-            <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Open or close the TEXT-IN panel (rising text on the main screen)">TEXT-IN</button>
+            <button type="button" class="btn dj-fx" id="dj-fx-tk" title="Open or close the CHAT panel (rising text on the main screen)">CHAT</button>
 
             <button type="button" class="dj-play" id="dj-play-a" title="Play or pause Deck A">Play</button>
             <button type="button" class="dj-tbtn" id="dj-a-next" title="Tune to another random station">Rand ⟶</button>
@@ -2816,7 +2816,7 @@
 
                 <button type="button" class="btn dj-sfx" id="dj-b-sfx-w2" title="Open K-BOP in Deck B (toggle)">K-BOP</button>
                 <button type="button" class="btn dj-sfx" id="dj-b-sfx-w1" title="Open Karaoke Nerds in Deck B (toggle)">KARAOKE</button>
-                <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Open or close TEXT-IN, displaying rising text inside the Deck B player">TEXT-IN</button>
+                <button type="button" class="btn dj-fx" id="dj-b-fx-tk" title="Open or close CHAT, displaying rising text inside the Deck B player">CHAT</button>
 
                 <button type="button" class="dj-play" id="dj-play-b" title="Play or pause Deck B">Play</button>
                 <button type="button" class="dj-tbtn" id="dj-b-next" title="Tune deck B to another random station">Rand ⟶</button>
