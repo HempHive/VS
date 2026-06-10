@@ -214,9 +214,17 @@
 				<label for="avatar-inp-opacity" style="min-width:120px; font-size:12px; color:#ccc">Opacity</label>
 				<input id="avatar-inp-opacity" type="range" min="0" max="1" step="0.01" value="0.82">
 			</div>
-			<div class="row">
-				<label for="avatar-inp-dup" style="min-width:120px; font-size:12px; color:#ccc">Duplicates (0-2)</label>
-				<input id="avatar-inp-dup" type="range" min="0" max="2" step="1" value="0">
+			<div class="row row--webm-dup">
+				<label style="min-width:120px; font-size:12px; color:#ccc">Duplicates</label>
+				<div class="webm-dup-controls">
+					<div class="webm-dup-knob-col" title="Duplicate count (0–2) — drag up/down">
+						<div class="knob-wrap webm-dup-knob" id="knob-avatar-dup" style="--knob-color:#5800FF">
+							<div class="knob-indicator"></div>
+							<div class="knob-value">0</div>
+						</div>
+					</div>
+					<input id="avatar-inp-dup-spacing" type="range" min="15" max="100" step="1" value="60" aria-label="Duplicate spread — closer or further apart">
+				</div>
 			</div>
 		</div>
 	</div>
@@ -690,9 +698,17 @@
                 <label for="inp-webm-opacity">Opacity</label>
                 <input id="inp-webm-opacity" type="range" min="0" max="1" step="0.01" value="0.82">
             </div>
-            <div class="settings-row">
-                <label for="inp-webm-dup">Duplicates (0-2)</label>
-                <input id="inp-webm-dup" type="range" min="0" max="2" step="1" value="0">
+            <div class="settings-row settings-row--webm-dup">
+                <label for="knob-webm-dup">Duplicates</label>
+                <div class="webm-dup-controls">
+                    <div class="webm-dup-knob-col" title="Duplicate count (0–2) — drag up/down">
+                        <div class="knob-wrap webm-dup-knob" id="knob-webm-dup" style="--knob-color:#5800FF">
+                            <div class="knob-indicator"></div>
+                            <div class="knob-value">0</div>
+                        </div>
+                    </div>
+                    <input id="inp-webm-dup-spacing" type="range" min="15" max="100" step="1" value="60" aria-label="Duplicate spread — closer or further apart">
+                </div>
             </div>
         </div>
     </div>

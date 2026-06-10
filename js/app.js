@@ -745,7 +745,7 @@ const QUALITY = {
         const inpWebmRot = document.getElementById('inp-webm-rot');
         const inpWebmSpeed = document.getElementById('inp-webm-speed');
         const inpWebmOpacity = document.getElementById('inp-webm-opacity');
-        const inpWebmDup = document.getElementById('inp-webm-dup');
+        const inpWebmDupSpacing = document.getElementById('inp-webm-dup-spacing');
         const stations = [];
         const stationCycleEnabledByUrl = new Map();
         const sanitizeUrlForAudio = (v) => String(v || '').trim();
@@ -1570,6 +1570,7 @@ const QUALITY = {
             return enabled;
         }
         const WEBM_DEFAULT_SCALE_VW = 50;
+        const WEBM_DEFAULT_DUP_SPACING = 0.6;
         const webmSettings = {
             scaleVw: WEBM_DEFAULT_SCALE_VW,
             posXvw: 50,
@@ -1577,7 +1578,8 @@ const QUALITY = {
             rotationDeg: 0,
             playbackRate: 1.0,
             opacity: 0.82,
-            duplicates: 0
+            duplicates: 0,
+            duplicateSpacing: WEBM_DEFAULT_DUP_SPACING
         };
         // EQ State Storage
         const eqState = {
@@ -2660,14 +2662,15 @@ function randomGlowColor() {
                 const aRot = document.getElementById('avatar-inp-rot');
                 const aSpeed = document.getElementById('avatar-inp-speed');
                 const aOpacity = document.getElementById('avatar-inp-opacity');
-                const aDup = document.getElementById('avatar-inp-dup');
+                const aDupSpacing = document.getElementById('avatar-inp-dup-spacing');
                 if (aScale) aScale.value = String(webmSettings.scaleVw);
                 if (aX) aX.value = String(webmSettings.posXvw);
                 if (aY) aY.value = String(webmSettings.posYvh);
                 if (aRot) aRot.value = String(webmSettings.rotationDeg);
                 if (aSpeed) aSpeed.value = String(webmSettings.playbackRate);
                 if (aOpacity) aOpacity.value = String(webmSettings.opacity);
-                if (aDup) aDup.value = String(webmSettings.duplicates);
+                if (aDupSpacing) aDupSpacing.value = String(Math.round((webmSettings.duplicateSpacing || WEBM_DEFAULT_DUP_SPACING) * 100));
+                try { syncAllWebmDupKnobs(); } catch (_) {}
                 const autoBtn = document.getElementById('avatar-btn-auto');
                 if (autoBtn) { autoBtn.textContent = 'Auto'; autoBtn.classList.toggle('on', webmAutoOn); }
                 // Sync play/stop label
@@ -2718,7 +2721,7 @@ function randomGlowColor() {
                 const aRot = document.getElementById('avatar-inp-rot');
                 const aSpeed = document.getElementById('avatar-inp-speed');
                 const aOpacity = document.getElementById('avatar-inp-opacity');
-                const aDup = document.getElementById('avatar-inp-dup');
+                const aDupSpacing = document.getElementById('avatar-inp-dup-spacing');
                 const updateFromAvatarInputs = () => {
                     webmSettings.scaleVw = Number(aScale?.value) || WEBM_DEFAULT_SCALE_VW;
                     webmSettings.posXvw = Number(aX?.value) || 50;
@@ -2726,10 +2729,11 @@ function randomGlowColor() {
                     webmSettings.rotationDeg = Number(aRot?.value) || 0;
                     webmSettings.playbackRate = Math.max(0.1, Math.min(4, Number(aSpeed?.value) || 1));
                     webmSettings.opacity = Math.max(0, Math.min(1, Number(aOpacity?.value) || 1));
-                    webmSettings.duplicates = Math.max(0, Math.min(2, Math.floor(Number(aDup?.value) || 0)));
+                    webmSettings.duplicateSpacing = Math.max(0.15, Math.min(1, (Number(aDupSpacing?.value) || 60) / 100));
+                    try { syncWebmDupSpacingInputs(); } catch (_) {}
                     applyWebmSettings();
                 };
-                [aScale, aX, aY, aRot, aSpeed, aOpacity, aDup].forEach(el => {
+                [aScale, aX, aY, aRot, aSpeed, aOpacity, aDupSpacing].forEach(el => {
                     if (el) el.addEventListener('input', updateFromAvatarInputs);
                 });
                 const btnAuto = document.getElementById('avatar-btn-auto');
@@ -2762,13 +2766,16 @@ function randomGlowColor() {
                     webmSettings.playbackRate = 1.0;
                     webmSettings.opacity = 0.82;
                     webmSettings.duplicates = 0;
+                    webmSettings.duplicateSpacing = WEBM_DEFAULT_DUP_SPACING;
                     if (aScale) aScale.value = String(WEBM_DEFAULT_SCALE_VW);
                     if (aX) aX.value = '50';
                     if (aY) aY.value = '50';
                     if (aRot) aRot.value = '0';
                     if (aSpeed) aSpeed.value = '1.0';
                     if (aOpacity) aOpacity.value = '0.82';
-                    if (aDup) aDup.value = '0';
+                    if (aDupSpacing) aDupSpacing.value = String(Math.round(WEBM_DEFAULT_DUP_SPACING * 100));
+                    try { syncAllWebmDupKnobs(); } catch (_) {}
+                    try { syncWebmDupSpacingInputs(); } catch (_) {}
                     applyWebmSettings();
                 });
             } catch(e) {}
@@ -3256,7 +3263,7 @@ function exposeAppBindingsToGlobal() {
     try { g.TAP_MAX_MOVE = TAP_MAX_MOVE; } catch (_) {}
     try { g.USER_RADIO_STATIONS_KEY = USER_RADIO_STATIONS_KEY; } catch (_) {}
     try { g.__webmDeckBOnLayout = __webmDeckBOnLayout; } catch (_) {}
-    try { g.aDup = aDup; } catch (_) {}
+    try { g.aDupSpacing = document.getElementById('avatar-inp-dup-spacing'); } catch (_) {}
     try { g.aOpacity = aOpacity; } catch (_) {}
     try { g.aRot = aRot; } catch (_) {}
     try { g.aScale = aScale; } catch (_) {}
@@ -3488,7 +3495,7 @@ function exposeAppBindingsToGlobal() {
     try { g.inpShuffleMax = inpShuffleMax; } catch (_) {}
     try { g.inpShuffleMin = inpShuffleMin; } catch (_) {}
     try { g.inpTransition = inpTransition; } catch (_) {}
-    try { g.inpWebmDup = inpWebmDup; } catch (_) {}
+    try { g.inpWebmDupSpacing = inpWebmDupSpacing; } catch (_) {}
     try { g.inpWebmOpacity = inpWebmOpacity; } catch (_) {}
     try { g.inpWebmRot = inpWebmRot; } catch (_) {}
     try { g.inpWebmScale = inpWebmScale; } catch (_) {}
@@ -6765,7 +6772,8 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 inpWebmRot.value = String(webmSettings.rotationDeg);
                 inpWebmSpeed.value = String(webmSettings.playbackRate);
                 inpWebmOpacity.value = String(webmSettings.opacity);
-                inpWebmDup.value = String(webmSettings.duplicates);
+                if (inpWebmDupSpacing) inpWebmDupSpacing.value = String(Math.round((webmSettings.duplicateSpacing || WEBM_DEFAULT_DUP_SPACING) * 100));
+                try { syncAllWebmDupKnobs(); } catch (_) {}
             } else {
                 hideWebmSettingsPanel();
             }
@@ -6989,6 +6997,36 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             // Otherwise, close
             hideWebmSettingsPanel();
         }, true);
+        function syncAllWebmDupKnobs() {
+            const n = Math.max(0, Math.min(2, Math.round(Number(webmSettings.duplicates) || 0)));
+            webmSettings.duplicates = n;
+            ['knob-webm-dup', 'knob-avatar-dup'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                setKnobUi(el, 0, 2, n);
+                const valTooltip = el.querySelector('.knob-value');
+                if (valTooltip) valTooltip.textContent = String(n);
+            });
+        }
+        function syncWebmDupSpacingInputs() {
+            const pct = Math.round((Number(webmSettings.duplicateSpacing) || WEBM_DEFAULT_DUP_SPACING) * 100);
+            if (inpWebmDupSpacing) inpWebmDupSpacing.value = String(pct);
+            const avatarSpacing = document.getElementById('avatar-inp-dup-spacing');
+            if (avatarSpacing) avatarSpacing.value = String(pct);
+        }
+        function onWebmDupCountChange() {
+            webmSettings.duplicates = Math.max(0, Math.min(2, Math.round(Number(webmSettings.duplicates) || 0)));
+            syncAllWebmDupKnobs();
+            applyWebmSettings();
+            try { scheduleWebmSettingsClose(); } catch (_) {}
+        }
+        function bindWebmDupKnob(id) {
+            bindKnob(id, 0, 2, webmSettings.duplicates, webmSettings, 'duplicates', () => {
+                onWebmDupCountChange();
+            });
+        }
+        try { bindWebmDupKnob('knob-webm-dup'); } catch (_) {}
+        try { bindWebmDupKnob('knob-avatar-dup'); } catch (_) {}
         document.getElementById('btn-webm-reset').addEventListener('click', () => {
             webmSettings.scaleVw = WEBM_DEFAULT_SCALE_VW;
             webmSettings.posXvw = 50;
@@ -6997,13 +7035,15 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             webmSettings.playbackRate = 1.0;
             webmSettings.opacity = 0.82;
             webmSettings.duplicates = 0;
+            webmSettings.duplicateSpacing = WEBM_DEFAULT_DUP_SPACING;
             inpWebmScale.value = String(WEBM_DEFAULT_SCALE_VW);
             inpWebmX.value = '50';
             inpWebmY.value = '50';
             inpWebmRot.value = '0';
             inpWebmSpeed.value = '1.0';
             inpWebmOpacity.value = '0.82';
-            inpWebmDup.value = '0';
+            syncWebmDupSpacingInputs();
+            syncAllWebmDupKnobs();
             applyWebmSettings();
         });
         // Live-change on input
@@ -7014,12 +7054,13 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             webmSettings.rotationDeg = Number(inpWebmRot.value) || 0;
             webmSettings.playbackRate = Math.max(0.1, Math.min(4, Number(inpWebmSpeed.value) || 1));
             webmSettings.opacity = Math.max(0, Math.min(1, Number(inpWebmOpacity.value) || 1));
-            webmSettings.duplicates = Math.max(0, Math.min(2, Math.floor(Number(inpWebmDup.value) || 0)));
+            webmSettings.duplicateSpacing = Math.max(0.15, Math.min(1, (Number(inpWebmDupSpacing?.value) || 60) / 100));
+            syncWebmDupSpacingInputs();
             applyWebmSettings();
             scheduleWebmSettingsClose();
         }
-        [inpWebmScale, inpWebmX, inpWebmY, inpWebmRot, inpWebmSpeed, inpWebmOpacity, inpWebmDup].forEach(el => {
-            el.addEventListener('input', updateWebmSettingsFromInputs);
+        [inpWebmScale, inpWebmX, inpWebmY, inpWebmRot, inpWebmSpeed, inpWebmOpacity, inpWebmDupSpacing].forEach(el => {
+            if (el) el.addEventListener('input', updateWebmSettingsFromInputs);
         });
         // Bind auto toggle
         const btnWebmAuto = document.getElementById('btn-webm-auto');
@@ -7102,7 +7143,8 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                         webmVideoEl.style.opacity = String(webmSettings.opacity);
                         try { webmVideoEl.playbackRate = webmSettings.playbackRate; } catch {}
                         const dup = webmSettings.duplicates;
-                        const offsetPx = wPx * 0.62;
+                        const spacingFactor = Math.max(0.15, Math.min(1, Number(webmSettings.duplicateSpacing) || WEBM_DEFAULT_DUP_SPACING));
+                        const offsetPx = wPx * spacingFactor;
                         if (dup >= 1) {
                             webmVideoLeftEl.classList.remove('display-none');
                             webmVideoLeftEl.style.width = `${wPx}px`;
@@ -7161,7 +7203,8 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 webmVideoEl.style.opacity = String(webmSettings.opacity);
                 try { webmVideoEl.playbackRate = webmSettings.playbackRate; } catch {}
                 const dup = webmSettings.duplicates;
-                const offsetVw = webmSettings.scaleVw * 0.6;
+                const spacingFactor = Math.max(0.15, Math.min(1, Number(webmSettings.duplicateSpacing) || WEBM_DEFAULT_DUP_SPACING));
+                const offsetVw = webmSettings.scaleVw * spacingFactor;
                 if (dup >= 1) {
                     webmVideoLeftEl.classList.remove('display-none');
                     webmVideoLeftEl.style.width = `${webmSettings.scaleVw}vw`;
