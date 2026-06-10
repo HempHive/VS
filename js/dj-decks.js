@@ -1819,8 +1819,10 @@
                     iframe.setAttribute('title', iframeTitle);
                     iframe.setAttribute(
                         'sandbox',
-                        'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals'
+                        'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals allow-fullscreen'
                     );
+                    iframe.setAttribute('allow', 'fullscreen; autoplay; encrypted-media; picture-in-picture');
+                    iframe.setAttribute('allowfullscreen', '');
                     iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
                     iframe.src = href;
                     shell.appendChild(iframe);
