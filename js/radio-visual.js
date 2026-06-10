@@ -1938,7 +1938,7 @@
                     videoBtn.textContent = videoShellFs ? 'Exit FS' : 'F';
                     videoBtn.title = videoShellFs
                         ? 'Exit video fullscreen (Esc)'
-                        : 'Video fullscreen (site F key, or staging video view)';
+                        : 'Video fullscreen (same as F key when a video is playing)';
                     videoBtn.setAttribute('aria-label', videoBtn.title);
                 }
                 if (mountBtn) {
@@ -1949,19 +1949,65 @@
                 }
             }
 
+            isDigitalKaraokeStagingActive() {
+                return this._digitalStagingView === 'karaoke' && !!this._getDigitalStagingEmbedIframe();
+            }
+
+            isDigitalKaraokeVideoReady() {
+                return !!(this.isDigitalKaraokeStagingActive() && this._digitalKaraokeVideoReady);
+            }
+
+            triggerKaraokeVideoFullscreenButton() {
+                this._toggleDigitalStagingKaraokeVideoFullscreen();
+            }
+
             _triggerKaraokeSiteVideoFullscreenKey(iframe) {
                 if (!iframe) return;
                 try { iframe.focus(); } catch (_) {}
+                try {
+                    ['keydown', 'keypress', 'keyup'].forEach((type) => {
+                        const keyCode = type === 'keypress' ? 102 : 70;
+                        const ev = new KeyboardEvent(type, {
+                            key: 'f',
+                            code: 'KeyF',
+                            keyCode,
+                            which: keyCode,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        iframe.dispatchEvent(ev);
+                    });
+                } catch (_) {}
                 const origins = ['https://www.karaokenerds.com', 'https://karaokenerds.com'];
                 const payloads = [
                     { type: 'keydown', key: 'f', code: 'KeyF', keyCode: 70, which: 70, bubbles: true },
                     { type: 'keypress', key: 'f', code: 'KeyF', keyCode: 102, which: 102, bubbles: true },
-                    { type: 'keydown', key: 'F', code: 'KeyF', keyCode: 70, which: 70, bubbles: true }
+                    { type: 'keyup', key: 'f', code: 'KeyF', keyCode: 70, which: 70, bubbles: true },
+                    { type: 'keydown', key: 'F', code: 'KeyF', keyCode: 70, which: 70, bubbles: true },
+                    { action: 'toggleFullscreen' },
+                    { command: 'fullscreen' },
+                    'f',
+                    'KeyF'
                 ];
                 origins.forEach((origin) => {
                     payloads.forEach((payload) => {
-                        try { iframe.contentWindow.postMessage(payload, origin); } catch (_) {}
+                        try {
+                            if (typeof payload === 'string') {
+                                iframe.contentWindow.postMessage(payload, origin);
+                            } else {
+                                iframe.contentWindow.postMessage(payload, origin);
+                                iframe.contentWindow.postMessage(JSON.stringify(payload), origin);
+                            }
+                        } catch (_) {}
                     });
+                });
+            }
+
+            _enterDigitalKaraokeVideoCinemaFullscreen(shell) {
+                if (!shell || this._digitalStagingView !== 'karaoke') return;
+                try { shell.classList.add('is-embed-video-cinema'); } catch (_) {}
+                this._requestStagingFullscreen(shell).then((ok) => {
+                    if (ok) this._afterDigitalStagingMountFullscreen();
                 });
             }
 
@@ -1988,6 +2034,13 @@
                     const raw = e.data;
                     const s = (typeof raw === 'string' ? raw : JSON.stringify(raw || '')).toLowerCase();
                     if (/\.youtube\.com$/i.test(origin)) {
+                        try {
+                            const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                            if (d && d.event === 'onStateChange' && Number(d.info) === 1) {
+                                markReady();
+                                return;
+                            }
+                        } catch (_) {}
                         if (!/(player|video|play|ready|statechange|onstatechange)/i.test(s)) return;
                     }
                     markReady();
@@ -2029,7 +2082,7 @@
                     shell.appendChild(mkBtn(
                         'radio-visual-digital-embed-iframe-fs-btn',
                         'F',
-                        'Video fullscreen (site F key)',
+                        'Video fullscreen (same as F key when a video is playing)',
                         videoToggle,
                         true
                     ));
@@ -2124,6 +2177,14 @@
                 }
                 const enterVideoView = () => {
                     try { this._triggerKaraokeSiteVideoFullscreenKey(iframe); } catch (_) {}
+                    window.setTimeout(() => {
+                        try {
+                            if (this._digitalStagingView !== 'karaoke' || !this._digitalKaraokeVideoReady) return;
+                            const fs = document.fullscreenElement || document.webkitFullscreenElement;
+                            if (fs) return;
+                            this._enterDigitalKaraokeVideoCinemaFullscreen(shell);
+                        } catch (_) {}
+                    }, 220);
                 };
                 if (this._getDigitalStagingMountFullscreenEl()) {
                     this._exitStagingFullscreen().then(enterVideoView);

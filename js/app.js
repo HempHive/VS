@@ -6321,6 +6321,19 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             }
 
             if (e.key === 'f' || e.key === 'F') {
+                const rv = getActiveRadioVisualEngine();
+                if (rv && typeof rv.isDigitalKaraokeVideoReady === 'function' && rv.isDigitalKaraokeVideoReady()) {
+                    const knFrame = typeof rv._getDigitalStagingEmbedIframe === 'function'
+                        ? rv._getDigitalStagingEmbedIframe()
+                        : null;
+                    if (!knFrame || document.activeElement !== knFrame) {
+                        e.preventDefault();
+                        if (typeof rv.triggerKaraokeVideoFullscreenButton === 'function') {
+                            rv.triggerKaraokeVideoFullscreenButton();
+                        }
+                        return;
+                    }
+                }
                 toggleFullscreen();
             } else if (e.key === 's' || e.key === 'S') {
                 e.preventDefault();
