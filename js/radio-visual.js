@@ -1985,6 +1985,11 @@
                     if (this._digitalStagingView !== 'karaoke') return;
                     const origin = String(e.origin || '').replace(/\/$/, '');
                     if (!RadioVisualEngine.isKaraokeNerdsOrigin(origin) && !/\.youtube\.com$/i.test(origin)) return;
+                    const raw = e.data;
+                    const s = (typeof raw === 'string' ? raw : JSON.stringify(raw || '')).toLowerCase();
+                    if (/\.youtube\.com$/i.test(origin)) {
+                        if (!/(player|video|play|ready|statechange|onstatechange)/i.test(s)) return;
+                    }
                     markReady();
                 };
                 window.addEventListener('blur', onWinBlur);
@@ -2006,9 +2011,7 @@
                 const videoToggle = () => {
                     try { this._toggleDigitalStagingKaraokeVideoFullscreen(); } catch (_) {}
                 };
-                if (!shell.querySelector('.radio-visual-digital-embed-fs-toolbar')) {
-                    const toolbar = document.createElement('div');
-                    toolbar.className = 'radio-visual-digital-embed-fs-toolbar';
+                if (!shell.querySelector('.radio-visual-digital-embed-mount-fs-btn')) {
                     const mkBtn = (className, text, title, handler, hidden) => {
                         const btn = document.createElement('button');
                         btn.type = 'button';
@@ -2023,37 +2026,23 @@
                         });
                         return btn;
                     };
-                    toolbar.appendChild(mkBtn(
+                    shell.appendChild(mkBtn(
                         'radio-visual-digital-embed-iframe-fs-btn',
                         'F',
                         'Video fullscreen (site F key)',
                         videoToggle,
                         true
                     ));
-                    toolbar.appendChild(mkBtn(
+                    shell.appendChild(mkBtn(
                         'radio-visual-digital-embed-mount-fs-btn',
                         '⛶',
                         'Fullscreen staging area',
                         mountToggle,
                         false
                     ));
-                    shell.appendChild(toolbar);
                 }
                 this._wireDigitalKaraokeVideoDetection(mount, iframe, shell);
                 try { this._syncDigitalKaraokeEmbedFsUi(); } catch (_) {}
-                if (shell.dataset.rvEmbedFsWired === '1') return;
-                shell.dataset.rvEmbedFsWired = '1';
-                const onDbl = (ev) => {
-                    try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
-                    if (this._digitalKaraokeVideoReady) videoToggle();
-                    else mountToggle();
-                };
-                shell.addEventListener('dblclick', onDbl);
-                if (mount.dataset.rvEmbedFsWired !== '1') {
-                    mount.dataset.rvEmbedFsWired = '1';
-                    const sig = this.abortCtrl ? { signal: this.abortCtrl.signal } : undefined;
-                    mount.addEventListener('dblclick', onDbl, sig);
-                }
             }
 
             _getDigitalStagingEmbedIframe() {
@@ -2135,16 +2124,6 @@
                 }
                 const enterVideoView = () => {
                     try { this._triggerKaraokeSiteVideoFullscreenKey(iframe); } catch (_) {}
-                    window.setTimeout(() => {
-                        try {
-                            const fs = document.fullscreenElement || document.webkitFullscreenElement;
-                            if (fs || this._digitalStagingView !== 'karaoke') return;
-                            shell.classList.add('is-embed-video-cinema');
-                            this._requestStagingFullscreen(shell).then((ok) => {
-                                if (ok) this._afterDigitalStagingMountFullscreen();
-                            });
-                        } catch (_) {}
-                    }, 280);
                 };
                 if (this._getDigitalStagingMountFullscreenEl()) {
                     this._exitStagingFullscreen().then(enterVideoView);
@@ -2196,14 +2175,6 @@
                 const mount = this._stagingContentMount();
                 if (!mount || !mount.classList.contains('is-active')) return false;
                 return !!el.closest('.radio-visual-digital-staging-mount');
-            }
-
-            _isDigitalStagingEmbedTarget(el) {
-                if (!el || typeof el.closest !== 'function') return false;
-                if (this._digitalStagingView !== 'karaoke') return false;
-                const mount = this._stagingContentMount();
-                if (!mount || !mount.classList.contains('is-active')) return false;
-                return !!el.closest('.radio-visual-digital-staging-mount .radio-visual-digital-embed-shell');
             }
 
             _showDigitalStagingAudioBars(mountEl) {
@@ -6542,7 +6513,7 @@
                     try { ev.preventDefault(); } catch (_) {}
                     clearTimeout(this._digitalStageClickTimer);
                     this._digitalStageClickTimer = null;
-                    if (this._isDigitalStagingProjectMTarget(ev.target) || this._isDigitalStagingEmbedTarget(ev.target)) {
+                    if (this._isDigitalStagingProjectMTarget(ev.target)) {
                         this._toggleDigitalStagingMountFullscreen();
                         return;
                     }

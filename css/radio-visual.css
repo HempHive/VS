@@ -800,23 +800,17 @@
             inset: 0;
             width: 100%;
             height: 100%;
-            pointer-events: auto;
+            pointer-events: none;
             background: #0a0a10;
             border-radius: inherit;
             overflow: hidden;
             display: flex;
             flex-direction: column;
         }
-        #radio-visual-root .radio-visual-digital-embed-fs-toolbar {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            z-index: 6;
-            display: flex;
-            gap: 6px;
-            pointer-events: none;
-        }
         #radio-visual-root .radio-visual-digital-embed-fs-btn {
+            position: absolute;
+            bottom: 8px;
+            z-index: 6;
             width: 34px;
             height: 30px;
             padding: 0;
@@ -831,9 +825,15 @@
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
         }
         #radio-visual-root .radio-visual-digital-embed-iframe-fs-btn {
+            left: 8px;
+            right: auto;
             font-size: 13px;
             font-weight: 700;
             letter-spacing: 0.04em;
+        }
+        #radio-visual-root .radio-visual-digital-embed-mount-fs-btn {
+            right: 8px;
+            left: auto;
         }
         #radio-visual-root .radio-visual-digital-embed-shell.is-embed-video-cinema {
             background: #000;
@@ -851,15 +851,9 @@
             background: #000;
             border-radius: 0;
         }
-        #radio-visual-root .radio-visual-digital-embed-shell:fullscreen .radio-visual-digital-embed-fs-toolbar,
-        #radio-visual-root .radio-visual-digital-embed-shell:-webkit-full-screen .radio-visual-digital-embed-fs-toolbar {
-            flex: 0 0 auto;
-            position: relative;
-            top: auto;
-            right: auto;
-            justify-content: flex-end;
-            padding: 8px 8px 0;
-            pointer-events: auto;
+        #radio-visual-root .radio-visual-digital-embed-shell:fullscreen .radio-visual-digital-embed-fs-btn,
+        #radio-visual-root .radio-visual-digital-embed-shell:-webkit-full-screen .radio-visual-digital-embed-fs-btn {
+            bottom: 10px;
         }
         #radio-visual-root .radio-visual-digital-embed-shell:fullscreen .radio-visual-digital-embed-frame,
         #radio-visual-root .radio-visual-digital-embed-shell:-webkit-full-screen .radio-visual-digital-embed-frame {
@@ -879,6 +873,7 @@
             border: 0;
             display: block;
             background: #000;
+            pointer-events: auto;
         }
         #radio-visual-root .radio-visual-digital-staging-video-stack {
             position: absolute;
