@@ -800,71 +800,12 @@
             inset: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none;
+            pointer-events: auto;
             background: #0a0a10;
             border-radius: inherit;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-        }
-        #radio-visual-root .radio-visual-digital-embed-fs-btn {
-            position: absolute;
-            bottom: 8px;
-            z-index: 6;
-            width: 34px;
-            height: 30px;
-            padding: 0;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.28);
-            background: rgba(8, 16, 28, 0.82);
-            color: rgba(255, 255, 255, 0.92);
-            font-size: 15px;
-            line-height: 1;
-            cursor: pointer;
-            pointer-events: auto;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-        }
-        #radio-visual-root .radio-visual-digital-embed-iframe-fs-btn {
-            left: 8px;
-            right: auto;
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-        }
-        #radio-visual-root .radio-visual-digital-embed-mount-fs-btn {
-            right: 8px;
-            left: auto;
-        }
-        #radio-visual-root .radio-visual-digital-embed-shell.is-embed-video-cinema {
-            background: #000;
-        }
-        #radio-visual-root .radio-visual-digital-embed-shell.is-embed-video-cinema .radio-visual-digital-embed-frame {
-            flex: 1 1 auto;
-            min-height: 0;
-        }
-        #radio-visual-root .radio-visual-digital-embed-shell:fullscreen,
-        #radio-visual-root .radio-visual-digital-embed-shell:-webkit-full-screen {
-            display: flex;
-            flex-direction: column;
-            width: 100vw;
-            height: 100vh;
-            background: #000;
-            border-radius: 0;
-        }
-        #radio-visual-root .radio-visual-digital-embed-shell:fullscreen .radio-visual-digital-embed-fs-btn,
-        #radio-visual-root .radio-visual-digital-embed-shell:-webkit-full-screen .radio-visual-digital-embed-fs-btn {
-            bottom: 10px;
-        }
-        #radio-visual-root .radio-visual-digital-embed-shell:fullscreen .radio-visual-digital-embed-frame,
-        #radio-visual-root .radio-visual-digital-embed-shell:-webkit-full-screen .radio-visual-digital-embed-frame {
-            flex: 1 1 auto;
-            width: 100%;
-            min-height: 0;
-            border-radius: 0;
-        }
-        #radio-visual-root .radio-visual-digital-embed-fs-btn:hover {
-            background: rgba(24, 40, 64, 0.92);
-            border-color: rgba(255, 255, 255, 0.45);
         }
         #radio-visual-root .radio-visual-digital-embed-frame {
             flex: 1;
@@ -873,7 +814,6 @@
             border: 0;
             display: block;
             background: #000;
-            pointer-events: auto;
         }
         #radio-visual-root .radio-visual-digital-staging-video-stack {
             position: absolute;
