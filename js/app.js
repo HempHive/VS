@@ -449,11 +449,19 @@ const QUALITY = {
         let phaseOffsetBms = 0; // apply to B grid ticks
         // --- OPTIONS PANEL HELPERS ---
         const DIGITAL_THEME_STORAGE_KEY = 'radioVisual.digitalTheme.v1';
+        const OPTIONS_AUTO_CLOSE_MS = 30000;
+        const DIGITAL_BG_GIF_MANIFEST_URL = 'assets/gifs/digital/manifest.json';
+        const DIGITAL_BG_GIF_STORAGE_KEY = 'radioVisual.digitalBgGif.v1';
+        const DIGITAL_BG_GIF_ENABLED_KEY = 'radioVisual.digitalBgGif.enabled.v1';
         const DEFAULT_DIGITAL_THEME = {
             presetId: 'midnight-blue',
             bgA: '#0a1628',
             bgB: '#061018',
             bgC: '#0c1020',
+            bgOuterA: '#0a1628',
+            bgOuterB: '#061018',
+            bgOuterC: '#0c1020',
+            bgGradientAngle: 165,
             accent: '#ffd246',
             font: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
             btnBlueTop: '#123048',
@@ -542,6 +550,12 @@ const QUALITY = {
         const optDigitalBgA = document.getElementById('opt-digital-bg-a');
         const optDigitalBgB = document.getElementById('opt-digital-bg-b');
         const optDigitalBgC = document.getElementById('opt-digital-bg-c');
+        const optDigitalBgOuterA = document.getElementById('opt-digital-bg-outer-a');
+        const optDigitalBgOuterB = document.getElementById('opt-digital-bg-outer-b');
+        const optDigitalBgOuterC = document.getElementById('opt-digital-bg-outer-c');
+        const optDigitalBgGradientAngle = document.getElementById('opt-digital-bg-gradient-angle');
+        const optDigitalBgGradientAngleReadout = document.getElementById('opt-digital-bg-gradient-angle-readout');
+        const optDigitalBgGif = document.getElementById('opt-digital-bg-gif');
         const optDigitalAccent = document.getElementById('opt-digital-accent');
         const optDigitalFont = document.getElementById('opt-digital-font');
         const optDigitalBtnBlueTop = document.getElementById('opt-digital-btn-blue-top');
@@ -678,6 +692,71 @@ const QUALITY = {
             populateSpectrumColorStreamSelect();
             applySpectrumSettingsToControls(loadSpectrumSettingsFromStorage());
         }
+        function clampThemeGradientAngle(raw, fallback = 165) {
+            const v = Number(raw);
+            if (!Number.isFinite(v)) return fallback;
+            return Math.max(0, Math.min(360, Math.round(v)));
+        }
+        function sortDigitalBgGifNames(names) {
+            const list = (names || [])
+                .map((f) => String(f || '').trim())
+                .filter((f) => /\.gif$/i.test(f));
+            const first = list.filter((f) => f.toLowerCase() === 'dig.gif');
+            const rest = list.filter((f) => f.toLowerCase() !== 'dig.gif').sort((a, b) =>
+                a.localeCompare(b, undefined, { sensitivity: 'base' })
+            );
+            return [...first, ...rest];
+        }
+        async function populateDigitalBgGifSelect() {
+            if (!optDigitalBgGif) return;
+            let files = [];
+            try {
+                const res = await fetch(`${DIGITAL_BG_GIF_MANIFEST_URL}?t=${Date.now()}`, { cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json();
+                    const raw = Array.isArray(data) ? data : (data && (data.gifs || data.files)) || [];
+                    files = sortDigitalBgGifNames(raw);
+                }
+            } catch (_) {}
+            const prev = optDigitalBgGif.value;
+            optDigitalBgGif.innerHTML = '';
+            const noneOpt = document.createElement('option');
+            noneOpt.value = '';
+            noneOpt.textContent = 'Off — no background GIF';
+            optDigitalBgGif.appendChild(noneOpt);
+            files.forEach((file) => {
+                const opt = document.createElement('option');
+                opt.value = file;
+                opt.textContent = file.replace(/\.gif$/i, '');
+                optDigitalBgGif.appendChild(opt);
+            });
+            let selected = '';
+            try {
+                const enabled = localStorage.getItem(DIGITAL_BG_GIF_ENABLED_KEY);
+                const stored = localStorage.getItem(DIGITAL_BG_GIF_STORAGE_KEY);
+                if (enabled !== '0' && stored) selected = stored;
+            } catch (_) {}
+            if (selected && files.includes(selected)) optDigitalBgGif.value = selected;
+            else if (prev && Array.from(optDigitalBgGif.options).some((o) => o.value === prev)) optDigitalBgGif.value = prev;
+            else optDigitalBgGif.value = '';
+        }
+        function applyDigitalBgGifFromOptions(filename) {
+            const name = String(filename || '').trim();
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (rv && typeof rv.setDigitalBgGifFromOptions === 'function') {
+                    rv.setDigitalBgGifFromOptions(name);
+                    return;
+                }
+            } catch (_) {}
+            try {
+                if (!name) {
+                    localStorage.setItem(DIGITAL_BG_GIF_ENABLED_KEY, '0');
+                } else {
+                    localStorage.setItem(DIGITAL_BG_GIF_STORAGE_KEY, name);
+                    localStorage.setItem(DIGITAL_BG_GIF_ENABLED_KEY, '1');
+                }
+            } catch (_) {}
         function clampThemeFontScale(raw, fallback = 1) {
             const v = Number(raw);
             if (!Number.isFinite(v)) return fallback;
@@ -694,6 +773,10 @@ const QUALITY = {
                 bgA: src.bgA || d.bgA,
                 bgB: src.bgB || d.bgB,
                 bgC: src.bgC || d.bgC,
+                bgOuterA: src.bgOuterA || src.bgA || d.bgOuterA,
+                bgOuterB: src.bgOuterB || src.bgB || d.bgOuterB,
+                bgOuterC: src.bgOuterC || src.bgC || d.bgOuterC,
+                bgGradientAngle: clampThemeGradientAngle(src.bgGradientAngle, d.bgGradientAngle),
                 accent: src.accent || d.accent,
                 font: src.font || d.font,
                 btnBlueTop: src.btnBlueTop || d.btnBlueTop,
@@ -721,6 +804,9 @@ const QUALITY = {
                 bgA: preset.bgA,
                 bgB: preset.bgB,
                 bgC: preset.bgC,
+                bgOuterA: preset.bgA,
+                bgOuterB: preset.bgB,
+                bgOuterC: preset.bgC,
                 accent: preset.accent,
                 font: preset.font || fontFallback || prev.font
             });
@@ -770,6 +856,10 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-bg-a', t.bgA);
             target.style.setProperty('--rv-digital-bg-b', t.bgB);
             target.style.setProperty('--rv-digital-bg-c', t.bgC);
+            target.style.setProperty('--rv-digital-bg-outer-a', t.bgOuterA);
+            target.style.setProperty('--rv-digital-bg-outer-b', t.bgOuterB);
+            target.style.setProperty('--rv-digital-bg-outer-c', t.bgOuterC);
+            target.style.setProperty('--rv-digital-bg-gradient-angle', String(t.bgGradientAngle));
             target.style.setProperty('--rv-digital-accent-color', t.accent);
             target.style.setProperty('--rv-digital-ui-font', t.font);
             target.style.setProperty('--rv-digital-btn-blue-top', t.btnBlueTop);
@@ -798,6 +888,10 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-bg-a', t.bgA);
             root.style.setProperty('--global-rv-digital-bg-b', t.bgB);
             root.style.setProperty('--global-rv-digital-bg-c', t.bgC);
+            root.style.setProperty('--global-rv-digital-bg-outer-a', t.bgOuterA);
+            root.style.setProperty('--global-rv-digital-bg-outer-b', t.bgOuterB);
+            root.style.setProperty('--global-rv-digital-bg-outer-c', t.bgOuterC);
+            root.style.setProperty('--global-rv-digital-bg-gradient-angle', String(t.bgGradientAngle));
             root.style.setProperty('--global-rv-digital-accent-color', t.accent);
             root.style.setProperty('--global-rv-digital-ui-font', t.font);
             root.style.setProperty('--global-rv-digital-btn-blue-top', t.btnBlueTop);
@@ -845,6 +939,11 @@ const QUALITY = {
             if (optDigitalBgA) optDigitalBgA.value = theme.bgA;
             if (optDigitalBgB) optDigitalBgB.value = theme.bgB;
             if (optDigitalBgC) optDigitalBgC.value = theme.bgC;
+            if (optDigitalBgOuterA) optDigitalBgOuterA.value = theme.bgOuterA;
+            if (optDigitalBgOuterB) optDigitalBgOuterB.value = theme.bgOuterB;
+            if (optDigitalBgOuterC) optDigitalBgOuterC.value = theme.bgOuterC;
+            if (optDigitalBgGradientAngle) optDigitalBgGradientAngle.value = String(theme.bgGradientAngle);
+            if (optDigitalBgGradientAngleReadout) optDigitalBgGradientAngleReadout.textContent = `${theme.bgGradientAngle}°`;
             if (optDigitalAccent) optDigitalAccent.value = theme.accent;
             if (optDigitalFont) optDigitalFont.value = theme.font;
             if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = theme.btnBlueTop;
@@ -880,6 +979,7 @@ const QUALITY = {
             } catch (_) {}
             if (optAutofadeChangeStation) optAutofadeChangeStation.checked = changeStation;
             try { syncSpectrumOptionsControlsFromStorage(); } catch (_) {}
+            try { populateDigitalBgGifSelect(); } catch (_) {}
         }
         function syncRadioVisualMixPanelsFromOptions() {
             try {
@@ -899,6 +999,13 @@ const QUALITY = {
                 bgA: optDigitalBgA ? optDigitalBgA.value : DEFAULT_DIGITAL_THEME.bgA,
                 bgB: optDigitalBgB ? optDigitalBgB.value : DEFAULT_DIGITAL_THEME.bgB,
                 bgC: optDigitalBgC ? optDigitalBgC.value : DEFAULT_DIGITAL_THEME.bgC,
+                bgOuterA: optDigitalBgOuterA ? optDigitalBgOuterA.value : DEFAULT_DIGITAL_THEME.bgOuterA,
+                bgOuterB: optDigitalBgOuterB ? optDigitalBgOuterB.value : DEFAULT_DIGITAL_THEME.bgOuterB,
+                bgOuterC: optDigitalBgOuterC ? optDigitalBgOuterC.value : DEFAULT_DIGITAL_THEME.bgOuterC,
+                bgGradientAngle: clampThemeGradientAngle(
+                    optDigitalBgGradientAngle ? optDigitalBgGradientAngle.value : DEFAULT_DIGITAL_THEME.bgGradientAngle,
+                    DEFAULT_DIGITAL_THEME.bgGradientAngle
+                ),
                 accent: optDigitalAccent ? optDigitalAccent.value : DEFAULT_DIGITAL_THEME.accent,
                 font: optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.font,
                 btnBlueTop: optDigitalBtnBlueTop ? optDigitalBtnBlueTop.value : DEFAULT_DIGITAL_THEME.btnBlueTop,
@@ -935,6 +1042,11 @@ const QUALITY = {
             if (optDigitalBgA) optDigitalBgA.value = t.bgA;
             if (optDigitalBgB) optDigitalBgB.value = t.bgB;
             if (optDigitalBgC) optDigitalBgC.value = t.bgC;
+            if (optDigitalBgOuterA) optDigitalBgOuterA.value = t.bgOuterA;
+            if (optDigitalBgOuterB) optDigitalBgOuterB.value = t.bgOuterB;
+            if (optDigitalBgOuterC) optDigitalBgOuterC.value = t.bgOuterC;
+            if (optDigitalBgGradientAngle) optDigitalBgGradientAngle.value = String(t.bgGradientAngle);
+            if (optDigitalBgGradientAngleReadout) optDigitalBgGradientAngleReadout.textContent = `${t.bgGradientAngle}°`;
             if (optDigitalAccent) optDigitalAccent.value = t.accent;
             if (optDigitalFont && t.font) optDigitalFont.value = t.font;
             if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = t.btnBlueTop;
@@ -965,6 +1077,9 @@ const QUALITY = {
             if (optDigitalClockFontScale && optDigitalClockFontScaleReadout) {
                 optDigitalClockFontScaleReadout.textContent = `${optDigitalClockFontScale.value}%`;
             }
+            if (optDigitalBgGradientAngle && optDigitalBgGradientAngleReadout) {
+                optDigitalBgGradientAngleReadout.textContent = `${optDigitalBgGradientAngle.value}°`;
+            }
         }
         function isOptionsOpen() {
             return !!(optionsPanel && !optionsPanel.classList.contains('display-none') && optionsPanel.classList.contains('show'));
@@ -972,7 +1087,7 @@ const QUALITY = {
         let optionsAutoCloseId = null;
         function armOptionsAutoClose() {
             if (optionsAutoCloseId) { clearTimeout(optionsAutoCloseId); optionsAutoCloseId = null; }
-            optionsAutoCloseId = setTimeout(() => { closeOptionsPanel(); }, 20000);
+            optionsAutoCloseId = setTimeout(() => { closeOptionsPanel(); }, OPTIONS_AUTO_CLOSE_MS);
         }
         function openOptionsPanel() {
             if (uiLocked) return;
@@ -1002,6 +1117,7 @@ const QUALITY = {
         if (optionsPanel) {
             optionsPanel.addEventListener('pointerdown', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
             optionsPanel.addEventListener('input', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
+            optionsPanel.addEventListener('mousemove', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
         }
         function wireOptionsPanelControls() {
             populateDigitalThemePresetSelect();
@@ -1025,6 +1141,7 @@ const QUALITY = {
                 });
             }
             [optDigitalBgA, optDigitalBgB, optDigitalBgC, optDigitalAccent,
+                optDigitalBgOuterA, optDigitalBgOuterB, optDigitalBgOuterC, optDigitalBgGradientAngle,
                 optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent,
                 optDigitalBtnPurpleTop, optDigitalBtnPurpleBase, optDigitalBtnPurpleLabel, optDigitalBtnPurpleActive,
                 optDigitalBtnBlueFontScale, optDigitalBtnPurpleFontScale,
@@ -1038,6 +1155,12 @@ const QUALITY = {
             if (optDigitalClockFont) optDigitalClockFont.addEventListener('change', onThemeChange);
             if (optDigitalFont) {
                 optDigitalFont.addEventListener('change', onThemeChange);
+            }
+            if (optDigitalBgGif) {
+                optDigitalBgGif.addEventListener('change', () => {
+                    applyDigitalBgGifFromOptions(optDigitalBgGif.value);
+                    if (isOptionsOpen()) armOptionsAutoClose();
+                });
             }
             if (optDigitalThemeReset) {
                 optDigitalThemeReset.addEventListener('click', (e) => {
@@ -4117,6 +4240,7 @@ function exposeAppBindingsToGlobal() {
     try { g.clearAutoMixDeferForNonIncoming = clearAutoMixDeferForNonIncoming; } catch (_) {}
     try { g.closeBottomMenuPanel = closeBottomMenuPanel; } catch (_) {}
     try { g.closeKeyboardShortcutsPanel = closeKeyboardShortcutsPanel; } catch (_) {}
+    try { g.applyDigitalBgGifFromOptions = applyDigitalBgGifFromOptions; } catch (_) {}
     try { g.applyDigitalRadioTheme = applyDigitalRadioTheme; } catch (_) {}
     try { g.applyDigitalSpectrumSettings = applyDigitalSpectrumSettings; } catch (_) {}
     try { g.closeOptionsPanel = closeOptionsPanel; } catch (_) {}

@@ -242,18 +242,43 @@
                         <label class="options-label" for="opt-digital-theme-preset">Theme preset</label>
                         <select class="options-select options-select--full" id="opt-digital-theme-preset" aria-label="Digital Radio theme preset"></select>
                     </div>
-                    <p class="options-hint options-hint--inline">Colours apply to the full Digital Radio screen and centre panel.</p>
+                    <p class="options-hint options-hint--inline">Panel colours apply to the centre Digital Radio panel; screen colours apply to the furthest full-screen background.</p>
+                    <p class="options-subsection-title">Panel gradient</p>
                     <div class="options-row">
-                        <label class="options-label" for="opt-digital-bg-a">Gradient top</label>
-                        <input type="color" class="options-color" id="opt-digital-bg-a" value="#0a1628" aria-label="Digital Radio background top colour">
+                        <label class="options-label" for="opt-digital-bg-a">Top</label>
+                        <input type="color" class="options-color" id="opt-digital-bg-a" value="#0a1628" aria-label="Digital Radio panel gradient top colour">
                     </div>
                     <div class="options-row">
-                        <label class="options-label" for="opt-digital-bg-b">Gradient mid</label>
-                        <input type="color" class="options-color" id="opt-digital-bg-b" value="#061018" aria-label="Digital Radio background mid colour">
+                        <label class="options-label" for="opt-digital-bg-b">Mid</label>
+                        <input type="color" class="options-color" id="opt-digital-bg-b" value="#061018" aria-label="Digital Radio panel gradient mid colour">
                     </div>
                     <div class="options-row">
-                        <label class="options-label" for="opt-digital-bg-c">Gradient base</label>
-                        <input type="color" class="options-color" id="opt-digital-bg-c" value="#0c1020" aria-label="Digital Radio background base colour">
+                        <label class="options-label" for="opt-digital-bg-c">Base</label>
+                        <input type="color" class="options-color" id="opt-digital-bg-c" value="#0c1020" aria-label="Digital Radio panel gradient base colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-bg-gradient-angle">Gradient angle</label>
+                        <input type="range" class="options-range" id="opt-digital-bg-gradient-angle" min="0" max="360" step="1" value="165" aria-label="Background gradient rotation angle">
+                        <span class="options-readout" id="opt-digital-bg-gradient-angle-readout">165°</span>
+                    </div>
+                    <p class="options-subsection-title">Screen background</p>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-bg-outer-a">Top</label>
+                        <input type="color" class="options-color" id="opt-digital-bg-outer-a" value="#0a1628" aria-label="Full-screen background gradient top colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-bg-outer-b">Mid</label>
+                        <input type="color" class="options-color" id="opt-digital-bg-outer-b" value="#061018" aria-label="Full-screen background gradient mid colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-bg-outer-c">Base</label>
+                        <input type="color" class="options-color" id="opt-digital-bg-outer-c" value="#0c1020" aria-label="Full-screen background gradient base colour">
+                    </div>
+                    <div class="options-row options-row--stack">
+                        <label class="options-label" for="opt-digital-bg-gif">Background GIF</label>
+                        <select class="options-select options-select--full" id="opt-digital-bg-gif" aria-label="Digital Radio background GIF">
+                            <option value="">Off — no background GIF</option>
+                        </select>
                     </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-accent">Accent glow</label>
@@ -398,7 +423,7 @@
                 <section class="options-section" aria-label="System">
                     <h4 class="options-section-title">System</h4>
                     <button type="button" id="ui-lock-toggle" class="options-btn options-lock-btn" title="Lock UI" aria-pressed="false">🔒 Lock UI</button>
-                    <p class="options-hint">Hold the HUD title or press <strong>G</strong> to reopen Options. Panel closes after 20 seconds.</p>
+                    <p class="options-hint">Hold the HUD title or press <strong>G</strong> to reopen Options. Panel closes after 30 seconds of inactivity (mouse movement resets the timer).</p>
                 </section>
             </div>
         </div>

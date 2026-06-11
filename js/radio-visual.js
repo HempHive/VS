@@ -566,6 +566,23 @@
                 }).catch(() => {});
             }
 
+            setDigitalBgGifFromOptions(filename) {
+                const name = String(filename || '').trim();
+                if (!name) {
+                    this._setDigitalBgGifEnabled(false);
+                    this._syncDigitalVisBgButton();
+                    return;
+                }
+                this._refreshDigitalBgGifList().then(() => {
+                    const files = this._digitalBgGifFiles();
+                    const idx = files.indexOf(name);
+                    if (idx < 0) return;
+                    this._setDigitalBgGifEnabled(true);
+                    this._applyDigitalSpectrumBgFile(name, idx);
+                    this._syncDigitalVisBgButton();
+                }).catch(() => {});
+            }
+
             _wireDigitalVisBgButton(btn, sig) {
                 if (!btn) return;
                 let longPressTimer = null;

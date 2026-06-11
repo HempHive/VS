@@ -66,6 +66,10 @@
             --rv-digital-bg-a: var(--global-rv-digital-bg-a, #0a1628);
             --rv-digital-bg-b: var(--global-rv-digital-bg-b, #061018);
             --rv-digital-bg-c: var(--global-rv-digital-bg-c, #0c1020);
+            --rv-digital-bg-outer-a: var(--global-rv-digital-bg-outer-a, #0a1628);
+            --rv-digital-bg-outer-b: var(--global-rv-digital-bg-outer-b, #061018);
+            --rv-digital-bg-outer-c: var(--global-rv-digital-bg-outer-c, #0c1020);
+            --rv-digital-bg-gradient-angle: var(--global-rv-digital-bg-gradient-angle, 165);
             --rv-digital-accent-color: var(--global-rv-digital-accent-color, #ffd246);
             --rv-digital-ui-font: var(--global-rv-digital-ui-font, 'Orbitron', 'Share Tech Mono', ui-monospace, monospace);
             --rv-digital-btn-blue-top: var(--global-rv-digital-btn-blue-top, #123048);
@@ -460,7 +464,7 @@
             padding: clamp(6px, 0.73cqw, 10px) clamp(12px, 1.67cqw, 24px);
             background:
                 linear-gradient(180deg, color-mix(in srgb, var(--rv-digital-accent-color) 14%, transparent) 0%, transparent 28%),
-                linear-gradient(160deg, var(--rv-digital-bg-a) 0%, var(--rv-digital-bg-b) 50%, var(--rv-digital-bg-c) 100%);
+                linear-gradient(calc(var(--rv-digital-bg-gradient-angle, 165) * 1deg), var(--rv-digital-bg-a) 0%, var(--rv-digital-bg-b) 50%, var(--rv-digital-bg-c) 100%);
             border: clamp(1px, 0.21cqw, 2px) solid rgba(0, 220, 255, 0.35);
             box-shadow:
                 0 0 clamp(20px, 4.17cqw, 40px) rgba(0, 180, 255, 0.12),
@@ -555,6 +559,10 @@
             --rv-digital-bg-a: var(--global-rv-digital-bg-a, #0a1628);
             --rv-digital-bg-b: var(--global-rv-digital-bg-b, #061018);
             --rv-digital-bg-c: var(--global-rv-digital-bg-c, #0c1020);
+            --rv-digital-bg-outer-a: var(--global-rv-digital-bg-outer-a, #0a1628);
+            --rv-digital-bg-outer-b: var(--global-rv-digital-bg-outer-b, #061018);
+            --rv-digital-bg-outer-c: var(--global-rv-digital-bg-outer-c, #0c1020);
+            --rv-digital-bg-gradient-angle: var(--global-rv-digital-bg-gradient-angle, 165);
             --rv-digital-accent-color: var(--global-rv-digital-accent-color, #ffd246);
             --rv-digital-ui-font: var(--global-rv-digital-ui-font, 'Orbitron', 'Share Tech Mono', ui-monospace, monospace);
             --rv-digital-btn-blue-top: var(--global-rv-digital-btn-blue-top, #123048);
@@ -571,8 +579,8 @@
             --rv-digital-clock-font-scale: var(--global-rv-digital-clock-font-scale, 1);
             background:
                 radial-gradient(ellipse 120% 80% at 50% 0%, color-mix(in srgb, var(--rv-digital-accent-color) 22%, transparent), transparent 55%),
-                radial-gradient(ellipse 90% 70% at 50% 100%, color-mix(in srgb, var(--rv-digital-bg-b) 45%, transparent), transparent 60%),
-                linear-gradient(165deg, var(--rv-digital-bg-a) 0%, var(--rv-digital-bg-b) 38%, var(--rv-digital-bg-c) 100%);
+                radial-gradient(ellipse 90% 70% at 50% 100%, color-mix(in srgb, var(--rv-digital-bg-outer-b) 45%, transparent), transparent 60%),
+                linear-gradient(calc(var(--rv-digital-bg-gradient-angle, 165) * 1deg), var(--rv-digital-bg-outer-a) 0%, var(--rv-digital-bg-outer-b) 38%, var(--rv-digital-bg-outer-c) 100%);
             color: #e8f4ff;
         }
         #radio-visual-root.radio-visual-root--analogue-only .radio-visual-stage,
