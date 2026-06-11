@@ -237,7 +237,10 @@
             </div>
             <div id="options-body">
                 <section class="options-section" aria-label="Appearance">
-                    <h4 class="options-section-title">Appearance</h4>
+                    <div class="options-section-head">
+                        <h4 class="options-section-title">Appearance</h4>
+                        <button type="button" class="options-section-reset" id="opt-appearance-reset" title="Reset Appearance" aria-label="Reset Appearance">🔄</button>
+                    </div>
                     <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-digital-theme-preset">Theme preset</label>
                         <select class="options-select options-select--full" id="opt-digital-theme-preset" aria-label="Digital Radio theme preset"></select>
@@ -309,6 +312,11 @@
                         <input type="color" class="options-color" id="opt-digital-btn-blue-accent" value="#00dcff" aria-label="Blue toolbar button accent">
                     </div>
                     <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-blue-opacity">Opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-btn-blue-opacity" min="15" max="100" step="1" aria-label="Blue toolbar button opacity">
+                        <span class="options-readout" id="opt-digital-btn-blue-opacity-readout">100%</span>
+                    </div>
+                    <div class="options-row">
                         <label class="options-label" for="opt-digital-btn-blue-font-scale">Text size</label>
                         <input type="range" class="options-range" id="opt-digital-btn-blue-font-scale" min="65" max="160" step="5" aria-label="Blue toolbar button text size">
                         <span class="options-readout" id="opt-digital-btn-blue-font-scale-readout">100%</span>
@@ -329,6 +337,11 @@
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-btn-purple-active">Active</label>
                         <input type="color" class="options-color" id="opt-digital-btn-purple-active" value="#ff5ce8" aria-label="Purple feature button active highlight">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-purple-opacity">Opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-btn-purple-opacity" min="15" max="100" step="1" aria-label="Purple feature button opacity">
+                        <span class="options-readout" id="opt-digital-btn-purple-opacity-readout">100%</span>
                     </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-btn-purple-font-scale">Text size</label>
@@ -366,10 +379,12 @@
                         <input type="range" class="options-range" id="opt-digital-clock-font-scale" min="65" max="160" step="5" aria-label="Date and time text size">
                         <span class="options-readout" id="opt-digital-clock-font-scale-readout">100%</span>
                     </div>
-                    <button type="button" class="options-btn options-btn--ghost" id="opt-digital-theme-reset">Reset colours &amp; font</button>
                 </section>
                 <section class="options-section" aria-label="Spectrum">
-                    <h4 class="options-section-title">Spectrum</h4>
+                    <div class="options-section-head">
+                        <h4 class="options-section-title">Spectrum</h4>
+                        <button type="button" class="options-section-reset" id="opt-spectrum-reset" title="Reset Spectrum" aria-label="Reset Spectrum">🔄</button>
+                    </div>
                     <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-spectrum-color-stream">Colour stream</label>
                         <select class="options-select options-select--full" id="opt-spectrum-color-stream" aria-label="Spectrum colour stream preset"></select>
@@ -394,10 +409,12 @@
                         <input type="range" class="options-range" id="opt-spectrum-color-flow" min="25" max="300" step="5" aria-label="Spectrum colour flow speed">
                         <span class="options-readout" id="opt-spectrum-color-flow-readout">100%</span>
                     </div>
-                    <button type="button" class="options-btn options-btn--ghost" id="opt-spectrum-reset">Reset spectrum</button>
                 </section>
                 <section class="options-section" aria-label="Auto-Mix">
-                    <h4 class="options-section-title">Auto-Mix</h4>
+                    <div class="options-section-head">
+                        <h4 class="options-section-title">Auto-Mix</h4>
+                        <button type="button" class="options-section-reset" id="opt-automix-reset" title="Reset Auto-Mix" aria-label="Reset Auto-Mix">🔄</button>
+                    </div>
                     <label class="options-check">
                         <input type="checkbox" id="opt-automix-enabled">
                         <span>Enable Auto-Mix</span>
@@ -409,7 +426,10 @@
                     </div>
                 </section>
                 <section class="options-section" aria-label="Auto-Fade">
-                    <h4 class="options-section-title">Auto-Fade</h4>
+                    <div class="options-section-head">
+                        <h4 class="options-section-title">Auto-Fade</h4>
+                        <button type="button" class="options-section-reset" id="opt-autofade-reset" title="Reset Auto-Fade" aria-label="Reset Auto-Fade">🔄</button>
+                    </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-autofade-duration">Fade duration</label>
                         <input type="range" class="options-range" id="opt-autofade-duration" min="2" max="15" step="0.5" aria-label="Auto-fade duration in seconds">
@@ -421,7 +441,10 @@
                     </label>
                 </section>
                 <section class="options-section" aria-label="System">
-                    <h4 class="options-section-title">System</h4>
+                    <div class="options-section-head">
+                        <h4 class="options-section-title">System</h4>
+                        <button type="button" class="options-section-reset" id="opt-system-reset" title="Reset System" aria-label="Reset System">🔄</button>
+                    </div>
                     <button type="button" id="ui-lock-toggle" class="options-btn options-lock-btn" title="Lock UI" aria-pressed="false">🔒 Lock UI</button>
                     <p class="options-hint">Hold the HUD title or press <strong>G</strong> to reopen Options. Panel closes after 30 seconds of inactivity (mouse movement resets the timer).</p>
                 </section>

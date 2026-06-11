@@ -75,10 +75,12 @@
             --rv-digital-btn-blue-top: var(--global-rv-digital-btn-blue-top, #123048);
             --rv-digital-btn-blue-base: var(--global-rv-digital-btn-blue-base, #081820);
             --rv-digital-btn-blue-accent: var(--global-rv-digital-btn-blue-accent, #00dcff);
+            --rv-digital-btn-blue-opacity: var(--global-rv-digital-btn-blue-opacity, 1);
             --rv-digital-btn-purple-top: var(--global-rv-digital-btn-purple-top, #5a3488);
             --rv-digital-btn-purple-base: var(--global-rv-digital-btn-purple-base, #1a0c30);
             --rv-digital-btn-purple-label: var(--global-rv-digital-btn-purple-label, #5cff9e);
             --rv-digital-btn-purple-active: var(--global-rv-digital-btn-purple-active, #ff5ce8);
+            --rv-digital-btn-purple-opacity: var(--global-rv-digital-btn-purple-opacity, 1);
             --rv-digital-btn-blue-font-scale: var(--global-rv-digital-btn-blue-font-scale, 1);
             --rv-digital-btn-purple-font-scale: var(--global-rv-digital-btn-purple-font-scale, 1);
             --rv-digital-clock-font: var(--global-rv-digital-clock-font, var(--rv-digital-ui-font));
@@ -518,9 +520,10 @@
             margin-bottom: 12px;
         }
         #radio-visual-root .radio-visual-digital-station-row .radio-visual-btn {
-            border-color: rgba(0, 220, 255, 0.4);
-            background: linear-gradient(180deg, #123048, #081820);
-            color: #8ef;
+            opacity: var(--rv-digital-btn-blue-opacity, 1);
+            border-color: color-mix(in srgb, var(--rv-digital-btn-blue-accent) 40%, transparent);
+            background: linear-gradient(180deg, var(--rv-digital-btn-blue-top), var(--rv-digital-btn-blue-base));
+            color: color-mix(in srgb, var(--rv-digital-btn-blue-accent) 72%, white 28%);
             min-width: 72px;
         }
         #radio-visual-root .radio-visual-digital-eq {
@@ -568,10 +571,12 @@
             --rv-digital-btn-blue-top: var(--global-rv-digital-btn-blue-top, #123048);
             --rv-digital-btn-blue-base: var(--global-rv-digital-btn-blue-base, #081820);
             --rv-digital-btn-blue-accent: var(--global-rv-digital-btn-blue-accent, #00dcff);
+            --rv-digital-btn-blue-opacity: var(--global-rv-digital-btn-blue-opacity, 1);
             --rv-digital-btn-purple-top: var(--global-rv-digital-btn-purple-top, #5a3488);
             --rv-digital-btn-purple-base: var(--global-rv-digital-btn-purple-base, #1a0c30);
             --rv-digital-btn-purple-label: var(--global-rv-digital-btn-purple-label, #5cff9e);
             --rv-digital-btn-purple-active: var(--global-rv-digital-btn-purple-active, #ff5ce8);
+            --rv-digital-btn-purple-opacity: var(--global-rv-digital-btn-purple-opacity, 1);
             --rv-digital-btn-blue-font-scale: var(--global-rv-digital-btn-blue-font-scale, 1);
             --rv-digital-btn-purple-font-scale: var(--global-rv-digital-btn-purple-font-scale, 1);
             --rv-digital-clock-font: var(--global-rv-digital-clock-font, var(--rv-digital-ui-font));
@@ -1967,6 +1972,7 @@
             min-width: 0;
             min-height: 0;
             aspect-ratio: auto;
+            opacity: var(--rv-digital-btn-purple-opacity, 1);
             border-color: color-mix(in srgb, var(--rv-digital-btn-purple-top) 55%, white 20%);
             background: linear-gradient(
                 180deg,
@@ -2080,6 +2086,7 @@
         }
         /* Digital toolbar blue theme (overrides default brown .radio-visual-btn). */
         #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn {
+            opacity: var(--rv-digital-btn-blue-opacity, 1);
             border-color: color-mix(in srgb, var(--rv-digital-btn-blue-accent) 40%, transparent);
             background: linear-gradient(180deg, var(--rv-digital-btn-blue-top), var(--rv-digital-btn-blue-base));
             color: color-mix(in srgb, var(--rv-digital-btn-blue-accent) 72%, white 28%);

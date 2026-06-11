@@ -1361,6 +1361,18 @@
             padding-top: 12px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
+        .options-section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .options-section-head .options-section-title {
+            margin: 0;
+            flex: 1;
+            min-width: 0;
+        }
         .options-section-title {
             margin: 0 0 10px;
             font-size: 11px;
@@ -1368,6 +1380,30 @@
             text-transform: uppercase;
             color: #9fdcff;
             font-weight: 700;
+        }
+        .options-section-reset {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border-radius: 6px;
+            border: 1px solid rgba(120, 200, 255, 0.28);
+            background: rgba(8, 28, 52, 0.55);
+            color: #dff4ff;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, transform 0.08s;
+        }
+        .options-section-reset:hover {
+            background: rgba(18, 48, 82, 0.82);
+            border-color: rgba(120, 200, 255, 0.5);
+        }
+        .options-section-reset:active {
+            transform: scale(0.94);
         }
         .options-subsection-title {
             margin: 10px 0 6px;

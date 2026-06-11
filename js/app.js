@@ -467,10 +467,12 @@ const QUALITY = {
             btnBlueTop: '#123048',
             btnBlueBase: '#081820',
             btnBlueAccent: '#00dcff',
+            btnBlueOpacity: 1,
             btnPurpleTop: '#5a3488',
             btnPurpleBase: '#1a0c30',
             btnPurpleLabel: '#5cff9e',
             btnPurpleActive: '#ff5ce8',
+            btnPurpleOpacity: 1,
             btnBlueFontScale: 1,
             btnPurpleFontScale: 1,
             clockFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
@@ -561,10 +563,14 @@ const QUALITY = {
         const optDigitalBtnBlueTop = document.getElementById('opt-digital-btn-blue-top');
         const optDigitalBtnBlueBase = document.getElementById('opt-digital-btn-blue-base');
         const optDigitalBtnBlueAccent = document.getElementById('opt-digital-btn-blue-accent');
+        const optDigitalBtnBlueOpacity = document.getElementById('opt-digital-btn-blue-opacity');
+        const optDigitalBtnBlueOpacityReadout = document.getElementById('opt-digital-btn-blue-opacity-readout');
         const optDigitalBtnPurpleTop = document.getElementById('opt-digital-btn-purple-top');
         const optDigitalBtnPurpleBase = document.getElementById('opt-digital-btn-purple-base');
         const optDigitalBtnPurpleLabel = document.getElementById('opt-digital-btn-purple-label');
         const optDigitalBtnPurpleActive = document.getElementById('opt-digital-btn-purple-active');
+        const optDigitalBtnPurpleOpacity = document.getElementById('opt-digital-btn-purple-opacity');
+        const optDigitalBtnPurpleOpacityReadout = document.getElementById('opt-digital-btn-purple-opacity-readout');
         const optDigitalBtnBlueFontScale = document.getElementById('opt-digital-btn-blue-font-scale');
         const optDigitalBtnBlueFontScaleReadout = document.getElementById('opt-digital-btn-blue-font-scale-readout');
         const optDigitalBtnPurpleFontScale = document.getElementById('opt-digital-btn-purple-font-scale');
@@ -574,7 +580,10 @@ const QUALITY = {
         const optDigitalClockColor = document.getElementById('opt-digital-clock-color');
         const optDigitalClockFontScale = document.getElementById('opt-digital-clock-font-scale');
         const optDigitalClockFontScaleReadout = document.getElementById('opt-digital-clock-font-scale-readout');
-        const optDigitalThemeReset = document.getElementById('opt-digital-theme-reset');
+        const optAppearanceReset = document.getElementById('opt-appearance-reset');
+        const optAutomixReset = document.getElementById('opt-automix-reset');
+        const optAutofadeReset = document.getElementById('opt-autofade-reset');
+        const optSystemReset = document.getElementById('opt-system-reset');
         const optAutomixEnabled = document.getElementById('opt-automix-enabled');
         const optAutomixMax = document.getElementById('opt-automix-max');
         const optAutomixMaxReadout = document.getElementById('opt-automix-max-readout');
@@ -762,6 +771,11 @@ const QUALITY = {
             if (!Number.isFinite(v)) return fallback;
             return Math.max(0.65, Math.min(1.6, Math.round(v * 100) / 100));
         }
+        function clampThemeOpacity(raw, fallback = 1) {
+            const v = Number(raw);
+            if (!Number.isFinite(v)) return fallback;
+            return Math.max(0.15, Math.min(1, Math.round(v * 100) / 100));
+        }
         function normalizeDigitalTheme(parsed) {
             const d = DEFAULT_DIGITAL_THEME;
             const src = (parsed && typeof parsed === 'object') ? parsed : {};
@@ -782,10 +796,12 @@ const QUALITY = {
                 btnBlueTop: src.btnBlueTop || d.btnBlueTop,
                 btnBlueBase: src.btnBlueBase || d.btnBlueBase,
                 btnBlueAccent: src.btnBlueAccent || d.btnBlueAccent,
+                btnBlueOpacity: clampThemeOpacity(src.btnBlueOpacity, d.btnBlueOpacity),
                 btnPurpleTop: src.btnPurpleTop || d.btnPurpleTop,
                 btnPurpleBase: src.btnPurpleBase || d.btnPurpleBase,
                 btnPurpleLabel: src.btnPurpleLabel || d.btnPurpleLabel,
                 btnPurpleActive: src.btnPurpleActive || d.btnPurpleActive,
+                btnPurpleOpacity: clampThemeOpacity(src.btnPurpleOpacity, d.btnPurpleOpacity),
                 btnBlueFontScale: clampThemeFontScale(src.btnBlueFontScale, d.btnBlueFontScale),
                 btnPurpleFontScale: clampThemeFontScale(src.btnPurpleFontScale, d.btnPurpleFontScale),
                 clockFont: src.clockFont || d.clockFont,
@@ -865,10 +881,12 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-btn-blue-top', t.btnBlueTop);
             target.style.setProperty('--rv-digital-btn-blue-base', t.btnBlueBase);
             target.style.setProperty('--rv-digital-btn-blue-accent', t.btnBlueAccent);
+            target.style.setProperty('--rv-digital-btn-blue-opacity', String(t.btnBlueOpacity));
             target.style.setProperty('--rv-digital-btn-purple-top', t.btnPurpleTop);
             target.style.setProperty('--rv-digital-btn-purple-base', t.btnPurpleBase);
             target.style.setProperty('--rv-digital-btn-purple-label', t.btnPurpleLabel);
             target.style.setProperty('--rv-digital-btn-purple-active', t.btnPurpleActive);
+            target.style.setProperty('--rv-digital-btn-purple-opacity', String(t.btnPurpleOpacity));
             target.style.setProperty('--rv-digital-btn-blue-font-scale', String(t.btnBlueFontScale));
             target.style.setProperty('--rv-digital-btn-purple-font-scale', String(t.btnPurpleFontScale));
             target.style.setProperty('--rv-digital-clock-font', t.clockFont);
@@ -897,10 +915,12 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-btn-blue-top', t.btnBlueTop);
             root.style.setProperty('--global-rv-digital-btn-blue-base', t.btnBlueBase);
             root.style.setProperty('--global-rv-digital-btn-blue-accent', t.btnBlueAccent);
+            root.style.setProperty('--global-rv-digital-btn-blue-opacity', String(t.btnBlueOpacity));
             root.style.setProperty('--global-rv-digital-btn-purple-top', t.btnPurpleTop);
             root.style.setProperty('--global-rv-digital-btn-purple-base', t.btnPurpleBase);
             root.style.setProperty('--global-rv-digital-btn-purple-label', t.btnPurpleLabel);
             root.style.setProperty('--global-rv-digital-btn-purple-active', t.btnPurpleActive);
+            root.style.setProperty('--global-rv-digital-btn-purple-opacity', String(t.btnPurpleOpacity));
             root.style.setProperty('--global-rv-digital-btn-blue-font-scale', String(t.btnBlueFontScale));
             root.style.setProperty('--global-rv-digital-btn-purple-font-scale', String(t.btnPurpleFontScale));
             root.style.setProperty('--global-rv-digital-clock-font', t.clockFont);
@@ -949,10 +969,14 @@ const QUALITY = {
             if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = theme.btnBlueTop;
             if (optDigitalBtnBlueBase) optDigitalBtnBlueBase.value = theme.btnBlueBase;
             if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = theme.btnBlueAccent;
+            if (optDigitalBtnBlueOpacity) optDigitalBtnBlueOpacity.value = String(Math.round(theme.btnBlueOpacity * 100));
+            if (optDigitalBtnBlueOpacityReadout) optDigitalBtnBlueOpacityReadout.textContent = `${Math.round(theme.btnBlueOpacity * 100)}%`;
             if (optDigitalBtnPurpleTop) optDigitalBtnPurpleTop.value = theme.btnPurpleTop;
             if (optDigitalBtnPurpleBase) optDigitalBtnPurpleBase.value = theme.btnPurpleBase;
             if (optDigitalBtnPurpleLabel) optDigitalBtnPurpleLabel.value = theme.btnPurpleLabel;
             if (optDigitalBtnPurpleActive) optDigitalBtnPurpleActive.value = theme.btnPurpleActive;
+            if (optDigitalBtnPurpleOpacity) optDigitalBtnPurpleOpacity.value = String(Math.round(theme.btnPurpleOpacity * 100));
+            if (optDigitalBtnPurpleOpacityReadout) optDigitalBtnPurpleOpacityReadout.textContent = `${Math.round(theme.btnPurpleOpacity * 100)}%`;
             if (optDigitalBtnBlueFontScale) optDigitalBtnBlueFontScale.value = String(Math.round(theme.btnBlueFontScale * 100));
             if (optDigitalBtnBlueFontScaleReadout) optDigitalBtnBlueFontScaleReadout.textContent = `${Math.round(theme.btnBlueFontScale * 100)}%`;
             if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(theme.btnPurpleFontScale * 100));
@@ -1011,10 +1035,18 @@ const QUALITY = {
                 btnBlueTop: optDigitalBtnBlueTop ? optDigitalBtnBlueTop.value : DEFAULT_DIGITAL_THEME.btnBlueTop,
                 btnBlueBase: optDigitalBtnBlueBase ? optDigitalBtnBlueBase.value : DEFAULT_DIGITAL_THEME.btnBlueBase,
                 btnBlueAccent: optDigitalBtnBlueAccent ? optDigitalBtnBlueAccent.value : DEFAULT_DIGITAL_THEME.btnBlueAccent,
+                btnBlueOpacity: clampThemeOpacity(
+                    (Number(optDigitalBtnBlueOpacity && optDigitalBtnBlueOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnBlueOpacity
+                ),
                 btnPurpleTop: optDigitalBtnPurpleTop ? optDigitalBtnPurpleTop.value : DEFAULT_DIGITAL_THEME.btnPurpleTop,
                 btnPurpleBase: optDigitalBtnPurpleBase ? optDigitalBtnPurpleBase.value : DEFAULT_DIGITAL_THEME.btnPurpleBase,
                 btnPurpleLabel: optDigitalBtnPurpleLabel ? optDigitalBtnPurpleLabel.value : DEFAULT_DIGITAL_THEME.btnPurpleLabel,
                 btnPurpleActive: optDigitalBtnPurpleActive ? optDigitalBtnPurpleActive.value : DEFAULT_DIGITAL_THEME.btnPurpleActive,
+                btnPurpleOpacity: clampThemeOpacity(
+                    (Number(optDigitalBtnPurpleOpacity && optDigitalBtnPurpleOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnPurpleOpacity
+                ),
                 btnBlueFontScale: clampThemeFontScale(
                     (Number(optDigitalBtnBlueFontScale && optDigitalBtnBlueFontScale.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.btnBlueFontScale
@@ -1052,10 +1084,14 @@ const QUALITY = {
             if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = t.btnBlueTop;
             if (optDigitalBtnBlueBase) optDigitalBtnBlueBase.value = t.btnBlueBase;
             if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = t.btnBlueAccent;
+            if (optDigitalBtnBlueOpacity) optDigitalBtnBlueOpacity.value = String(Math.round(t.btnBlueOpacity * 100));
+            if (optDigitalBtnBlueOpacityReadout) optDigitalBtnBlueOpacityReadout.textContent = `${Math.round(t.btnBlueOpacity * 100)}%`;
             if (optDigitalBtnPurpleTop) optDigitalBtnPurpleTop.value = t.btnPurpleTop;
             if (optDigitalBtnPurpleBase) optDigitalBtnPurpleBase.value = t.btnPurpleBase;
             if (optDigitalBtnPurpleLabel) optDigitalBtnPurpleLabel.value = t.btnPurpleLabel;
             if (optDigitalBtnPurpleActive) optDigitalBtnPurpleActive.value = t.btnPurpleActive;
+            if (optDigitalBtnPurpleOpacity) optDigitalBtnPurpleOpacity.value = String(Math.round(t.btnPurpleOpacity * 100));
+            if (optDigitalBtnPurpleOpacityReadout) optDigitalBtnPurpleOpacityReadout.textContent = `${Math.round(t.btnPurpleOpacity * 100)}%`;
             if (optDigitalBtnBlueFontScale) optDigitalBtnBlueFontScale.value = String(Math.round(t.btnBlueFontScale * 100));
             if (optDigitalBtnBlueFontScaleReadout) optDigitalBtnBlueFontScaleReadout.textContent = `${Math.round(t.btnBlueFontScale * 100)}%`;
             if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(t.btnPurpleFontScale * 100));
@@ -1071,8 +1107,14 @@ const QUALITY = {
             if (optDigitalBtnBlueFontScale && optDigitalBtnBlueFontScaleReadout) {
                 optDigitalBtnBlueFontScaleReadout.textContent = `${optDigitalBtnBlueFontScale.value}%`;
             }
+            if (optDigitalBtnBlueOpacity && optDigitalBtnBlueOpacityReadout) {
+                optDigitalBtnBlueOpacityReadout.textContent = `${optDigitalBtnBlueOpacity.value}%`;
+            }
             if (optDigitalBtnPurpleFontScale && optDigitalBtnPurpleFontScaleReadout) {
                 optDigitalBtnPurpleFontScaleReadout.textContent = `${optDigitalBtnPurpleFontScale.value}%`;
+            }
+            if (optDigitalBtnPurpleOpacity && optDigitalBtnPurpleOpacityReadout) {
+                optDigitalBtnPurpleOpacityReadout.textContent = `${optDigitalBtnPurpleOpacity.value}%`;
             }
             if (optDigitalClockFontScale && optDigitalClockFontScaleReadout) {
                 optDigitalClockFontScaleReadout.textContent = `${optDigitalClockFontScale.value}%`;
@@ -1119,6 +1161,94 @@ const QUALITY = {
             optionsPanel.addEventListener('input', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
             optionsPanel.addEventListener('mousemove', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
         }
+        function resetAppearanceOptionsSection() {
+            saveDigitalThemeToStorage(DEFAULT_DIGITAL_THEME);
+            applyDigitalRadioTheme(DEFAULT_DIGITAL_THEME);
+            applyDigitalThemeToControls(DEFAULT_DIGITAL_THEME);
+            applyDigitalBgGifFromOptions('');
+            if (optDigitalBgGif) optDigitalBgGif.value = '';
+            try { populateDigitalBgGifSelect(); } catch (_) {}
+        }
+        function resetSpectrumOptionsSection() {
+            const RVE = getSpectrumEngineClass();
+            const defaults = (RVE && RVE.DEFAULT_SPECTRUM_SETTINGS)
+                ? { ...RVE.DEFAULT_SPECTRUM_SETTINGS }
+                : {
+                    colorStreamId: 'aurora',
+                    scale: 1,
+                    opacity: 1,
+                    audioStrength: 1,
+                    colorFlow: 1
+                };
+            applySpectrumSettingsToControls(defaults);
+            applyDigitalSpectrumSettings(defaults);
+        }
+        function setAutomixEnabledFromOptions(next) {
+            let currentlyOn = false;
+            try { currentlyOn = localStorage.getItem(AUTOMIX_ENABLED_STORAGE_KEY) === '1'; } catch (_) {}
+            try { currentlyOn = currentlyOn || !!(state && state.autoMixEnabled); } catch (_) {}
+            if (currentlyOn === next) {
+                if (optAutomixEnabled) optAutomixEnabled.checked = next;
+                return;
+            }
+            const rv = getActiveRadioVisualEngine();
+            if (rv && typeof rv._toggleAutoMix === 'function') {
+                rv._toggleAutoMix();
+            } else {
+                const btn = document.getElementById('mix-automix') || document.getElementById('dj-automix');
+                if (btn) btn.click();
+                else {
+                    try { localStorage.setItem(AUTOMIX_ENABLED_STORAGE_KEY, next ? '1' : '0'); } catch (_) {}
+                    try { state.autoMixEnabled = next; } catch (_) {}
+                }
+            }
+            if (optAutomixEnabled) optAutomixEnabled.checked = next;
+            syncRadioVisualMixPanelsFromOptions();
+        }
+        function resetAutomixOptionsSection() {
+            const maxMin = writeAutoMixMaxMinToStorage(20);
+            if (optAutomixMax) optAutomixMax.value = String(maxMin);
+            if (optAutomixMaxReadout) optAutomixMaxReadout.textContent = `${maxMin}m`;
+            setAutomixEnabledFromOptions(false);
+            syncRadioVisualMixPanelsFromOptions();
+        }
+        function setAutofadeChangeStationFromOptions(next) {
+            let currently = true;
+            try {
+                const raw = localStorage.getItem(AUTOFADE_CHANGE_STATION_STORAGE_KEY);
+                if (raw != null) currently = raw === '1';
+            } catch (_) {}
+            if (currently === next) {
+                if (optAutofadeChangeStation) optAutofadeChangeStation.checked = next;
+                return;
+            }
+            const rv = getActiveRadioVisualEngine();
+            if (rv && typeof rv._toggleAutoFadeChangeStation === 'function') {
+                rv._toggleAutoFadeChangeStation();
+            } else {
+                try { localStorage.setItem(AUTOFADE_CHANGE_STATION_STORAGE_KEY, next ? '1' : '0'); } catch (_) {}
+                const cb = document.getElementById('dj-autofade-change-station');
+                if (cb) {
+                    cb.checked = next;
+                    try { cb.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+                }
+            }
+            if (optAutofadeChangeStation) optAutofadeChangeStation.checked = next;
+            syncRadioVisualMixPanelsFromOptions();
+        }
+        function resetAutofadeOptionsSection() {
+            const fadeMs = writeAutoFadeDurationMsToStorage(5000);
+            if (optAutofadeDuration) optAutofadeDuration.value = String(fadeMs / 1000);
+            if (optAutofadeDurationReadout) optAutofadeDurationReadout.textContent = `${(fadeMs / 1000).toFixed(1)}s`;
+            setAutofadeChangeStationFromOptions(true);
+            syncRadioVisualMixPanelsFromOptions();
+        }
+        function resetSystemOptionsSection() {
+            if (uiLocked) {
+                uiLocked = false;
+                applyUiLockState();
+            }
+        }
         function wireOptionsPanelControls() {
             populateDigitalThemePresetSelect();
             const onThemeChange = () => {
@@ -1142,8 +1272,9 @@ const QUALITY = {
             }
             [optDigitalBgA, optDigitalBgB, optDigitalBgC, optDigitalAccent,
                 optDigitalBgOuterA, optDigitalBgOuterB, optDigitalBgOuterC, optDigitalBgGradientAngle,
-                optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent,
+                optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent, optDigitalBtnBlueOpacity,
                 optDigitalBtnPurpleTop, optDigitalBtnPurpleBase, optDigitalBtnPurpleLabel, optDigitalBtnPurpleActive,
+                optDigitalBtnPurpleOpacity,
                 optDigitalBtnBlueFontScale, optDigitalBtnPurpleFontScale,
                 optDigitalClockColor, optDigitalClockFontScale
             ].forEach((el) => {
@@ -1162,12 +1293,11 @@ const QUALITY = {
                     if (isOptionsOpen()) armOptionsAutoClose();
                 });
             }
-            if (optDigitalThemeReset) {
-                optDigitalThemeReset.addEventListener('click', (e) => {
+            if (optAppearanceReset) {
+                optAppearanceReset.addEventListener('click', (e) => {
                     e.preventDefault();
-                    saveDigitalThemeToStorage(DEFAULT_DIGITAL_THEME);
-                    applyDigitalRadioTheme(DEFAULT_DIGITAL_THEME);
-                    syncOptionsPanelControlsFromStorage();
+                    resetAppearanceOptionsSection();
+                    if (isOptionsOpen()) armOptionsAutoClose();
                 });
             }
             const onSpectrumSettingsChange = () => {
@@ -1197,18 +1327,29 @@ const QUALITY = {
             if (optSpectrumReset) {
                 optSpectrumReset.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const RVE = getSpectrumEngineClass();
-                    const defaults = (RVE && RVE.DEFAULT_SPECTRUM_SETTINGS)
-                        ? { ...RVE.DEFAULT_SPECTRUM_SETTINGS }
-                        : {
-                            colorStreamId: 'aurora',
-                            scale: 1,
-                            opacity: 1,
-                            audioStrength: 1,
-                            colorFlow: 1
-                        };
-                    applySpectrumSettingsToControls(defaults);
-                    applyDigitalSpectrumSettings(defaults);
+                    resetSpectrumOptionsSection();
+                    if (isOptionsOpen()) armOptionsAutoClose();
+                });
+            }
+            if (optAutomixReset) {
+                optAutomixReset.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    resetAutomixOptionsSection();
+                    if (isOptionsOpen()) armOptionsAutoClose();
+                });
+            }
+            if (optAutofadeReset) {
+                optAutofadeReset.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    resetAutofadeOptionsSection();
+                    if (isOptionsOpen()) armOptionsAutoClose();
+                });
+            }
+            if (optSystemReset) {
+                optSystemReset.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    resetSystemOptionsSection();
+                    if (isOptionsOpen()) armOptionsAutoClose();
                 });
             }
             if (optAutomixMax) {
@@ -1222,23 +1363,7 @@ const QUALITY = {
             }
             if (optAutomixEnabled) {
                 optAutomixEnabled.addEventListener('change', () => {
-                    const next = !!optAutomixEnabled.checked;
-                    let currentlyOn = false;
-                    try { currentlyOn = localStorage.getItem(AUTOMIX_ENABLED_STORAGE_KEY) === '1'; } catch (_) {}
-                    try { currentlyOn = currentlyOn || !!(state && state.autoMixEnabled); } catch (_) {}
-                    if (currentlyOn === next) return;
-                    const rv = getActiveRadioVisualEngine();
-                    if (rv && typeof rv._toggleAutoMix === 'function') {
-                        rv._toggleAutoMix();
-                    } else {
-                        const btn = document.getElementById('mix-automix') || document.getElementById('dj-automix');
-                        if (btn) btn.click();
-                        else {
-                            try { localStorage.setItem(AUTOMIX_ENABLED_STORAGE_KEY, next ? '1' : '0'); } catch (_) {}
-                            try { state.autoMixEnabled = next; } catch (_) {}
-                        }
-                    }
-                    syncRadioVisualMixPanelsFromOptions();
+                    setAutomixEnabledFromOptions(!!optAutomixEnabled.checked);
                 });
             }
             if (optAutofadeDuration) {
@@ -1252,25 +1377,7 @@ const QUALITY = {
             }
             if (optAutofadeChangeStation) {
                 optAutofadeChangeStation.addEventListener('change', () => {
-                    const next = !!optAutofadeChangeStation.checked;
-                    let currently = true;
-                    try {
-                        const raw = localStorage.getItem(AUTOFADE_CHANGE_STATION_STORAGE_KEY);
-                        if (raw != null) currently = raw === '1';
-                    } catch (_) {}
-                    if (currently === next) return;
-                    const rv = getActiveRadioVisualEngine();
-                    if (rv && typeof rv._toggleAutoFadeChangeStation === 'function') {
-                        rv._toggleAutoFadeChangeStation();
-                    } else {
-                        try { localStorage.setItem(AUTOFADE_CHANGE_STATION_STORAGE_KEY, next ? '1' : '0'); } catch (_) {}
-                        const cb = document.getElementById('dj-autofade-change-station');
-                        if (cb) {
-                            cb.checked = next;
-                            try { cb.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
-                        }
-                    }
-                    syncRadioVisualMixPanelsFromOptions();
+                    setAutofadeChangeStationFromOptions(!!optAutofadeChangeStation.checked);
                 });
             }
         }
