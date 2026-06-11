@@ -1742,6 +1742,10 @@
         }
         #radio-visual-root .radio-visual-digital-spectrum-scale-range.radio-visual-digital-range::-webkit-slider-thumb {
             margin-left: calc((var(--rv-range-thumb) - var(--rv-range-rail)) / -2);
+            transform: rotate(-90deg);
+        }
+        #radio-visual-root .radio-visual-digital-spectrum-scale-range.radio-visual-digital-range::-moz-range-thumb {
+            transform: rotate(-90deg);
         }
         #radio-visual-root .radio-visual-digital-spectrum-pan-range.radio-visual-digital-range {
             writing-mode: horizontal-tb;

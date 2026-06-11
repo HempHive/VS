@@ -6991,15 +6991,11 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
          */
         function pickRandomStationB() {
             if (!Array.isArray(stations) || stations.length === 0) return;
-            if (!suppressHistoryPush) pushDeckPlaybackHistory('b');
             const cur = (typeof currentStationBIndex === 'number' && Number.isFinite(currentStationBIndex)) ? currentStationBIndex : 0;
             const eligible = (typeof getCycleEligibleStationIndexes === 'function') ? getCycleEligibleStationIndexes(cur) : [];
             if (!eligible.length) return;
             const idx = eligible[Math.floor(Math.random() * eligible.length)];
-            currentStationBIndex = Math.max(0, Math.min(stations.length - 1, Number(idx) || 0));
-            try { saveLastStationSelection('b'); } catch (_) {}
-            try { if (typeof refreshMixStationB === 'function') refreshMixStationB(); } catch (_) {}
-            try { if (typeof playRadioB === 'function') playRadioB(); } catch (_) {}
+            setStationB(idx);
         }
         /**
          * Reads the crossfader (DJ Decks panel first, then the Mixer panel fallback)

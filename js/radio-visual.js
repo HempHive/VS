@@ -884,6 +884,16 @@
                         try { this._scrollDigitalStationsListToActive(deck); } catch (_) {}
                     });
                 };
+                const wireRandom = (deck) => {
+                    const g = globalThis;
+                    if (g.uiLocked) return;
+                    if (deck === 'b') {
+                        if (typeof g.pickRandomStationB === 'function') g.pickRandomStationB();
+                    } else if (typeof g.pickRandomStation === 'function') {
+                        g.pickRandomStation();
+                    }
+                    this._scrollDigitalStationsAfterDeckChange(deck);
+                };
                 const mkCol = (deck) => {
                     const col = document.createElement('div');
                     col.className = 'radio-visual-digital-stations-col';
@@ -908,7 +918,7 @@
                     next.type = 'button';
                     next.className = 'radio-visual-digital-stations-nav-btn';
                     next.textContent = '▶';
-                    next.title = deck === 'b' ? 'Next station on Deck B' : 'Next station on Deck A';
+                    next.title = deck === 'b' ? 'Random station on Deck B' : 'Random station on Deck A';
                     next.setAttribute('aria-label', next.title);
                     prev.addEventListener('click', (ev) => {
                         try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
@@ -916,7 +926,7 @@
                     });
                     next.addEventListener('click', (ev) => {
                         try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
-                        wireNav(deck, 1);
+                        wireRandom(deck);
                     });
                     nav.appendChild(prev);
                     nav.appendChild(next);
@@ -1002,6 +1012,13 @@
                 if (!this._digitalStationsVisible) return;
                 try { this._scrollDigitalStationsListToActive('a'); } catch (_) {}
                 try { this._scrollDigitalStationsListToActive('b'); } catch (_) {}
+            }
+
+            _scrollDigitalStationsAfterDeckChange(deckKey) {
+                if (!this._digitalStationsVisible) return;
+                requestAnimationFrame(() => {
+                    try { this._scrollDigitalStationsListToActive(deckKey); } catch (_) {}
+                });
             }
 
             _syncDigitalStationsActiveHighlight() {
@@ -2314,6 +2331,7 @@
                 try {
                     if (typeof pickRandomStation === 'function') pickRandomStation();
                 } catch (_) {}
+                this._scrollDigitalStationsAfterDeckChange('a');
             }
 
             _stationBPrev() {
@@ -2334,6 +2352,7 @@
                 try {
                     if (typeof pickRandomStationB === 'function') pickRandomStationB();
                 } catch (_) {}
+                this._scrollDigitalStationsAfterDeckChange('b');
             }
 
             /** A▶: next queued local track, or random station when the Deck A queue is empty. */
