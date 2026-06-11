@@ -766,6 +766,7 @@ const QUALITY = {
                     localStorage.setItem(DIGITAL_BG_GIF_ENABLED_KEY, '1');
                 }
             } catch (_) {}
+        }
         function clampThemeFontScale(raw, fallback = 1) {
             const v = Number(raw);
             if (!Number.isFinite(v)) return fallback;
