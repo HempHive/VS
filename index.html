@@ -238,16 +238,21 @@
             <div id="options-body">
                 <section class="options-section" aria-label="Appearance">
                     <h4 class="options-section-title">Appearance</h4>
+                    <div class="options-row options-row--stack">
+                        <label class="options-label" for="opt-digital-theme-preset">Theme preset</label>
+                        <select class="options-select options-select--full" id="opt-digital-theme-preset" aria-label="Digital Radio theme preset"></select>
+                    </div>
+                    <p class="options-hint options-hint--inline">Colours apply to the full Digital Radio screen and centre panel.</p>
                     <div class="options-row">
-                        <label class="options-label" for="opt-digital-bg-a">Background top</label>
+                        <label class="options-label" for="opt-digital-bg-a">Gradient top</label>
                         <input type="color" class="options-color" id="opt-digital-bg-a" value="#0a1628" aria-label="Digital Radio background top colour">
                     </div>
                     <div class="options-row">
-                        <label class="options-label" for="opt-digital-bg-b">Background mid</label>
+                        <label class="options-label" for="opt-digital-bg-b">Gradient mid</label>
                         <input type="color" class="options-color" id="opt-digital-bg-b" value="#061018" aria-label="Digital Radio background mid colour">
                     </div>
                     <div class="options-row">
-                        <label class="options-label" for="opt-digital-bg-c">Background base</label>
+                        <label class="options-label" for="opt-digital-bg-c">Gradient base</label>
                         <input type="color" class="options-color" id="opt-digital-bg-c" value="#0c1020" aria-label="Digital Radio background base colour">
                     </div>
                     <div class="options-row">
@@ -265,7 +270,106 @@
                             <option value="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">System Mono</option>
                         </select>
                     </div>
+                    <p class="options-subsection-title">Blue toolbar buttons</p>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-blue-top">Fill top</label>
+                        <input type="color" class="options-color" id="opt-digital-btn-blue-top" value="#123048" aria-label="Blue toolbar button fill top">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-blue-base">Fill base</label>
+                        <input type="color" class="options-color" id="opt-digital-btn-blue-base" value="#081820" aria-label="Blue toolbar button fill base">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-blue-accent">Accent</label>
+                        <input type="color" class="options-color" id="opt-digital-btn-blue-accent" value="#00dcff" aria-label="Blue toolbar button accent">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-blue-font-scale">Text size</label>
+                        <input type="range" class="options-range" id="opt-digital-btn-blue-font-scale" min="65" max="160" step="5" aria-label="Blue toolbar button text size">
+                        <span class="options-readout" id="opt-digital-btn-blue-font-scale-readout">100%</span>
+                    </div>
+                    <p class="options-subsection-title">Purple feature buttons</p>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-purple-top">Fill top</label>
+                        <input type="color" class="options-color" id="opt-digital-btn-purple-top" value="#5a3488" aria-label="Purple feature button fill top">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-purple-base">Fill base</label>
+                        <input type="color" class="options-color" id="opt-digital-btn-purple-base" value="#1a0c30" aria-label="Purple feature button fill base">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-purple-label">Label</label>
+                        <input type="color" class="options-color" id="opt-digital-btn-purple-label" value="#5cff9e" aria-label="Purple feature button label colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-purple-active">Active</label>
+                        <input type="color" class="options-color" id="opt-digital-btn-purple-active" value="#ff5ce8" aria-label="Purple feature button active highlight">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-purple-font-scale">Text size</label>
+                        <input type="range" class="options-range" id="opt-digital-btn-purple-font-scale" min="65" max="160" step="5" aria-label="Purple feature button text size">
+                        <span class="options-readout" id="opt-digital-btn-purple-font-scale-readout">100%</span>
+                    </div>
+                    <p class="options-subsection-title">Date &amp; time</p>
+                    <div class="options-row options-row--stack">
+                        <label class="options-label" for="opt-digital-clock-format">Display type</label>
+                        <select class="options-select options-select--full" id="opt-digital-clock-format" aria-label="Date and time display format">
+                            <option value="weekday-time">Weekday + 24h time</option>
+                            <option value="time-24">24-hour time only</option>
+                            <option value="time-12">12-hour time</option>
+                            <option value="date-time">Date + time</option>
+                            <option value="date-short">Short date + time</option>
+                        </select>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-clock-font">Font</label>
+                        <select class="options-select" id="opt-digital-clock-font" aria-label="Date and time font">
+                            <option value="'Orbitron', 'Share Tech Mono', ui-monospace, monospace">Orbitron</option>
+                            <option value="'Share Tech Mono', ui-monospace, monospace">Share Tech Mono</option>
+                            <option value="'Audiowide', cursive">Audiowide</option>
+                            <option value="'Rajdhani', sans-serif">Rajdhani</option>
+                            <option value="'Quicksand', sans-serif">Quicksand</option>
+                            <option value="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">System Mono</option>
+                        </select>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-clock-color">Colour</label>
+                        <input type="color" class="options-color" id="opt-digital-clock-color" value="#fff566" aria-label="Date and time colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-clock-font-scale">Text size</label>
+                        <input type="range" class="options-range" id="opt-digital-clock-font-scale" min="65" max="160" step="5" aria-label="Date and time text size">
+                        <span class="options-readout" id="opt-digital-clock-font-scale-readout">100%</span>
+                    </div>
                     <button type="button" class="options-btn options-btn--ghost" id="opt-digital-theme-reset">Reset colours &amp; font</button>
+                </section>
+                <section class="options-section" aria-label="Spectrum">
+                    <h4 class="options-section-title">Spectrum</h4>
+                    <div class="options-row options-row--stack">
+                        <label class="options-label" for="opt-spectrum-color-stream">Colour stream</label>
+                        <select class="options-select options-select--full" id="opt-spectrum-color-stream" aria-label="Spectrum colour stream preset"></select>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-size">Size</label>
+                        <input type="range" class="options-range" id="opt-spectrum-size" min="35" max="280" step="5" aria-label="Spectrum flower size">
+                        <span class="options-readout" id="opt-spectrum-size-readout">100%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-opacity">Opacity</label>
+                        <input type="range" class="options-range" id="opt-spectrum-opacity" min="15" max="100" step="1" aria-label="Spectrum opacity">
+                        <span class="options-readout" id="opt-spectrum-opacity-readout">100%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-audio-strength">Audio strength</label>
+                        <input type="range" class="options-range" id="opt-spectrum-audio-strength" min="25" max="300" step="5" aria-label="Spectrum audio response strength">
+                        <span class="options-readout" id="opt-spectrum-audio-strength-readout">100%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-color-flow">Colour flow</label>
+                        <input type="range" class="options-range" id="opt-spectrum-color-flow" min="25" max="300" step="5" aria-label="Spectrum colour flow speed">
+                        <span class="options-readout" id="opt-spectrum-color-flow-readout">100%</span>
+                    </div>
+                    <button type="button" class="options-btn options-btn--ghost" id="opt-spectrum-reset">Reset spectrum</button>
                 </section>
                 <section class="options-section" aria-label="Auto-Mix">
                     <h4 class="options-section-title">Auto-Mix</h4>

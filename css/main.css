@@ -1369,12 +1369,31 @@
             color: #9fdcff;
             font-weight: 700;
         }
+        .options-subsection-title {
+            margin: 10px 0 6px;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(180, 220, 255, 0.82);
+            font-weight: 600;
+        }
         .options-row {
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto auto;
             align-items: center;
             gap: 8px;
             margin-bottom: 8px;
+        }
+        .options-row--stack {
+            grid-template-columns: 1fr;
+            margin-bottom: 4px;
+        }
+        .options-select--full {
+            width: 100%;
+            min-width: 0;
+        }
+        .options-hint--inline {
+            margin: 0 0 10px;
         }
         .options-label {
             font-size: 12px;

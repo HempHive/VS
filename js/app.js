@@ -450,20 +450,116 @@ const QUALITY = {
         // --- OPTIONS PANEL HELPERS ---
         const DIGITAL_THEME_STORAGE_KEY = 'radioVisual.digitalTheme.v1';
         const DEFAULT_DIGITAL_THEME = {
+            presetId: 'midnight-blue',
             bgA: '#0a1628',
             bgB: '#061018',
             bgC: '#0c1020',
             accent: '#ffd246',
-            font: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace"
+            font: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
+            btnBlueTop: '#123048',
+            btnBlueBase: '#081820',
+            btnBlueAccent: '#00dcff',
+            btnPurpleTop: '#5a3488',
+            btnPurpleBase: '#1a0c30',
+            btnPurpleLabel: '#5cff9e',
+            btnPurpleActive: '#ff5ce8',
+            btnBlueFontScale: 1,
+            btnPurpleFontScale: 1,
+            clockFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
+            clockColor: '#fff566',
+            clockFontScale: 1,
+            clockFormat: 'weekday-time'
+        };
+        const DIGITAL_CLOCK_FORMATS = {
+            'weekday-time': 'Weekday + 24h time',
+            'time-24': '24-hour time only',
+            'time-12': '12-hour time',
+            'date-time': 'Date + time',
+            'date-short': 'Short date + time'
+        };
+        const DIGITAL_THEME_PRESETS = {
+            'midnight-blue': {
+                label: 'Midnight Blue',
+                bgA: '#0a1628',
+                bgB: '#061018',
+                bgC: '#0c1020',
+                accent: '#ffd246'
+            },
+            'cyber-cyan': {
+                label: 'Cyber Cyan',
+                bgA: '#041824',
+                bgB: '#062838',
+                bgC: '#031018',
+                accent: '#00e8ff'
+            },
+            'sunset-amber': {
+                label: 'Sunset Amber',
+                bgA: '#1a0c08',
+                bgB: '#281408',
+                bgC: '#100810',
+                accent: '#ff9944'
+            },
+            'violet-pulse': {
+                label: 'Violet Pulse',
+                bgA: '#140818',
+                bgB: '#1e0a28',
+                bgC: '#0a0614',
+                accent: '#c86bff'
+            },
+            'matrix-green': {
+                label: 'Matrix Green',
+                bgA: '#041408',
+                bgB: '#062010',
+                bgC: '#020a06',
+                accent: '#44ff88'
+            },
+            'rose-neon': {
+                label: 'Rose Neon',
+                bgA: '#180810',
+                bgB: '#240818',
+                bgC: '#100408',
+                accent: '#ff4d8a'
+            },
+            'arctic-steel': {
+                label: 'Arctic Steel',
+                bgA: '#0c1420',
+                bgB: '#142030',
+                bgC: '#081018',
+                accent: '#8ec8ff'
+            },
+            'deep-ocean': {
+                label: 'Deep Ocean',
+                bgA: '#040818',
+                bgB: '#081828',
+                bgC: '#020610',
+                accent: '#3aa8ff'
+            }
         };
         const optionsPanel = document.getElementById('options-panel');
         const btnOptions = document.getElementById('btn-options');
         const btnOptionsClose = document.getElementById('btn-options-close');
+        const optDigitalThemePreset = document.getElementById('opt-digital-theme-preset');
         const optDigitalBgA = document.getElementById('opt-digital-bg-a');
         const optDigitalBgB = document.getElementById('opt-digital-bg-b');
         const optDigitalBgC = document.getElementById('opt-digital-bg-c');
         const optDigitalAccent = document.getElementById('opt-digital-accent');
         const optDigitalFont = document.getElementById('opt-digital-font');
+        const optDigitalBtnBlueTop = document.getElementById('opt-digital-btn-blue-top');
+        const optDigitalBtnBlueBase = document.getElementById('opt-digital-btn-blue-base');
+        const optDigitalBtnBlueAccent = document.getElementById('opt-digital-btn-blue-accent');
+        const optDigitalBtnPurpleTop = document.getElementById('opt-digital-btn-purple-top');
+        const optDigitalBtnPurpleBase = document.getElementById('opt-digital-btn-purple-base');
+        const optDigitalBtnPurpleLabel = document.getElementById('opt-digital-btn-purple-label');
+        const optDigitalBtnPurpleActive = document.getElementById('opt-digital-btn-purple-active');
+        const optDigitalBtnBlueFontScale = document.getElementById('opt-digital-btn-blue-font-scale');
+        const optDigitalBtnBlueFontScaleReadout = document.getElementById('opt-digital-btn-blue-font-scale-readout');
+        const optDigitalBtnPurpleFontScale = document.getElementById('opt-digital-btn-purple-font-scale');
+        const optDigitalBtnPurpleFontScaleReadout = document.getElementById('opt-digital-btn-purple-font-scale-readout');
+        const optDigitalClockFormat = document.getElementById('opt-digital-clock-format');
+        const optDigitalClockFont = document.getElementById('opt-digital-clock-font');
+        const optDigitalClockColor = document.getElementById('opt-digital-clock-color');
+        const optDigitalClockFontScale = document.getElementById('opt-digital-clock-font-scale');
+        const optDigitalClockFontScaleReadout = document.getElementById('opt-digital-clock-font-scale-readout');
         const optDigitalThemeReset = document.getElementById('opt-digital-theme-reset');
         const optAutomixEnabled = document.getElementById('opt-automix-enabled');
         const optAutomixMax = document.getElementById('opt-automix-max');
@@ -471,41 +567,253 @@ const QUALITY = {
         const optAutofadeDuration = document.getElementById('opt-autofade-duration');
         const optAutofadeDurationReadout = document.getElementById('opt-autofade-duration-readout');
         const optAutofadeChangeStation = document.getElementById('opt-autofade-change-station');
+        const optSpectrumColorStream = document.getElementById('opt-spectrum-color-stream');
+        const optSpectrumSize = document.getElementById('opt-spectrum-size');
+        const optSpectrumSizeReadout = document.getElementById('opt-spectrum-size-readout');
+        const optSpectrumOpacity = document.getElementById('opt-spectrum-opacity');
+        const optSpectrumOpacityReadout = document.getElementById('opt-spectrum-opacity-readout');
+        const optSpectrumAudioStrength = document.getElementById('opt-spectrum-audio-strength');
+        const optSpectrumAudioStrengthReadout = document.getElementById('opt-spectrum-audio-strength-readout');
+        const optSpectrumColorFlow = document.getElementById('opt-spectrum-color-flow');
+        const optSpectrumColorFlowReadout = document.getElementById('opt-spectrum-color-flow-readout');
+        const optSpectrumReset = document.getElementById('opt-spectrum-reset');
+        let spectrumColorStreamSelectReady = false;
+        function getSpectrumEngineClass() {
+            return globalThis.RadioVisualEngine || null;
+        }
+        function loadSpectrumSettingsFromStorage() {
+            const RVE = getSpectrumEngineClass();
+            if (RVE && typeof RVE.loadSpectrumSettingsFromStorage === 'function') {
+                return RVE.loadSpectrumSettingsFromStorage();
+            }
+            try {
+                const raw = localStorage.getItem('radioVisual.digitalSpectrum.v1');
+                const parsed = raw ? JSON.parse(raw) : null;
+                if (!parsed || typeof parsed !== 'object') {
+                    return {
+                        colorStreamId: 'aurora',
+                        scale: 1,
+                        opacity: 1,
+                        audioStrength: 1,
+                        colorFlow: 1
+                    };
+                }
+                return parsed;
+            } catch (_) {
+                return {
+                    colorStreamId: 'aurora',
+                    scale: 1,
+                    opacity: 1,
+                    audioStrength: 1,
+                    colorFlow: 1
+                };
+            }
+        }
+        function saveSpectrumSettingsToStorage(settings) {
+            const RVE = getSpectrumEngineClass();
+            if (RVE && typeof RVE.saveSpectrumSettingsToStorage === 'function') {
+                return RVE.saveSpectrumSettingsToStorage(settings);
+            }
+            try { localStorage.setItem('radioVisual.digitalSpectrum.v1', JSON.stringify(settings)); } catch (_) {}
+            return settings;
+        }
+        function applyDigitalSpectrumSettings(settings) {
+            const RVE = getSpectrumEngineClass();
+            const next = (RVE && typeof RVE.clampSpectrumSettings === 'function')
+                ? RVE.clampSpectrumSettings(settings)
+                : settings;
+            saveSpectrumSettingsToStorage(next);
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (rv && typeof rv.applySpectrumSettings === 'function') {
+                    rv.applySpectrumSettings(next, { skipSave: true });
+                }
+            } catch (_) {}
+            return next;
+        }
+        function populateSpectrumColorStreamSelect() {
+            if (spectrumColorStreamSelectReady || !optSpectrumColorStream) return;
+            const RVE = getSpectrumEngineClass();
+            if (!RVE || !RVE.SPECTRUM_COLOR_STREAM_PRESETS) return;
+            optSpectrumColorStream.innerHTML = '';
+            Object.entries(RVE.SPECTRUM_COLOR_STREAM_PRESETS).forEach(([id, preset]) => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = preset.label || id;
+                optSpectrumColorStream.appendChild(opt);
+            });
+            spectrumColorStreamSelectReady = true;
+        }
+        function applySpectrumSettingsToControls(settings) {
+            const s = settings || loadSpectrumSettingsFromStorage();
+            if (optSpectrumColorStream) optSpectrumColorStream.value = s.colorStreamId || 'aurora';
+            const sizePct = Math.round((Number(s.scale) || 1) * 100);
+            if (optSpectrumSize) optSpectrumSize.value = String(Math.max(35, Math.min(280, sizePct)));
+            if (optSpectrumSizeReadout) optSpectrumSizeReadout.textContent = `${sizePct}%`;
+            const opacityPct = Math.round((Number(s.opacity) || 1) * 100);
+            if (optSpectrumOpacity) optSpectrumOpacity.value = String(Math.max(15, Math.min(100, opacityPct)));
+            if (optSpectrumOpacityReadout) optSpectrumOpacityReadout.textContent = `${opacityPct}%`;
+            const strengthPct = Math.round((Number(s.audioStrength) || 1) * 100);
+            if (optSpectrumAudioStrength) optSpectrumAudioStrength.value = String(Math.max(25, Math.min(300, strengthPct)));
+            if (optSpectrumAudioStrengthReadout) optSpectrumAudioStrengthReadout.textContent = `${strengthPct}%`;
+            const flowPct = Math.round((Number(s.colorFlow) || 1) * 100);
+            if (optSpectrumColorFlow) optSpectrumColorFlow.value = String(Math.max(25, Math.min(300, flowPct)));
+            if (optSpectrumColorFlowReadout) optSpectrumColorFlowReadout.textContent = `${flowPct}%`;
+        }
+        function collectSpectrumSettingsFromControls() {
+            const current = loadSpectrumSettingsFromStorage();
+            const scale = Math.max(0.35, Math.min(2.8, (Number(optSpectrumSize && optSpectrumSize.value) || 100) / 100));
+            const opacity = Math.max(0.15, Math.min(1, (Number(optSpectrumOpacity && optSpectrumOpacity.value) || 100) / 100));
+            const audioStrength = Math.max(0.25, Math.min(3, (Number(optSpectrumAudioStrength && optSpectrumAudioStrength.value) || 100) / 100));
+            const colorFlow = Math.max(0.25, Math.min(3, (Number(optSpectrumColorFlow && optSpectrumColorFlow.value) || 100) / 100));
+            return {
+                colorStreamId: (optSpectrumColorStream && optSpectrumColorStream.value) || current.colorStreamId || 'aurora',
+                scale,
+                opacity,
+                audioStrength,
+                colorFlow
+            };
+        }
+        function syncSpectrumOptionsControlsFromStorage() {
+            populateSpectrumColorStreamSelect();
+            applySpectrumSettingsToControls(loadSpectrumSettingsFromStorage());
+        }
+        function clampThemeFontScale(raw, fallback = 1) {
+            const v = Number(raw);
+            if (!Number.isFinite(v)) return fallback;
+            return Math.max(0.65, Math.min(1.6, Math.round(v * 100) / 100));
+        }
+        function normalizeDigitalTheme(parsed) {
+            const d = DEFAULT_DIGITAL_THEME;
+            const src = (parsed && typeof parsed === 'object') ? parsed : {};
+            const clockFormat = (src.clockFormat && DIGITAL_CLOCK_FORMATS[src.clockFormat])
+                ? src.clockFormat
+                : d.clockFormat;
+            return {
+                presetId: src.presetId || d.presetId,
+                bgA: src.bgA || d.bgA,
+                bgB: src.bgB || d.bgB,
+                bgC: src.bgC || d.bgC,
+                accent: src.accent || d.accent,
+                font: src.font || d.font,
+                btnBlueTop: src.btnBlueTop || d.btnBlueTop,
+                btnBlueBase: src.btnBlueBase || d.btnBlueBase,
+                btnBlueAccent: src.btnBlueAccent || d.btnBlueAccent,
+                btnPurpleTop: src.btnPurpleTop || d.btnPurpleTop,
+                btnPurpleBase: src.btnPurpleBase || d.btnPurpleBase,
+                btnPurpleLabel: src.btnPurpleLabel || d.btnPurpleLabel,
+                btnPurpleActive: src.btnPurpleActive || d.btnPurpleActive,
+                btnBlueFontScale: clampThemeFontScale(src.btnBlueFontScale, d.btnBlueFontScale),
+                btnPurpleFontScale: clampThemeFontScale(src.btnPurpleFontScale, d.btnPurpleFontScale),
+                clockFont: src.clockFont || d.clockFont,
+                clockColor: src.clockColor || d.clockColor,
+                clockFontScale: clampThemeFontScale(src.clockFontScale, d.clockFontScale),
+                clockFormat
+            };
+        }
+        function themeFromPresetId(presetId, fontFallback, themeFallback) {
+            const preset = DIGITAL_THEME_PRESETS[presetId];
+            if (!preset) return null;
+            const prev = normalizeDigitalTheme(themeFallback);
+            return normalizeDigitalTheme({
+                ...prev,
+                presetId,
+                bgA: preset.bgA,
+                bgB: preset.bgB,
+                bgC: preset.bgC,
+                accent: preset.accent,
+                font: preset.font || fontFallback || prev.font
+            });
+        }
+        function detectDigitalThemePresetId(theme) {
+            if (!theme) return 'custom';
+            for (const [id, preset] of Object.entries(DIGITAL_THEME_PRESETS)) {
+                if (theme.bgA === preset.bgA
+                    && theme.bgB === preset.bgB
+                    && theme.bgC === preset.bgC
+                    && theme.accent === preset.accent) {
+                    return id;
+                }
+            }
+            return 'custom';
+        }
+        function populateDigitalThemePresetSelect() {
+            if (!optDigitalThemePreset) return;
+            optDigitalThemePreset.innerHTML = '';
+            const customOpt = document.createElement('option');
+            customOpt.value = 'custom';
+            customOpt.textContent = 'Custom';
+            optDigitalThemePreset.appendChild(customOpt);
+            Object.entries(DIGITAL_THEME_PRESETS).forEach(([id, preset]) => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = preset.label;
+                optDigitalThemePreset.appendChild(opt);
+            });
+        }
         function loadDigitalThemeFromStorage() {
             try {
                 const raw = localStorage.getItem(DIGITAL_THEME_STORAGE_KEY);
                 const parsed = raw ? JSON.parse(raw) : null;
-                if (!parsed || typeof parsed !== 'object') return { ...DEFAULT_DIGITAL_THEME };
-                return {
-                    bgA: parsed.bgA || DEFAULT_DIGITAL_THEME.bgA,
-                    bgB: parsed.bgB || DEFAULT_DIGITAL_THEME.bgB,
-                    bgC: parsed.bgC || DEFAULT_DIGITAL_THEME.bgC,
-                    accent: parsed.accent || DEFAULT_DIGITAL_THEME.accent,
-                    font: parsed.font || DEFAULT_DIGITAL_THEME.font
-                };
+                const theme = normalizeDigitalTheme(parsed);
+                theme.presetId = detectDigitalThemePresetId(theme);
+                return theme;
             } catch (_) {
                 return { ...DEFAULT_DIGITAL_THEME };
             }
         }
         function saveDigitalThemeToStorage(theme) {
-            try { localStorage.setItem(DIGITAL_THEME_STORAGE_KEY, JSON.stringify(theme)); } catch (_) {}
+            try { localStorage.setItem(DIGITAL_THEME_STORAGE_KEY, JSON.stringify(normalizeDigitalTheme(theme))); } catch (_) {}
+        }
+        function applyDigitalThemeCssVars(target, t) {
+            if (!target) return;
+            target.style.setProperty('--rv-digital-bg-a', t.bgA);
+            target.style.setProperty('--rv-digital-bg-b', t.bgB);
+            target.style.setProperty('--rv-digital-bg-c', t.bgC);
+            target.style.setProperty('--rv-digital-accent-color', t.accent);
+            target.style.setProperty('--rv-digital-ui-font', t.font);
+            target.style.setProperty('--rv-digital-btn-blue-top', t.btnBlueTop);
+            target.style.setProperty('--rv-digital-btn-blue-base', t.btnBlueBase);
+            target.style.setProperty('--rv-digital-btn-blue-accent', t.btnBlueAccent);
+            target.style.setProperty('--rv-digital-btn-purple-top', t.btnPurpleTop);
+            target.style.setProperty('--rv-digital-btn-purple-base', t.btnPurpleBase);
+            target.style.setProperty('--rv-digital-btn-purple-label', t.btnPurpleLabel);
+            target.style.setProperty('--rv-digital-btn-purple-active', t.btnPurpleActive);
+            target.style.setProperty('--rv-digital-btn-blue-font-scale', String(t.btnBlueFontScale));
+            target.style.setProperty('--rv-digital-btn-purple-font-scale', String(t.btnPurpleFontScale));
+            target.style.setProperty('--rv-digital-clock-font', t.clockFont);
+            target.style.setProperty('--rv-digital-clock-color', t.clockColor);
+            target.style.setProperty('--rv-digital-clock-font-scale', String(t.clockFontScale));
+            if (target.dataset) target.dataset.rvClockFormat = t.clockFormat;
+        }
+        function reflowDigitalRadioThemeUi() {
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (rv && typeof rv._reflowDigitalThemeUi === 'function') rv._reflowDigitalThemeUi();
+            } catch (_) {}
         }
         function applyDigitalRadioTheme(theme) {
-            const t = theme || loadDigitalThemeFromStorage();
+            const t = normalizeDigitalTheme(theme || loadDigitalThemeFromStorage());
             const root = document.documentElement;
             root.style.setProperty('--global-rv-digital-bg-a', t.bgA);
             root.style.setProperty('--global-rv-digital-bg-b', t.bgB);
             root.style.setProperty('--global-rv-digital-bg-c', t.bgC);
             root.style.setProperty('--global-rv-digital-accent-color', t.accent);
             root.style.setProperty('--global-rv-digital-ui-font', t.font);
-            const rvRoot = document.getElementById('radio-visual-root');
-            if (rvRoot) {
-                rvRoot.style.setProperty('--rv-digital-bg-a', t.bgA);
-                rvRoot.style.setProperty('--rv-digital-bg-b', t.bgB);
-                rvRoot.style.setProperty('--rv-digital-bg-c', t.bgC);
-                rvRoot.style.setProperty('--rv-digital-accent-color', t.accent);
-                rvRoot.style.setProperty('--rv-digital-ui-font', t.font);
-            }
+            root.style.setProperty('--global-rv-digital-btn-blue-top', t.btnBlueTop);
+            root.style.setProperty('--global-rv-digital-btn-blue-base', t.btnBlueBase);
+            root.style.setProperty('--global-rv-digital-btn-blue-accent', t.btnBlueAccent);
+            root.style.setProperty('--global-rv-digital-btn-purple-top', t.btnPurpleTop);
+            root.style.setProperty('--global-rv-digital-btn-purple-base', t.btnPurpleBase);
+            root.style.setProperty('--global-rv-digital-btn-purple-label', t.btnPurpleLabel);
+            root.style.setProperty('--global-rv-digital-btn-purple-active', t.btnPurpleActive);
+            root.style.setProperty('--global-rv-digital-btn-blue-font-scale', String(t.btnBlueFontScale));
+            root.style.setProperty('--global-rv-digital-btn-purple-font-scale', String(t.btnPurpleFontScale));
+            root.style.setProperty('--global-rv-digital-clock-font', t.clockFont);
+            root.style.setProperty('--global-rv-digital-clock-color', t.clockColor);
+            root.style.setProperty('--global-rv-digital-clock-font-scale', String(t.clockFontScale));
+            applyDigitalThemeCssVars(document.getElementById('radio-visual-root'), t);
+            reflowDigitalRadioThemeUi();
         }
         function readAutoMixMaxMinFromStorage() {
             try {
@@ -533,11 +841,28 @@ const QUALITY = {
         }
         function syncOptionsPanelControlsFromStorage() {
             const theme = loadDigitalThemeFromStorage();
+            if (optDigitalThemePreset) optDigitalThemePreset.value = theme.presetId || detectDigitalThemePresetId(theme);
             if (optDigitalBgA) optDigitalBgA.value = theme.bgA;
             if (optDigitalBgB) optDigitalBgB.value = theme.bgB;
             if (optDigitalBgC) optDigitalBgC.value = theme.bgC;
             if (optDigitalAccent) optDigitalAccent.value = theme.accent;
             if (optDigitalFont) optDigitalFont.value = theme.font;
+            if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = theme.btnBlueTop;
+            if (optDigitalBtnBlueBase) optDigitalBtnBlueBase.value = theme.btnBlueBase;
+            if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = theme.btnBlueAccent;
+            if (optDigitalBtnPurpleTop) optDigitalBtnPurpleTop.value = theme.btnPurpleTop;
+            if (optDigitalBtnPurpleBase) optDigitalBtnPurpleBase.value = theme.btnPurpleBase;
+            if (optDigitalBtnPurpleLabel) optDigitalBtnPurpleLabel.value = theme.btnPurpleLabel;
+            if (optDigitalBtnPurpleActive) optDigitalBtnPurpleActive.value = theme.btnPurpleActive;
+            if (optDigitalBtnBlueFontScale) optDigitalBtnBlueFontScale.value = String(Math.round(theme.btnBlueFontScale * 100));
+            if (optDigitalBtnBlueFontScaleReadout) optDigitalBtnBlueFontScaleReadout.textContent = `${Math.round(theme.btnBlueFontScale * 100)}%`;
+            if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(theme.btnPurpleFontScale * 100));
+            if (optDigitalBtnPurpleFontScaleReadout) optDigitalBtnPurpleFontScaleReadout.textContent = `${Math.round(theme.btnPurpleFontScale * 100)}%`;
+            if (optDigitalClockFormat) optDigitalClockFormat.value = theme.clockFormat;
+            if (optDigitalClockFont) optDigitalClockFont.value = theme.clockFont;
+            if (optDigitalClockColor) optDigitalClockColor.value = theme.clockColor;
+            if (optDigitalClockFontScale) optDigitalClockFontScale.value = String(Math.round(theme.clockFontScale * 100));
+            if (optDigitalClockFontScaleReadout) optDigitalClockFontScaleReadout.textContent = `${Math.round(theme.clockFontScale * 100)}%`;
             const maxMin = readAutoMixMaxMinFromStorage();
             if (optAutomixMax) optAutomixMax.value = String(maxMin);
             if (optAutomixMaxReadout) optAutomixMaxReadout.textContent = `${maxMin}m`;
@@ -554,6 +879,7 @@ const QUALITY = {
                 if (raw != null) changeStation = raw === '1';
             } catch (_) {}
             if (optAutofadeChangeStation) optAutofadeChangeStation.checked = changeStation;
+            try { syncSpectrumOptionsControlsFromStorage(); } catch (_) {}
         }
         function syncRadioVisualMixPanelsFromOptions() {
             try {
@@ -569,13 +895,76 @@ const QUALITY = {
             } catch (_) {}
         }
         function collectDigitalThemeFromControls() {
-            return {
+            const theme = {
                 bgA: optDigitalBgA ? optDigitalBgA.value : DEFAULT_DIGITAL_THEME.bgA,
                 bgB: optDigitalBgB ? optDigitalBgB.value : DEFAULT_DIGITAL_THEME.bgB,
                 bgC: optDigitalBgC ? optDigitalBgC.value : DEFAULT_DIGITAL_THEME.bgC,
                 accent: optDigitalAccent ? optDigitalAccent.value : DEFAULT_DIGITAL_THEME.accent,
-                font: optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.font
+                font: optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.font,
+                btnBlueTop: optDigitalBtnBlueTop ? optDigitalBtnBlueTop.value : DEFAULT_DIGITAL_THEME.btnBlueTop,
+                btnBlueBase: optDigitalBtnBlueBase ? optDigitalBtnBlueBase.value : DEFAULT_DIGITAL_THEME.btnBlueBase,
+                btnBlueAccent: optDigitalBtnBlueAccent ? optDigitalBtnBlueAccent.value : DEFAULT_DIGITAL_THEME.btnBlueAccent,
+                btnPurpleTop: optDigitalBtnPurpleTop ? optDigitalBtnPurpleTop.value : DEFAULT_DIGITAL_THEME.btnPurpleTop,
+                btnPurpleBase: optDigitalBtnPurpleBase ? optDigitalBtnPurpleBase.value : DEFAULT_DIGITAL_THEME.btnPurpleBase,
+                btnPurpleLabel: optDigitalBtnPurpleLabel ? optDigitalBtnPurpleLabel.value : DEFAULT_DIGITAL_THEME.btnPurpleLabel,
+                btnPurpleActive: optDigitalBtnPurpleActive ? optDigitalBtnPurpleActive.value : DEFAULT_DIGITAL_THEME.btnPurpleActive,
+                btnBlueFontScale: clampThemeFontScale(
+                    (Number(optDigitalBtnBlueFontScale && optDigitalBtnBlueFontScale.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnBlueFontScale
+                ),
+                btnPurpleFontScale: clampThemeFontScale(
+                    (Number(optDigitalBtnPurpleFontScale && optDigitalBtnPurpleFontScale.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnPurpleFontScale
+                ),
+                clockFont: optDigitalClockFont ? optDigitalClockFont.value : DEFAULT_DIGITAL_THEME.clockFont,
+                clockColor: optDigitalClockColor ? optDigitalClockColor.value : DEFAULT_DIGITAL_THEME.clockColor,
+                clockFontScale: clampThemeFontScale(
+                    (Number(optDigitalClockFontScale && optDigitalClockFontScale.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.clockFontScale
+                ),
+                clockFormat: (optDigitalClockFormat && DIGITAL_CLOCK_FORMATS[optDigitalClockFormat.value])
+                    ? optDigitalClockFormat.value
+                    : DEFAULT_DIGITAL_THEME.clockFormat
             };
+            theme.presetId = detectDigitalThemePresetId(theme);
+            if (optDigitalThemePreset) optDigitalThemePreset.value = theme.presetId;
+            return normalizeDigitalTheme(theme);
+        }
+        function applyDigitalThemeToControls(theme) {
+            const t = normalizeDigitalTheme(theme);
+            if (optDigitalBgA) optDigitalBgA.value = t.bgA;
+            if (optDigitalBgB) optDigitalBgB.value = t.bgB;
+            if (optDigitalBgC) optDigitalBgC.value = t.bgC;
+            if (optDigitalAccent) optDigitalAccent.value = t.accent;
+            if (optDigitalFont && t.font) optDigitalFont.value = t.font;
+            if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = t.btnBlueTop;
+            if (optDigitalBtnBlueBase) optDigitalBtnBlueBase.value = t.btnBlueBase;
+            if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = t.btnBlueAccent;
+            if (optDigitalBtnPurpleTop) optDigitalBtnPurpleTop.value = t.btnPurpleTop;
+            if (optDigitalBtnPurpleBase) optDigitalBtnPurpleBase.value = t.btnPurpleBase;
+            if (optDigitalBtnPurpleLabel) optDigitalBtnPurpleLabel.value = t.btnPurpleLabel;
+            if (optDigitalBtnPurpleActive) optDigitalBtnPurpleActive.value = t.btnPurpleActive;
+            if (optDigitalBtnBlueFontScale) optDigitalBtnBlueFontScale.value = String(Math.round(t.btnBlueFontScale * 100));
+            if (optDigitalBtnBlueFontScaleReadout) optDigitalBtnBlueFontScaleReadout.textContent = `${Math.round(t.btnBlueFontScale * 100)}%`;
+            if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(t.btnPurpleFontScale * 100));
+            if (optDigitalBtnPurpleFontScaleReadout) optDigitalBtnPurpleFontScaleReadout.textContent = `${Math.round(t.btnPurpleFontScale * 100)}%`;
+            if (optDigitalClockFormat) optDigitalClockFormat.value = t.clockFormat;
+            if (optDigitalClockFont) optDigitalClockFont.value = t.clockFont;
+            if (optDigitalClockColor) optDigitalClockColor.value = t.clockColor;
+            if (optDigitalClockFontScale) optDigitalClockFontScale.value = String(Math.round(t.clockFontScale * 100));
+            if (optDigitalClockFontScaleReadout) optDigitalClockFontScaleReadout.textContent = `${Math.round(t.clockFontScale * 100)}%`;
+            if (optDigitalThemePreset) optDigitalThemePreset.value = t.presetId || detectDigitalThemePresetId(t);
+        }
+        function syncDigitalThemeScaleReadoutsFromControls() {
+            if (optDigitalBtnBlueFontScale && optDigitalBtnBlueFontScaleReadout) {
+                optDigitalBtnBlueFontScaleReadout.textContent = `${optDigitalBtnBlueFontScale.value}%`;
+            }
+            if (optDigitalBtnPurpleFontScale && optDigitalBtnPurpleFontScaleReadout) {
+                optDigitalBtnPurpleFontScaleReadout.textContent = `${optDigitalBtnPurpleFontScale.value}%`;
+            }
+            if (optDigitalClockFontScale && optDigitalClockFontScaleReadout) {
+                optDigitalClockFontScaleReadout.textContent = `${optDigitalClockFontScale.value}%`;
+            }
         }
         function isOptionsOpen() {
             return !!(optionsPanel && !optionsPanel.classList.contains('display-none') && optionsPanel.classList.contains('show'));
@@ -615,16 +1004,38 @@ const QUALITY = {
             optionsPanel.addEventListener('input', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
         }
         function wireOptionsPanelControls() {
+            populateDigitalThemePresetSelect();
             const onThemeChange = () => {
+                syncDigitalThemeScaleReadoutsFromControls();
                 const theme = collectDigitalThemeFromControls();
                 saveDigitalThemeToStorage(theme);
                 applyDigitalRadioTheme(theme);
             };
-            [optDigitalBgA, optDigitalBgB, optDigitalBgC, optDigitalAccent].forEach((el) => {
+            if (optDigitalThemePreset) {
+                optDigitalThemePreset.addEventListener('change', () => {
+                    const presetId = optDigitalThemePreset.value;
+                    if (presetId === 'custom') return;
+                    const currentFont = optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.font;
+                    const currentButtons = loadDigitalThemeFromStorage();
+                    const theme = themeFromPresetId(presetId, currentFont, currentButtons);
+                    if (!theme) return;
+                    applyDigitalThemeToControls(theme);
+                    saveDigitalThemeToStorage(theme);
+                    applyDigitalRadioTheme(theme);
+                });
+            }
+            [optDigitalBgA, optDigitalBgB, optDigitalBgC, optDigitalAccent,
+                optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent,
+                optDigitalBtnPurpleTop, optDigitalBtnPurpleBase, optDigitalBtnPurpleLabel, optDigitalBtnPurpleActive,
+                optDigitalBtnBlueFontScale, optDigitalBtnPurpleFontScale,
+                optDigitalClockColor, optDigitalClockFontScale
+            ].forEach((el) => {
                 if (!el) return;
                 el.addEventListener('input', onThemeChange);
                 el.addEventListener('change', onThemeChange);
             });
+            if (optDigitalClockFormat) optDigitalClockFormat.addEventListener('change', onThemeChange);
+            if (optDigitalClockFont) optDigitalClockFont.addEventListener('change', onThemeChange);
             if (optDigitalFont) {
                 optDigitalFont.addEventListener('change', onThemeChange);
             }
@@ -634,6 +1045,47 @@ const QUALITY = {
                     saveDigitalThemeToStorage(DEFAULT_DIGITAL_THEME);
                     applyDigitalRadioTheme(DEFAULT_DIGITAL_THEME);
                     syncOptionsPanelControlsFromStorage();
+                });
+            }
+            const onSpectrumSettingsChange = () => {
+                const settings = collectSpectrumSettingsFromControls();
+                applySpectrumSettingsToControls(settings);
+                applyDigitalSpectrumSettings(settings);
+            };
+            if (optSpectrumColorStream) {
+                optSpectrumColorStream.addEventListener('change', onSpectrumSettingsChange);
+            }
+            if (optSpectrumSize) {
+                optSpectrumSize.addEventListener('input', onSpectrumSettingsChange);
+                optSpectrumSize.addEventListener('change', onSpectrumSettingsChange);
+            }
+            if (optSpectrumOpacity) {
+                optSpectrumOpacity.addEventListener('input', onSpectrumSettingsChange);
+                optSpectrumOpacity.addEventListener('change', onSpectrumSettingsChange);
+            }
+            if (optSpectrumAudioStrength) {
+                optSpectrumAudioStrength.addEventListener('input', onSpectrumSettingsChange);
+                optSpectrumAudioStrength.addEventListener('change', onSpectrumSettingsChange);
+            }
+            if (optSpectrumColorFlow) {
+                optSpectrumColorFlow.addEventListener('input', onSpectrumSettingsChange);
+                optSpectrumColorFlow.addEventListener('change', onSpectrumSettingsChange);
+            }
+            if (optSpectrumReset) {
+                optSpectrumReset.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const RVE = getSpectrumEngineClass();
+                    const defaults = (RVE && RVE.DEFAULT_SPECTRUM_SETTINGS)
+                        ? { ...RVE.DEFAULT_SPECTRUM_SETTINGS }
+                        : {
+                            colorStreamId: 'aurora',
+                            scale: 1,
+                            opacity: 1,
+                            audioStrength: 1,
+                            colorFlow: 1
+                        };
+                    applySpectrumSettingsToControls(defaults);
+                    applyDigitalSpectrumSettings(defaults);
                 });
             }
             if (optAutomixMax) {
@@ -3665,6 +4117,8 @@ function exposeAppBindingsToGlobal() {
     try { g.clearAutoMixDeferForNonIncoming = clearAutoMixDeferForNonIncoming; } catch (_) {}
     try { g.closeBottomMenuPanel = closeBottomMenuPanel; } catch (_) {}
     try { g.closeKeyboardShortcutsPanel = closeKeyboardShortcutsPanel; } catch (_) {}
+    try { g.applyDigitalRadioTheme = applyDigitalRadioTheme; } catch (_) {}
+    try { g.applyDigitalSpectrumSettings = applyDigitalSpectrumSettings; } catch (_) {}
     try { g.closeOptionsPanel = closeOptionsPanel; } catch (_) {}
     try { g.code = code; } catch (_) {}
     try { g.computeDeckBVideoCrossfadePlan = computeDeckBVideoCrossfadePlan; } catch (_) {}
@@ -4252,6 +4706,7 @@ function exposeAppBindingsToGlobal() {
     try { g.webmVideoEl = webmVideoEl; } catch (_) {}
     try { g.webmVideoLeftEl = webmVideoLeftEl; } catch (_) {}
     try { g.webmVideoRightEl = webmVideoRightEl; } catch (_) {}
+    try { g.syncSpectrumOptionsControlsFromStorage = syncSpectrumOptionsControlsFromStorage; } catch (_) {}
     try { g.wireDjKnobMirror = wireDjKnobMirror; } catch (_) {}
     try { g.x = x; } catch (_) {}
     try { g.xf = xf; } catch (_) {}
@@ -4309,6 +4764,7 @@ async function loadExtractedChunks() {
 }
 
 await loadExtractedChunks();
+try { globalThis.syncSpectrumOptionsControlsFromStorage?.(); } catch (_) {}
 
 // Bridge extracted globals into this module (same bindings as former single-file scope).
 const DjDecksEngine = globalThis.DjDecksEngine;

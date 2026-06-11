@@ -29,6 +29,97 @@
             }
             static get SPECTRUM_STAGING_SCALE_MIN() { return 0.35; }
             static get SPECTRUM_STAGING_SCALE_MAX() { return 2.8; }
+            static get SPECTRUM_SETTINGS_KEY() { return 'radioVisual.digitalSpectrum.v1'; }
+            static get DEFAULT_SPECTRUM_SETTINGS() {
+                return {
+                    colorStreamId: 'aurora',
+                    scale: 1,
+                    opacity: 1,
+                    audioStrength: 1,
+                    colorFlow: 1
+                };
+            }
+            static get SPECTRUM_COLOR_STREAM_PRESETS() {
+                return {
+                    aurora: {
+                        label: 'Aurora',
+                        palette: [18, 35, 55, 95, 140, 185, 220, 265, 310, 350]
+                    },
+                    sunset: {
+                        label: 'Sunset',
+                        palette: [0, 12, 24, 38, 52, 18, 350, 330, 305, 280]
+                    },
+                    ocean: {
+                        label: 'Ocean',
+                        palette: [185, 195, 205, 215, 225, 200, 190, 210, 220, 230]
+                    },
+                    neon: {
+                        label: 'Neon Pulse',
+                        palette: [300, 320, 340, 0, 60, 120, 180, 240, 280, 310]
+                    },
+                    forest: {
+                        label: 'Forest',
+                        palette: [85, 95, 105, 115, 125, 100, 90, 110, 120, 130]
+                    },
+                    fire: {
+                        label: 'Fire',
+                        palette: [0, 8, 18, 28, 38, 45, 35, 25, 15, 5]
+                    },
+                    ice: {
+                        label: 'Ice',
+                        palette: [195, 200, 205, 210, 215, 190, 220, 200, 210, 205]
+                    },
+                    candy: {
+                        label: 'Candy',
+                        palette: [330, 340, 350, 0, 10, 300, 315, 325, 335, 345]
+                    },
+                    vaporwave: {
+                        label: 'Vaporwave',
+                        palette: [280, 300, 320, 180, 200, 260, 290, 310, 190, 270]
+                    },
+                    mono: {
+                        label: 'Mono Blue',
+                        palette: [210, 215, 220, 205, 225, 200, 230, 210, 218, 212]
+                    }
+                };
+            }
+            static clampSpectrumSettings(raw) {
+                const d = RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
+                const presets = RadioVisualEngine.SPECTRUM_COLOR_STREAM_PRESETS;
+                const colorStreamId = (raw && presets[raw.colorStreamId]) ? raw.colorStreamId : d.colorStreamId;
+                const scaleMin = RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN;
+                const scaleMax = RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX;
+                let scale = Number(raw && raw.scale);
+                if (!Number.isFinite(scale)) scale = d.scale;
+                scale = Math.max(scaleMin, Math.min(scaleMax, scale));
+                let opacity = Number(raw && raw.opacity);
+                if (!Number.isFinite(opacity)) opacity = d.opacity;
+                opacity = Math.max(0.15, Math.min(1, opacity));
+                let audioStrength = Number(raw && raw.audioStrength);
+                if (!Number.isFinite(audioStrength)) audioStrength = d.audioStrength;
+                audioStrength = Math.max(0.25, Math.min(3, audioStrength));
+                let colorFlow = Number(raw && raw.colorFlow);
+                if (!Number.isFinite(colorFlow)) colorFlow = d.colorFlow;
+                colorFlow = Math.max(0.25, Math.min(3, colorFlow));
+                return { colorStreamId, scale, opacity, audioStrength, colorFlow };
+            }
+            static loadSpectrumSettingsFromStorage() {
+                try {
+                    const raw = localStorage.getItem(RadioVisualEngine.SPECTRUM_SETTINGS_KEY);
+                    const parsed = raw ? JSON.parse(raw) : null;
+                    if (!parsed || typeof parsed !== 'object') {
+                        return { ...RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS };
+                    }
+                    return RadioVisualEngine.clampSpectrumSettings(parsed);
+                } catch (_) {
+                    return { ...RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS };
+                }
+            }
+            static saveSpectrumSettingsToStorage(settings) {
+                const next = RadioVisualEngine.clampSpectrumSettings(settings);
+                try { localStorage.setItem(RadioVisualEngine.SPECTRUM_SETTINGS_KEY, JSON.stringify(next)); } catch (_) {}
+                return next;
+            }
             static get DIGITAL_HUB_LABELS() {
                 return {
                     equaliser: 'EQUALISER',
@@ -139,7 +230,6 @@
                 this._digitalSpectrumLayout = 'full';
                 /** Spectrum hub staging scale (1 = default flower size). */
                 this._spectrumStagingScale = 1;
-                /** Spectrum hub horizontal spread (0 = together, 1 = max apart). */
                 this._spectrumStagingPanNorm = 0;
                 this._spectrumSliderHideTimer = null;
                 this._digitalDeckBView = 'video';
@@ -173,6 +263,8 @@
                 this._digitalBgGifManifestPromise = null;
                 this._outerHuePhase = 0;
                 this._outerHueLastT = 0;
+                this._spectrumSettings = RadioVisualEngine.loadSpectrumSettingsFromStorage();
+                this._spectrumStagingScale = this._spectrumSettings.scale;
                 this._rvStagingPmFsToggleAt = 0;
                 /** After long Space-hold pause, block auto-fade resume ticks until play again. */
                 this._suppressCrossfadeResume = false;
@@ -3908,18 +4000,82 @@
             }
 
             _formatDigitalClockReadout(date = new Date(), opts = {}) {
+                const compact = !!(opts && opts.compact);
+                const format = this._digitalClockFormat();
                 try {
-                    const time = date.toLocaleTimeString(undefined, {
+                    const time24 = date.toLocaleTimeString(undefined, {
                         hour: '2-digit',
                         minute: '2-digit',
                         hour12: false
                     });
-                    if (opts && opts.compact) return time;
+                    if (compact && format !== 'date-time' && format !== 'date-short') {
+                        return time24;
+                    }
+                    if (format === 'time-24') return time24;
+                    if (format === 'time-12') {
+                        return date.toLocaleTimeString(undefined, {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                        });
+                    }
+                    if (format === 'date-time') {
+                        return date.toLocaleString(undefined, {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        });
+                    }
+                    if (format === 'date-short') {
+                        return date.toLocaleString(undefined, {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        });
+                    }
                     const day = date.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
-                    return `${day} ${time}`;
+                    return `${day} ${time24}`;
                 } catch (_) {
                     return '—';
                 }
+            }
+
+            _digitalClockFormat() {
+                const root = this.root || document.getElementById('radio-visual-root');
+                const fmt = root && root.dataset ? root.dataset.rvClockFormat : '';
+                return fmt || 'weekday-time';
+            }
+
+            _readRvThemeCssNumber(varName, fallback = 1) {
+                try {
+                    const root = this.root || document.getElementById('radio-visual-root');
+                    if (!root) return fallback;
+                    const raw = getComputedStyle(root).getPropertyValue(varName).trim();
+                    const v = Number(raw);
+                    return Number.isFinite(v) ? v : fallback;
+                } catch (_) {
+                    return fallback;
+                }
+            }
+
+            _reflowDigitalThemeUi() {
+                try { this._tickClock(); } catch (_) {}
+                try {
+                    const toolbar = this.els.digitalToolbar || document.getElementById('radio-visual-digital-toolbar');
+                    if (toolbar) {
+                        this._fitDigitalToolbarButtonLabels(toolbar);
+                        this._fitDigitalToolbarCenterReadout(toolbar);
+                    }
+                } catch (_) {}
+                try {
+                    if (this.els.digitalBtns) this._fitDigitalFeatureButtonLabels(this.els.digitalBtns);
+                } catch (_) {}
             }
 
             _digitalToolbarClockReadoutCompact() {
@@ -4186,8 +4342,9 @@
                 }
                 const maxW = Math.max(6, readout.clientWidth - 1);
                 const maxH = Math.max(6, readout.clientHeight - 1);
+                const clockScale = this._readRvThemeCssNumber('--rv-digital-clock-font-scale', 1);
                 const minPx = fitAsClock ? 4 : 6;
-                const maxCap = fitAsClock ? 11 : 13;
+                const maxCap = (fitAsClock ? 11 : 13) * clockScale;
                 let size = Math.min(maxH * 0.9, maxCap);
                 label.style.fontSize = `${size}px`;
                 if (fitAsClock) label.style.letterSpacing = '0.03em';
@@ -4221,6 +4378,67 @@
                         try { this._resizeCanvases(); } catch (_) {}
                     });
                 });
+            }
+
+            _getSpectrumOpacityMult() {
+                const v = Number(this._spectrumSettings && this._spectrumSettings.opacity);
+                if (!Number.isFinite(v)) return 1;
+                return Math.max(0.15, Math.min(1, v));
+            }
+
+            _getSpectrumAudioStrength() {
+                const v = Number(this._spectrumSettings && this._spectrumSettings.audioStrength);
+                if (!Number.isFinite(v)) return 1;
+                return Math.max(0.25, Math.min(3, v));
+            }
+
+            _getSpectrumColorFlow() {
+                const v = Number(this._spectrumSettings && this._spectrumSettings.colorFlow);
+                if (!Number.isFinite(v)) return 1;
+                return Math.max(0.25, Math.min(3, v));
+            }
+
+            _getSpectrumColorPalette() {
+                const id = (this._spectrumSettings && this._spectrumSettings.colorStreamId)
+                    || RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS.colorStreamId;
+                const preset = RadioVisualEngine.SPECTRUM_COLOR_STREAM_PRESETS[id];
+                if (preset && Array.isArray(preset.palette) && preset.palette.length) return preset.palette;
+                return RadioVisualEngine.SPECTRUM_COLOR_STREAM_PRESETS.aurora.palette;
+            }
+
+            _spectrumScaleToSliderPct(scale) {
+                const min = RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN;
+                const max = RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX;
+                const clamped = Math.max(min, Math.min(max, Number(scale) || 1));
+                return Math.round(clamped * 100);
+            }
+
+            applySpectrumSettings(settings, opts = {}) {
+                const next = RadioVisualEngine.clampSpectrumSettings({
+                    ...(this._spectrumSettings || RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS),
+                    ...(settings || {})
+                });
+                this._spectrumSettings = next;
+                this._spectrumStagingScale = next.scale;
+                if (!opts.skipSave) {
+                    RadioVisualEngine.saveSpectrumSettingsToStorage(next);
+                }
+                this._syncSpectrumStagingScale();
+                const slider = this.els && this.els.digitalSpectrumScaleSlider;
+                if (slider && !opts.skipSlider) {
+                    slider.value = String(this._spectrumScaleToSliderPct(next.scale));
+                }
+            }
+
+            _persistSpectrumScaleFromStaging() {
+                const scale = Math.max(
+                    RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN,
+                    Math.min(
+                        RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX,
+                        Number(this._spectrumStagingScale) || 1
+                    )
+                );
+                this.applySpectrumSettings({ scale }, { skipSlider: true });
             }
 
             _showDigitalSpectrumStagingSlider() {
@@ -4329,11 +4547,15 @@
                     this._spectrumStagingScale = Math.max(min, Math.min(max, v / 100));
                     this._syncSpectrumStagingScale();
                 };
+                const applyScaleFromSliderAndSave = () => {
+                    applyScaleFromSlider();
+                    try { this._persistSpectrumScaleFromStaging(); } catch (_) {}
+                };
                 applyScaleFromSlider();
                 this._applySpectrumStagingPanNorm(this._spectrumStagingPanNorm, { skipSlider: !panSlider });
 
                 slider.addEventListener('input', () => {
-                    applyScaleFromSlider();
+                    applyScaleFromSliderAndSave();
                     this._showDigitalSpectrumStagingSlider();
                 }, opts);
 
@@ -5033,6 +5255,12 @@
                 if (dash) dash.classList.remove('is-spectrum-hud-hidden');
                 try { this._syncDigitalSpectrumLayout(); } catch (_) {}
                 try { this._syncSpectrumStagingScale(); } catch (_) {}
+                try { this.applySpectrumSettings(RadioVisualEngine.loadSpectrumSettingsFromStorage(), { skipSave: true }); } catch (_) {}
+                try {
+                    if (typeof globalThis.applyDigitalRadioTheme === 'function') {
+                        globalThis.applyDigitalRadioTheme();
+                    }
+                } catch (_) {}
                 this._scheduleDigitalSpectrumLayoutSync();
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
@@ -5321,10 +5549,11 @@
                 const {
                     useOuterPalette, isHigh, hue, sat, lit, drift, layerSpec, bass, phaseBase, shimmerT
                 } = opts;
+                const opacityMult = this._getSpectrumOpacityMult();
                 let h;
                 let satUse = sat;
                 let litUse = lit;
-                let a0 = layerSpec.alpha * (0.5 + 0.5 * u);
+                let a0 = layerSpec.alpha * (0.5 + 0.5 * u) * opacityMult;
                 if (useOuterPalette) {
                     const phaseWrap = phaseBase + u * 1.1 + bass * 0.35;
                     h = this._paletteHueAt(phaseWrap);
@@ -5334,7 +5563,7 @@
                     h = (hue + u * drift + shimmerT * 48 + ripple * 32) % 360;
                     satUse = Math.min(100, sat + 6 + pulse * 10);
                     litUse = lit + 10 + pulse * 22 + ripple * 8;
-                    a0 = layerSpec.alpha * (0.62 + 0.38 * u) * (0.88 + pulse * 0.12);
+                    a0 = layerSpec.alpha * (0.62 + 0.38 * u) * (0.88 + pulse * 0.12) * opacityMult;
                 } else {
                     const cycle = ((u * drift) % 360 + 360) % 360;
                     h = (hue + cycle) % 360;
@@ -5347,6 +5576,7 @@
                 const sat = layer.sat ?? 88;
                 const lit = layer.light ?? 54;
                 const drift = layer.hueDrift ?? 40;
+                const opacityMult = this._getSpectrumOpacityMult();
                 const petal = ctx.createRadialGradient(cx, cy, zoneInner, cx, cy, zoneOuter);
                 const shimmerT = typeof t === 'number' ? t : performance.now() * 0.001;
                 if (layer.key === 'high') {
@@ -5355,13 +5585,13 @@
                     const h0 = (hue + shimmerT * 42 + ripple * 18) % 360;
                     const h1 = (hue + drift * 0.35 + shimmerT * 28 + ripple * 12) % 360;
                     const h2 = (hue + drift * 0.7 + shimmerT * 55 - ripple * 10) % 360;
-                    petal.addColorStop(0, `hsla(${h0}, ${Math.min(100, sat + 10)}%, ${lit + 14 + pulse * 18}%, ${layer.alpha * (0.6 + pulse * 0.15)})`);
-                    petal.addColorStop(0.55, `hsla(${h1}, ${sat + 6}%, ${lit + 8 + pulse * 16}%, ${layer.alpha * (0.92 + pulse * 0.08)})`);
-                    petal.addColorStop(1, `hsla(${h2}, ${sat}%, ${lit + pulse * 12}%, ${layer.alpha * 0.9})`);
+                    petal.addColorStop(0, `hsla(${h0}, ${Math.min(100, sat + 10)}%, ${lit + 14 + pulse * 18}%, ${layer.alpha * (0.6 + pulse * 0.15) * opacityMult})`);
+                    petal.addColorStop(0.55, `hsla(${h1}, ${sat + 6}%, ${lit + 8 + pulse * 16}%, ${layer.alpha * (0.92 + pulse * 0.08) * opacityMult})`);
+                    petal.addColorStop(1, `hsla(${h2}, ${sat}%, ${lit + pulse * 12}%, ${layer.alpha * 0.9 * opacityMult})`);
                 } else {
-                    petal.addColorStop(0, `hsla(${hue}, ${sat}%, ${lit + 6}%, ${layer.alpha * 0.55})`);
-                    petal.addColorStop(0.55, `hsla(${(hue + drift * 0.35) % 360}, ${sat}%, ${lit}%, ${layer.alpha})`);
-                    petal.addColorStop(1, `hsla(${(hue + drift * 0.7) % 360}, ${sat - 4}%, ${lit - 8}%, ${layer.alpha * 0.85})`);
+                    petal.addColorStop(0, `hsla(${hue}, ${sat}%, ${lit + 6}%, ${layer.alpha * 0.55 * opacityMult})`);
+                    petal.addColorStop(0.55, `hsla(${(hue + drift * 0.35) % 360}, ${sat}%, ${lit}%, ${layer.alpha * opacityMult})`);
+                    petal.addColorStop(1, `hsla(${(hue + drift * 0.7) % 360}, ${sat - 4}%, ${lit - 8}%, ${layer.alpha * 0.85 * opacityMult})`);
                 }
                 return petal;
             }
@@ -5379,7 +5609,7 @@
             }
 
             _paletteHueAt(phase) {
-                const palette = RadioVisualEngine.SPECTRUM_OUTER_HUE_PALETTE;
+                const palette = this._getSpectrumColorPalette();
                 const n = palette.length;
                 if (n < 2) return palette[0] || 0;
                 const p = ((phase % n) + n) % n;
@@ -5397,7 +5627,8 @@
             _advanceOuterHuePhase(t, bassLevel) {
                 const dt = this._outerHueLastT ? Math.min(0.12, Math.max(0, t - this._outerHueLastT)) : 0.016;
                 this._outerHueLastT = t;
-                this._outerHuePhase = (this._outerHuePhase || 0) + dt * (0.04 + bassLevel * 3.2);
+                const flow = this._getSpectrumColorFlow();
+                this._outerHuePhase = (this._outerHuePhase || 0) + dt * (0.04 + bassLevel * 3.2) * flow;
             }
 
             static get SPECTRUM_ANGULAR_BINS() { return 72; }
@@ -5554,7 +5785,8 @@
                 const sorted = smooth.slice().sort((a, b) => a - b);
                 const p78 = sorted[Math.min(n - 1, Math.floor(n * 0.78))] || 0.001;
                 const norm = 1 / Math.max(0.05, p78);
-                const gain = bandKey === 'high' ? 0.88 : 0.76;
+                const strength = this._getSpectrumAudioStrength();
+                const gain = (bandKey === 'high' ? 0.88 : 0.76) * strength;
                 const gamma = bandKey === 'high' ? 1.12 : 1.26;
                 for (let i = 0; i < n; i++) {
                     const raw = Math.min(1, (smooth[i] || 0) * norm * gain);
@@ -5750,10 +5982,11 @@
                 const cx = w * 0.5;
                 const cy = h * 0.5;
                 ctx.clearRect(0, 0, w, h);
+                const opacityMult = this._getSpectrumOpacityMult();
                 const innerR = Math.min(w, h) * 0.14;
                 const outerR = Math.min(w, h) * 0.44;
                 const coreR = innerR * 1.08;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.05 * opacityMult})`;
                 ctx.lineWidth = 1;
                 for (let ring = 1; ring <= 3; ring++) {
                     ctx.beginPath();
@@ -5772,9 +6005,9 @@
                 ctx.beginPath();
                 ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
                 const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-                core.addColorStop(0, `hsla(${hue}, 88%, 62%, 0.88)`);
-                core.addColorStop(0.45, `hsla(${hue}, 76%, 40%, 0.78)`);
-                core.addColorStop(1, `hsla(${(hue + 28) % 360}, 68%, 24%, 0.62)`);
+                core.addColorStop(0, `hsla(${hue}, 88%, 62%, ${0.88 * opacityMult})`);
+                core.addColorStop(0.45, `hsla(${hue}, 76%, 40%, ${0.78 * opacityMult})`);
+                core.addColorStop(1, `hsla(${(hue + 28) % 360}, 68%, 24%, ${0.62 * opacityMult})`);
                 ctx.fillStyle = core;
                 ctx.fill();
             }
@@ -6725,10 +6958,15 @@
 
             _rvLabelFitOpts(kind) {
                 if (kind === 'toolbar-vol') {
-                    return { fill: true, maxCap: 13, heightFactor: 0.82, widthFactor: 0.5, minPx: 7 };
+                    const blueScale = this._readRvThemeCssNumber('--rv-digital-btn-blue-font-scale', 1);
+                    return { fill: true, maxCap: 13 * blueScale, heightFactor: 0.82, widthFactor: 0.5, minPx: 7 };
                 }
-                /* feature + toolbar: per-button fill like purple grid */
-                return { fill: true, maxCap: 12, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
+                if (kind === 'feature') {
+                    const purpleScale = this._readRvThemeCssNumber('--rv-digital-btn-purple-font-scale', 1);
+                    return { fill: true, maxCap: 12 * purpleScale, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
+                }
+                const blueScale = this._readRvThemeCssNumber('--rv-digital-btn-blue-font-scale', 1);
+                return { fill: true, maxCap: 12 * blueScale, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
             }
 
             _fitDigitalFeatureButtonLabels(gridEl) {
@@ -6744,7 +6982,7 @@
 
             _fitDigitalToolbarButtonLabels(toolbarEl) {
                 if (!toolbarEl) return;
-                const mainOpts = this._rvLabelFitOpts('feature');
+                const blueOpts = this._rvLabelFitOpts('toolbar-blue');
                 const volOpts = this._rvLabelFitOpts('toolbar-vol');
                 const fitBtn = (btn, opts) => {
                     const label = btn.querySelector('.radio-visual-btn-label');
@@ -6756,7 +6994,7 @@
                 const main = toolbarEl.querySelector('.radio-visual-digital-toolbar-main');
                 if (main) {
                     main.querySelectorAll('.radio-visual-digital-toolbar-text-btn').forEach((btn) => {
-                        fitBtn(btn, mainOpts);
+                        fitBtn(btn, blueOpts);
                     });
                 }
                 toolbarEl.querySelectorAll('.radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn').forEach((btn) => {
@@ -7541,6 +7779,7 @@
                     try { this._tearDownDigitalStagingView(); } catch (_) {}
                     try { this._wireDigitalHubPanel(this.abortCtrl.signal); } catch (_) {}
                     try { this._wireDigitalSpectrumStagingSlider(this.abortCtrl.signal); } catch (_) {}
+                    try { this.applySpectrumSettings(RadioVisualEngine.loadSpectrumSettingsFromStorage(), { skipSave: true }); } catch (_) {}
                     try { this._finalizeDigitalRadioInit(); } catch (_) {}
                     try { this._initDigitalSpectrumBg(); } catch (_) {}
                     try {
