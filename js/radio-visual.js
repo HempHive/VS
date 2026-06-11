@@ -4542,7 +4542,7 @@
                 this._syncSpectrumStagingScale();
                 const slider = this.els && this.els.digitalSpectrumScaleSlider;
                 if (slider && !opts.skipSlider) {
-                    slider.value = String(this._spectrumScaleToSliderPct(next.scale));
+                    slider.value = String(this._spectrumScaleToSliderPct(resolved.scale));
                 }
             }
 

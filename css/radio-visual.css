@@ -73,6 +73,7 @@
             --rv-digital-bg-outer-gradient-angle: var(--global-rv-digital-bg-outer-gradient-angle, 165);
             --rv-digital-bg-outer-image-opacity: var(--global-rv-digital-bg-outer-image-opacity, 1);
             --rv-digital-bg-panel-image-opacity: var(--global-rv-digital-bg-panel-image-opacity, 1);
+            --rv-digital-panel-opacity: var(--global-rv-digital-panel-opacity, 1);
             --rv-digital-accent-color: var(--global-rv-digital-accent-color, #ffd246);
             --rv-digital-ui-font: var(--global-rv-digital-ui-font, 'Orbitron', 'Share Tech Mono', ui-monospace, monospace);
             --rv-digital-btn-blue-top: var(--global-rv-digital-btn-blue-top, #123048);
@@ -470,6 +471,7 @@
             flex-direction: column;
             width: 100%;
             overflow: hidden;
+            opacity: var(--rv-digital-panel-opacity, 1);
             border-radius: clamp(8px, 1.46cqw, 14px);
             padding: clamp(6px, 0.73cqw, 10px) clamp(12px, 1.67cqw, 24px);
             background:
@@ -624,6 +626,7 @@
             --rv-digital-bg-outer-gradient-angle: var(--global-rv-digital-bg-outer-gradient-angle, 165);
             --rv-digital-bg-outer-image-opacity: var(--global-rv-digital-bg-outer-image-opacity, 1);
             --rv-digital-bg-panel-image-opacity: var(--global-rv-digital-bg-panel-image-opacity, 1);
+            --rv-digital-panel-opacity: var(--global-rv-digital-panel-opacity, 1);
             --rv-digital-accent-color: var(--global-rv-digital-accent-color, #ffd246);
             --rv-digital-ui-font: var(--global-rv-digital-ui-font, 'Orbitron', 'Share Tech Mono', ui-monospace, monospace);
             --rv-digital-btn-blue-top: var(--global-rv-digital-btn-blue-top, #123048);
@@ -1056,9 +1059,6 @@
             .radio-visual-digital-spectrum-side--right {
             transform: translateX(var(--rv-spectrum-staging-spread, 0px));
             transition: transform 0.15s ease-out;
-        }
-        #radio-visual-root .radio-visual-digital-center-pane:not([data-hub-mode="spectrum"]) .radio-visual-digital-spectrum-row {
-            transform: none;
         }
         #radio-visual-root .radio-visual-digital-spectrum-side {
             flex: 1 1 0;

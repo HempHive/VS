@@ -467,6 +467,7 @@ const QUALITY = {
             bgOuterGradientAngle: 165,
             bgOuterImageOpacity: 1,
             bgPanelImageOpacity: 1,
+            bgPanelOpacity: 1,
             accent: '#ffd246',
             font: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
             btnBlueTop: '#123048',
@@ -581,6 +582,8 @@ const QUALITY = {
         const optDigitalBgPanelImageStatus = document.getElementById('opt-digital-bg-panel-image-status');
         const optDigitalBgPanelImageOpacity = document.getElementById('opt-digital-bg-panel-image-opacity');
         const optDigitalBgPanelImageOpacityReadout = document.getElementById('opt-digital-bg-panel-image-opacity-readout');
+        const optDigitalBgPanelOpacity = document.getElementById('opt-digital-bg-panel-opacity');
+        const optDigitalBgPanelOpacityReadout = document.getElementById('opt-digital-bg-panel-opacity-readout');
         const optDigitalBgGif = document.getElementById('opt-digital-bg-gif');
         const optDigitalAccent = document.getElementById('opt-digital-accent');
         const optDigitalFont = document.getElementById('opt-digital-font');
@@ -1138,6 +1141,7 @@ const QUALITY = {
                 ),
                 bgOuterImageOpacity: clampThemeOpacity(src.bgOuterImageOpacity, d.bgOuterImageOpacity, 0),
                 bgPanelImageOpacity: clampThemeOpacity(src.bgPanelImageOpacity, d.bgPanelImageOpacity, 0),
+                bgPanelOpacity: clampThemeOpacity(src.bgPanelOpacity, d.bgPanelOpacity, 0),
                 accent: src.accent || d.accent,
                 font: src.font || d.font,
                 btnBlueTop: src.btnBlueTop || d.btnBlueTop,
@@ -1231,6 +1235,7 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-bg-outer-gradient-angle', String(t.bgOuterGradientAngle));
             target.style.setProperty('--rv-digital-bg-outer-image-opacity', String(t.bgOuterImageOpacity));
             target.style.setProperty('--rv-digital-bg-panel-image-opacity', String(t.bgPanelImageOpacity));
+            target.style.setProperty('--rv-digital-panel-opacity', String(t.bgPanelOpacity));
             target.style.setProperty('--rv-digital-accent-color', t.accent);
             target.style.setProperty('--rv-digital-ui-font', t.font);
             target.style.setProperty('--rv-digital-btn-blue-top', t.btnBlueTop);
@@ -1273,6 +1278,7 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-bg-outer-gradient-angle', String(t.bgOuterGradientAngle));
             root.style.setProperty('--global-rv-digital-bg-outer-image-opacity', String(t.bgOuterImageOpacity));
             root.style.setProperty('--global-rv-digital-bg-panel-image-opacity', String(t.bgPanelImageOpacity));
+            root.style.setProperty('--global-rv-digital-panel-opacity', String(t.bgPanelOpacity));
             root.style.setProperty('--global-rv-digital-accent-color', t.accent);
             root.style.setProperty('--global-rv-digital-ui-font', t.font);
             root.style.setProperty('--global-rv-digital-btn-blue-top', t.btnBlueTop);
@@ -1348,6 +1354,12 @@ const QUALITY = {
             }
             if (optDigitalBgPanelImageOpacityReadout) {
                 optDigitalBgPanelImageOpacityReadout.textContent = `${Math.round(theme.bgPanelImageOpacity * 100)}%`;
+            }
+            if (optDigitalBgPanelOpacity) {
+                optDigitalBgPanelOpacity.value = String(Math.round(theme.bgPanelOpacity * 100));
+            }
+            if (optDigitalBgPanelOpacityReadout) {
+                optDigitalBgPanelOpacityReadout.textContent = `${Math.round(theme.bgPanelOpacity * 100)}%`;
             }
             syncDigitalBgOuterImageStatusUi(loadDigitalBgOuterImageFromStorage());
             syncDigitalBgPanelImageStatusUi(loadDigitalBgPanelImageFromStorage());
@@ -1456,6 +1468,11 @@ const QUALITY = {
                     DEFAULT_DIGITAL_THEME.bgPanelImageOpacity,
                     0
                 ),
+                bgPanelOpacity: clampThemeOpacity(
+                    (Number(optDigitalBgPanelOpacity && optDigitalBgPanelOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.bgPanelOpacity,
+                    0
+                ),
                 accent: optDigitalAccent ? optDigitalAccent.value : DEFAULT_DIGITAL_THEME.accent,
                 font: optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.font,
                 btnBlueTop: optDigitalBtnBlueTop ? optDigitalBtnBlueTop.value : DEFAULT_DIGITAL_THEME.btnBlueTop,
@@ -1539,6 +1556,12 @@ const QUALITY = {
             }
             if (optDigitalBgPanelImageOpacityReadout) {
                 optDigitalBgPanelImageOpacityReadout.textContent = `${Math.round(t.bgPanelImageOpacity * 100)}%`;
+            }
+            if (optDigitalBgPanelOpacity) {
+                optDigitalBgPanelOpacity.value = String(Math.round(t.bgPanelOpacity * 100));
+            }
+            if (optDigitalBgPanelOpacityReadout) {
+                optDigitalBgPanelOpacityReadout.textContent = `${Math.round(t.bgPanelOpacity * 100)}%`;
             }
             if (optDigitalAccent) optDigitalAccent.value = t.accent;
             if (optDigitalFont && t.font) optDigitalFont.value = t.font;
@@ -1625,6 +1648,12 @@ const QUALITY = {
             }
             if (optDigitalBgGradientAngle && optDigitalBgGradientAngleReadout) {
                 optDigitalBgGradientAngleReadout.textContent = `${optDigitalBgGradientAngle.value}°`;
+            }
+            if (optDigitalBgPanelImageOpacity && optDigitalBgPanelImageOpacityReadout) {
+                optDigitalBgPanelImageOpacityReadout.textContent = `${optDigitalBgPanelImageOpacity.value}%`;
+            }
+            if (optDigitalBgPanelOpacity && optDigitalBgPanelOpacityReadout) {
+                optDigitalBgPanelOpacityReadout.textContent = `${optDigitalBgPanelOpacity.value}%`;
             }
         }
         function isOptionsOpen() {
@@ -1779,6 +1808,7 @@ const QUALITY = {
             [optDigitalBgA, optDigitalBgB, optDigitalBgC, optDigitalAccent,
                 optDigitalBgOuterA, optDigitalBgOuterB, optDigitalBgOuterC, optDigitalBgGradientAngle,
                 optDigitalBgOuterGradientAngle, optDigitalBgOuterImageOpacity, optDigitalBgPanelImageOpacity,
+                optDigitalBgPanelOpacity,
                 optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent, optDigitalBtnBlueLabel, optDigitalBtnBlueOpacity,
                 optDigitalBtnBlueTextOpacity, optDigitalBtnBlueBorderOpacity,
                 optDigitalBtnPurpleTop, optDigitalBtnPurpleBase, optDigitalBtnPurpleLabel, optDigitalBtnPurpleActive,
