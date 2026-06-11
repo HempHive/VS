@@ -485,12 +485,23 @@ const QUALITY = {
             btnPurpleOpacity: 1,
             btnPurpleTextOpacity: 1,
             btnPurpleBorderOpacity: 1,
+            btnBlueFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
+            btnPurpleFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
             btnBlueFontScale: 1,
             btnPurpleFontScale: 1,
             clockFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
             clockColor: '#fff566',
             clockFontScale: 1,
-            clockFormat: 'weekday-time'
+            clockFormat: 'weekday-time',
+            showButtonInfoOverlays: false,
+            showBlueToolbar: true,
+            showPurpleButtons: true,
+            showStagingPanel: true,
+            stagingBorderColor: '#00dcff',
+            stagingBorderOpacity: 0.35,
+            stagingGlowColor: '#00b4ff',
+            stagingGlowOpacity: 0.12,
+            stagingScale: 1
         };
         const DIGITAL_CLOCK_FORMATS = {
             'weekday-time': 'Weekday + 24h time',
@@ -568,29 +579,49 @@ const QUALITY = {
                 bgOuterGradientAngle: 162,
                 bgOuterImageOpacity: 1,
                 bgPanelImageOpacity: 1,
-                bgPanelOpacity: 1,
+                bgPanelOpacity: 0.15,
                 accent: '#ffe747',
                 font: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
+                btnBlueFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
+                btnPurpleFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
                 btnBlueTop: '#9ab512',
-                btnBlueBase: '#b9dd83',
-                btnBlueAccent: '#1bb139',
+                btnBlueBase: '#4a602a',
+                btnBlueAccent: '#1cce49',
                 btnBlueLabel: '#fff824',
                 btnBlueOpacity: 0.15,
-                btnBlueTextOpacity: 1,
+                btnBlueTextOpacity: 0.71,
                 btnBlueBorderOpacity: 1,
                 btnPurpleTop: '#110e16',
                 btnPurpleBase: '#28d425',
                 btnPurpleLabel: '#b62534',
                 btnPurpleActive: '#ff5ce8',
                 btnPurpleOpacity: 0.2,
-                btnPurpleTextOpacity: 1,
+                btnPurpleTextOpacity: 0.68,
                 btnPurpleBorderOpacity: 1,
                 btnBlueFontScale: 1.35,
                 btnPurpleFontScale: 1.25,
                 clockFont: "'Rajdhani', sans-serif",
-                clockColor: '#24db27',
+                clockColor: '#1c9c1e',
                 clockFontScale: 1.6,
-                clockFormat: 'weekday-time'
+                clockFormat: 'weekday-time',
+                spectrum: {
+                    colorStreamId: 'aurora',
+                    scale: 1,
+                    opacity: 1,
+                    audioStrength: 1,
+                    colorFlow: 1,
+                    eqColorStreamId: 'aurora',
+                    eqScale: 1,
+                    eqOpacity: 1,
+                    eqAudioStrength: 1,
+                    eqColorFlow: 1,
+                    rotateLHigh: 0,
+                    rotateLMid: 342,
+                    rotateLLow: 324,
+                    rotateRHigh: 0,
+                    rotateRMid: 0,
+                    rotateRLow: 0
+                }
             }
         };
         const optionsPanel = document.getElementById('options-panel');
@@ -621,9 +652,23 @@ const QUALITY = {
         const optDigitalBgPanelImageOpacityReadout = document.getElementById('opt-digital-bg-panel-image-opacity-readout');
         const optDigitalBgPanelOpacity = document.getElementById('opt-digital-bg-panel-opacity');
         const optDigitalBgPanelOpacityReadout = document.getElementById('opt-digital-bg-panel-opacity-readout');
+        const optDigitalButtonInfoOverlays = document.getElementById('opt-digital-button-info-overlays');
+        const optDigitalBlueToolbarVisible = document.getElementById('opt-digital-blue-toolbar-visible');
+        const optDigitalPurpleButtonsVisible = document.getElementById('opt-digital-purple-buttons-visible');
+        const optDigitalStagingVisible = document.getElementById('opt-digital-staging-visible');
+        const optDigitalStagingBorderColor = document.getElementById('opt-digital-staging-border-color');
+        const optDigitalStagingBorderOpacity = document.getElementById('opt-digital-staging-border-opacity');
+        const optDigitalStagingBorderOpacityReadout = document.getElementById('opt-digital-staging-border-opacity-readout');
+        const optDigitalStagingGlowColor = document.getElementById('opt-digital-staging-glow-color');
+        const optDigitalStagingGlowOpacity = document.getElementById('opt-digital-staging-glow-opacity');
+        const optDigitalStagingGlowOpacityReadout = document.getElementById('opt-digital-staging-glow-opacity-readout');
+        const optDigitalStagingScale = document.getElementById('opt-digital-staging-scale');
+        const optDigitalStagingScaleReadout = document.getElementById('opt-digital-staging-scale-readout');
         const optDigitalBgGif = document.getElementById('opt-digital-bg-gif');
         const optDigitalAccent = document.getElementById('opt-digital-accent');
         const optDigitalFont = document.getElementById('opt-digital-font');
+        const optDigitalBtnBlueFont = document.getElementById('opt-digital-btn-blue-font');
+        const optDigitalBtnPurpleFont = document.getElementById('opt-digital-btn-purple-font');
         const optDigitalBtnBlueTop = document.getElementById('opt-digital-btn-blue-top');
         const optDigitalBtnBlueBase = document.getElementById('opt-digital-btn-blue-base');
         const optDigitalBtnBlueAccent = document.getElementById('opt-digital-btn-blue-accent');
@@ -1155,6 +1200,11 @@ const QUALITY = {
             if (!Number.isFinite(v)) return fallback;
             return Math.max(0.65, Math.min(1.6, Math.round(v * 100) / 100));
         }
+        function clampStagingScale(raw, fallback = 1) {
+            const v = Number(raw);
+            if (!Number.isFinite(v)) return fallback;
+            return Math.max(0.5, Math.min(1.5, Math.round(v * 100) / 100));
+        }
         function clampThemeOpacity(raw, fallback = 1, min = 0.15) {
             const v = Number(raw);
             if (!Number.isFinite(v)) return fallback;
@@ -1184,6 +1234,8 @@ const QUALITY = {
                 bgPanelOpacity: clampThemeOpacity(src.bgPanelOpacity, d.bgPanelOpacity, 0),
                 accent: src.accent || d.accent,
                 font: src.font || d.font,
+                btnBlueFont: src.btnBlueFont || src.font || d.btnBlueFont || d.font,
+                btnPurpleFont: src.btnPurpleFont || src.font || d.btnPurpleFont || d.font,
                 btnBlueTop: src.btnBlueTop || d.btnBlueTop,
                 btnBlueBase: src.btnBlueBase || d.btnBlueBase,
                 btnBlueAccent: src.btnBlueAccent || d.btnBlueAccent,
@@ -1203,11 +1255,20 @@ const QUALITY = {
                 clockFont: src.clockFont || d.clockFont,
                 clockColor: src.clockColor || d.clockColor,
                 clockFontScale: clampThemeFontScale(src.clockFontScale, d.clockFontScale),
-                clockFormat
+                clockFormat,
+                showButtonInfoOverlays: src.showButtonInfoOverlays === true,
+                showBlueToolbar: src.showBlueToolbar !== false,
+                showPurpleButtons: src.showPurpleButtons !== false,
+                showStagingPanel: src.showStagingPanel !== false,
+                stagingBorderColor: src.stagingBorderColor || d.stagingBorderColor,
+                stagingBorderOpacity: clampThemeOpacity(src.stagingBorderOpacity, d.stagingBorderOpacity, 0),
+                stagingGlowColor: src.stagingGlowColor || d.stagingGlowColor,
+                stagingGlowOpacity: clampThemeOpacity(src.stagingGlowOpacity, d.stagingGlowOpacity, 0),
+                stagingScale: clampStagingScale(src.stagingScale, d.stagingScale)
             };
         }
         function digitalThemePresetKeys(preset) {
-            return Object.keys(preset).filter((key) => key !== 'label');
+            return Object.keys(preset).filter((key) => key !== 'label' && key !== 'spectrum');
         }
         function themeMatchesPreset(theme, preset) {
             const t = normalizeDigitalTheme(theme);
@@ -1281,6 +1342,8 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-panel-opacity', String(t.bgPanelOpacity));
             target.style.setProperty('--rv-digital-accent-color', t.accent);
             target.style.setProperty('--rv-digital-ui-font', t.font);
+            target.style.setProperty('--rv-digital-btn-blue-font', t.btnBlueFont || t.font);
+            target.style.setProperty('--rv-digital-btn-purple-font', t.btnPurpleFont || t.font);
             target.style.setProperty('--rv-digital-btn-blue-top', t.btnBlueTop);
             target.style.setProperty('--rv-digital-btn-blue-base', t.btnBlueBase);
             target.style.setProperty('--rv-digital-btn-blue-accent', t.btnBlueAccent);
@@ -1300,7 +1363,30 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-clock-font', t.clockFont);
             target.style.setProperty('--rv-digital-clock-color', t.clockColor);
             target.style.setProperty('--rv-digital-clock-font-scale', String(t.clockFontScale));
-            if (target.dataset) target.dataset.rvClockFormat = t.clockFormat;
+            target.style.setProperty('--rv-digital-staging-border-color', t.stagingBorderColor);
+            target.style.setProperty('--rv-digital-staging-border-opacity', String(t.stagingBorderOpacity));
+            target.style.setProperty('--rv-digital-staging-glow-color', t.stagingGlowColor);
+            target.style.setProperty('--rv-digital-staging-glow-opacity', String(t.stagingGlowOpacity));
+            target.style.setProperty(
+                '--rv-digital-staging-glow-inset-opacity',
+                String(Math.min(1, Math.max(0, t.stagingGlowOpacity * 0.5)))
+            );
+            target.style.setProperty('--rv-digital-staging-scale', String(t.stagingScale));
+            if (target.dataset) {
+                target.dataset.rvClockFormat = t.clockFormat;
+                target.dataset.rvShowStaging = t.showStagingPanel ? '1' : '0';
+                target.dataset.rvShowBlueToolbar = t.showBlueToolbar ? '1' : '0';
+                target.dataset.rvShowPurpleButtons = t.showPurpleButtons ? '1' : '0';
+            }
+        }
+        function applyButtonInfoOverlaysFromTheme(theme) {
+            const enabled = !!(theme && theme.showButtonInfoOverlays);
+            try {
+                if (window.__uiButtonInfoOverlays && typeof window.__uiButtonInfoOverlays.setEnabled === 'function') {
+                    window.__uiButtonInfoOverlays.setEnabled(enabled);
+                }
+            } catch (_) {}
+            if (optDigitalButtonInfoOverlays) optDigitalButtonInfoOverlays.checked = enabled;
         }
         function reflowDigitalRadioThemeUi() {
             try {
@@ -1324,6 +1410,8 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-panel-opacity', String(t.bgPanelOpacity));
             root.style.setProperty('--global-rv-digital-accent-color', t.accent);
             root.style.setProperty('--global-rv-digital-ui-font', t.font);
+            root.style.setProperty('--global-rv-digital-btn-blue-font', t.btnBlueFont || t.font);
+            root.style.setProperty('--global-rv-digital-btn-purple-font', t.btnPurpleFont || t.font);
             root.style.setProperty('--global-rv-digital-btn-blue-top', t.btnBlueTop);
             root.style.setProperty('--global-rv-digital-btn-blue-base', t.btnBlueBase);
             root.style.setProperty('--global-rv-digital-btn-blue-accent', t.btnBlueAccent);
@@ -1344,6 +1432,7 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-clock-color', t.clockColor);
             root.style.setProperty('--global-rv-digital-clock-font-scale', String(t.clockFontScale));
             applyDigitalThemeCssVars(document.getElementById('radio-visual-root'), t);
+            applyButtonInfoOverlaysFromTheme(t);
             reapplyDigitalThemeImageLayers();
             reflowDigitalRadioThemeUi();
         }
@@ -1407,7 +1496,17 @@ const QUALITY = {
             syncDigitalBgOuterImageStatusUi(loadDigitalBgOuterImageFromStorage());
             syncDigitalBgPanelImageStatusUi(loadDigitalBgPanelImageFromStorage());
             if (optDigitalAccent) optDigitalAccent.value = theme.accent;
-            if (optDigitalFont) optDigitalFont.value = theme.font;
+            if (typeof populateSiteFontSelect === 'function') {
+                populateSiteFontSelect(optDigitalFont, theme.font);
+                populateSiteFontSelect(optDigitalBtnBlueFont, theme.btnBlueFont || theme.font);
+                populateSiteFontSelect(optDigitalBtnPurpleFont, theme.btnPurpleFont || theme.font);
+                populateSiteFontSelect(optDigitalClockFont, theme.clockFont);
+            } else {
+                if (optDigitalFont) optDigitalFont.value = theme.font;
+                if (optDigitalBtnBlueFont) optDigitalBtnBlueFont.value = theme.btnBlueFont || theme.font;
+                if (optDigitalBtnPurpleFont) optDigitalBtnPurpleFont.value = theme.btnPurpleFont || theme.font;
+                if (optDigitalClockFont) optDigitalClockFont.value = theme.clockFont;
+            }
             if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = theme.btnBlueTop;
             if (optDigitalBtnBlueBase) optDigitalBtnBlueBase.value = theme.btnBlueBase;
             if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = theme.btnBlueAccent;
@@ -1449,10 +1548,33 @@ const QUALITY = {
             if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(theme.btnPurpleFontScale * 100));
             if (optDigitalBtnPurpleFontScaleReadout) optDigitalBtnPurpleFontScaleReadout.textContent = `${Math.round(theme.btnPurpleFontScale * 100)}%`;
             if (optDigitalClockFormat) optDigitalClockFormat.value = theme.clockFormat;
-            if (optDigitalClockFont) optDigitalClockFont.value = theme.clockFont;
             if (optDigitalClockColor) optDigitalClockColor.value = theme.clockColor;
             if (optDigitalClockFontScale) optDigitalClockFontScale.value = String(Math.round(theme.clockFontScale * 100));
             if (optDigitalClockFontScaleReadout) optDigitalClockFontScaleReadout.textContent = `${Math.round(theme.clockFontScale * 100)}%`;
+            if (optDigitalButtonInfoOverlays) optDigitalButtonInfoOverlays.checked = !!theme.showButtonInfoOverlays;
+            if (optDigitalBlueToolbarVisible) optDigitalBlueToolbarVisible.checked = theme.showBlueToolbar !== false;
+            if (optDigitalPurpleButtonsVisible) optDigitalPurpleButtonsVisible.checked = theme.showPurpleButtons !== false;
+            if (optDigitalStagingVisible) optDigitalStagingVisible.checked = theme.showStagingPanel !== false;
+            if (optDigitalStagingBorderColor) optDigitalStagingBorderColor.value = theme.stagingBorderColor;
+            if (optDigitalStagingBorderOpacity) {
+                optDigitalStagingBorderOpacity.value = String(Math.round(theme.stagingBorderOpacity * 100));
+            }
+            if (optDigitalStagingBorderOpacityReadout) {
+                optDigitalStagingBorderOpacityReadout.textContent = `${Math.round(theme.stagingBorderOpacity * 100)}%`;
+            }
+            if (optDigitalStagingGlowColor) optDigitalStagingGlowColor.value = theme.stagingGlowColor;
+            if (optDigitalStagingGlowOpacity) {
+                optDigitalStagingGlowOpacity.value = String(Math.round(theme.stagingGlowOpacity * 100));
+            }
+            if (optDigitalStagingGlowOpacityReadout) {
+                optDigitalStagingGlowOpacityReadout.textContent = `${Math.round(theme.stagingGlowOpacity * 100)}%`;
+            }
+            if (optDigitalStagingScale) {
+                optDigitalStagingScale.value = String(Math.round(theme.stagingScale * 100));
+            }
+            if (optDigitalStagingScaleReadout) {
+                optDigitalStagingScaleReadout.textContent = `${Math.round(theme.stagingScale * 100)}%`;
+            }
             const maxMin = readAutoMixMaxMinFromStorage();
             if (optAutomixMax) optAutomixMax.value = String(maxMin);
             if (optAutomixMaxReadout) optAutomixMaxReadout.textContent = `${maxMin}m`;
@@ -1471,6 +1593,7 @@ const QUALITY = {
             if (optAutofadeChangeStation) optAutofadeChangeStation.checked = changeStation;
             try { syncSpectrumOptionsControlsFromStorage(); } catch (_) {}
             try { populateDigitalBgGifSelect(); } catch (_) {}
+            try { if (typeof syncAvatarOptionsControlsFromSettings === 'function') syncAvatarOptionsControlsFromSettings(); } catch (_) {}
         }
         function syncRadioVisualMixPanelsFromOptions() {
             try {
@@ -1518,6 +1641,12 @@ const QUALITY = {
                 ),
                 accent: optDigitalAccent ? optDigitalAccent.value : DEFAULT_DIGITAL_THEME.accent,
                 font: optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.font,
+                btnBlueFont: optDigitalBtnBlueFont
+                    ? optDigitalBtnBlueFont.value
+                    : (optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.btnBlueFont),
+                btnPurpleFont: optDigitalBtnPurpleFont
+                    ? optDigitalBtnPurpleFont.value
+                    : (optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.btnPurpleFont),
                 btnBlueTop: optDigitalBtnBlueTop ? optDigitalBtnBlueTop.value : DEFAULT_DIGITAL_THEME.btnBlueTop,
                 btnBlueBase: optDigitalBtnBlueBase ? optDigitalBtnBlueBase.value : DEFAULT_DIGITAL_THEME.btnBlueBase,
                 btnBlueAccent: optDigitalBtnBlueAccent ? optDigitalBtnBlueAccent.value : DEFAULT_DIGITAL_THEME.btnBlueAccent,
@@ -1568,7 +1697,31 @@ const QUALITY = {
                 ),
                 clockFormat: (optDigitalClockFormat && DIGITAL_CLOCK_FORMATS[optDigitalClockFormat.value])
                     ? optDigitalClockFormat.value
-                    : DEFAULT_DIGITAL_THEME.clockFormat
+                    : DEFAULT_DIGITAL_THEME.clockFormat,
+                showButtonInfoOverlays: !!(optDigitalButtonInfoOverlays && optDigitalButtonInfoOverlays.checked),
+                showBlueToolbar: !(optDigitalBlueToolbarVisible && !optDigitalBlueToolbarVisible.checked),
+                showPurpleButtons: !(optDigitalPurpleButtonsVisible && !optDigitalPurpleButtonsVisible.checked),
+                showStagingPanel: !(optDigitalStagingVisible && !optDigitalStagingVisible.checked),
+                stagingBorderColor: optDigitalStagingBorderColor
+                    ? optDigitalStagingBorderColor.value
+                    : DEFAULT_DIGITAL_THEME.stagingBorderColor,
+                stagingBorderOpacity: clampThemeOpacity(
+                    (Number(optDigitalStagingBorderOpacity && optDigitalStagingBorderOpacity.value) || 35) / 100,
+                    DEFAULT_DIGITAL_THEME.stagingBorderOpacity,
+                    0
+                ),
+                stagingGlowColor: optDigitalStagingGlowColor
+                    ? optDigitalStagingGlowColor.value
+                    : DEFAULT_DIGITAL_THEME.stagingGlowColor,
+                stagingGlowOpacity: clampThemeOpacity(
+                    (Number(optDigitalStagingGlowOpacity && optDigitalStagingGlowOpacity.value) || 12) / 100,
+                    DEFAULT_DIGITAL_THEME.stagingGlowOpacity,
+                    0
+                ),
+                stagingScale: clampStagingScale(
+                    (Number(optDigitalStagingScale && optDigitalStagingScale.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.stagingScale
+                )
             };
             theme.presetId = detectDigitalThemePresetId(theme);
             if (optDigitalThemePreset) optDigitalThemePreset.value = theme.presetId;
@@ -1607,7 +1760,17 @@ const QUALITY = {
                 optDigitalBgPanelOpacityReadout.textContent = `${Math.round(t.bgPanelOpacity * 100)}%`;
             }
             if (optDigitalAccent) optDigitalAccent.value = t.accent;
-            if (optDigitalFont && t.font) optDigitalFont.value = t.font;
+            if (typeof populateSiteFontSelect === 'function') {
+                populateSiteFontSelect(optDigitalFont, t.font);
+                populateSiteFontSelect(optDigitalBtnBlueFont, t.btnBlueFont || t.font);
+                populateSiteFontSelect(optDigitalBtnPurpleFont, t.btnPurpleFont || t.font);
+                populateSiteFontSelect(optDigitalClockFont, t.clockFont);
+            } else {
+                if (optDigitalFont && t.font) optDigitalFont.value = t.font;
+                if (optDigitalBtnBlueFont) optDigitalBtnBlueFont.value = t.btnBlueFont || t.font;
+                if (optDigitalBtnPurpleFont) optDigitalBtnPurpleFont.value = t.btnPurpleFont || t.font;
+                if (optDigitalClockFont) optDigitalClockFont.value = t.clockFont;
+            }
             if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = t.btnBlueTop;
             if (optDigitalBtnBlueBase) optDigitalBtnBlueBase.value = t.btnBlueBase;
             if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = t.btnBlueAccent;
@@ -1649,10 +1812,33 @@ const QUALITY = {
             if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(t.btnPurpleFontScale * 100));
             if (optDigitalBtnPurpleFontScaleReadout) optDigitalBtnPurpleFontScaleReadout.textContent = `${Math.round(t.btnPurpleFontScale * 100)}%`;
             if (optDigitalClockFormat) optDigitalClockFormat.value = t.clockFormat;
-            if (optDigitalClockFont) optDigitalClockFont.value = t.clockFont;
             if (optDigitalClockColor) optDigitalClockColor.value = t.clockColor;
             if (optDigitalClockFontScale) optDigitalClockFontScale.value = String(Math.round(t.clockFontScale * 100));
             if (optDigitalClockFontScaleReadout) optDigitalClockFontScaleReadout.textContent = `${Math.round(t.clockFontScale * 100)}%`;
+            if (optDigitalButtonInfoOverlays) optDigitalButtonInfoOverlays.checked = !!t.showButtonInfoOverlays;
+            if (optDigitalBlueToolbarVisible) optDigitalBlueToolbarVisible.checked = t.showBlueToolbar !== false;
+            if (optDigitalPurpleButtonsVisible) optDigitalPurpleButtonsVisible.checked = t.showPurpleButtons !== false;
+            if (optDigitalStagingVisible) optDigitalStagingVisible.checked = t.showStagingPanel !== false;
+            if (optDigitalStagingBorderColor) optDigitalStagingBorderColor.value = t.stagingBorderColor;
+            if (optDigitalStagingBorderOpacity) {
+                optDigitalStagingBorderOpacity.value = String(Math.round(t.stagingBorderOpacity * 100));
+            }
+            if (optDigitalStagingBorderOpacityReadout) {
+                optDigitalStagingBorderOpacityReadout.textContent = `${Math.round(t.stagingBorderOpacity * 100)}%`;
+            }
+            if (optDigitalStagingGlowColor) optDigitalStagingGlowColor.value = t.stagingGlowColor;
+            if (optDigitalStagingGlowOpacity) {
+                optDigitalStagingGlowOpacity.value = String(Math.round(t.stagingGlowOpacity * 100));
+            }
+            if (optDigitalStagingGlowOpacityReadout) {
+                optDigitalStagingGlowOpacityReadout.textContent = `${Math.round(t.stagingGlowOpacity * 100)}%`;
+            }
+            if (optDigitalStagingScale) {
+                optDigitalStagingScale.value = String(Math.round(t.stagingScale * 100));
+            }
+            if (optDigitalStagingScaleReadout) {
+                optDigitalStagingScaleReadout.textContent = `${Math.round(t.stagingScale * 100)}%`;
+            }
             if (optDigitalThemePreset) optDigitalThemePreset.value = t.presetId || detectDigitalThemePresetId(t);
         }
         function syncDigitalThemeScaleReadoutsFromControls() {
@@ -1697,6 +1883,15 @@ const QUALITY = {
             }
             if (optDigitalBgPanelOpacity && optDigitalBgPanelOpacityReadout) {
                 optDigitalBgPanelOpacityReadout.textContent = `${optDigitalBgPanelOpacity.value}%`;
+            }
+            if (optDigitalStagingBorderOpacity && optDigitalStagingBorderOpacityReadout) {
+                optDigitalStagingBorderOpacityReadout.textContent = `${optDigitalStagingBorderOpacity.value}%`;
+            }
+            if (optDigitalStagingGlowOpacity && optDigitalStagingGlowOpacityReadout) {
+                optDigitalStagingGlowOpacityReadout.textContent = `${optDigitalStagingGlowOpacity.value}%`;
+            }
+            if (optDigitalStagingScale && optDigitalStagingScaleReadout) {
+                optDigitalStagingScaleReadout.textContent = `${optDigitalStagingScale.value}%`;
             }
         }
         function isOptionsOpen() {
@@ -1765,7 +1960,13 @@ const QUALITY = {
                 bgC: d.bgC,
                 bgGradientAngle: d.bgGradientAngle,
                 bgPanelImageOpacity: d.bgPanelImageOpacity,
-                bgPanelOpacity: d.bgPanelOpacity
+                bgPanelOpacity: d.bgPanelOpacity,
+                showStagingPanel: d.showStagingPanel,
+                stagingBorderColor: d.stagingBorderColor,
+                stagingBorderOpacity: d.stagingBorderOpacity,
+                stagingGlowColor: d.stagingGlowColor,
+                stagingGlowOpacity: d.stagingGlowOpacity,
+                stagingScale: d.stagingScale
             }, () => clearDigitalBgPanelImage());
         }
         function resetScreenBackgroundOptions() {
@@ -1792,6 +1993,7 @@ const QUALITY = {
                 btnBlueOpacity: d.btnBlueOpacity,
                 btnBlueTextOpacity: d.btnBlueTextOpacity,
                 btnBlueBorderOpacity: d.btnBlueBorderOpacity,
+                btnBlueFont: d.btnBlueFont,
                 btnBlueFontScale: d.btnBlueFontScale
             });
         }
@@ -1805,6 +2007,7 @@ const QUALITY = {
                 btnPurpleOpacity: d.btnPurpleOpacity,
                 btnPurpleTextOpacity: d.btnPurpleTextOpacity,
                 btnPurpleBorderOpacity: d.btnPurpleBorderOpacity,
+                btnPurpleFont: d.btnPurpleFont,
                 btnPurpleFontScale: d.btnPurpleFontScale
             });
         }
@@ -1975,7 +2178,10 @@ const QUALITY = {
                 backgroundGif: {
                     enabled: !!(gifEnabled && gifFilename),
                     filename: gifEnabled ? gifFilename : ''
-                }
+                },
+                avatar: (typeof collectAvatarSettingsForExport === 'function')
+                    ? collectAvatarSettingsForExport()
+                    : null
             };
         }
         function exportOptionsSettings() {
@@ -2035,6 +2241,13 @@ const QUALITY = {
                 applyDigitalBgGifFromOptions(filename);
                 if (optDigitalBgGif) optDigitalBgGif.value = filename;
             }
+            if (payload.avatar && typeof payload.avatar === 'object') {
+                try {
+                    if (typeof applyAvatarSettingsFromImport === 'function') {
+                        applyAvatarSettingsFromImport(payload.avatar);
+                    }
+                } catch (_) {}
+            }
             syncRadioVisualMixPanelsFromOptions();
         }
         async function importOptionsSettingsFromFile(file) {
@@ -2050,6 +2263,10 @@ const QUALITY = {
         }
         function wireOptionsPanelControls() {
             populateDigitalThemePresetSelect();
+            try {
+                if (typeof populateAllSiteFontSelects === 'function') populateAllSiteFontSelects();
+            } catch (_) {}
+            try { applyDigitalThemeToControls(loadDigitalThemeFromStorage()); } catch (_) {}
             const onThemeChange = () => {
                 syncDigitalThemeScaleReadoutsFromControls();
                 const theme = collectDigitalThemeFromControls();
@@ -2062,17 +2279,35 @@ const QUALITY = {
                     if (presetId === 'custom') return;
                     const currentFont = optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.font;
                     const currentButtons = loadDigitalThemeFromStorage();
+                    const preset = DIGITAL_THEME_PRESETS[presetId];
                     const theme = themeFromPresetId(presetId, currentFont, currentButtons);
                     if (!theme) return;
                     applyDigitalThemeToControls(theme);
                     saveDigitalThemeToStorage(theme);
                     applyDigitalRadioTheme(theme);
+                    if (preset && preset.spectrum) {
+                        const RVE = getSpectrumEngineClass();
+                        const spectrum = (RVE && typeof RVE.clampSpectrumSettings === 'function')
+                            ? RVE.clampSpectrumSettings(preset.spectrum)
+                            : preset.spectrum;
+                        applySpectrumSettingsToControls(spectrum);
+                        applyDigitalSpectrumSettings(spectrum);
+                    }
                 });
             }
+            [
+                optDigitalButtonInfoOverlays, optDigitalBlueToolbarVisible,
+                optDigitalPurpleButtonsVisible, optDigitalStagingVisible
+            ].forEach((el) => {
+                if (!el) return;
+                el.addEventListener('change', onThemeChange);
+            });
             [optDigitalBgA, optDigitalBgB, optDigitalBgC, optDigitalAccent,
                 optDigitalBgOuterA, optDigitalBgOuterB, optDigitalBgOuterC, optDigitalBgGradientAngle,
                 optDigitalBgOuterGradientAngle, optDigitalBgOuterImageOpacity, optDigitalBgPanelImageOpacity,
                 optDigitalBgPanelOpacity,
+                optDigitalStagingBorderColor, optDigitalStagingBorderOpacity,
+                optDigitalStagingGlowColor, optDigitalStagingGlowOpacity, optDigitalStagingScale,
                 optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent, optDigitalBtnBlueLabel, optDigitalBtnBlueOpacity,
                 optDigitalBtnBlueTextOpacity, optDigitalBtnBlueBorderOpacity,
                 optDigitalBtnPurpleTop, optDigitalBtnPurpleBase, optDigitalBtnPurpleLabel, optDigitalBtnPurpleActive,
@@ -2085,10 +2320,10 @@ const QUALITY = {
                 el.addEventListener('change', onThemeChange);
             });
             if (optDigitalClockFormat) optDigitalClockFormat.addEventListener('change', onThemeChange);
-            if (optDigitalClockFont) optDigitalClockFont.addEventListener('change', onThemeChange);
-            if (optDigitalFont) {
-                optDigitalFont.addEventListener('change', onThemeChange);
-            }
+            [optDigitalClockFont, optDigitalFont, optDigitalBtnBlueFont, optDigitalBtnPurpleFont].forEach((el) => {
+                if (!el) return;
+                el.addEventListener('change', onThemeChange);
+            });
             if (optDigitalBgGif) {
                 optDigitalBgGif.addEventListener('change', () => {
                     applyDigitalBgGifFromOptions(optDigitalBgGif.value);
@@ -3452,6 +3687,236 @@ const QUALITY = {
             } catch (_) {}
         }
         loadWebmSettingsFromStorage();
+        const DEFAULT_AVATAR_SETTINGS = {
+            scaleVw: WEBM_DEFAULT_SCALE_VW,
+            posXvw: 50,
+            posYvh: 50,
+            rotationDeg: 0,
+            playbackRate: 1.0,
+            opacity: 0.82,
+            duplicates: 0,
+            duplicateSpacing: WEBM_DEFAULT_DUP_SPACING
+        };
+        function getAvatarOptionsControlIds() {
+            return {
+                scale: 'opt-avatar-scale',
+                x: 'opt-avatar-x',
+                y: 'opt-avatar-y',
+                rot: 'opt-avatar-rot',
+                speed: 'opt-avatar-speed',
+                opacity: 'opt-avatar-opacity',
+                duplicates: 'opt-avatar-duplicates',
+                dupSpacing: 'opt-avatar-dup-spacing',
+                auto: 'opt-avatar-auto',
+                select: 'opt-avatar-webm-select'
+            };
+        }
+        function syncAvatarOptionsReadouts() {
+            const s = webmSettings;
+            const dupPct = Math.round((Number(s.duplicateSpacing) || WEBM_DEFAULT_DUP_SPACING) * 100);
+            const setText = (id, text) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = text;
+            };
+            setText('opt-avatar-scale-readout', `${Math.round(s.scaleVw)}vw`);
+            setText('opt-avatar-x-readout', `${Math.round(s.posXvw)}%`);
+            setText('opt-avatar-y-readout', `${Math.round(s.posYvh)}%`);
+            setText('opt-avatar-rot-readout', `${Math.round(s.rotationDeg)}°`);
+            setText('opt-avatar-speed-readout', `${Number(s.playbackRate).toFixed(1)}×`);
+            setText('opt-avatar-opacity-readout', `${Math.round(s.opacity * 100)}%`);
+            setText('opt-avatar-duplicates-readout', String(Math.max(0, Math.min(2, Math.round(s.duplicates)))));
+            setText('opt-avatar-dup-spacing-readout', `${dupPct}%`);
+        }
+        function syncWebmScalarInputs() {
+            const s = webmSettings;
+            const dupPct = Math.round((Number(s.duplicateSpacing) || WEBM_DEFAULT_DUP_SPACING) * 100);
+            const opacityPct = Math.round((Number(s.opacity) || 0) * 100);
+            const setVal = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.value = String(value);
+            };
+            setVal('inp-webm-scale', s.scaleVw);
+            setVal('avatar-inp-scale', s.scaleVw);
+            setVal('opt-avatar-scale', s.scaleVw);
+            setVal('inp-webm-x', s.posXvw);
+            setVal('avatar-inp-x', s.posXvw);
+            setVal('opt-avatar-x', s.posXvw);
+            setVal('inp-webm-y', s.posYvh);
+            setVal('avatar-inp-y', s.posYvh);
+            setVal('opt-avatar-y', s.posYvh);
+            setVal('inp-webm-rot', s.rotationDeg);
+            setVal('avatar-inp-rot', s.rotationDeg);
+            setVal('opt-avatar-rot', s.rotationDeg);
+            setVal('inp-webm-speed', s.playbackRate);
+            setVal('avatar-inp-speed', s.playbackRate);
+            setVal('opt-avatar-speed', s.playbackRate);
+            setVal('inp-webm-opacity', s.opacity);
+            setVal('avatar-inp-opacity', s.opacity);
+            setVal('opt-avatar-opacity', opacityPct);
+            setVal('inp-webm-dup-spacing', dupPct);
+            setVal('avatar-inp-dup-spacing', dupPct);
+            setVal('opt-avatar-dup-spacing', dupPct);
+            setVal('opt-avatar-duplicates', Math.max(0, Math.min(2, Math.round(s.duplicates))));
+            syncAvatarOptionsReadouts();
+        }
+        function populateAvatarWebmSelect(selectEl) {
+            if (!selectEl) return;
+            selectEl.innerHTML = '';
+            if (Array.isArray(webmList) && webmList.length > 0) {
+                webmList.forEach((pth, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = String(idx);
+                    opt.textContent = (pth || '').split('/').pop() || pth || (`Clip ${idx + 1}`);
+                    if (typeof webmIndex === 'number' && idx === webmIndex) opt.selected = true;
+                    selectEl.appendChild(opt);
+                });
+            } else {
+                const opt = document.createElement('option');
+                opt.value = '0';
+                opt.textContent = '(load list)';
+                selectEl.appendChild(opt);
+            }
+        }
+        function syncAvatarOptionsControlsFromSettings() {
+            syncWebmScalarInputs();
+            try { syncAllWebmDupKnobs(); } catch (_) {}
+            const ids = getAvatarOptionsControlIds();
+            const autoEl = document.getElementById(ids.auto);
+            if (autoEl) autoEl.checked = !!webmAutoOn;
+            const sel = document.getElementById(ids.select);
+            const avatarSel = document.getElementById('avatar-webm-select');
+            const fillSelects = () => {
+                if (sel) populateAvatarWebmSelect(sel);
+                if (avatarSel) populateAvatarWebmSelect(avatarSel);
+            };
+            if ((!webmList || webmList.length === 0) && typeof loadWebmList === 'function') {
+                loadWebmList().finally(fillSelects);
+            } else {
+                fillSelects();
+            }
+            if (avatarSel && webmList.length > 0) {
+                avatarSel.value = String(Math.max(0, Math.min(webmList.length - 1, webmIndex || 0)));
+            }
+            if (sel && webmList.length > 0) {
+                sel.value = String(Math.max(0, Math.min(webmList.length - 1, webmIndex || 0)));
+            }
+        }
+        function applyWebmSettingsFromObject(patch) {
+            const d = DEFAULT_AVATAR_SETTINGS;
+            const src = (patch && typeof patch === 'object') ? patch : {};
+            const num = (v, fallback, min, max) => {
+                const n = Number(v);
+                if (!Number.isFinite(n)) return fallback;
+                if (min != null && n < min) return min;
+                if (max != null && n > max) return max;
+                return n;
+            };
+            webmSettings.scaleVw = num(src.scaleVw, d.scaleVw, 10, 200);
+            webmSettings.posXvw = num(src.posXvw, d.posXvw, 0, 100);
+            webmSettings.posYvh = num(src.posYvh, d.posYvh, 0, 100);
+            webmSettings.rotationDeg = num(src.rotationDeg, d.rotationDeg, -180, 180);
+            webmSettings.playbackRate = num(src.playbackRate, d.playbackRate, 0.1, 4);
+            const opacityRaw = src.opacity;
+            webmSettings.opacity = (opacityRaw > 1)
+                ? num(opacityRaw / 100, d.opacity, 0, 1)
+                : num(opacityRaw, d.opacity, 0, 1);
+            webmSettings.duplicates = Math.max(0, Math.min(2, Math.round(num(src.duplicates, d.duplicates, 0, 2))));
+            const spacingRaw = src.duplicateSpacing;
+            webmSettings.duplicateSpacing = (spacingRaw > 1)
+                ? num(spacingRaw / 100, d.duplicateSpacing, 0.15, 1)
+                : num(spacingRaw, d.duplicateSpacing, 0.15, 1);
+            saveWebmSettingsToStorage();
+            syncWebmScalarInputs();
+            try { syncAllWebmDupKnobs(); } catch (_) {}
+            applyWebmSettings();
+            if (typeof src.autoEnabled === 'boolean') setWebmAuto(src.autoEnabled);
+            if (typeof src.clipIndex === 'number' && webmList.length > 0) {
+                try { setWebm(Math.max(0, Math.min(webmList.length - 1, Math.round(src.clipIndex)))); } catch (_) {}
+            }
+            syncAvatarOptionsControlsFromSettings();
+        }
+        function collectAvatarSettingsForExport() {
+            return {
+                scaleVw: webmSettings.scaleVw,
+                posXvw: webmSettings.posXvw,
+                posYvh: webmSettings.posYvh,
+                rotationDeg: webmSettings.rotationDeg,
+                playbackRate: webmSettings.playbackRate,
+                opacity: webmSettings.opacity,
+                duplicates: webmSettings.duplicates,
+                duplicateSpacing: webmSettings.duplicateSpacing,
+                autoEnabled: !!webmAutoOn,
+                clipIndex: typeof webmIndex === 'number' ? webmIndex : 0
+            };
+        }
+        function applyAvatarSettingsFromImport(patch) {
+            applyWebmSettingsFromObject(patch);
+        }
+        function readAvatarSettingsFromOptionsControls() {
+            const ids = getAvatarOptionsControlIds();
+            const scale = document.getElementById(ids.scale);
+            const x = document.getElementById(ids.x);
+            const y = document.getElementById(ids.y);
+            const rot = document.getElementById(ids.rot);
+            const speed = document.getElementById(ids.speed);
+            const opacity = document.getElementById(ids.opacity);
+            const duplicates = document.getElementById(ids.duplicates);
+            const dupSpacing = document.getElementById(ids.dupSpacing);
+            webmSettings.scaleVw = Number(scale?.value) || WEBM_DEFAULT_SCALE_VW;
+            webmSettings.posXvw = Number(x?.value) || 50;
+            webmSettings.posYvh = Number(y?.value) || 50;
+            webmSettings.rotationDeg = Number(rot?.value) || 0;
+            webmSettings.playbackRate = Math.max(0.1, Math.min(4, Number(speed?.value) || 1));
+            webmSettings.opacity = Math.max(0, Math.min(1, (Number(opacity?.value) || 82) / 100));
+            webmSettings.duplicates = Math.max(0, Math.min(2, Math.round(Number(duplicates?.value) || 0)));
+            webmSettings.duplicateSpacing = Math.max(0.15, Math.min(1, (Number(dupSpacing?.value) || 60) / 100));
+            saveWebmSettingsToStorage();
+            syncWebmScalarInputs();
+            try { syncAllWebmDupKnobs(); } catch (_) {}
+            applyWebmSettings();
+        }
+        function resetAvatarOptionsSection() {
+            applyWebmSettingsFromObject(DEFAULT_AVATAR_SETTINGS);
+            setWebmAuto(false);
+        }
+        function wireAvatarOptionsControls() {
+            const ids = getAvatarOptionsControlIds();
+            const onAvatarOptionChange = () => {
+                readAvatarSettingsFromOptionsControls();
+            };
+            [
+                ids.scale, ids.x, ids.y, ids.rot, ids.speed,
+                ids.opacity, ids.duplicates, ids.dupSpacing
+            ].forEach((id) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('input', onAvatarOptionChange);
+                el.addEventListener('change', onAvatarOptionChange);
+            });
+            const autoEl = document.getElementById(ids.auto);
+            if (autoEl) {
+                autoEl.addEventListener('change', () => {
+                    setWebmAuto(!!autoEl.checked);
+                });
+            }
+            const sel = document.getElementById(ids.select);
+            if (sel) {
+                sel.addEventListener('change', () => {
+                    const idx = Math.max(0, Math.min(webmList.length - 1, parseInt(sel.value, 10) || 0));
+                    try { setWebm(idx); } catch (_) {}
+                    const avatarSel = document.getElementById('avatar-webm-select');
+                    if (avatarSel) avatarSel.value = String(idx);
+                });
+            }
+            const resetBtn = document.getElementById('opt-avatar-reset');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    resetAvatarOptionsSection();
+                    try { if (typeof isOptionsOpen === 'function' && isOptionsOpen() && typeof armOptionsAutoClose === 'function') armOptionsAutoClose(); } catch (_) {}
+                });
+            }
+        }
         // EQ State Storage
         const eqState = {
             a: { gain: 1.0, high: 0, mid: 0, low: 0 },
@@ -3917,6 +4382,121 @@ const QUALITY = {
 		function startScreenAssetsCached() {
 			return !!(tapGifLoadPromise && ptaGifLoadPromise && patGifLoadPromise);
 		}
+		const START_LOADER_PHRASES = [
+			{ text: 'Loading...', color: '#9ffcff', glow: '#00e8ff' },
+			{ text: 'Click2Play', color: '#ffc8f8', glow: '#ff5ce8' },
+			{ text: 'OMNI>', color: '#fff3a8', glow: '#ffd246' }
+		];
+		let startLoaderOrbitRaf = 0;
+		let startLoaderOrbitHoldTimer = 0;
+		let startLoaderOrbitGapTimer = 0;
+		let startLoaderOrbitPhraseIdx = 0;
+		let startLoaderOrbitRunning = false;
+		function layoutStartLoaderPhrase(phraseEl, text, spread, opacity) {
+			if (!phraseEl || !text) return;
+			if (phraseEl.dataset.text !== text) {
+				phraseEl.dataset.text = text;
+				phraseEl.innerHTML = '';
+				text.split('').forEach((ch) => {
+					const span = document.createElement('span');
+					span.className = 'start-loader-char';
+					span.textContent = ch;
+					phraseEl.appendChild(span);
+				});
+			}
+			const chars = phraseEl.querySelectorAll('.start-loader-char');
+			const n = chars.length;
+			if (!n) return;
+			const clusterSpan = Math.min(108, Math.max(42, n * 10));
+			const spreadSpan = Math.min(310, Math.max(170, n * 24));
+			const s = Math.max(0, Math.min(1, Number(spread) || 0));
+			const spanDeg = clusterSpan + (spreadSpan - clusterSpan) * s;
+			const startAngle = -90 - spanDeg / 2;
+			chars.forEach((el, i) => {
+				const angle = n === 1 ? -90 : startAngle + (i / (n - 1)) * spanDeg;
+				el.style.setProperty('--char-angle', `${angle}deg`);
+			});
+			phraseEl.style.setProperty('--phrase-opacity', String(Math.max(0, Math.min(1, Number(opacity) || 0))));
+		}
+		function animateStartLoaderSpread(phraseEl, text, from, to, durationMs, opacityFrom, opacityTo, onDone) {
+			if (startLoaderOrbitRaf) {
+				cancelAnimationFrame(startLoaderOrbitRaf);
+				startLoaderOrbitRaf = 0;
+			}
+			const t0 = performance.now();
+			const tick = (now) => {
+				const t = Math.min(1, (now - t0) / Math.max(1, durationMs));
+				const eased = 1 - Math.pow(1 - t, 3);
+				const spread = from + (to - from) * eased;
+				const opacity = opacityFrom + (opacityTo - opacityFrom) * eased;
+				layoutStartLoaderPhrase(phraseEl, text, spread, opacity);
+				if (t < 1) {
+					startLoaderOrbitRaf = requestAnimationFrame(tick);
+					return;
+				}
+				startLoaderOrbitRaf = 0;
+				if (typeof onDone === 'function') onDone();
+			};
+			startLoaderOrbitRaf = requestAnimationFrame(tick);
+		}
+		function clearStartLoaderOrbitTimers() {
+			if (startLoaderOrbitHoldTimer) {
+				clearTimeout(startLoaderOrbitHoldTimer);
+				startLoaderOrbitHoldTimer = 0;
+			}
+			if (startLoaderOrbitGapTimer) {
+				clearTimeout(startLoaderOrbitGapTimer);
+				startLoaderOrbitGapTimer = 0;
+			}
+			if (startLoaderOrbitRaf) {
+				cancelAnimationFrame(startLoaderOrbitRaf);
+				startLoaderOrbitRaf = 0;
+			}
+		}
+		function runStartLoaderOrbitPhrase() {
+			if (!startLoaderOrbitRunning) return;
+			const phraseEl = document.getElementById('start-loader-phrase');
+			const loader = document.getElementById('start-loader');
+			if (!phraseEl || !loader || !loader.classList.contains('is-visible')) return;
+			const phrase = START_LOADER_PHRASES[startLoaderOrbitPhraseIdx % START_LOADER_PHRASES.length];
+			phraseEl.style.setProperty('--phrase-color', phrase.color);
+			phraseEl.style.setProperty('--phrase-glow', phrase.glow);
+			phraseEl.classList.add('is-active');
+			loader.setAttribute('aria-label', phrase.text);
+			layoutStartLoaderPhrase(phraseEl, phrase.text, 1, 0.05);
+			animateStartLoaderSpread(phraseEl, phrase.text, 1, 0, 780, 0.05, 1, () => {
+				if (!startLoaderOrbitRunning) return;
+				startLoaderOrbitHoldTimer = setTimeout(() => {
+					if (!startLoaderOrbitRunning) return;
+					animateStartLoaderSpread(phraseEl, phrase.text, 0, 1, 680, 1, 0, () => {
+						if (!startLoaderOrbitRunning) return;
+						phraseEl.classList.remove('is-active');
+						startLoaderOrbitPhraseIdx = (startLoaderOrbitPhraseIdx + 1) % START_LOADER_PHRASES.length;
+						startLoaderOrbitGapTimer = setTimeout(runStartLoaderOrbitPhrase, 220);
+					});
+				}, 1100);
+			});
+		}
+		function startStartLoaderOrbit() {
+			const loader = document.getElementById('start-loader');
+			const phraseEl = document.getElementById('start-loader-phrase');
+			if (!loader || !phraseEl || !loader.classList.contains('is-visible')) return;
+			if (startLoaderOrbitRunning) return;
+			startLoaderOrbitRunning = true;
+			startLoaderOrbitPhraseIdx = 0;
+			clearStartLoaderOrbitTimers();
+			runStartLoaderOrbitPhrase();
+		}
+		function stopStartLoaderOrbit() {
+			startLoaderOrbitRunning = false;
+			clearStartLoaderOrbitTimers();
+			const phraseEl = document.getElementById('start-loader-phrase');
+			if (phraseEl) {
+				phraseEl.classList.remove('is-active');
+				phraseEl.innerHTML = '';
+				delete phraseEl.dataset.text;
+			}
+		}
 		function updateStartLoaderProgress(pct) {
 			const progressEl = document.getElementById('start-loader-pct');
 			const loader = document.getElementById('start-loader');
@@ -3926,6 +4506,7 @@ const QUALITY = {
 			loader.classList.add('is-visible');
 			loader.setAttribute('aria-hidden', 'false');
 			loader.setAttribute('aria-busy', n < 100 ? 'true' : 'false');
+			if (n < 100) startStartLoaderOrbit();
 		}
 		function showStartLoader() {
 			const loader = document.getElementById('start-loader');
@@ -3933,16 +4514,23 @@ const QUALITY = {
 			loader.classList.add('is-visible');
 			loader.setAttribute('aria-hidden', 'false');
 			loader.setAttribute('aria-busy', 'true');
+			startStartLoaderOrbit();
 		}
 		function hideStartLoader() {
 			const loader = document.getElementById('start-loader');
 			if (!loader) return;
+			stopStartLoaderOrbit();
 			loader.classList.remove('is-visible');
 			loader.setAttribute('aria-hidden', 'true');
 			loader.setAttribute('aria-busy', 'false');
 		}
+		try {
+			const bootLoader = document.getElementById('start-loader');
+			if (bootLoader && bootLoader.classList.contains('is-visible')) startStartLoaderOrbit();
+		} catch (_) {}
 		function resetStartScreenReveal() {
 			startScreenRevealPromise = null;
+			stopStartLoaderOrbit();
 			try {
 				const pta = document.getElementById('pta-start-bg');
 				if (pta) pta.classList.remove('pta-visible');
@@ -4572,21 +5160,7 @@ function randomGlowColor() {
                         sel.appendChild(opt);
                     }
                 }
-                // Sync inputs from current settings
-                const aScale = document.getElementById('avatar-inp-scale');
-                const aX = document.getElementById('avatar-inp-x');
-                const aY = document.getElementById('avatar-inp-y');
-                const aRot = document.getElementById('avatar-inp-rot');
-                const aSpeed = document.getElementById('avatar-inp-speed');
-                const aOpacity = document.getElementById('avatar-inp-opacity');
-                const aDupSpacing = document.getElementById('avatar-inp-dup-spacing');
-                if (aScale) aScale.value = String(webmSettings.scaleVw);
-                if (aX) aX.value = String(webmSettings.posXvw);
-                if (aY) aY.value = String(webmSettings.posYvh);
-                if (aRot) aRot.value = String(webmSettings.rotationDeg);
-                if (aSpeed) aSpeed.value = String(webmSettings.playbackRate);
-                if (aOpacity) aOpacity.value = String(webmSettings.opacity);
-                if (aDupSpacing) aDupSpacing.value = String(Math.round((webmSettings.duplicateSpacing || WEBM_DEFAULT_DUP_SPACING) * 100));
+                try { syncWebmScalarInputs(); } catch (_) {}
                 try { syncAllWebmDupKnobs(); } catch (_) {}
                 const autoBtn = document.getElementById('avatar-btn-auto');
                 if (autoBtn) { autoBtn.textContent = 'Auto'; autoBtn.classList.toggle('on', webmAutoOn); }
@@ -4647,7 +5221,9 @@ function randomGlowColor() {
                     webmSettings.playbackRate = Math.max(0.1, Math.min(4, Number(aSpeed?.value) || 1));
                     webmSettings.opacity = Math.max(0, Math.min(1, Number(aOpacity?.value) || 1));
                     webmSettings.duplicateSpacing = Math.max(0.15, Math.min(1, (Number(aDupSpacing?.value) || 60) / 100));
-                    try { syncWebmDupSpacingInputs(); } catch (_) {}
+                    saveWebmSettingsToStorage();
+                    try { syncWebmScalarInputs(); } catch (_) {}
+                    try { syncAllWebmDupKnobs(); } catch (_) {}
                     applyWebmSettings();
                 };
                 [aScale, aX, aY, aRot, aSpeed, aOpacity, aDupSpacing].forEach(el => {
@@ -4691,8 +5267,9 @@ function randomGlowColor() {
                     if (aSpeed) aSpeed.value = '1.0';
                     if (aOpacity) aOpacity.value = '0.82';
                     if (aDupSpacing) aDupSpacing.value = String(Math.round(WEBM_DEFAULT_DUP_SPACING * 100));
+                    saveWebmSettingsToStorage();
+                    try { syncWebmScalarInputs(); } catch (_) {}
                     try { syncAllWebmDupKnobs(); } catch (_) {}
-                    try { syncWebmDupSpacingInputs(); } catch (_) {}
                     applyWebmSettings();
                 });
             } catch(e) {}
@@ -5095,9 +5672,8 @@ function randomGlowColor() {
         function setWebmSpeed(newRate) {
             const clamped = Math.max(0.1, Math.min(4, Number(newRate) || 1));
             webmSettings.playbackRate = clamped;
-            if (typeof inpWebmSpeed !== 'undefined' && inpWebmSpeed) {
-                inpWebmSpeed.value = String(clamped);
-            }
+            saveWebmSettingsToStorage();
+            try { syncWebmScalarInputs(); } catch (_) {}
             applyWebmSettings();
         }
         function adjustWebmSpeed(delta) {
@@ -5112,8 +5688,8 @@ function randomGlowColor() {
             var ny = Math.max(0, Math.min(100, y + (dyVh || 0)));
             webmSettings.posXvw = nx;
             webmSettings.posYvh = ny;
-            if (typeof inpWebmX !== 'undefined' && inpWebmX) inpWebmX.value = String(nx);
-            if (typeof inpWebmY !== 'undefined' && inpWebmY) inpWebmY.value = String(ny);
+            saveWebmSettingsToStorage();
+            try { syncWebmScalarInputs(); } catch (_) {}
             applyWebmSettings();
         }
         function adjustWebmScale(deltaVw) {
@@ -5123,7 +5699,8 @@ function randomGlowColor() {
             var cur = Number(webmSettings.scaleVw) || min;
             var nv = Math.max(min, Math.min(max, cur + (deltaVw || 0)));
             webmSettings.scaleVw = nv;
-            if (typeof inpWebmScale !== 'undefined' && inpWebmScale) inpWebmScale.value = String(nv);
+            saveWebmSettingsToStorage();
+            try { syncWebmScalarInputs(); } catch (_) {}
             applyWebmSettings();
         }
         function adjustWebmOpacity(delta) {
@@ -5131,7 +5708,8 @@ function randomGlowColor() {
             var cur = Number(webmSettings.opacity) || 0;
             var nv = Math.max(0, Math.min(1, cur + (delta || 0)));
             webmSettings.opacity = nv;
-            if (typeof inpWebmOpacity !== 'undefined' && inpWebmOpacity) inpWebmOpacity.value = String(nv);
+            saveWebmSettingsToStorage();
+            try { syncWebmScalarInputs(); } catch (_) {}
             applyWebmSettings();
         }
         // Volume control handling (50% = 0 dB; below attenuate, above amplify)
@@ -8700,6 +9278,8 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             if (autoBtn) { autoBtn.textContent = 'Auto'; autoBtn.classList.toggle('on', webmAutoOn); }
             const autoBtn2 = document.getElementById('avatar-btn-auto');
             if (autoBtn2) { autoBtn2.textContent = 'Auto'; autoBtn2.classList.toggle('on', webmAutoOn); }
+            const optAuto = document.getElementById('opt-avatar-auto');
+            if (optAuto) optAuto.checked = webmAutoOn;
             if (webmAutoOn) scheduleWebmAuto(); else cancelWebmAuto();
         }
         
@@ -8717,8 +9297,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 inpWebmY.value = String(webmSettings.posYvh);
                 inpWebmRot.value = String(webmSettings.rotationDeg);
                 inpWebmSpeed.value = String(webmSettings.playbackRate);
-                inpWebmOpacity.value = String(webmSettings.opacity);
-                if (inpWebmDupSpacing) inpWebmDupSpacing.value = String(Math.round((webmSettings.duplicateSpacing || WEBM_DEFAULT_DUP_SPACING) * 100));
+                try { syncWebmScalarInputs(); } catch (_) {}
                 try { syncAllWebmDupKnobs(); } catch (_) {}
             } else {
                 hideWebmSettingsPanel();
@@ -8955,14 +9534,13 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             });
         }
         function syncWebmDupSpacingInputs() {
-            const pct = Math.round((Number(webmSettings.duplicateSpacing) || WEBM_DEFAULT_DUP_SPACING) * 100);
-            if (inpWebmDupSpacing) inpWebmDupSpacing.value = String(pct);
-            const avatarSpacing = document.getElementById('avatar-inp-dup-spacing');
-            if (avatarSpacing) avatarSpacing.value = String(pct);
+            try { syncWebmScalarInputs(); } catch (_) {}
         }
         function onWebmDupCountChange() {
             webmSettings.duplicates = Math.max(0, Math.min(2, Math.round(Number(webmSettings.duplicates) || 0)));
+            saveWebmSettingsToStorage();
             syncAllWebmDupKnobs();
+            try { syncWebmScalarInputs(); } catch (_) {}
             applyWebmSettings();
             try { scheduleWebmSettingsClose(); } catch (_) {}
         }
@@ -8973,6 +9551,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
         }
         try { bindWebmDupKnob('knob-webm-dup'); } catch (_) {}
         try { bindWebmDupKnob('knob-avatar-dup'); } catch (_) {}
+        try { wireAvatarOptionsControls(); } catch (_) {}
         document.getElementById('btn-webm-reset').addEventListener('click', () => {
             webmSettings.scaleVw = WEBM_DEFAULT_SCALE_VW;
             webmSettings.posXvw = 50;
@@ -8988,7 +9567,8 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             inpWebmRot.value = '0';
             inpWebmSpeed.value = '1.0';
             inpWebmOpacity.value = '0.82';
-            syncWebmDupSpacingInputs();
+            saveWebmSettingsToStorage();
+            syncWebmScalarInputs();
             syncAllWebmDupKnobs();
             applyWebmSettings();
         });
@@ -9001,7 +9581,8 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             webmSettings.playbackRate = Math.max(0.1, Math.min(4, Number(inpWebmSpeed.value) || 1));
             webmSettings.opacity = Math.max(0, Math.min(1, Number(inpWebmOpacity.value) || 1));
             webmSettings.duplicateSpacing = Math.max(0.15, Math.min(1, (Number(inpWebmDupSpacing?.value) || 60) / 100));
-            syncWebmDupSpacingInputs();
+            saveWebmSettingsToStorage();
+            syncWebmScalarInputs();
             applyWebmSettings();
             scheduleWebmSettingsClose();
         }

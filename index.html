@@ -13,6 +13,7 @@
 		<link rel="preload" href="assets/gifs/xim.gif" as="image">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;700&family=Lato:wght@400;700&family=Ubuntu:wght@400;700&family=Work+Sans:wght@400;700&family=Kanit:wght@400;700&family=Anton&family=Bangers&family=Pacifico&family=Permanent+Marker&family=Righteous&family=Russo+One&family=Black+Ops+One&family=Bungee&family=Comfortaa:wght@400;700&family=DM+Sans:wght@400;700&family=Josefin+Sans:wght@400;700&family=Karla:wght@400;700&family=Manrope:wght@400;700&family=Michroma&family=Mulish:wght@400;700&family=Outfit:wght@400;700&family=Staatliches&family=Space+Grotesk:wght@400;700&family=Space+Mono&family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;700&family=Archivo:wght@400;700&family=Archivo+Black&family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Abril+Fatface&family=Alfa+Slab+One&family=Bitter:wght@400;700&family=Lora:wght@400;700&family=PT+Sans:wght@400;700&family=Roboto+Condensed:wght@400;700&family=Roboto+Mono:wght@400;700&family=Roboto+Slab:wght@400;700&family=Titillium+Web:wght@400;700&family=Yanone+Kaffeesatz:wght@400;700&family=Unbounded:wght@400;700&family=Zen+Dots&family=Tourney:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/dj-visual.css">
     <link rel="stylesheet" href="css/radio-visual.css">
@@ -38,7 +39,10 @@
         <div id="start-loader" class="is-visible" aria-live="polite" aria-busy="true" aria-label="Loading">
             <div class="start-loader-shell">
                 <div class="start-loader-ring" aria-hidden="true"></div>
-                <span id="start-loader-pct" class="start-loader-pct" aria-hidden="true">0</span>
+                <div class="start-loader-orbit-spin" aria-hidden="true">
+                    <div id="start-loader-phrase" class="start-loader-phrase"></div>
+                </div>
+                <span id="start-loader-pct" class="start-loader-pct visually-hidden">0</span>
             </div>
         </div>
 		<h1 id="logo-omni" data-text="OMNI&gt;"><span class="logo-letter logo-o" data-ch="O">O</span><span class="logo-letter logo-m" data-ch="M">M</span><span class="logo-letter" data-ch="N">N</span><span class="logo-letter logo-midi" data-ch="I">I</span><span class="logo-letter logo-start" data-ch="&#62;">&gt;</span></h1>
@@ -242,7 +246,7 @@
                 <button type="button" class="icon-btn interactive" id="btn-options-close" title="Close" aria-label="Close">✕</button>
             </div>
             <div id="options-body">
-                <section class="options-section" aria-label="Appearance">
+                <section class="options-section options-section--tone-gold" aria-label="Appearance">
                     <div class="options-section-head">
                         <h4 class="options-section-title">Appearance</h4>
                         <button type="button" class="options-section-reset" id="opt-appearance-reset" title="Reset Appearance" aria-label="Reset Appearance">↺</button>
@@ -252,7 +256,25 @@
                         <select class="options-select options-select--full" id="opt-digital-theme-preset" aria-label="Digital Radio theme preset"></select>
                     </div>
                     <p class="options-hint options-hint--inline">Staging colours apply to the centre display only (not toolbar or buttons). Screen colours apply to the furthest full-screen background.</p>
-                    <div class="options-subsection-head">
+                    <div class="options-toggle-row" role="group" aria-label="Digital Radio layout">
+                        <label class="options-check" title="Show native hover tooltips on Digital Radio buttons">
+                            <input type="checkbox" id="opt-digital-button-info-overlays">
+                            <span>Info overlays</span>
+                        </label>
+                        <label class="options-check" title="Show blue toolbar button row">
+                            <input type="checkbox" id="opt-digital-blue-toolbar-visible" checked>
+                            <span>Blue buttons</span>
+                        </label>
+                        <label class="options-check" title="Show purple feature button row">
+                            <input type="checkbox" id="opt-digital-purple-buttons-visible" checked>
+                            <span>Purple buttons</span>
+                        </label>
+                        <label class="options-check" title="Show centre staging panel">
+                            <input type="checkbox" id="opt-digital-staging-visible" checked>
+                            <span>Staging panel</span>
+                        </label>
+                    </div>
+                    <div class="options-subsection-head options-subsection-head--cyan">
                         <p class="options-subsection-title">Staging panel</p>
                         <button type="button" class="options-section-reset options-subsection-reset" id="opt-staging-panel-reset" title="Reset staging panel" aria-label="Reset staging panel">↺</button>
                     </div>
@@ -292,7 +314,30 @@
                         <input type="range" class="options-range" id="opt-digital-bg-panel-opacity" min="0" max="100" step="1" value="100" aria-label="Digital Radio staging panel opacity">
                         <span class="options-readout" id="opt-digital-bg-panel-opacity-readout">100%</span>
                     </div>
-                    <div class="options-subsection-head">
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-staging-border-color">Border colour</label>
+                        <input type="color" class="options-color" id="opt-digital-staging-border-color" value="#00dcff" aria-label="Staging panel border colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-staging-border-opacity">Border opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-staging-border-opacity" min="0" max="100" step="1" value="35" aria-label="Staging panel border opacity">
+                        <span class="options-readout" id="opt-digital-staging-border-opacity-readout">35%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-staging-glow-color">Glow colour</label>
+                        <input type="color" class="options-color" id="opt-digital-staging-glow-color" value="#00b4ff" aria-label="Staging panel glow colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-staging-glow-opacity">Glow strength</label>
+                        <input type="range" class="options-range" id="opt-digital-staging-glow-opacity" min="0" max="100" step="1" value="12" aria-label="Staging panel outer glow strength">
+                        <span class="options-readout" id="opt-digital-staging-glow-opacity-readout">12%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-staging-scale">Panel size</label>
+                        <input type="range" class="options-range" id="opt-digital-staging-scale" min="50" max="150" step="1" value="100" aria-label="Staging panel size">
+                        <span class="options-readout" id="opt-digital-staging-scale-readout">100%</span>
+                    </div>
+                    <div class="options-subsection-head options-subsection-head--amber">
                         <p class="options-subsection-title">Screen background</p>
                         <button type="button" class="options-section-reset options-subsection-reset" id="opt-screen-bg-reset" title="Reset screen background" aria-label="Reset screen background">↺</button>
                     </div>
@@ -337,18 +382,11 @@
                         <label class="options-label" for="opt-digital-accent">Accent glow</label>
                         <input type="color" class="options-color" id="opt-digital-accent" value="#ffd246" aria-label="Digital Radio accent glow colour">
                     </div>
-                    <div class="options-row">
+                    <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-digital-font">Display font</label>
-                        <select class="options-select" id="opt-digital-font" aria-label="Digital Radio display font">
-                            <option value="'Orbitron', 'Share Tech Mono', ui-monospace, monospace">Orbitron</option>
-                            <option value="'Share Tech Mono', ui-monospace, monospace">Share Tech Mono</option>
-                            <option value="'Audiowide', cursive">Audiowide</option>
-                            <option value="'Rajdhani', sans-serif">Rajdhani</option>
-                            <option value="'Quicksand', sans-serif">Quicksand</option>
-                            <option value="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">System Mono</option>
-                        </select>
+                        <select class="options-select options-select--full" id="opt-digital-font" aria-label="Digital Radio display font"></select>
                     </div>
-                    <div class="options-subsection-head">
+                    <div class="options-subsection-head options-subsection-head--blue">
                         <p class="options-subsection-title">Blue toolbar buttons</p>
                         <button type="button" class="options-section-reset options-subsection-reset" id="opt-blue-buttons-reset" title="Reset blue toolbar buttons" aria-label="Reset blue toolbar buttons">↺</button>
                     </div>
@@ -383,12 +421,16 @@
                         <input type="range" class="options-range" id="opt-digital-btn-blue-border-opacity" min="0" max="100" step="1" aria-label="Blue toolbar button border opacity">
                         <span class="options-readout" id="opt-digital-btn-blue-border-opacity-readout">100%</span>
                     </div>
+                    <div class="options-row options-row--stack">
+                        <label class="options-label" for="opt-digital-btn-blue-font">Font</label>
+                        <select class="options-select options-select--full" id="opt-digital-btn-blue-font" aria-label="Blue toolbar button font"></select>
+                    </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-btn-blue-font-scale">Text size</label>
                         <input type="range" class="options-range" id="opt-digital-btn-blue-font-scale" min="65" max="160" step="5" aria-label="Blue toolbar button text size">
                         <span class="options-readout" id="opt-digital-btn-blue-font-scale-readout">100%</span>
                     </div>
-                    <div class="options-subsection-head">
+                    <div class="options-subsection-head options-subsection-head--purple">
                         <p class="options-subsection-title">Purple feature buttons</p>
                         <button type="button" class="options-section-reset options-subsection-reset" id="opt-purple-buttons-reset" title="Reset purple feature buttons" aria-label="Reset purple feature buttons">↺</button>
                     </div>
@@ -423,12 +465,16 @@
                         <input type="range" class="options-range" id="opt-digital-btn-purple-border-opacity" min="0" max="100" step="1" aria-label="Purple feature button border opacity">
                         <span class="options-readout" id="opt-digital-btn-purple-border-opacity-readout">100%</span>
                     </div>
+                    <div class="options-row options-row--stack">
+                        <label class="options-label" for="opt-digital-btn-purple-font">Font</label>
+                        <select class="options-select options-select--full" id="opt-digital-btn-purple-font" aria-label="Purple feature button font"></select>
+                    </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-btn-purple-font-scale">Text size</label>
                         <input type="range" class="options-range" id="opt-digital-btn-purple-font-scale" min="65" max="160" step="5" aria-label="Purple feature button text size">
                         <span class="options-readout" id="opt-digital-btn-purple-font-scale-readout">100%</span>
                     </div>
-                    <div class="options-subsection-head">
+                    <div class="options-subsection-head options-subsection-head--lime">
                         <p class="options-subsection-title">Date &amp; time</p>
                         <button type="button" class="options-section-reset options-subsection-reset" id="opt-clock-reset" title="Reset date and time" aria-label="Reset date and time">↺</button>
                     </div>
@@ -442,16 +488,9 @@
                             <option value="date-short">Short date + time</option>
                         </select>
                     </div>
-                    <div class="options-row">
+                    <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-digital-clock-font">Font</label>
-                        <select class="options-select" id="opt-digital-clock-font" aria-label="Date and time font">
-                            <option value="'Orbitron', 'Share Tech Mono', ui-monospace, monospace">Orbitron</option>
-                            <option value="'Share Tech Mono', ui-monospace, monospace">Share Tech Mono</option>
-                            <option value="'Audiowide', cursive">Audiowide</option>
-                            <option value="'Rajdhani', sans-serif">Rajdhani</option>
-                            <option value="'Quicksand', sans-serif">Quicksand</option>
-                            <option value="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">System Mono</option>
-                        </select>
+                        <select class="options-select options-select--full" id="opt-digital-clock-font" aria-label="Date and time font"></select>
                     </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-clock-color">Colour</label>
@@ -463,13 +502,13 @@
                         <span class="options-readout" id="opt-digital-clock-font-scale-readout">100%</span>
                     </div>
                 </section>
-                <section class="options-section" aria-label="Spectrum">
+                <section class="options-section options-section--tone-magenta" aria-label="Spectrum">
                     <div class="options-section-head">
                         <h4 class="options-section-title">Spectrum</h4>
                         <button type="button" class="options-section-reset" id="opt-spectrum-reset" title="Reset Spectrum" aria-label="Reset Spectrum">↺</button>
                     </div>
                     <p class="options-hint options-hint--inline">Spectrum mode size scales only the side flowers in Spectrum hub (they may overlap the centre). Equaliser size scales only the side flowers in Equaliser and other hub modes — the centre equaliser is not resized.</p>
-                    <div class="options-subsection-head">
+                    <div class="options-subsection-head options-subsection-head--magenta">
                         <p class="options-subsection-title">Spectrum mode</p>
                         <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-mode-reset" title="Reset spectrum mode" aria-label="Reset spectrum mode">↺</button>
                     </div>
@@ -497,7 +536,7 @@
                         <input type="range" class="options-range" id="opt-spectrum-color-flow" min="25" max="300" step="5" aria-label="Spectrum colour flow speed">
                         <span class="options-readout" id="opt-spectrum-color-flow-readout">100%</span>
                     </div>
-                    <div class="options-subsection-head">
+                    <div class="options-subsection-head options-subsection-head--violet">
                         <p class="options-subsection-title">Equaliser side spectrums</p>
                         <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-eq-reset" title="Reset equaliser side spectrums" aria-label="Reset equaliser side spectrums">↺</button>
                     </div>
@@ -525,7 +564,7 @@
                         <input type="range" class="options-range" id="opt-spectrum-eq-color-flow" min="25" max="300" step="5" aria-label="Equaliser spectrum colour flow speed">
                         <span class="options-readout" id="opt-spectrum-eq-color-flow-readout">100%</span>
                     </div>
-                    <div class="options-subsection-head">
+                    <div class="options-subsection-head options-subsection-head--pink">
                         <p class="options-subsection-title">Left spectrum ribbon rotation</p>
                         <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-rotate-l-reset" title="Reset left ribbon rotation" aria-label="Reset left ribbon rotation">↺</button>
                     </div>
@@ -544,7 +583,7 @@
                         <input type="range" class="options-range" id="opt-spectrum-rotate-l-lo" min="0" max="360" step="1" value="0" aria-label="Left spectrum low ribbon rotation">
                         <span class="options-readout" id="opt-spectrum-rotate-l-lo-readout">0°</span>
                     </div>
-                    <div class="options-subsection-head">
+                    <div class="options-subsection-head options-subsection-head--orchid">
                         <p class="options-subsection-title">Right spectrum ribbon rotation</p>
                         <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-rotate-r-reset" title="Reset right ribbon rotation" aria-label="Reset right ribbon rotation">↺</button>
                     </div>
@@ -564,7 +603,7 @@
                         <span class="options-readout" id="opt-spectrum-rotate-r-lo-readout">0°</span>
                     </div>
                 </section>
-                <section class="options-section" aria-label="Auto-Mix">
+                <section class="options-section options-section--tone-orange" aria-label="Auto-Mix">
                     <div class="options-section-head">
                         <h4 class="options-section-title">Auto-Mix</h4>
                         <button type="button" class="options-section-reset" id="opt-automix-reset" title="Reset Auto-Mix" aria-label="Reset Auto-Mix">↺</button>
@@ -579,7 +618,7 @@
                         <span class="options-readout" id="opt-automix-max-readout">20m</span>
                     </div>
                 </section>
-                <section class="options-section" aria-label="Auto-Fade">
+                <section class="options-section options-section--tone-cyan" aria-label="Auto-Fade">
                     <div class="options-section-head">
                         <h4 class="options-section-title">Auto-Fade</h4>
                         <button type="button" class="options-section-reset" id="opt-autofade-reset" title="Reset Auto-Fade" aria-label="Reset Auto-Fade">↺</button>
@@ -594,7 +633,62 @@
                         <span>Change station on Auto-Fade</span>
                     </label>
                 </section>
-                <section class="options-section" aria-label="System">
+                <section class="options-section options-section--tone-violet" aria-label="Avatar">
+                    <div class="options-section-head">
+                        <h4 class="options-section-title">Avatar</h4>
+                        <button type="button" class="options-section-reset" id="opt-avatar-reset" title="Reset Avatar" aria-label="Reset Avatar">↺</button>
+                    </div>
+                    <p class="options-hint options-hint--inline">Mirrors the 💃 Avatar panel — changes apply to the overlay and stay in sync with that panel.</p>
+                    <div class="options-row options-row--stack">
+                        <label class="options-label" for="opt-avatar-webm-select">Clip</label>
+                        <select class="options-select options-select--full" id="opt-avatar-webm-select" aria-label="Avatar WebM clip"></select>
+                    </div>
+                    <label class="options-check">
+                        <input type="checkbox" id="opt-avatar-auto">
+                        <span>Auto random clips (30–60s)</span>
+                    </label>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-avatar-scale">Size</label>
+                        <input type="range" class="options-range" id="opt-avatar-scale" min="10" max="200" step="1" value="42" aria-label="Avatar size in viewport width">
+                        <span class="options-readout" id="opt-avatar-scale-readout">42vw</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-avatar-x">X position</label>
+                        <input type="range" class="options-range" id="opt-avatar-x" min="0" max="100" step="1" value="50" aria-label="Avatar horizontal position">
+                        <span class="options-readout" id="opt-avatar-x-readout">50%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-avatar-y">Y position</label>
+                        <input type="range" class="options-range" id="opt-avatar-y" min="0" max="100" step="1" value="50" aria-label="Avatar vertical position">
+                        <span class="options-readout" id="opt-avatar-y-readout">50%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-avatar-rot">Rotation</label>
+                        <input type="range" class="options-range" id="opt-avatar-rot" min="-180" max="180" step="1" value="0" aria-label="Avatar rotation">
+                        <span class="options-readout" id="opt-avatar-rot-readout">0°</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-avatar-speed">Speed</label>
+                        <input type="range" class="options-range" id="opt-avatar-speed" min="0.1" max="4" step="0.1" value="1.0" aria-label="Avatar playback speed">
+                        <span class="options-readout" id="opt-avatar-speed-readout">1.0×</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-avatar-opacity">Opacity</label>
+                        <input type="range" class="options-range" id="opt-avatar-opacity" min="0" max="100" step="1" value="82" aria-label="Avatar opacity">
+                        <span class="options-readout" id="opt-avatar-opacity-readout">82%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-avatar-duplicates">Duplicates</label>
+                        <input type="range" class="options-range" id="opt-avatar-duplicates" min="0" max="2" step="1" value="0" aria-label="Avatar duplicate count">
+                        <span class="options-readout" id="opt-avatar-duplicates-readout">0</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-avatar-dup-spacing">Duplicate spread</label>
+                        <input type="range" class="options-range" id="opt-avatar-dup-spacing" min="15" max="100" step="1" value="60" aria-label="Avatar duplicate spacing">
+                        <span class="options-readout" id="opt-avatar-dup-spacing-readout">60%</span>
+                    </div>
+                </section>
+                <section class="options-section options-section--tone-silver" aria-label="System">
                     <div class="options-section-head">
                         <h4 class="options-section-title">System</h4>
                         <button type="button" class="options-section-reset" id="opt-system-reset" title="Reset System" aria-label="Reset System">↺</button>
@@ -605,7 +699,7 @@
                         <button type="button" class="options-btn options-btn--compact" id="opt-import-settings">Import</button>
                         <input type="file" class="options-file-input" id="opt-import-settings-file" accept="application/json,.json" aria-label="Import options settings file">
                     </div>
-                    <p class="options-hint options-hint--inline">Export saves appearance, spectrum, auto-mix, auto-fade, and background GIF selection as JSON. Uploaded panel and screen images are not included.</p>
+                    <p class="options-hint options-hint--inline">Export saves appearance, spectrum, avatar, auto-mix, auto-fade, and background GIF selection as JSON. Uploaded panel and screen images are not included.</p>
                     <p class="options-hint">Hold the HUD title or press <strong>G</strong> to reopen Options. Panel closes after 30 seconds of inactivity (mouse movement resets the timer).</p>
                 </section>
             </div>
@@ -633,46 +727,7 @@
             </div>
             <div class="textin-row textin-row--font">
                 <div class="textin-label">Font</div>
-                <select id="ti-font" class="textin-select">
-                    <option value="'Segoe UI', sans-serif">Segoe UI</option>
-                    <option value="Arial, Helvetica, sans-serif">Arial</option>
-                    <option value="'Courier New', Courier, monospace">Courier New</option>
-                    <option value="'Times New Roman', Times, serif">Times New Roman</option>
-                    <option value="Georgia, 'Times New Roman', serif">Georgia</option>
-                    <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
-                    <option value="Roboto, sans-serif">Roboto</option>
-                    <option value="Oswald, sans-serif">Oswald</option>
-                    <option value="Montserrat, sans-serif">Montserrat</option>
-                    <option value="Raleway, sans-serif">Raleway</option>
-                    <option value="Poppins, sans-serif">Poppins</option>
-                    <option value="Orbitron, sans-serif">Orbitron</option>
-                    <option value="Audiowide, cursive">Audiowide</option>
-                    <option value="'Share Tech Mono', monospace">Share Tech Mono</option>
-                    <option value="VT323, monospace">VT323</option>
-                    <option value="Electrolize, sans-serif">Electrolize</option>
-                    <option value="Oxanium, cursive">Oxanium</option>
-                    <option value="Quantico, sans-serif">Quantico</option>
-                    <option value="Syncopate, sans-serif">Syncopate</option>
-                    <option value="'Exo 2', sans-serif">Exo 2</option>
-                    <option value="'Chakra Petch', sans-serif">Chakra Petch</option>
-                    <option value="Teko, sans-serif">Teko</option>
-                    <option value="Sarpanch, sans-serif">Sarpanch</option>
-                    <option value="'Major Mono Display', monospace">Major Mono Display</option>
-                    <option value="Monoton, cursive">Monoton</option>
-                    <option value="Quicksilver, cursive">Quicksilver</option>
-                    <option value="'Playfair Display', serif">Playfair Display</option>
-                    <option value="Lobster, cursive" selected>Lobster</option>
-                    <option value="'Open Sans', sans-serif">Open Sans</option>
-                    <option value="Nunito, sans-serif">Nunito</option>
-                    <option value="Merriweather, serif">Merriweather</option>
-                    <option value="Rubik, sans-serif">Rubik</option>
-                    <option value="Inter, sans-serif">Inter</option>
-                    <option value="'Fira Sans', sans-serif">Fira Sans</option>
-                    <option value="'Fira Mono', monospace">Fira Mono</option>
-                    <option value="Inconsolata, monospace">Inconsolata</option>
-                    <option value="'Source Code Pro', monospace">Source Code Pro</option>
-                    <option value="'Press Start 2P', cursive">Press Start 2P</option>
-                </select>
+                <select id="ti-font" class="textin-select"></select>
                 <label class="textin-check-label"><input type="checkbox" id="ti-font-rand" title="Random Font" checked></label>
                 <div class="textin-font-color-group">
                     <input type="color" id="ti-color" class="textin-color" value="#ffffff">
@@ -1088,6 +1143,7 @@
     </div>
 
     <script src="js/disable-hover-tooltips.js"></script>
+    <script src="js/site-fonts.js"></script>
     <script type="module" src="js/app.js"></script>
     <div id="border-frame"></div>
 </body>

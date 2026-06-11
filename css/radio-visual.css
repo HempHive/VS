@@ -76,6 +76,8 @@
             --rv-digital-panel-opacity: var(--global-rv-digital-panel-opacity, 1);
             --rv-digital-accent-color: var(--global-rv-digital-accent-color, #ffd246);
             --rv-digital-ui-font: var(--global-rv-digital-ui-font, 'Orbitron', 'Share Tech Mono', ui-monospace, monospace);
+            --rv-digital-btn-blue-font: var(--global-rv-digital-btn-blue-font, var(--rv-digital-ui-font));
+            --rv-digital-btn-purple-font: var(--global-rv-digital-btn-purple-font, var(--rv-digital-ui-font));
             --rv-digital-btn-blue-top: var(--global-rv-digital-btn-blue-top, #123048);
             --rv-digital-btn-blue-base: var(--global-rv-digital-btn-blue-base, #081820);
             --rv-digital-btn-blue-accent: var(--global-rv-digital-btn-blue-accent, #00dcff);
@@ -551,19 +553,43 @@
         }
         #radio-visual-root .radio-visual-digital-center {
             position: relative;
-            width: 100%;
+            width: calc(100% * var(--rv-digital-staging-scale, 1));
+            margin-left: auto;
+            margin-right: auto;
             aspect-ratio: 960 / 320;
             min-height: 0;
             height: auto;
-            margin: clamp(2px, 0.31cqw, 4px) 0 clamp(4px, 0.52cqw, 6px);
+            margin-top: clamp(2px, 0.31cqw, 4px);
+            margin-bottom: clamp(4px, 0.52cqw, 6px);
             border-radius: clamp(8px, 1.25cqw, 12px);
             overflow: hidden;
-            border: clamp(1px, 0.21cqw, 2px) solid rgba(0, 220, 255, 0.35);
+            border: clamp(1px, 0.21cqw, 2px) solid color-mix(
+                in srgb,
+                var(--rv-digital-staging-border-color, #00dcff) calc(var(--rv-digital-staging-border-opacity, 0.35) * 100%),
+                transparent
+            );
             background: transparent;
             box-shadow:
-                0 0 clamp(20px, 4.17cqw, 40px) rgba(0, 180, 255, 0.12),
-                inset 0 0 clamp(30px, 6.25cqw, 60px) rgba(0, 120, 200, 0.06);
+                0 0 clamp(20px, 4.17cqw, 40px) color-mix(
+                    in srgb,
+                    var(--rv-digital-staging-glow-color, #00b4ff) calc(var(--rv-digital-staging-glow-opacity, 0.12) * 100%),
+                    transparent
+                ),
+                inset 0 0 clamp(30px, 6.25cqw, 60px) color-mix(
+                    in srgb,
+                    var(--rv-digital-staging-glow-color, #00b4ff) calc(var(--rv-digital-staging-glow-inset-opacity, 0.06) * 100%),
+                    transparent
+                );
             cursor: pointer;
+        }
+        #radio-visual-root[data-rv-show-staging="0"] .radio-visual-digital-center {
+            display: none !important;
+        }
+        #radio-visual-root[data-rv-show-blue-toolbar="0"] .radio-visual-digital-toolbar {
+            display: none !important;
+        }
+        #radio-visual-root[data-rv-show-purple-buttons="0"] .radio-visual-btn-grid.radio-visual-digital-feature-btns {
+            display: none !important;
         }
         #radio-visual-root .radio-visual-digital-center::before {
             content: '';
@@ -640,6 +666,8 @@
             --rv-digital-panel-opacity: var(--global-rv-digital-panel-opacity, 1);
             --rv-digital-accent-color: var(--global-rv-digital-accent-color, #ffd246);
             --rv-digital-ui-font: var(--global-rv-digital-ui-font, 'Orbitron', 'Share Tech Mono', ui-monospace, monospace);
+            --rv-digital-btn-blue-font: var(--global-rv-digital-btn-blue-font, var(--rv-digital-ui-font));
+            --rv-digital-btn-purple-font: var(--global-rv-digital-btn-purple-font, var(--rv-digital-ui-font));
             --rv-digital-btn-blue-top: var(--global-rv-digital-btn-blue-top, #123048);
             --rv-digital-btn-blue-base: var(--global-rv-digital-btn-blue-base, #081820);
             --rv-digital-btn-blue-accent: var(--global-rv-digital-btn-blue-accent, #00dcff);
@@ -2105,6 +2133,7 @@
             display: block;
             width: 100%;
             max-height: 100%;
+            font-family: var(--rv-digital-btn-purple-font, var(--rv-digital-ui-font));
             opacity: var(--rv-digital-btn-purple-text-opacity, 1);
             color: var(--rv-digital-btn-purple-label);
             font-weight: 800;
@@ -2313,7 +2342,7 @@
             min-width: 0;
         }
         #radio-visual-root .radio-visual-digital-toolbar-text-btn .radio-visual-btn-label {
-            font-family: var(--rv-digital-ui-font);
+            font-family: var(--rv-digital-btn-blue-font, var(--rv-digital-ui-font));
             display: block;
             width: 100%;
             opacity: var(--rv-digital-btn-blue-text-opacity, 1);

@@ -187,9 +187,10 @@
                 };
             }
             static get DIGITAL_AI_VIDEO_DIR() { return 'assets/ai/'; }
+            static get DIGITAL_AI_VIDEO_MANIFEST() { return 'assets/ai/manifest.json'; }
             /** Hub AI / LIVE overlay clips (random pick, then next random on end). */
             static get DIGITAL_AI_VIDEO_LIST() {
-                return ['ai.mp4', 'ai1.mp4', 'ai2.mp4', 'ai3.mp4', 'ai4.mp4', 'ai5.mp4'];
+                return ['ai.mp4', 'ai1.mp4', 'ai2.mp4', 'ai3.mp4', 'ai4.mp4', 'ai5.mp4', 'ai6.mp4'];
             }
             /** Toolbar centre strip: clock → volume → crossfade → auto-mix countdown. */
             static get DIGITAL_TOOLBAR_CENTER_CYCLE() {
@@ -281,6 +282,8 @@
                 this._digitalHubAiAdvancing = false;
                 this._digitalHubAiVideoLoadGen = 0;
                 this._digitalHubAiEndGuard = false;
+                this._digitalAiVideoFilesList = null;
+                this._digitalAiVideoManifestPromise = null;
                 /** Derived from hub mode for spectrum flower / HUD layout. */
                 this._digitalSpectrumLayout = 'full';
                 /** Spectrum hub staging scale (1 = default flower size). */
@@ -5083,9 +5086,57 @@
                 this._syncDigitalHubAiVideoAlias();
             }
 
+            _digitalAiVideoFilesFromStatic() {
+                return RadioVisualEngine.DIGITAL_AI_VIDEO_LIST.slice();
+            }
+
+            _sortDigitalAiVideoNames(names) {
+                const list = (names || [])
+                    .map((f) => String(f || '').trim())
+                    .filter((f) => /\.mp4$/i.test(f));
+                const primary = list.filter((f) => f.toLowerCase() === 'ai.mp4');
+                const rest = list
+                    .filter((f) => f.toLowerCase() !== 'ai.mp4')
+                    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+                return [...primary, ...rest];
+            }
+
+            _digitalAiVideoFiles() {
+                if (this._digitalAiVideoFilesList && this._digitalAiVideoFilesList.length) {
+                    return this._digitalAiVideoFilesList;
+                }
+                return this._digitalAiVideoFilesFromStatic();
+            }
+
+            _refreshDigitalAiVideoList() {
+                if (this._digitalAiVideoManifestPromise) return this._digitalAiVideoManifestPromise;
+                this._digitalAiVideoManifestPromise = (async () => {
+                    try {
+                        const url = `${RadioVisualEngine.DIGITAL_AI_VIDEO_MANIFEST}?t=${Date.now()}`;
+                        const res = await fetch(url, { cache: 'no-store' });
+                        if (res.ok) {
+                            const data = await res.json();
+                            const raw = Array.isArray(data)
+                                ? data
+                                : (data && (data.videos || data.files)) || [];
+                            const sorted = this._sortDigitalAiVideoNames(raw);
+                            if (sorted.length) {
+                                this._digitalAiVideoFilesList = sorted;
+                                return sorted;
+                            }
+                        }
+                    } catch (_) {}
+                    this._digitalAiVideoFilesList = this._digitalAiVideoFilesFromStatic();
+                    return this._digitalAiVideoFilesList;
+                })().finally(() => {
+                    this._digitalAiVideoManifestPromise = null;
+                });
+                return this._digitalAiVideoManifestPromise;
+            }
+
             _digitalHubAiVideoPool() {
                 const dir = RadioVisualEngine.DIGITAL_AI_VIDEO_DIR;
-                return RadioVisualEngine.DIGITAL_AI_VIDEO_LIST.map((file) => dir + file);
+                return this._digitalAiVideoFiles().map((file) => dir + file);
             }
 
             _pickRandomDigitalHubAiVideoSrc(excludeSrc) {
@@ -7952,6 +8003,7 @@
                     try { this.applySpectrumSettings(RadioVisualEngine.loadSpectrumSettingsFromStorage(), { skipSave: true }); } catch (_) {}
                     try { this._finalizeDigitalRadioInit(); } catch (_) {}
                     try { this._initDigitalSpectrumBg(); } catch (_) {}
+                    try { this._refreshDigitalAiVideoList(); } catch (_) {}
                     try {
                         if (localStorage.getItem(RadioVisualEngine.AUTOMIX_ENABLED_KEY) === '1') {
                             state.autoMixEnabled = true;
