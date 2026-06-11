@@ -448,6 +448,7 @@ const QUALITY = {
         let tapTimesA = [], tapTimesB = [];
         let phaseOffsetBms = 0; // apply to B grid ticks
         // --- OPTIONS PANEL HELPERS ---
+        const OPTIONS_EXPORT_VERSION = 1;
         const DIGITAL_THEME_STORAGE_KEY = 'radioVisual.digitalTheme.v1';
         const DIGITAL_BG_OUTER_IMAGE_KEY = 'radioVisual.digitalBgOuterImage.v1';
         const DIGITAL_BG_PANEL_IMAGE_KEY = 'radioVisual.digitalBgPanelImage.v1';
@@ -620,6 +621,9 @@ const QUALITY = {
         const optAutomixReset = document.getElementById('opt-automix-reset');
         const optAutofadeReset = document.getElementById('opt-autofade-reset');
         const optSystemReset = document.getElementById('opt-system-reset');
+        const optExportSettings = document.getElementById('opt-export-settings');
+        const optImportSettings = document.getElementById('opt-import-settings');
+        const optImportSettingsFile = document.getElementById('opt-import-settings-file');
         const optAutomixEnabled = document.getElementById('opt-automix-enabled');
         const optAutomixMax = document.getElementById('opt-automix-max');
         const optAutomixMaxReadout = document.getElementById('opt-automix-max-readout');
@@ -1903,6 +1907,108 @@ const QUALITY = {
                 applyUiLockState();
             }
         }
+        function collectOptionsExportPayload() {
+            let gifEnabled = false;
+            let gifFilename = '';
+            try {
+                gifEnabled = localStorage.getItem(DIGITAL_BG_GIF_ENABLED_KEY) !== '0';
+                gifFilename = localStorage.getItem(DIGITAL_BG_GIF_STORAGE_KEY) || '';
+            } catch (_) {}
+            if (!gifEnabled) gifFilename = '';
+            let changeStation = true;
+            try {
+                const raw = localStorage.getItem(AUTOFADE_CHANGE_STATION_STORAGE_KEY);
+                if (raw != null) changeStation = raw === '1';
+            } catch (_) {}
+            return {
+                version: OPTIONS_EXPORT_VERSION,
+                exportedAt: new Date().toISOString(),
+                digitalTheme: collectDigitalThemeFromControls(),
+                spectrum: collectSpectrumSettingsFromControls(),
+                automix: {
+                    enabled: !!(optAutomixEnabled && optAutomixEnabled.checked),
+                    maxMinutes: readAutoMixMaxMinFromStorage()
+                },
+                autofade: {
+                    durationMs: readAutoFadeDurationMsFromStorage(),
+                    changeStation
+                },
+                backgroundGif: {
+                    enabled: !!(gifEnabled && gifFilename),
+                    filename: gifEnabled ? gifFilename : ''
+                }
+            };
+        }
+        function exportOptionsSettings() {
+            const payload = collectOptionsExportPayload();
+            const json = JSON.stringify(payload, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const stamp = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `radio-options-${stamp}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+        function isValidOptionsImportPayload(payload) {
+            if (!payload || typeof payload !== 'object') return false;
+            return !!(payload.digitalTheme || payload.spectrum || payload.automix || payload.autofade || payload.backgroundGif);
+        }
+        async function applyImportedOptionsPayload(payload) {
+            if (!isValidOptionsImportPayload(payload)) {
+                throw new Error('Unrecognised options file');
+            }
+            if (payload.digitalTheme && typeof payload.digitalTheme === 'object') {
+                const theme = normalizeDigitalTheme(payload.digitalTheme);
+                theme.presetId = detectDigitalThemePresetId(theme);
+                saveDigitalThemeToStorage(theme);
+                applyDigitalThemeToControls(theme);
+                applyDigitalRadioTheme(theme);
+            }
+            if (payload.spectrum && typeof payload.spectrum === 'object') {
+                const RVE = getSpectrumEngineClass();
+                const spectrum = (RVE && typeof RVE.clampSpectrumSettings === 'function')
+                    ? RVE.clampSpectrumSettings(payload.spectrum)
+                    : payload.spectrum;
+                applySpectrumSettingsToControls(spectrum);
+                applyDigitalSpectrumSettings(spectrum);
+            }
+            if (payload.automix && typeof payload.automix === 'object') {
+                const maxMin = writeAutoMixMaxMinToStorage(payload.automix.maxMinutes);
+                if (optAutomixMax) optAutomixMax.value = String(maxMin);
+                if (optAutomixMaxReadout) optAutomixMaxReadout.textContent = `${maxMin}m`;
+                setAutomixEnabledFromOptions(!!payload.automix.enabled);
+            }
+            if (payload.autofade && typeof payload.autofade === 'object') {
+                const ms = writeAutoFadeDurationMsToStorage(payload.autofade.durationMs);
+                if (optAutofadeDuration) optAutofadeDuration.value = String(ms / 1000);
+                if (optAutofadeDurationReadout) optAutofadeDurationReadout.textContent = `${(ms / 1000).toFixed(1)}s`;
+                setAutofadeChangeStationFromOptions(payload.autofade.changeStation !== false);
+            }
+            if (payload.backgroundGif && typeof payload.backgroundGif === 'object') {
+                try { await populateDigitalBgGifSelect(); } catch (_) {}
+                const filename = payload.backgroundGif.enabled
+                    ? String(payload.backgroundGif.filename || '').trim()
+                    : '';
+                applyDigitalBgGifFromOptions(filename);
+                if (optDigitalBgGif) optDigitalBgGif.value = filename;
+            }
+            syncRadioVisualMixPanelsFromOptions();
+        }
+        async function importOptionsSettingsFromFile(file) {
+            if (!file) return;
+            const text = await file.text();
+            let parsed;
+            try {
+                parsed = JSON.parse(text);
+            } catch (_) {
+                throw new Error('File is not valid JSON');
+            }
+            await applyImportedOptionsPayload(parsed);
+        }
         function wireOptionsPanelControls() {
             populateDigitalThemePresetSelect();
             const onThemeChange = () => {
@@ -2052,6 +2158,32 @@ const QUALITY = {
                     e.preventDefault();
                     resetSystemOptionsSection();
                     if (isOptionsOpen()) armOptionsAutoClose();
+                });
+            }
+            if (optExportSettings) {
+                optExportSettings.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    try { exportOptionsSettings(); } catch (_) {}
+                    if (isOptionsOpen()) armOptionsAutoClose();
+                });
+            }
+            if (optImportSettings && optImportSettingsFile) {
+                optImportSettings.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    optImportSettingsFile.value = '';
+                    optImportSettingsFile.click();
+                });
+                optImportSettingsFile.addEventListener('change', async () => {
+                    const file = optImportSettingsFile.files && optImportSettingsFile.files[0];
+                    if (!file) return;
+                    try {
+                        await importOptionsSettingsFromFile(file);
+                    } catch (err) {
+                        alert(err && err.message ? err.message : 'Could not import options file');
+                    } finally {
+                        optImportSettingsFile.value = '';
+                        if (isOptionsOpen()) armOptionsAutoClose();
+                    }
                 });
             }
             if (optAutomixMax) {

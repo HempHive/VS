@@ -600,6 +600,12 @@
                         <button type="button" class="options-section-reset" id="opt-system-reset" title="Reset System" aria-label="Reset System">↺</button>
                     </div>
                     <button type="button" id="ui-lock-toggle" class="options-btn options-lock-btn" title="Lock UI" aria-pressed="false">🔒 Lock UI</button>
+                    <div class="options-upload-row options-import-export-row">
+                        <button type="button" class="options-btn options-btn--compact" id="opt-export-settings">Export</button>
+                        <button type="button" class="options-btn options-btn--compact" id="opt-import-settings">Import</button>
+                        <input type="file" class="options-file-input" id="opt-import-settings-file" accept="application/json,.json" aria-label="Import options settings file">
+                    </div>
+                    <p class="options-hint options-hint--inline">Export saves appearance, spectrum, auto-mix, auto-fade, and background GIF selection as JSON. Uploaded panel and screen images are not included.</p>
                     <p class="options-hint">Hold the HUD title or press <strong>G</strong> to reopen Options. Panel closes after 30 seconds of inactivity (mouse movement resets the timer).</p>
                 </section>
             </div>

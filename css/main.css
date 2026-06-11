@@ -1487,6 +1487,13 @@
             align-items: center;
             gap: 6px;
         }
+        .options-import-export-row {
+            margin-top: 8px;
+        }
+        .options-import-export-row .options-btn--compact {
+            flex: 1 1 0;
+            min-width: 7rem;
+        }
         .options-file-input {
             position: absolute;
             width: 1px;
