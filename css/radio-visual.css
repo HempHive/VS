@@ -594,8 +594,7 @@
             border-radius: inherit;
             opacity: var(--rv-digital-bg-panel-image-opacity, 1);
         }
-        #radio-visual-root .radio-visual-digital-center > *:not(.radio-visual-digital-panel-image) {
-            position: relative;
+        #radio-visual-root .radio-visual-digital-center > .radio-visual-digital-center-pane {
             z-index: 1;
         }
         #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-center-pane[data-hub-mode="spectrum"].is-active) {
@@ -608,6 +607,7 @@
             align-items: stretch;
             justify-content: stretch;
             overflow: hidden;
+            z-index: 1;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"] {
             overflow: visible;
@@ -1042,9 +1042,6 @@
             color: #8ef;
             min-width: 2.5em;
             text-align: right;
-        }
-        #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-center-pane[data-hub-mode="spectrum"].is-active) {
-            overflow: hidden;
         }
         #radio-visual-root .radio-visual-digital-spectrum-row {
             position: absolute;
