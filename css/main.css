@@ -1416,6 +1416,21 @@
             overflow: auto;
             padding: 12px 14px 16px;
             color: #eef4ff;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 0, 0, 0.58) transparent;
+        }
+        #options-body::-webkit-scrollbar {
+            width: 10px;
+        }
+        #options-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #options-body::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.58);
+            border-radius: 8px;
+        }
+        #options-body::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.72);
         }
         .options-section + .options-section {
             margin-top: 14px;
