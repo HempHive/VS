@@ -4735,10 +4735,6 @@ function randomGlowColor() {
 				radioQuickBtn.style.opacity = '1';
 				radioQuickBtn.style.pointerEvents = 'auto';
 			}
-            if (btnOptions && state.isPlaying) {
-                btnOptions.style.opacity = '1';
-                btnOptions.style.pointerEvents = 'auto';
-            }
             // Show volume slider on interaction
             const vs = document.getElementById('volume-slider-container');
             if (vs && state.isPlaying) { vs.style.opacity = '1'; vs.style.pointerEvents = 'auto'; }
@@ -4784,10 +4780,6 @@ function randomGlowColor() {
                     }
                     // Hide top bar on idle
                     if (topBar) { topBar.style.opacity = '0'; topBar.style.pointerEvents = 'none'; }
-                    if (btnOptions) {
-                        btnOptions.style.opacity = '0';
-                        btnOptions.style.pointerEvents = 'none';
-                    }
                     // Hide webm nav
                     webmPrevBtn.style.opacity = '0';
                     webmNextBtn.style.opacity = '0';
