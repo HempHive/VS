@@ -449,6 +449,7 @@ const QUALITY = {
         let phaseOffsetBms = 0; // apply to B grid ticks
         // --- OPTIONS PANEL HELPERS ---
         const DIGITAL_THEME_STORAGE_KEY = 'radioVisual.digitalTheme.v1';
+        const DIGITAL_BG_OUTER_IMAGE_KEY = 'radioVisual.digitalBgOuterImage.v1';
         const OPTIONS_AUTO_CLOSE_MS = 30000;
         const DIGITAL_BG_GIF_MANIFEST_URL = 'assets/gifs/digital/manifest.json';
         const DIGITAL_BG_GIF_STORAGE_KEY = 'radioVisual.digitalBgGif.v1';
@@ -462,17 +463,23 @@ const QUALITY = {
             bgOuterB: '#061018',
             bgOuterC: '#0c1020',
             bgGradientAngle: 165,
+            bgOuterGradientAngle: 165,
+            bgOuterImageOpacity: 1,
             accent: '#ffd246',
             font: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
             btnBlueTop: '#123048',
             btnBlueBase: '#081820',
             btnBlueAccent: '#00dcff',
             btnBlueOpacity: 1,
+            btnBlueTextOpacity: 1,
+            btnBlueBorderOpacity: 1,
             btnPurpleTop: '#5a3488',
             btnPurpleBase: '#1a0c30',
             btnPurpleLabel: '#5cff9e',
             btnPurpleActive: '#ff5ce8',
             btnPurpleOpacity: 1,
+            btnPurpleTextOpacity: 1,
+            btnPurpleBorderOpacity: 1,
             btnBlueFontScale: 1,
             btnPurpleFontScale: 1,
             clockFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
@@ -557,6 +564,14 @@ const QUALITY = {
         const optDigitalBgOuterC = document.getElementById('opt-digital-bg-outer-c');
         const optDigitalBgGradientAngle = document.getElementById('opt-digital-bg-gradient-angle');
         const optDigitalBgGradientAngleReadout = document.getElementById('opt-digital-bg-gradient-angle-readout');
+        const optDigitalBgOuterGradientAngle = document.getElementById('opt-digital-bg-outer-gradient-angle');
+        const optDigitalBgOuterGradientAngleReadout = document.getElementById('opt-digital-bg-outer-gradient-angle-readout');
+        const optDigitalBgOuterImageFile = document.getElementById('opt-digital-bg-outer-image-file');
+        const optDigitalBgOuterImageUpload = document.getElementById('opt-digital-bg-outer-image-upload');
+        const optDigitalBgOuterImageClear = document.getElementById('opt-digital-bg-outer-image-clear');
+        const optDigitalBgOuterImageStatus = document.getElementById('opt-digital-bg-outer-image-status');
+        const optDigitalBgOuterImageOpacity = document.getElementById('opt-digital-bg-outer-image-opacity');
+        const optDigitalBgOuterImageOpacityReadout = document.getElementById('opt-digital-bg-outer-image-opacity-readout');
         const optDigitalBgGif = document.getElementById('opt-digital-bg-gif');
         const optDigitalAccent = document.getElementById('opt-digital-accent');
         const optDigitalFont = document.getElementById('opt-digital-font');
@@ -565,12 +580,20 @@ const QUALITY = {
         const optDigitalBtnBlueAccent = document.getElementById('opt-digital-btn-blue-accent');
         const optDigitalBtnBlueOpacity = document.getElementById('opt-digital-btn-blue-opacity');
         const optDigitalBtnBlueOpacityReadout = document.getElementById('opt-digital-btn-blue-opacity-readout');
+        const optDigitalBtnBlueTextOpacity = document.getElementById('opt-digital-btn-blue-text-opacity');
+        const optDigitalBtnBlueTextOpacityReadout = document.getElementById('opt-digital-btn-blue-text-opacity-readout');
+        const optDigitalBtnBlueBorderOpacity = document.getElementById('opt-digital-btn-blue-border-opacity');
+        const optDigitalBtnBlueBorderOpacityReadout = document.getElementById('opt-digital-btn-blue-border-opacity-readout');
         const optDigitalBtnPurpleTop = document.getElementById('opt-digital-btn-purple-top');
         const optDigitalBtnPurpleBase = document.getElementById('opt-digital-btn-purple-base');
         const optDigitalBtnPurpleLabel = document.getElementById('opt-digital-btn-purple-label');
         const optDigitalBtnPurpleActive = document.getElementById('opt-digital-btn-purple-active');
         const optDigitalBtnPurpleOpacity = document.getElementById('opt-digital-btn-purple-opacity');
         const optDigitalBtnPurpleOpacityReadout = document.getElementById('opt-digital-btn-purple-opacity-readout');
+        const optDigitalBtnPurpleTextOpacity = document.getElementById('opt-digital-btn-purple-text-opacity');
+        const optDigitalBtnPurpleTextOpacityReadout = document.getElementById('opt-digital-btn-purple-text-opacity-readout');
+        const optDigitalBtnPurpleBorderOpacity = document.getElementById('opt-digital-btn-purple-border-opacity');
+        const optDigitalBtnPurpleBorderOpacityReadout = document.getElementById('opt-digital-btn-purple-border-opacity-readout');
         const optDigitalBtnBlueFontScale = document.getElementById('opt-digital-btn-blue-font-scale');
         const optDigitalBtnBlueFontScaleReadout = document.getElementById('opt-digital-btn-blue-font-scale-readout');
         const optDigitalBtnPurpleFontScale = document.getElementById('opt-digital-btn-purple-font-scale');
@@ -767,15 +790,88 @@ const QUALITY = {
                 }
             } catch (_) {}
         }
+        function loadDigitalBgOuterImageFromStorage() {
+            try { return localStorage.getItem(DIGITAL_BG_OUTER_IMAGE_KEY) || ''; } catch (_) {}
+            return '';
+        }
+        function saveDigitalBgOuterImageToStorage(dataUrl) {
+            try {
+                if (dataUrl) localStorage.setItem(DIGITAL_BG_OUTER_IMAGE_KEY, dataUrl);
+                else localStorage.removeItem(DIGITAL_BG_OUTER_IMAGE_KEY);
+            } catch (_) {}
+        }
+        function syncDigitalBgOuterImageStatusUi(hasImage) {
+            if (!optDigitalBgOuterImageStatus) return;
+            optDigitalBgOuterImageStatus.textContent = hasImage
+                ? 'Custom image applied to screen background'
+                : 'No image uploaded';
+        }
+        function applyDigitalBgOuterImageToUi(dataUrl, imageOpacity = 1) {
+            const url = dataUrl ? `url("${String(dataUrl).replace(/"/g, '%22')}")` : 'none';
+            const op = clampThemeOpacity(imageOpacity, 1);
+            const root = document.documentElement;
+            root.style.setProperty('--global-rv-digital-bg-outer-image', url);
+            root.style.setProperty('--global-rv-digital-bg-outer-image-opacity', String(op));
+            const rvRoot = document.getElementById('radio-visual-root');
+            if (rvRoot) {
+                rvRoot.style.setProperty('--rv-digital-bg-outer-image', url);
+                rvRoot.style.setProperty('--rv-digital-bg-outer-image-opacity', String(op));
+            }
+            syncDigitalBgOuterImageStatusUi(!!dataUrl);
+        }
+        function compressThemeImageFile(file, maxDim = 1600, quality = 0.82) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('read failed'));
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error('decode failed'));
+                    img.onload = () => {
+                        let w = img.naturalWidth || img.width;
+                        let h = img.naturalHeight || img.height;
+                        const scale = Math.min(1, maxDim / Math.max(w, h, 1));
+                        w = Math.max(1, Math.round(w * scale));
+                        h = Math.max(1, Math.round(h * scale));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            reject(new Error('canvas unavailable'));
+                            return;
+                        }
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        async function handleDigitalBgOuterImageUpload(file) {
+            if (!file || !/^image\//i.test(file.type || '')) return;
+            try {
+                const dataUrl = await compressThemeImageFile(file);
+                saveDigitalBgOuterImageToStorage(dataUrl);
+                const theme = loadDigitalThemeFromStorage();
+                applyDigitalBgOuterImageToUi(dataUrl, theme.bgOuterImageOpacity);
+            } catch (_) {}
+        }
+        function clearDigitalBgOuterImage() {
+            saveDigitalBgOuterImageToStorage('');
+            const theme = loadDigitalThemeFromStorage();
+            applyDigitalBgOuterImageToUi('', theme.bgOuterImageOpacity);
+            if (optDigitalBgOuterImageFile) optDigitalBgOuterImageFile.value = '';
+        }
         function clampThemeFontScale(raw, fallback = 1) {
             const v = Number(raw);
             if (!Number.isFinite(v)) return fallback;
             return Math.max(0.65, Math.min(1.6, Math.round(v * 100) / 100));
         }
-        function clampThemeOpacity(raw, fallback = 1) {
+        function clampThemeOpacity(raw, fallback = 1, min = 0.15) {
             const v = Number(raw);
             if (!Number.isFinite(v)) return fallback;
-            return Math.max(0.15, Math.min(1, Math.round(v * 100) / 100));
+            return Math.max(min, Math.min(1, Math.round(v * 100) / 100));
         }
         function normalizeDigitalTheme(parsed) {
             const d = DEFAULT_DIGITAL_THEME;
@@ -792,17 +888,26 @@ const QUALITY = {
                 bgOuterB: src.bgOuterB || src.bgB || d.bgOuterB,
                 bgOuterC: src.bgOuterC || src.bgC || d.bgOuterC,
                 bgGradientAngle: clampThemeGradientAngle(src.bgGradientAngle, d.bgGradientAngle),
+                bgOuterGradientAngle: clampThemeGradientAngle(
+                    src.bgOuterGradientAngle != null ? src.bgOuterGradientAngle : src.bgGradientAngle,
+                    d.bgOuterGradientAngle
+                ),
+                bgOuterImageOpacity: clampThemeOpacity(src.bgOuterImageOpacity, d.bgOuterImageOpacity, 0),
                 accent: src.accent || d.accent,
                 font: src.font || d.font,
                 btnBlueTop: src.btnBlueTop || d.btnBlueTop,
                 btnBlueBase: src.btnBlueBase || d.btnBlueBase,
                 btnBlueAccent: src.btnBlueAccent || d.btnBlueAccent,
                 btnBlueOpacity: clampThemeOpacity(src.btnBlueOpacity, d.btnBlueOpacity),
+                btnBlueTextOpacity: clampThemeOpacity(src.btnBlueTextOpacity, d.btnBlueTextOpacity),
+                btnBlueBorderOpacity: clampThemeOpacity(src.btnBlueBorderOpacity, d.btnBlueBorderOpacity, 0),
                 btnPurpleTop: src.btnPurpleTop || d.btnPurpleTop,
                 btnPurpleBase: src.btnPurpleBase || d.btnPurpleBase,
                 btnPurpleLabel: src.btnPurpleLabel || d.btnPurpleLabel,
                 btnPurpleActive: src.btnPurpleActive || d.btnPurpleActive,
                 btnPurpleOpacity: clampThemeOpacity(src.btnPurpleOpacity, d.btnPurpleOpacity),
+                btnPurpleTextOpacity: clampThemeOpacity(src.btnPurpleTextOpacity, d.btnPurpleTextOpacity),
+                btnPurpleBorderOpacity: clampThemeOpacity(src.btnPurpleBorderOpacity, d.btnPurpleBorderOpacity, 0),
                 btnBlueFontScale: clampThemeFontScale(src.btnBlueFontScale, d.btnBlueFontScale),
                 btnPurpleFontScale: clampThemeFontScale(src.btnPurpleFontScale, d.btnPurpleFontScale),
                 clockFont: src.clockFont || d.clockFont,
@@ -877,17 +982,23 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-bg-outer-b', t.bgOuterB);
             target.style.setProperty('--rv-digital-bg-outer-c', t.bgOuterC);
             target.style.setProperty('--rv-digital-bg-gradient-angle', String(t.bgGradientAngle));
+            target.style.setProperty('--rv-digital-bg-outer-gradient-angle', String(t.bgOuterGradientAngle));
+            target.style.setProperty('--rv-digital-bg-outer-image-opacity', String(t.bgOuterImageOpacity));
             target.style.setProperty('--rv-digital-accent-color', t.accent);
             target.style.setProperty('--rv-digital-ui-font', t.font);
             target.style.setProperty('--rv-digital-btn-blue-top', t.btnBlueTop);
             target.style.setProperty('--rv-digital-btn-blue-base', t.btnBlueBase);
             target.style.setProperty('--rv-digital-btn-blue-accent', t.btnBlueAccent);
             target.style.setProperty('--rv-digital-btn-blue-opacity', String(t.btnBlueOpacity));
+            target.style.setProperty('--rv-digital-btn-blue-text-opacity', String(t.btnBlueTextOpacity));
+            target.style.setProperty('--rv-digital-btn-blue-border-opacity', String(t.btnBlueBorderOpacity));
             target.style.setProperty('--rv-digital-btn-purple-top', t.btnPurpleTop);
             target.style.setProperty('--rv-digital-btn-purple-base', t.btnPurpleBase);
             target.style.setProperty('--rv-digital-btn-purple-label', t.btnPurpleLabel);
             target.style.setProperty('--rv-digital-btn-purple-active', t.btnPurpleActive);
             target.style.setProperty('--rv-digital-btn-purple-opacity', String(t.btnPurpleOpacity));
+            target.style.setProperty('--rv-digital-btn-purple-text-opacity', String(t.btnPurpleTextOpacity));
+            target.style.setProperty('--rv-digital-btn-purple-border-opacity', String(t.btnPurpleBorderOpacity));
             target.style.setProperty('--rv-digital-btn-blue-font-scale', String(t.btnBlueFontScale));
             target.style.setProperty('--rv-digital-btn-purple-font-scale', String(t.btnPurpleFontScale));
             target.style.setProperty('--rv-digital-clock-font', t.clockFont);
@@ -911,23 +1022,30 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-bg-outer-b', t.bgOuterB);
             root.style.setProperty('--global-rv-digital-bg-outer-c', t.bgOuterC);
             root.style.setProperty('--global-rv-digital-bg-gradient-angle', String(t.bgGradientAngle));
+            root.style.setProperty('--global-rv-digital-bg-outer-gradient-angle', String(t.bgOuterGradientAngle));
+            root.style.setProperty('--global-rv-digital-bg-outer-image-opacity', String(t.bgOuterImageOpacity));
             root.style.setProperty('--global-rv-digital-accent-color', t.accent);
             root.style.setProperty('--global-rv-digital-ui-font', t.font);
             root.style.setProperty('--global-rv-digital-btn-blue-top', t.btnBlueTop);
             root.style.setProperty('--global-rv-digital-btn-blue-base', t.btnBlueBase);
             root.style.setProperty('--global-rv-digital-btn-blue-accent', t.btnBlueAccent);
             root.style.setProperty('--global-rv-digital-btn-blue-opacity', String(t.btnBlueOpacity));
+            root.style.setProperty('--global-rv-digital-btn-blue-text-opacity', String(t.btnBlueTextOpacity));
+            root.style.setProperty('--global-rv-digital-btn-blue-border-opacity', String(t.btnBlueBorderOpacity));
             root.style.setProperty('--global-rv-digital-btn-purple-top', t.btnPurpleTop);
             root.style.setProperty('--global-rv-digital-btn-purple-base', t.btnPurpleBase);
             root.style.setProperty('--global-rv-digital-btn-purple-label', t.btnPurpleLabel);
             root.style.setProperty('--global-rv-digital-btn-purple-active', t.btnPurpleActive);
             root.style.setProperty('--global-rv-digital-btn-purple-opacity', String(t.btnPurpleOpacity));
+            root.style.setProperty('--global-rv-digital-btn-purple-text-opacity', String(t.btnPurpleTextOpacity));
+            root.style.setProperty('--global-rv-digital-btn-purple-border-opacity', String(t.btnPurpleBorderOpacity));
             root.style.setProperty('--global-rv-digital-btn-blue-font-scale', String(t.btnBlueFontScale));
             root.style.setProperty('--global-rv-digital-btn-purple-font-scale', String(t.btnPurpleFontScale));
             root.style.setProperty('--global-rv-digital-clock-font', t.clockFont);
             root.style.setProperty('--global-rv-digital-clock-color', t.clockColor);
             root.style.setProperty('--global-rv-digital-clock-font-scale', String(t.clockFontScale));
             applyDigitalThemeCssVars(document.getElementById('radio-visual-root'), t);
+            applyDigitalBgOuterImageToUi(loadDigitalBgOuterImageFromStorage(), t.bgOuterImageOpacity);
             reflowDigitalRadioThemeUi();
         }
         function readAutoMixMaxMinFromStorage() {
@@ -965,6 +1083,17 @@ const QUALITY = {
             if (optDigitalBgOuterC) optDigitalBgOuterC.value = theme.bgOuterC;
             if (optDigitalBgGradientAngle) optDigitalBgGradientAngle.value = String(theme.bgGradientAngle);
             if (optDigitalBgGradientAngleReadout) optDigitalBgGradientAngleReadout.textContent = `${theme.bgGradientAngle}°`;
+            if (optDigitalBgOuterGradientAngle) optDigitalBgOuterGradientAngle.value = String(theme.bgOuterGradientAngle);
+            if (optDigitalBgOuterGradientAngleReadout) {
+                optDigitalBgOuterGradientAngleReadout.textContent = `${theme.bgOuterGradientAngle}°`;
+            }
+            if (optDigitalBgOuterImageOpacity) {
+                optDigitalBgOuterImageOpacity.value = String(Math.round(theme.bgOuterImageOpacity * 100));
+            }
+            if (optDigitalBgOuterImageOpacityReadout) {
+                optDigitalBgOuterImageOpacityReadout.textContent = `${Math.round(theme.bgOuterImageOpacity * 100)}%`;
+            }
+            syncDigitalBgOuterImageStatusUi(!!loadDigitalBgOuterImageFromStorage());
             if (optDigitalAccent) optDigitalAccent.value = theme.accent;
             if (optDigitalFont) optDigitalFont.value = theme.font;
             if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = theme.btnBlueTop;
@@ -972,12 +1101,36 @@ const QUALITY = {
             if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = theme.btnBlueAccent;
             if (optDigitalBtnBlueOpacity) optDigitalBtnBlueOpacity.value = String(Math.round(theme.btnBlueOpacity * 100));
             if (optDigitalBtnBlueOpacityReadout) optDigitalBtnBlueOpacityReadout.textContent = `${Math.round(theme.btnBlueOpacity * 100)}%`;
+            if (optDigitalBtnBlueTextOpacity) {
+                optDigitalBtnBlueTextOpacity.value = String(Math.round(theme.btnBlueTextOpacity * 100));
+            }
+            if (optDigitalBtnBlueTextOpacityReadout) {
+                optDigitalBtnBlueTextOpacityReadout.textContent = `${Math.round(theme.btnBlueTextOpacity * 100)}%`;
+            }
+            if (optDigitalBtnBlueBorderOpacity) {
+                optDigitalBtnBlueBorderOpacity.value = String(Math.round(theme.btnBlueBorderOpacity * 100));
+            }
+            if (optDigitalBtnBlueBorderOpacityReadout) {
+                optDigitalBtnBlueBorderOpacityReadout.textContent = `${Math.round(theme.btnBlueBorderOpacity * 100)}%`;
+            }
             if (optDigitalBtnPurpleTop) optDigitalBtnPurpleTop.value = theme.btnPurpleTop;
             if (optDigitalBtnPurpleBase) optDigitalBtnPurpleBase.value = theme.btnPurpleBase;
             if (optDigitalBtnPurpleLabel) optDigitalBtnPurpleLabel.value = theme.btnPurpleLabel;
             if (optDigitalBtnPurpleActive) optDigitalBtnPurpleActive.value = theme.btnPurpleActive;
             if (optDigitalBtnPurpleOpacity) optDigitalBtnPurpleOpacity.value = String(Math.round(theme.btnPurpleOpacity * 100));
             if (optDigitalBtnPurpleOpacityReadout) optDigitalBtnPurpleOpacityReadout.textContent = `${Math.round(theme.btnPurpleOpacity * 100)}%`;
+            if (optDigitalBtnPurpleTextOpacity) {
+                optDigitalBtnPurpleTextOpacity.value = String(Math.round(theme.btnPurpleTextOpacity * 100));
+            }
+            if (optDigitalBtnPurpleTextOpacityReadout) {
+                optDigitalBtnPurpleTextOpacityReadout.textContent = `${Math.round(theme.btnPurpleTextOpacity * 100)}%`;
+            }
+            if (optDigitalBtnPurpleBorderOpacity) {
+                optDigitalBtnPurpleBorderOpacity.value = String(Math.round(theme.btnPurpleBorderOpacity * 100));
+            }
+            if (optDigitalBtnPurpleBorderOpacityReadout) {
+                optDigitalBtnPurpleBorderOpacityReadout.textContent = `${Math.round(theme.btnPurpleBorderOpacity * 100)}%`;
+            }
             if (optDigitalBtnBlueFontScale) optDigitalBtnBlueFontScale.value = String(Math.round(theme.btnBlueFontScale * 100));
             if (optDigitalBtnBlueFontScaleReadout) optDigitalBtnBlueFontScaleReadout.textContent = `${Math.round(theme.btnBlueFontScale * 100)}%`;
             if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(theme.btnPurpleFontScale * 100));
@@ -1031,6 +1184,15 @@ const QUALITY = {
                     optDigitalBgGradientAngle ? optDigitalBgGradientAngle.value : DEFAULT_DIGITAL_THEME.bgGradientAngle,
                     DEFAULT_DIGITAL_THEME.bgGradientAngle
                 ),
+                bgOuterGradientAngle: clampThemeGradientAngle(
+                    optDigitalBgOuterGradientAngle ? optDigitalBgOuterGradientAngle.value : DEFAULT_DIGITAL_THEME.bgOuterGradientAngle,
+                    DEFAULT_DIGITAL_THEME.bgOuterGradientAngle
+                ),
+                bgOuterImageOpacity: clampThemeOpacity(
+                    (Number(optDigitalBgOuterImageOpacity && optDigitalBgOuterImageOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.bgOuterImageOpacity,
+                    0
+                ),
                 accent: optDigitalAccent ? optDigitalAccent.value : DEFAULT_DIGITAL_THEME.accent,
                 font: optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.font,
                 btnBlueTop: optDigitalBtnBlueTop ? optDigitalBtnBlueTop.value : DEFAULT_DIGITAL_THEME.btnBlueTop,
@@ -1040,6 +1202,15 @@ const QUALITY = {
                     (Number(optDigitalBtnBlueOpacity && optDigitalBtnBlueOpacity.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.btnBlueOpacity
                 ),
+                btnBlueTextOpacity: clampThemeOpacity(
+                    (Number(optDigitalBtnBlueTextOpacity && optDigitalBtnBlueTextOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnBlueTextOpacity
+                ),
+                btnBlueBorderOpacity: clampThemeOpacity(
+                    (Number(optDigitalBtnBlueBorderOpacity && optDigitalBtnBlueBorderOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnBlueBorderOpacity,
+                    0
+                ),
                 btnPurpleTop: optDigitalBtnPurpleTop ? optDigitalBtnPurpleTop.value : DEFAULT_DIGITAL_THEME.btnPurpleTop,
                 btnPurpleBase: optDigitalBtnPurpleBase ? optDigitalBtnPurpleBase.value : DEFAULT_DIGITAL_THEME.btnPurpleBase,
                 btnPurpleLabel: optDigitalBtnPurpleLabel ? optDigitalBtnPurpleLabel.value : DEFAULT_DIGITAL_THEME.btnPurpleLabel,
@@ -1047,6 +1218,15 @@ const QUALITY = {
                 btnPurpleOpacity: clampThemeOpacity(
                     (Number(optDigitalBtnPurpleOpacity && optDigitalBtnPurpleOpacity.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.btnPurpleOpacity
+                ),
+                btnPurpleTextOpacity: clampThemeOpacity(
+                    (Number(optDigitalBtnPurpleTextOpacity && optDigitalBtnPurpleTextOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnPurpleTextOpacity
+                ),
+                btnPurpleBorderOpacity: clampThemeOpacity(
+                    (Number(optDigitalBtnPurpleBorderOpacity && optDigitalBtnPurpleBorderOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnPurpleBorderOpacity,
+                    0
                 ),
                 btnBlueFontScale: clampThemeFontScale(
                     (Number(optDigitalBtnBlueFontScale && optDigitalBtnBlueFontScale.value) || 100) / 100,
@@ -1080,6 +1260,16 @@ const QUALITY = {
             if (optDigitalBgOuterC) optDigitalBgOuterC.value = t.bgOuterC;
             if (optDigitalBgGradientAngle) optDigitalBgGradientAngle.value = String(t.bgGradientAngle);
             if (optDigitalBgGradientAngleReadout) optDigitalBgGradientAngleReadout.textContent = `${t.bgGradientAngle}°`;
+            if (optDigitalBgOuterGradientAngle) optDigitalBgOuterGradientAngle.value = String(t.bgOuterGradientAngle);
+            if (optDigitalBgOuterGradientAngleReadout) {
+                optDigitalBgOuterGradientAngleReadout.textContent = `${t.bgOuterGradientAngle}°`;
+            }
+            if (optDigitalBgOuterImageOpacity) {
+                optDigitalBgOuterImageOpacity.value = String(Math.round(t.bgOuterImageOpacity * 100));
+            }
+            if (optDigitalBgOuterImageOpacityReadout) {
+                optDigitalBgOuterImageOpacityReadout.textContent = `${Math.round(t.bgOuterImageOpacity * 100)}%`;
+            }
             if (optDigitalAccent) optDigitalAccent.value = t.accent;
             if (optDigitalFont && t.font) optDigitalFont.value = t.font;
             if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = t.btnBlueTop;
@@ -1087,12 +1277,36 @@ const QUALITY = {
             if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = t.btnBlueAccent;
             if (optDigitalBtnBlueOpacity) optDigitalBtnBlueOpacity.value = String(Math.round(t.btnBlueOpacity * 100));
             if (optDigitalBtnBlueOpacityReadout) optDigitalBtnBlueOpacityReadout.textContent = `${Math.round(t.btnBlueOpacity * 100)}%`;
+            if (optDigitalBtnBlueTextOpacity) {
+                optDigitalBtnBlueTextOpacity.value = String(Math.round(t.btnBlueTextOpacity * 100));
+            }
+            if (optDigitalBtnBlueTextOpacityReadout) {
+                optDigitalBtnBlueTextOpacityReadout.textContent = `${Math.round(t.btnBlueTextOpacity * 100)}%`;
+            }
+            if (optDigitalBtnBlueBorderOpacity) {
+                optDigitalBtnBlueBorderOpacity.value = String(Math.round(t.btnBlueBorderOpacity * 100));
+            }
+            if (optDigitalBtnBlueBorderOpacityReadout) {
+                optDigitalBtnBlueBorderOpacityReadout.textContent = `${Math.round(t.btnBlueBorderOpacity * 100)}%`;
+            }
             if (optDigitalBtnPurpleTop) optDigitalBtnPurpleTop.value = t.btnPurpleTop;
             if (optDigitalBtnPurpleBase) optDigitalBtnPurpleBase.value = t.btnPurpleBase;
             if (optDigitalBtnPurpleLabel) optDigitalBtnPurpleLabel.value = t.btnPurpleLabel;
             if (optDigitalBtnPurpleActive) optDigitalBtnPurpleActive.value = t.btnPurpleActive;
             if (optDigitalBtnPurpleOpacity) optDigitalBtnPurpleOpacity.value = String(Math.round(t.btnPurpleOpacity * 100));
             if (optDigitalBtnPurpleOpacityReadout) optDigitalBtnPurpleOpacityReadout.textContent = `${Math.round(t.btnPurpleOpacity * 100)}%`;
+            if (optDigitalBtnPurpleTextOpacity) {
+                optDigitalBtnPurpleTextOpacity.value = String(Math.round(t.btnPurpleTextOpacity * 100));
+            }
+            if (optDigitalBtnPurpleTextOpacityReadout) {
+                optDigitalBtnPurpleTextOpacityReadout.textContent = `${Math.round(t.btnPurpleTextOpacity * 100)}%`;
+            }
+            if (optDigitalBtnPurpleBorderOpacity) {
+                optDigitalBtnPurpleBorderOpacity.value = String(Math.round(t.btnPurpleBorderOpacity * 100));
+            }
+            if (optDigitalBtnPurpleBorderOpacityReadout) {
+                optDigitalBtnPurpleBorderOpacityReadout.textContent = `${Math.round(t.btnPurpleBorderOpacity * 100)}%`;
+            }
             if (optDigitalBtnBlueFontScale) optDigitalBtnBlueFontScale.value = String(Math.round(t.btnBlueFontScale * 100));
             if (optDigitalBtnBlueFontScaleReadout) optDigitalBtnBlueFontScaleReadout.textContent = `${Math.round(t.btnBlueFontScale * 100)}%`;
             if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(t.btnPurpleFontScale * 100));
@@ -1111,11 +1325,29 @@ const QUALITY = {
             if (optDigitalBtnBlueOpacity && optDigitalBtnBlueOpacityReadout) {
                 optDigitalBtnBlueOpacityReadout.textContent = `${optDigitalBtnBlueOpacity.value}%`;
             }
+            if (optDigitalBtnBlueTextOpacity && optDigitalBtnBlueTextOpacityReadout) {
+                optDigitalBtnBlueTextOpacityReadout.textContent = `${optDigitalBtnBlueTextOpacity.value}%`;
+            }
+            if (optDigitalBtnBlueBorderOpacity && optDigitalBtnBlueBorderOpacityReadout) {
+                optDigitalBtnBlueBorderOpacityReadout.textContent = `${optDigitalBtnBlueBorderOpacity.value}%`;
+            }
             if (optDigitalBtnPurpleFontScale && optDigitalBtnPurpleFontScaleReadout) {
                 optDigitalBtnPurpleFontScaleReadout.textContent = `${optDigitalBtnPurpleFontScale.value}%`;
             }
             if (optDigitalBtnPurpleOpacity && optDigitalBtnPurpleOpacityReadout) {
                 optDigitalBtnPurpleOpacityReadout.textContent = `${optDigitalBtnPurpleOpacity.value}%`;
+            }
+            if (optDigitalBtnPurpleTextOpacity && optDigitalBtnPurpleTextOpacityReadout) {
+                optDigitalBtnPurpleTextOpacityReadout.textContent = `${optDigitalBtnPurpleTextOpacity.value}%`;
+            }
+            if (optDigitalBtnPurpleBorderOpacity && optDigitalBtnPurpleBorderOpacityReadout) {
+                optDigitalBtnPurpleBorderOpacityReadout.textContent = `${optDigitalBtnPurpleBorderOpacity.value}%`;
+            }
+            if (optDigitalBgOuterGradientAngle && optDigitalBgOuterGradientAngleReadout) {
+                optDigitalBgOuterGradientAngleReadout.textContent = `${optDigitalBgOuterGradientAngle.value}°`;
+            }
+            if (optDigitalBgOuterImageOpacity && optDigitalBgOuterImageOpacityReadout) {
+                optDigitalBgOuterImageOpacityReadout.textContent = `${optDigitalBgOuterImageOpacity.value}%`;
             }
             if (optDigitalClockFontScale && optDigitalClockFontScaleReadout) {
                 optDigitalClockFontScaleReadout.textContent = `${optDigitalClockFontScale.value}%`;
@@ -1164,6 +1396,7 @@ const QUALITY = {
         }
         function resetAppearanceOptionsSection() {
             saveDigitalThemeToStorage(DEFAULT_DIGITAL_THEME);
+            clearDigitalBgOuterImage();
             applyDigitalRadioTheme(DEFAULT_DIGITAL_THEME);
             applyDigitalThemeToControls(DEFAULT_DIGITAL_THEME);
             applyDigitalBgGifFromOptions('');
@@ -1273,9 +1506,11 @@ const QUALITY = {
             }
             [optDigitalBgA, optDigitalBgB, optDigitalBgC, optDigitalAccent,
                 optDigitalBgOuterA, optDigitalBgOuterB, optDigitalBgOuterC, optDigitalBgGradientAngle,
+                optDigitalBgOuterGradientAngle, optDigitalBgOuterImageOpacity,
                 optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent, optDigitalBtnBlueOpacity,
+                optDigitalBtnBlueTextOpacity, optDigitalBtnBlueBorderOpacity,
                 optDigitalBtnPurpleTop, optDigitalBtnPurpleBase, optDigitalBtnPurpleLabel, optDigitalBtnPurpleActive,
-                optDigitalBtnPurpleOpacity,
+                optDigitalBtnPurpleOpacity, optDigitalBtnPurpleTextOpacity, optDigitalBtnPurpleBorderOpacity,
                 optDigitalBtnBlueFontScale, optDigitalBtnPurpleFontScale,
                 optDigitalClockColor, optDigitalClockFontScale
             ].forEach((el) => {
@@ -1291,6 +1526,26 @@ const QUALITY = {
             if (optDigitalBgGif) {
                 optDigitalBgGif.addEventListener('change', () => {
                     applyDigitalBgGifFromOptions(optDigitalBgGif.value);
+                    if (isOptionsOpen()) armOptionsAutoClose();
+                });
+            }
+            if (optDigitalBgOuterImageUpload && optDigitalBgOuterImageFile) {
+                optDigitalBgOuterImageUpload.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    optDigitalBgOuterImageFile.click();
+                });
+                optDigitalBgOuterImageFile.addEventListener('change', async () => {
+                    const file = optDigitalBgOuterImageFile.files && optDigitalBgOuterImageFile.files[0];
+                    if (!file) return;
+                    await handleDigitalBgOuterImageUpload(file);
+                    onThemeChange();
+                    if (isOptionsOpen()) armOptionsAutoClose();
+                });
+            }
+            if (optDigitalBgOuterImageClear) {
+                optDigitalBgOuterImageClear.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    clearDigitalBgOuterImage();
                     if (isOptionsOpen()) armOptionsAutoClose();
                 });
             }

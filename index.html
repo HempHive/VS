@@ -261,7 +261,7 @@
                     </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-bg-gradient-angle">Gradient angle</label>
-                        <input type="range" class="options-range" id="opt-digital-bg-gradient-angle" min="0" max="360" step="1" value="165" aria-label="Background gradient rotation angle">
+                        <input type="range" class="options-range" id="opt-digital-bg-gradient-angle" min="0" max="360" step="1" value="165" aria-label="Panel background gradient rotation angle">
                         <span class="options-readout" id="opt-digital-bg-gradient-angle-readout">165°</span>
                     </div>
                     <p class="options-subsection-title">Screen background</p>
@@ -276,6 +276,25 @@
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-bg-outer-c">Base</label>
                         <input type="color" class="options-color" id="opt-digital-bg-outer-c" value="#0c1020" aria-label="Full-screen background gradient base colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-bg-outer-gradient-angle">Gradient angle</label>
+                        <input type="range" class="options-range" id="opt-digital-bg-outer-gradient-angle" min="0" max="360" step="1" value="165" aria-label="Screen background gradient rotation angle">
+                        <span class="options-readout" id="opt-digital-bg-outer-gradient-angle-readout">165°</span>
+                    </div>
+                    <div class="options-row options-row--stack">
+                        <label class="options-label" for="opt-digital-bg-outer-image-file">Background image</label>
+                        <div class="options-upload-row">
+                            <input type="file" class="options-file-input" id="opt-digital-bg-outer-image-file" accept="image/*" aria-label="Upload screen background image">
+                            <button type="button" class="options-btn options-btn--compact" id="opt-digital-bg-outer-image-upload">Upload image</button>
+                            <button type="button" class="options-btn options-btn--compact options-btn--ghost" id="opt-digital-bg-outer-image-clear">Remove</button>
+                        </div>
+                        <span class="options-hint options-hint--inline" id="opt-digital-bg-outer-image-status">No image uploaded</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-bg-outer-image-opacity">Image opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-bg-outer-image-opacity" min="0" max="100" step="1" value="100" aria-label="Screen background image opacity">
+                        <span class="options-readout" id="opt-digital-bg-outer-image-opacity-readout">100%</span>
                     </div>
                     <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-digital-bg-gif">Background GIF</label>
@@ -312,9 +331,19 @@
                         <input type="color" class="options-color" id="opt-digital-btn-blue-accent" value="#00dcff" aria-label="Blue toolbar button accent">
                     </div>
                     <div class="options-row">
-                        <label class="options-label" for="opt-digital-btn-blue-opacity">Opacity</label>
-                        <input type="range" class="options-range" id="opt-digital-btn-blue-opacity" min="15" max="100" step="1" aria-label="Blue toolbar button opacity">
+                        <label class="options-label" for="opt-digital-btn-blue-opacity">Fill opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-btn-blue-opacity" min="15" max="100" step="1" aria-label="Blue toolbar button fill opacity">
                         <span class="options-readout" id="opt-digital-btn-blue-opacity-readout">100%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-blue-text-opacity">Text opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-btn-blue-text-opacity" min="15" max="100" step="1" aria-label="Blue toolbar button text opacity">
+                        <span class="options-readout" id="opt-digital-btn-blue-text-opacity-readout">100%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-blue-border-opacity">Border opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-btn-blue-border-opacity" min="0" max="100" step="1" aria-label="Blue toolbar button border opacity">
+                        <span class="options-readout" id="opt-digital-btn-blue-border-opacity-readout">100%</span>
                     </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-btn-blue-font-scale">Text size</label>
@@ -339,9 +368,19 @@
                         <input type="color" class="options-color" id="opt-digital-btn-purple-active" value="#ff5ce8" aria-label="Purple feature button active highlight">
                     </div>
                     <div class="options-row">
-                        <label class="options-label" for="opt-digital-btn-purple-opacity">Opacity</label>
-                        <input type="range" class="options-range" id="opt-digital-btn-purple-opacity" min="15" max="100" step="1" aria-label="Purple feature button opacity">
+                        <label class="options-label" for="opt-digital-btn-purple-opacity">Fill opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-btn-purple-opacity" min="15" max="100" step="1" aria-label="Purple feature button fill opacity">
                         <span class="options-readout" id="opt-digital-btn-purple-opacity-readout">100%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-purple-text-opacity">Text opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-btn-purple-text-opacity" min="15" max="100" step="1" aria-label="Purple feature button text opacity">
+                        <span class="options-readout" id="opt-digital-btn-purple-text-opacity-readout">100%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-purple-border-opacity">Border opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-btn-purple-border-opacity" min="0" max="100" step="1" aria-label="Purple feature button border opacity">
+                        <span class="options-readout" id="opt-digital-btn-purple-border-opacity-readout">100%</span>
                     </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-btn-purple-font-scale">Text size</label>
