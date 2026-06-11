@@ -30,13 +30,29 @@
             static get SPECTRUM_STAGING_SCALE_MIN() { return 0.35; }
             static get SPECTRUM_STAGING_SCALE_MAX() { return 2.8; }
             static get SPECTRUM_SETTINGS_KEY() { return 'radioVisual.digitalSpectrum.v1'; }
+            static get DEFAULT_SPECTRUM_RIBBON_ROTATE() {
+                return {
+                    rotateLHigh: 0,
+                    rotateLMid: 0,
+                    rotateLLow: 0,
+                    rotateRHigh: 0,
+                    rotateRMid: 0,
+                    rotateRLow: 0
+                };
+            }
             static get DEFAULT_SPECTRUM_SETTINGS() {
                 return {
                     colorStreamId: 'aurora',
                     scale: 1,
                     opacity: 1,
                     audioStrength: 1,
-                    colorFlow: 1
+                    colorFlow: 1,
+                    eqColorStreamId: 'aurora',
+                    eqScale: 1,
+                    eqOpacity: 1,
+                    eqAudioStrength: 1,
+                    eqColorFlow: 1,
+                    ...RadioVisualEngine.DEFAULT_SPECTRUM_RIBBON_ROTATE
                 };
             }
             static get SPECTRUM_COLOR_STREAM_PRESETS() {
@@ -83,25 +99,64 @@
                     }
                 };
             }
+            static clampSpectrumRibbonRotate(raw, fallback) {
+                const d = fallback || RadioVisualEngine.DEFAULT_SPECTRUM_RIBBON_ROTATE;
+                const src = (raw && typeof raw === 'object') ? raw : {};
+                const clampDeg = (key) => {
+                    const v = Number(src[key]);
+                    if (!Number.isFinite(v)) return d[key];
+                    return Math.max(0, Math.min(360, Math.round(v)));
+                };
+                return {
+                    rotateLHigh: clampDeg('rotateLHigh'),
+                    rotateLMid: clampDeg('rotateLMid'),
+                    rotateLLow: clampDeg('rotateLLow'),
+                    rotateRHigh: clampDeg('rotateRHigh'),
+                    rotateRMid: clampDeg('rotateRMid'),
+                    rotateRLow: clampDeg('rotateRLow')
+                };
+            }
             static clampSpectrumSettings(raw) {
                 const d = RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
                 const presets = RadioVisualEngine.SPECTRUM_COLOR_STREAM_PRESETS;
-                const colorStreamId = (raw && presets[raw.colorStreamId]) ? raw.colorStreamId : d.colorStreamId;
+                const pickStream = (id, fb) => ((raw && presets[id]) ? id : fb);
+                const colorStreamId = pickStream(raw && raw.colorStreamId, d.colorStreamId);
+                const eqColorStreamId = pickStream(raw && raw.eqColorStreamId, d.eqColorStreamId);
                 const scaleMin = RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN;
                 const scaleMax = RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX;
-                let scale = Number(raw && raw.scale);
-                if (!Number.isFinite(scale)) scale = d.scale;
-                scale = Math.max(scaleMin, Math.min(scaleMax, scale));
-                let opacity = Number(raw && raw.opacity);
-                if (!Number.isFinite(opacity)) opacity = d.opacity;
-                opacity = Math.max(0.15, Math.min(1, opacity));
-                let audioStrength = Number(raw && raw.audioStrength);
-                if (!Number.isFinite(audioStrength)) audioStrength = d.audioStrength;
-                audioStrength = Math.max(0.25, Math.min(3, audioStrength));
-                let colorFlow = Number(raw && raw.colorFlow);
-                if (!Number.isFinite(colorFlow)) colorFlow = d.colorFlow;
-                colorFlow = Math.max(0.25, Math.min(3, colorFlow));
-                return { colorStreamId, scale, opacity, audioStrength, colorFlow };
+                const clampScale = (val, fb) => {
+                    let scale = Number(val);
+                    if (!Number.isFinite(scale)) scale = fb;
+                    return Math.max(scaleMin, Math.min(scaleMax, scale));
+                };
+                const clampOpacity = (val, fb) => {
+                    let opacity = Number(val);
+                    if (!Number.isFinite(opacity)) opacity = fb;
+                    return Math.max(0.15, Math.min(1, opacity));
+                };
+                const clampStrength = (val, fb) => {
+                    let strength = Number(val);
+                    if (!Number.isFinite(strength)) strength = fb;
+                    return Math.max(0.25, Math.min(3, strength));
+                };
+                const clampFlow = (val, fb) => {
+                    let flow = Number(val);
+                    if (!Number.isFinite(flow)) flow = fb;
+                    return Math.max(0.25, Math.min(3, flow));
+                };
+                return {
+                    colorStreamId,
+                    scale: clampScale(raw && raw.scale, d.scale),
+                    opacity: clampOpacity(raw && raw.opacity, d.opacity),
+                    audioStrength: clampStrength(raw && raw.audioStrength, d.audioStrength),
+                    colorFlow: clampFlow(raw && raw.colorFlow, d.colorFlow),
+                    eqColorStreamId,
+                    eqScale: clampScale(raw && raw.eqScale, d.eqScale),
+                    eqOpacity: clampOpacity(raw && raw.eqOpacity, d.eqOpacity),
+                    eqAudioStrength: clampStrength(raw && raw.eqAudioStrength, d.eqAudioStrength),
+                    eqColorFlow: clampFlow(raw && raw.eqColorFlow, d.eqColorFlow),
+                    ...RadioVisualEngine.clampSpectrumRibbonRotate(raw, d)
+                };
             }
             static loadSpectrumSettingsFromStorage() {
                 try {
@@ -4397,30 +4452,73 @@
                 });
             }
 
+            _resolvedSpectrumDrawSettings() {
+                const s = this._spectrumSettings || RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
+                const d = RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
+                if (this._digitalHubMode === 'spectrum') {
+                    return {
+                        colorStreamId: s.colorStreamId || d.colorStreamId,
+                        scale: s.scale ?? d.scale,
+                        opacity: s.opacity ?? d.opacity,
+                        audioStrength: s.audioStrength ?? d.audioStrength,
+                        colorFlow: s.colorFlow ?? d.colorFlow
+                    };
+                }
+                return {
+                    colorStreamId: s.eqColorStreamId || s.colorStreamId || d.eqColorStreamId,
+                    scale: s.eqScale ?? s.scale ?? d.eqScale,
+                    opacity: s.eqOpacity ?? s.opacity ?? d.eqOpacity,
+                    audioStrength: s.eqAudioStrength ?? s.audioStrength ?? d.eqAudioStrength,
+                    colorFlow: s.eqColorFlow ?? s.colorFlow ?? d.eqColorFlow
+                };
+            }
+
             _getSpectrumOpacityMult() {
-                const v = Number(this._spectrumSettings && this._spectrumSettings.opacity);
+                const v = Number(this._resolvedSpectrumDrawSettings().opacity);
                 if (!Number.isFinite(v)) return 1;
                 return Math.max(0.15, Math.min(1, v));
             }
 
             _getSpectrumAudioStrength() {
-                const v = Number(this._spectrumSettings && this._spectrumSettings.audioStrength);
+                const v = Number(this._resolvedSpectrumDrawSettings().audioStrength);
                 if (!Number.isFinite(v)) return 1;
                 return Math.max(0.25, Math.min(3, v));
             }
 
             _getSpectrumColorFlow() {
-                const v = Number(this._spectrumSettings && this._spectrumSettings.colorFlow);
+                const v = Number(this._resolvedSpectrumDrawSettings().colorFlow);
                 if (!Number.isFinite(v)) return 1;
                 return Math.max(0.25, Math.min(3, v));
             }
 
             _getSpectrumColorPalette() {
-                const id = (this._spectrumSettings && this._spectrumSettings.colorStreamId)
+                const id = this._resolvedSpectrumDrawSettings().colorStreamId
                     || RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS.colorStreamId;
                 const preset = RadioVisualEngine.SPECTRUM_COLOR_STREAM_PRESETS[id];
                 if (preset && Array.isArray(preset.palette) && preset.palette.length) return preset.palette;
                 return RadioVisualEngine.SPECTRUM_COLOR_STREAM_PRESETS.aurora.palette;
+            }
+
+            _spectrumRibbonRotateKey(side, bandKey) {
+                const sideKey = side === 'R' ? 'R' : 'L';
+                const band = String(bandKey || 'high');
+                const cap = band.charAt(0).toUpperCase() + band.slice(1).toLowerCase();
+                return `rotate${sideKey}${cap}`;
+            }
+
+            _spectrumRibbonRotateDeg(side, bandKey) {
+                const s = this._spectrumSettings || RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
+                const key = this._spectrumRibbonRotateKey(side, bandKey);
+                const v = Number(s[key]);
+                if (!Number.isFinite(v)) return 0;
+                return Math.max(0, Math.min(360, v));
+            }
+
+            _effectiveRibbonPhaseBins(basePhaseBins, side, bandKey) {
+                const n = RadioVisualEngine.SPECTRUM_ANGULAR_BINS;
+                const base = Number(basePhaseBins) || 0;
+                const deg = this._spectrumRibbonRotateDeg(side, bandKey);
+                return base + (deg / 360) * n;
             }
 
             _spectrumScaleToSliderPct(scale) {
@@ -4436,7 +4534,8 @@
                     ...(settings || {})
                 });
                 this._spectrumSettings = next;
-                this._spectrumStagingScale = next.scale;
+                const resolved = this._resolvedSpectrumDrawSettings();
+                this._spectrumStagingScale = resolved.scale;
                 if (!opts.skipSave) {
                     RadioVisualEngine.saveSpectrumSettingsToStorage(next);
                 }
@@ -4494,15 +4593,14 @@
             _syncSpectrumStagingScale() {
                 const row = this.els.digitalSpectrumRow;
                 if (!row) return;
-                const scale = (this._digitalHubMode === 'spectrum')
-                    ? Math.max(
-                        RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN,
-                        Math.min(
-                            RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX,
-                            Number(this._spectrumStagingScale) || 1
-                        )
+                const resolved = this._resolvedSpectrumDrawSettings();
+                const scale = Math.max(
+                    RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN,
+                    Math.min(
+                        RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX,
+                        Number(resolved.scale) || 1
                     )
-                    : 1;
+                );
                 try {
                     row.style.setProperty('--rv-spectrum-staging-scale', String(scale));
                 } catch (_) {}
@@ -5859,9 +5957,15 @@
                         radii = this._radiiFromSpectrumSmooth(smooth, t, layer.key, layer);
                     }
                     const bassLevel = layer.key === 'low' ? this._bassLevelFromSmooth(smooth) : 0;
-                    layersL.push({ ...layer, radii, bassLevel });
+                    layersL.push({
+                        ...layer,
+                        phaseBins: this._effectiveRibbonPhaseBins(layer.phaseBins, 'L', layer.key),
+                        radii,
+                        bassLevel
+                    });
                     layersR.push({
                         ...layer,
+                        phaseBins: this._effectiveRibbonPhaseBins(layer.phaseBins, 'R', layer.key),
                         radii: this._mirrorSpectrumRadii(radii),
                         bassLevel
                     });
@@ -7688,6 +7792,12 @@
                 dPanel.appendChild(digBtns);
                 stageD.appendChild(dPanel);
                 }
+
+                try {
+                    if (typeof globalThis.reapplyDigitalThemeImageLayers === 'function') {
+                        globalThis.reapplyDigitalThemeImageLayers();
+                    }
+                } catch (_) {}
 
                 if (stageA) root.appendChild(stageA);
                 if (stageD) root.appendChild(stageD);

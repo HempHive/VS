@@ -450,6 +450,7 @@ const QUALITY = {
         // --- OPTIONS PANEL HELPERS ---
         const DIGITAL_THEME_STORAGE_KEY = 'radioVisual.digitalTheme.v1';
         const DIGITAL_BG_OUTER_IMAGE_KEY = 'radioVisual.digitalBgOuterImage.v1';
+        const DIGITAL_BG_PANEL_IMAGE_KEY = 'radioVisual.digitalBgPanelImage.v1';
         const OPTIONS_AUTO_CLOSE_MS = 30000;
         const DIGITAL_BG_GIF_MANIFEST_URL = 'assets/gifs/digital/manifest.json';
         const DIGITAL_BG_GIF_STORAGE_KEY = 'radioVisual.digitalBgGif.v1';
@@ -465,11 +466,13 @@ const QUALITY = {
             bgGradientAngle: 165,
             bgOuterGradientAngle: 165,
             bgOuterImageOpacity: 1,
+            bgPanelImageOpacity: 1,
             accent: '#ffd246',
             font: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
             btnBlueTop: '#123048',
             btnBlueBase: '#081820',
             btnBlueAccent: '#00dcff',
+            btnBlueLabel: '#9eeeff',
             btnBlueOpacity: 1,
             btnBlueTextOpacity: 1,
             btnBlueBorderOpacity: 1,
@@ -572,12 +575,19 @@ const QUALITY = {
         const optDigitalBgOuterImageStatus = document.getElementById('opt-digital-bg-outer-image-status');
         const optDigitalBgOuterImageOpacity = document.getElementById('opt-digital-bg-outer-image-opacity');
         const optDigitalBgOuterImageOpacityReadout = document.getElementById('opt-digital-bg-outer-image-opacity-readout');
+        const optDigitalBgPanelImageFile = document.getElementById('opt-digital-bg-panel-image-file');
+        const optDigitalBgPanelImageUpload = document.getElementById('opt-digital-bg-panel-image-upload');
+        const optDigitalBgPanelImageClear = document.getElementById('opt-digital-bg-panel-image-clear');
+        const optDigitalBgPanelImageStatus = document.getElementById('opt-digital-bg-panel-image-status');
+        const optDigitalBgPanelImageOpacity = document.getElementById('opt-digital-bg-panel-image-opacity');
+        const optDigitalBgPanelImageOpacityReadout = document.getElementById('opt-digital-bg-panel-image-opacity-readout');
         const optDigitalBgGif = document.getElementById('opt-digital-bg-gif');
         const optDigitalAccent = document.getElementById('opt-digital-accent');
         const optDigitalFont = document.getElementById('opt-digital-font');
         const optDigitalBtnBlueTop = document.getElementById('opt-digital-btn-blue-top');
         const optDigitalBtnBlueBase = document.getElementById('opt-digital-btn-blue-base');
         const optDigitalBtnBlueAccent = document.getElementById('opt-digital-btn-blue-accent');
+        const optDigitalBtnBlueLabel = document.getElementById('opt-digital-btn-blue-label');
         const optDigitalBtnBlueOpacity = document.getElementById('opt-digital-btn-blue-opacity');
         const optDigitalBtnBlueOpacityReadout = document.getElementById('opt-digital-btn-blue-opacity-readout');
         const optDigitalBtnBlueTextOpacity = document.getElementById('opt-digital-btn-blue-text-opacity');
@@ -622,8 +632,30 @@ const QUALITY = {
         const optSpectrumAudioStrengthReadout = document.getElementById('opt-spectrum-audio-strength-readout');
         const optSpectrumColorFlow = document.getElementById('opt-spectrum-color-flow');
         const optSpectrumColorFlowReadout = document.getElementById('opt-spectrum-color-flow-readout');
+        const optSpectrumEqColorStream = document.getElementById('opt-spectrum-eq-color-stream');
+        const optSpectrumEqSize = document.getElementById('opt-spectrum-eq-size');
+        const optSpectrumEqSizeReadout = document.getElementById('opt-spectrum-eq-size-readout');
+        const optSpectrumEqOpacity = document.getElementById('opt-spectrum-eq-opacity');
+        const optSpectrumEqOpacityReadout = document.getElementById('opt-spectrum-eq-opacity-readout');
+        const optSpectrumEqAudioStrength = document.getElementById('opt-spectrum-eq-audio-strength');
+        const optSpectrumEqAudioStrengthReadout = document.getElementById('opt-spectrum-eq-audio-strength-readout');
+        const optSpectrumEqColorFlow = document.getElementById('opt-spectrum-eq-color-flow');
+        const optSpectrumEqColorFlowReadout = document.getElementById('opt-spectrum-eq-color-flow-readout');
+        const optSpectrumRotateLHi = document.getElementById('opt-spectrum-rotate-l-hi');
+        const optSpectrumRotateLHiReadout = document.getElementById('opt-spectrum-rotate-l-hi-readout');
+        const optSpectrumRotateLMed = document.getElementById('opt-spectrum-rotate-l-med');
+        const optSpectrumRotateLMedReadout = document.getElementById('opt-spectrum-rotate-l-med-readout');
+        const optSpectrumRotateLLo = document.getElementById('opt-spectrum-rotate-l-lo');
+        const optSpectrumRotateLLoReadout = document.getElementById('opt-spectrum-rotate-l-lo-readout');
+        const optSpectrumRotateRHi = document.getElementById('opt-spectrum-rotate-r-hi');
+        const optSpectrumRotateRHiReadout = document.getElementById('opt-spectrum-rotate-r-hi-readout');
+        const optSpectrumRotateRMed = document.getElementById('opt-spectrum-rotate-r-med');
+        const optSpectrumRotateRMedReadout = document.getElementById('opt-spectrum-rotate-r-med-readout');
+        const optSpectrumRotateRLo = document.getElementById('opt-spectrum-rotate-r-lo');
+        const optSpectrumRotateRLoReadout = document.getElementById('opt-spectrum-rotate-r-lo-readout');
         const optSpectrumReset = document.getElementById('opt-spectrum-reset');
         let spectrumColorStreamSelectReady = false;
+        let spectrumEqColorStreamSelectReady = false;
         function getSpectrumEngineClass() {
             return globalThis.RadioVisualEngine || null;
         }
@@ -636,22 +668,56 @@ const QUALITY = {
                 const raw = localStorage.getItem('radioVisual.digitalSpectrum.v1');
                 const parsed = raw ? JSON.parse(raw) : null;
                 if (!parsed || typeof parsed !== 'object') {
+                    const RVE = getSpectrumEngineClass();
+                    if (RVE && RVE.DEFAULT_SPECTRUM_SETTINGS) {
+                        return { ...RVE.DEFAULT_SPECTRUM_SETTINGS };
+                    }
                     return {
                         colorStreamId: 'aurora',
                         scale: 1,
                         opacity: 1,
                         audioStrength: 1,
-                        colorFlow: 1
+                        colorFlow: 1,
+                        eqColorStreamId: 'aurora',
+                        eqScale: 1,
+                        eqOpacity: 1,
+                        eqAudioStrength: 1,
+                        eqColorFlow: 1,
+                        rotateLHigh: 0,
+                        rotateLMid: 0,
+                        rotateLLow: 0,
+                        rotateRHigh: 0,
+                        rotateRMid: 0,
+                        rotateRLow: 0
                     };
+                }
+                const RVE = getSpectrumEngineClass();
+                if (RVE && typeof RVE.clampSpectrumSettings === 'function') {
+                    return RVE.clampSpectrumSettings(parsed);
                 }
                 return parsed;
             } catch (_) {
+                const RVE = getSpectrumEngineClass();
+                if (RVE && RVE.DEFAULT_SPECTRUM_SETTINGS) {
+                    return { ...RVE.DEFAULT_SPECTRUM_SETTINGS };
+                }
                 return {
                     colorStreamId: 'aurora',
                     scale: 1,
                     opacity: 1,
                     audioStrength: 1,
-                    colorFlow: 1
+                    colorFlow: 1,
+                    eqColorStreamId: 'aurora',
+                    eqScale: 1,
+                    eqOpacity: 1,
+                    eqAudioStrength: 1,
+                    eqColorFlow: 1,
+                    rotateLHigh: 0,
+                    rotateLMid: 0,
+                    rotateLLow: 0,
+                    rotateRHigh: 0,
+                    rotateRMid: 0,
+                    rotateRLow: 0
                 };
             }
         }
@@ -677,47 +743,116 @@ const QUALITY = {
             } catch (_) {}
             return next;
         }
-        function populateSpectrumColorStreamSelect() {
-            if (spectrumColorStreamSelectReady || !optSpectrumColorStream) return;
+        function fillSpectrumColorStreamSelect(selectEl) {
+            if (!selectEl) return;
             const RVE = getSpectrumEngineClass();
             if (!RVE || !RVE.SPECTRUM_COLOR_STREAM_PRESETS) return;
-            optSpectrumColorStream.innerHTML = '';
+            selectEl.innerHTML = '';
             Object.entries(RVE.SPECTRUM_COLOR_STREAM_PRESETS).forEach(([id, preset]) => {
                 const opt = document.createElement('option');
                 opt.value = id;
                 opt.textContent = preset.label || id;
-                optSpectrumColorStream.appendChild(opt);
+                selectEl.appendChild(opt);
             });
-            spectrumColorStreamSelectReady = true;
         }
-        function applySpectrumSettingsToControls(settings) {
+        function populateSpectrumColorStreamSelect() {
+            if (spectrumColorStreamSelectReady && spectrumEqColorStreamSelectReady) return;
+            fillSpectrumColorStreamSelect(optSpectrumColorStream);
+            fillSpectrumColorStreamSelect(optSpectrumEqColorStream);
+            spectrumColorStreamSelectReady = true;
+            spectrumEqColorStreamSelectReady = true;
+        }
+        function spectrumPctFromScale(scale) {
+            return Math.round((Number(scale) || 1) * 100);
+        }
+        function spectrumScaleFromPct(pct) {
+            return Math.max(0.35, Math.min(2.8, (Number(pct) || 100) / 100));
+        }
+        function spectrumPctFromUnit(val, minPct, maxPct) {
+            return Math.round((Number(val) || 1) * 100);
+        }
+        function spectrumUnitFromPct(pct, minPct, maxPct) {
+            const v = Number(pct) || 100;
+            const min = minPct / 100;
+            const max = maxPct / 100;
+            return Math.max(min, Math.min(max, v / 100));
+        }
+        function applySpectrumBandControlsToUi(settings) {
             const s = settings || loadSpectrumSettingsFromStorage();
             if (optSpectrumColorStream) optSpectrumColorStream.value = s.colorStreamId || 'aurora';
-            const sizePct = Math.round((Number(s.scale) || 1) * 100);
+            const sizePct = spectrumPctFromScale(s.scale);
             if (optSpectrumSize) optSpectrumSize.value = String(Math.max(35, Math.min(280, sizePct)));
             if (optSpectrumSizeReadout) optSpectrumSizeReadout.textContent = `${sizePct}%`;
-            const opacityPct = Math.round((Number(s.opacity) || 1) * 100);
+            const opacityPct = spectrumPctFromUnit(s.opacity);
             if (optSpectrumOpacity) optSpectrumOpacity.value = String(Math.max(15, Math.min(100, opacityPct)));
             if (optSpectrumOpacityReadout) optSpectrumOpacityReadout.textContent = `${opacityPct}%`;
-            const strengthPct = Math.round((Number(s.audioStrength) || 1) * 100);
+            const strengthPct = spectrumPctFromUnit(s.audioStrength);
             if (optSpectrumAudioStrength) optSpectrumAudioStrength.value = String(Math.max(25, Math.min(300, strengthPct)));
             if (optSpectrumAudioStrengthReadout) optSpectrumAudioStrengthReadout.textContent = `${strengthPct}%`;
-            const flowPct = Math.round((Number(s.colorFlow) || 1) * 100);
+            const flowPct = spectrumPctFromUnit(s.colorFlow);
             if (optSpectrumColorFlow) optSpectrumColorFlow.value = String(Math.max(25, Math.min(300, flowPct)));
             if (optSpectrumColorFlowReadout) optSpectrumColorFlowReadout.textContent = `${flowPct}%`;
+            if (optSpectrumEqColorStream) optSpectrumEqColorStream.value = s.eqColorStreamId || s.colorStreamId || 'aurora';
+            const eqSizePct = spectrumPctFromScale(s.eqScale ?? s.scale);
+            if (optSpectrumEqSize) optSpectrumEqSize.value = String(Math.max(35, Math.min(280, eqSizePct)));
+            if (optSpectrumEqSizeReadout) optSpectrumEqSizeReadout.textContent = `${eqSizePct}%`;
+            const eqOpacityPct = spectrumPctFromUnit(s.eqOpacity ?? s.opacity);
+            if (optSpectrumEqOpacity) optSpectrumEqOpacity.value = String(Math.max(15, Math.min(100, eqOpacityPct)));
+            if (optSpectrumEqOpacityReadout) optSpectrumEqOpacityReadout.textContent = `${eqOpacityPct}%`;
+            const eqStrengthPct = spectrumPctFromUnit(s.eqAudioStrength ?? s.audioStrength);
+            if (optSpectrumEqAudioStrength) optSpectrumEqAudioStrength.value = String(Math.max(25, Math.min(300, eqStrengthPct)));
+            if (optSpectrumEqAudioStrengthReadout) optSpectrumEqAudioStrengthReadout.textContent = `${eqStrengthPct}%`;
+            const eqFlowPct = spectrumPctFromUnit(s.eqColorFlow ?? s.colorFlow);
+            if (optSpectrumEqColorFlow) optSpectrumEqColorFlow.value = String(Math.max(25, Math.min(300, eqFlowPct)));
+            if (optSpectrumEqColorFlowReadout) optSpectrumEqColorFlowReadout.textContent = `${eqFlowPct}%`;
+            const rotatePairs = [
+                [optSpectrumRotateLHi, optSpectrumRotateLHiReadout, 'rotateLHigh'],
+                [optSpectrumRotateLMed, optSpectrumRotateLMedReadout, 'rotateLMid'],
+                [optSpectrumRotateLLo, optSpectrumRotateLLoReadout, 'rotateLLow'],
+                [optSpectrumRotateRHi, optSpectrumRotateRHiReadout, 'rotateRHigh'],
+                [optSpectrumRotateRMed, optSpectrumRotateRMedReadout, 'rotateRMid'],
+                [optSpectrumRotateRLo, optSpectrumRotateRLoReadout, 'rotateRLow']
+            ];
+            rotatePairs.forEach(([input, readout, key]) => {
+                const deg = Math.max(0, Math.min(360, Math.round(Number(s[key]) || 0)));
+                if (input) input.value = String(deg);
+                if (readout) readout.textContent = `${deg}°`;
+            });
+        }
+        function applySpectrumSettingsToControls(settings) {
+            applySpectrumBandControlsToUi(settings);
+        }
+        function syncSpectrumOptionsReadoutsFromControls() {
+            applySpectrumBandControlsToUi(collectSpectrumSettingsFromControls());
         }
         function collectSpectrumSettingsFromControls() {
             const current = loadSpectrumSettingsFromStorage();
-            const scale = Math.max(0.35, Math.min(2.8, (Number(optSpectrumSize && optSpectrumSize.value) || 100) / 100));
-            const opacity = Math.max(0.15, Math.min(1, (Number(optSpectrumOpacity && optSpectrumOpacity.value) || 100) / 100));
-            const audioStrength = Math.max(0.25, Math.min(3, (Number(optSpectrumAudioStrength && optSpectrumAudioStrength.value) || 100) / 100));
-            const colorFlow = Math.max(0.25, Math.min(3, (Number(optSpectrumColorFlow && optSpectrumColorFlow.value) || 100) / 100));
+            const scale = spectrumScaleFromPct(optSpectrumSize && optSpectrumSize.value);
+            const opacity = spectrumUnitFromPct(optSpectrumOpacity && optSpectrumOpacity.value, 15, 100);
+            const audioStrength = spectrumUnitFromPct(optSpectrumAudioStrength && optSpectrumAudioStrength.value, 25, 300);
+            const colorFlow = spectrumUnitFromPct(optSpectrumColorFlow && optSpectrumColorFlow.value, 25, 300);
+            const eqScale = spectrumScaleFromPct(optSpectrumEqSize && optSpectrumEqSize.value);
+            const eqOpacity = spectrumUnitFromPct(optSpectrumEqOpacity && optSpectrumEqOpacity.value, 15, 100);
+            const eqAudioStrength = spectrumUnitFromPct(optSpectrumEqAudioStrength && optSpectrumEqAudioStrength.value, 25, 300);
+            const eqColorFlow = spectrumUnitFromPct(optSpectrumEqColorFlow && optSpectrumEqColorFlow.value, 25, 300);
+            const clampRotate = (input) => Math.max(0, Math.min(360, Math.round(Number(input && input.value) || 0)));
             return {
                 colorStreamId: (optSpectrumColorStream && optSpectrumColorStream.value) || current.colorStreamId || 'aurora',
                 scale,
                 opacity,
                 audioStrength,
-                colorFlow
+                colorFlow,
+                eqColorStreamId: (optSpectrumEqColorStream && optSpectrumEqColorStream.value) || current.eqColorStreamId || 'aurora',
+                eqScale,
+                eqOpacity,
+                eqAudioStrength,
+                eqColorFlow,
+                rotateLHigh: clampRotate(optSpectrumRotateLHi),
+                rotateLMid: clampRotate(optSpectrumRotateLMed),
+                rotateLLow: clampRotate(optSpectrumRotateLLo),
+                rotateRHigh: clampRotate(optSpectrumRotateRHi),
+                rotateRMid: clampRotate(optSpectrumRotateRMed),
+                rotateRLow: clampRotate(optSpectrumRotateRLo)
             };
         }
         function syncSpectrumOptionsControlsFromStorage() {
@@ -800,24 +935,118 @@ const QUALITY = {
                 else localStorage.removeItem(DIGITAL_BG_OUTER_IMAGE_KEY);
             } catch (_) {}
         }
-        function syncDigitalBgOuterImageStatusUi(hasImage) {
+        function themeImageStatusLabel(dataUrl, fallbackEmpty, appliedPrefix) {
+            if (!dataUrl) return fallbackEmpty;
+            const mime = String(dataUrl).slice(5, String(dataUrl).indexOf(';')).toLowerCase();
+            if (mime === 'image/gif') return `${appliedPrefix} — animated GIF`;
+            if (mime === 'image/webp') return `${appliedPrefix} — WebP (animation preserved)`;
+            return appliedPrefix;
+        }
+        function syncDigitalBgOuterImageStatusUi(dataUrl) {
             if (!optDigitalBgOuterImageStatus) return;
-            optDigitalBgOuterImageStatus.textContent = hasImage
-                ? 'Custom image applied to screen background'
-                : 'No image uploaded';
+            optDigitalBgOuterImageStatus.textContent = themeImageStatusLabel(
+                dataUrl,
+                'No image uploaded — PNG, JPEG, WebP, or animated GIF/WebP',
+                'Screen background image applied'
+            );
+        }
+        function syncDigitalBgPanelImageStatusUi(dataUrl) {
+            if (!optDigitalBgPanelImageStatus) return;
+            optDigitalBgPanelImageStatus.textContent = themeImageStatusLabel(
+                dataUrl,
+                'No image uploaded — panel gradient colours are used',
+                'Panel image applied (replaces gradient colours)'
+            );
+        }
+        function ensureThemeOuterImageEl(rvRoot) {
+            if (!rvRoot) return null;
+            let img = rvRoot.querySelector('.radio-visual-digital-theme-outer-image');
+            if (!img) {
+                img = document.createElement('img');
+                img.className = 'radio-visual-digital-theme-outer-image';
+                img.alt = '';
+                img.decoding = 'async';
+                img.setAttribute('aria-hidden', 'true');
+                rvRoot.insertBefore(img, rvRoot.firstChild);
+            }
+            return img;
         }
         function applyDigitalBgOuterImageToUi(dataUrl, imageOpacity = 1) {
-            const url = dataUrl ? `url("${String(dataUrl).replace(/"/g, '%22')}")` : 'none';
-            const op = clampThemeOpacity(imageOpacity, 1);
+            const op = clampThemeOpacity(imageOpacity, 1, 0);
             const root = document.documentElement;
-            root.style.setProperty('--global-rv-digital-bg-outer-image', url);
             root.style.setProperty('--global-rv-digital-bg-outer-image-opacity', String(op));
             const rvRoot = document.getElementById('radio-visual-root');
             if (rvRoot) {
-                rvRoot.style.setProperty('--rv-digital-bg-outer-image', url);
                 rvRoot.style.setProperty('--rv-digital-bg-outer-image-opacity', String(op));
+                if (dataUrl) {
+                    const img = ensureThemeOuterImageEl(rvRoot);
+                    if (img && img.src !== dataUrl) img.src = dataUrl;
+                } else {
+                    const img = rvRoot.querySelector('.radio-visual-digital-theme-outer-image');
+                    if (img) img.remove();
+                }
             }
-            syncDigitalBgOuterImageStatusUi(!!dataUrl);
+            syncDigitalBgOuterImageStatusUi(dataUrl);
+        }
+        function loadDigitalBgPanelImageFromStorage() {
+            try { return localStorage.getItem(DIGITAL_BG_PANEL_IMAGE_KEY) || ''; } catch (_) {}
+            return '';
+        }
+        function saveDigitalBgPanelImageToStorage(dataUrl) {
+            try {
+                if (dataUrl) localStorage.setItem(DIGITAL_BG_PANEL_IMAGE_KEY, dataUrl);
+                else localStorage.removeItem(DIGITAL_BG_PANEL_IMAGE_KEY);
+            } catch (_) {}
+        }
+        function applyDigitalBgPanelImageToUi(dataUrl, imageOpacity = 1) {
+            const op = clampThemeOpacity(imageOpacity, 1, 0);
+            document.documentElement.style.setProperty('--global-rv-digital-bg-panel-image-opacity', String(op));
+            document.querySelectorAll('#radio-visual-root .radio-visual-digital-panel').forEach((panel) => {
+                panel.style.setProperty('--rv-digital-bg-panel-image-opacity', String(op));
+                if (dataUrl) {
+                    let img = panel.querySelector('.radio-visual-digital-panel-image');
+                    if (!img) {
+                        img = document.createElement('img');
+                        img.className = 'radio-visual-digital-panel-image';
+                        img.alt = '';
+                        img.decoding = 'async';
+                        img.setAttribute('aria-hidden', 'true');
+                        panel.insertBefore(img, panel.firstChild);
+                    }
+                    if (img.src !== dataUrl) img.src = dataUrl;
+                    panel.classList.add('has-panel-bg-image');
+                } else {
+                    const img = panel.querySelector('.radio-visual-digital-panel-image');
+                    if (img) img.remove();
+                    panel.classList.remove('has-panel-bg-image');
+                }
+            });
+            syncDigitalBgPanelImageStatusUi(dataUrl);
+        }
+        function reapplyDigitalThemeImageLayers() {
+            const theme = loadDigitalThemeFromStorage();
+            applyDigitalBgOuterImageToUi(loadDigitalBgOuterImageFromStorage(), theme.bgOuterImageOpacity);
+            applyDigitalBgPanelImageToUi(loadDigitalBgPanelImageFromStorage(), theme.bgPanelImageOpacity);
+        }
+        function readThemeImageFileAsDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('read failed'));
+                reader.onload = () => resolve(reader.result);
+                reader.readAsDataURL(file);
+            });
+        }
+        function isAnimatedThemeImageType(mime, name) {
+            const t = String(mime || '').toLowerCase();
+            const n = String(name || '').toLowerCase();
+            return t === 'image/gif' || t === 'image/webp' || n.endsWith('.gif') || n.endsWith('.webp');
+        }
+        async function readThemeImageFile(file, maxDim = 1600, quality = 0.82) {
+            if (!file) throw new Error('no file');
+            if (isAnimatedThemeImageType(file.type, file.name)) {
+                return readThemeImageFileAsDataUrl(file);
+            }
+            return compressThemeImageFile(file, maxDim, quality);
         }
         function compressThemeImageFile(file, maxDim = 1600, quality = 0.82) {
             return new Promise((resolve, reject) => {
@@ -851,7 +1080,7 @@ const QUALITY = {
         async function handleDigitalBgOuterImageUpload(file) {
             if (!file || !/^image\//i.test(file.type || '')) return;
             try {
-                const dataUrl = await compressThemeImageFile(file);
+                const dataUrl = await readThemeImageFile(file);
                 saveDigitalBgOuterImageToStorage(dataUrl);
                 const theme = loadDigitalThemeFromStorage();
                 applyDigitalBgOuterImageToUi(dataUrl, theme.bgOuterImageOpacity);
@@ -862,6 +1091,21 @@ const QUALITY = {
             const theme = loadDigitalThemeFromStorage();
             applyDigitalBgOuterImageToUi('', theme.bgOuterImageOpacity);
             if (optDigitalBgOuterImageFile) optDigitalBgOuterImageFile.value = '';
+        }
+        async function handleDigitalBgPanelImageUpload(file) {
+            if (!file || !/^image\//i.test(file.type || '')) return;
+            try {
+                const dataUrl = await readThemeImageFile(file);
+                saveDigitalBgPanelImageToStorage(dataUrl);
+                const theme = loadDigitalThemeFromStorage();
+                applyDigitalBgPanelImageToUi(dataUrl, theme.bgPanelImageOpacity);
+            } catch (_) {}
+        }
+        function clearDigitalBgPanelImage() {
+            saveDigitalBgPanelImageToStorage('');
+            const theme = loadDigitalThemeFromStorage();
+            applyDigitalBgPanelImageToUi('', theme.bgPanelImageOpacity);
+            if (optDigitalBgPanelImageFile) optDigitalBgPanelImageFile.value = '';
         }
         function clampThemeFontScale(raw, fallback = 1) {
             const v = Number(raw);
@@ -893,11 +1137,13 @@ const QUALITY = {
                     d.bgOuterGradientAngle
                 ),
                 bgOuterImageOpacity: clampThemeOpacity(src.bgOuterImageOpacity, d.bgOuterImageOpacity, 0),
+                bgPanelImageOpacity: clampThemeOpacity(src.bgPanelImageOpacity, d.bgPanelImageOpacity, 0),
                 accent: src.accent || d.accent,
                 font: src.font || d.font,
                 btnBlueTop: src.btnBlueTop || d.btnBlueTop,
                 btnBlueBase: src.btnBlueBase || d.btnBlueBase,
                 btnBlueAccent: src.btnBlueAccent || d.btnBlueAccent,
+                btnBlueLabel: src.btnBlueLabel || d.btnBlueLabel,
                 btnBlueOpacity: clampThemeOpacity(src.btnBlueOpacity, d.btnBlueOpacity),
                 btnBlueTextOpacity: clampThemeOpacity(src.btnBlueTextOpacity, d.btnBlueTextOpacity),
                 btnBlueBorderOpacity: clampThemeOpacity(src.btnBlueBorderOpacity, d.btnBlueBorderOpacity, 0),
@@ -984,11 +1230,13 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-bg-gradient-angle', String(t.bgGradientAngle));
             target.style.setProperty('--rv-digital-bg-outer-gradient-angle', String(t.bgOuterGradientAngle));
             target.style.setProperty('--rv-digital-bg-outer-image-opacity', String(t.bgOuterImageOpacity));
+            target.style.setProperty('--rv-digital-bg-panel-image-opacity', String(t.bgPanelImageOpacity));
             target.style.setProperty('--rv-digital-accent-color', t.accent);
             target.style.setProperty('--rv-digital-ui-font', t.font);
             target.style.setProperty('--rv-digital-btn-blue-top', t.btnBlueTop);
             target.style.setProperty('--rv-digital-btn-blue-base', t.btnBlueBase);
             target.style.setProperty('--rv-digital-btn-blue-accent', t.btnBlueAccent);
+            target.style.setProperty('--rv-digital-btn-blue-label', t.btnBlueLabel);
             target.style.setProperty('--rv-digital-btn-blue-opacity', String(t.btnBlueOpacity));
             target.style.setProperty('--rv-digital-btn-blue-text-opacity', String(t.btnBlueTextOpacity));
             target.style.setProperty('--rv-digital-btn-blue-border-opacity', String(t.btnBlueBorderOpacity));
@@ -1024,11 +1272,13 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-bg-gradient-angle', String(t.bgGradientAngle));
             root.style.setProperty('--global-rv-digital-bg-outer-gradient-angle', String(t.bgOuterGradientAngle));
             root.style.setProperty('--global-rv-digital-bg-outer-image-opacity', String(t.bgOuterImageOpacity));
+            root.style.setProperty('--global-rv-digital-bg-panel-image-opacity', String(t.bgPanelImageOpacity));
             root.style.setProperty('--global-rv-digital-accent-color', t.accent);
             root.style.setProperty('--global-rv-digital-ui-font', t.font);
             root.style.setProperty('--global-rv-digital-btn-blue-top', t.btnBlueTop);
             root.style.setProperty('--global-rv-digital-btn-blue-base', t.btnBlueBase);
             root.style.setProperty('--global-rv-digital-btn-blue-accent', t.btnBlueAccent);
+            root.style.setProperty('--global-rv-digital-btn-blue-label', t.btnBlueLabel);
             root.style.setProperty('--global-rv-digital-btn-blue-opacity', String(t.btnBlueOpacity));
             root.style.setProperty('--global-rv-digital-btn-blue-text-opacity', String(t.btnBlueTextOpacity));
             root.style.setProperty('--global-rv-digital-btn-blue-border-opacity', String(t.btnBlueBorderOpacity));
@@ -1045,7 +1295,7 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-clock-color', t.clockColor);
             root.style.setProperty('--global-rv-digital-clock-font-scale', String(t.clockFontScale));
             applyDigitalThemeCssVars(document.getElementById('radio-visual-root'), t);
-            applyDigitalBgOuterImageToUi(loadDigitalBgOuterImageFromStorage(), t.bgOuterImageOpacity);
+            reapplyDigitalThemeImageLayers();
             reflowDigitalRadioThemeUi();
         }
         function readAutoMixMaxMinFromStorage() {
@@ -1093,12 +1343,20 @@ const QUALITY = {
             if (optDigitalBgOuterImageOpacityReadout) {
                 optDigitalBgOuterImageOpacityReadout.textContent = `${Math.round(theme.bgOuterImageOpacity * 100)}%`;
             }
-            syncDigitalBgOuterImageStatusUi(!!loadDigitalBgOuterImageFromStorage());
+            if (optDigitalBgPanelImageOpacity) {
+                optDigitalBgPanelImageOpacity.value = String(Math.round(theme.bgPanelImageOpacity * 100));
+            }
+            if (optDigitalBgPanelImageOpacityReadout) {
+                optDigitalBgPanelImageOpacityReadout.textContent = `${Math.round(theme.bgPanelImageOpacity * 100)}%`;
+            }
+            syncDigitalBgOuterImageStatusUi(loadDigitalBgOuterImageFromStorage());
+            syncDigitalBgPanelImageStatusUi(loadDigitalBgPanelImageFromStorage());
             if (optDigitalAccent) optDigitalAccent.value = theme.accent;
             if (optDigitalFont) optDigitalFont.value = theme.font;
             if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = theme.btnBlueTop;
             if (optDigitalBtnBlueBase) optDigitalBtnBlueBase.value = theme.btnBlueBase;
             if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = theme.btnBlueAccent;
+            if (optDigitalBtnBlueLabel) optDigitalBtnBlueLabel.value = theme.btnBlueLabel;
             if (optDigitalBtnBlueOpacity) optDigitalBtnBlueOpacity.value = String(Math.round(theme.btnBlueOpacity * 100));
             if (optDigitalBtnBlueOpacityReadout) optDigitalBtnBlueOpacityReadout.textContent = `${Math.round(theme.btnBlueOpacity * 100)}%`;
             if (optDigitalBtnBlueTextOpacity) {
@@ -1193,11 +1451,17 @@ const QUALITY = {
                     DEFAULT_DIGITAL_THEME.bgOuterImageOpacity,
                     0
                 ),
+                bgPanelImageOpacity: clampThemeOpacity(
+                    (Number(optDigitalBgPanelImageOpacity && optDigitalBgPanelImageOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.bgPanelImageOpacity,
+                    0
+                ),
                 accent: optDigitalAccent ? optDigitalAccent.value : DEFAULT_DIGITAL_THEME.accent,
                 font: optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.font,
                 btnBlueTop: optDigitalBtnBlueTop ? optDigitalBtnBlueTop.value : DEFAULT_DIGITAL_THEME.btnBlueTop,
                 btnBlueBase: optDigitalBtnBlueBase ? optDigitalBtnBlueBase.value : DEFAULT_DIGITAL_THEME.btnBlueBase,
                 btnBlueAccent: optDigitalBtnBlueAccent ? optDigitalBtnBlueAccent.value : DEFAULT_DIGITAL_THEME.btnBlueAccent,
+                btnBlueLabel: optDigitalBtnBlueLabel ? optDigitalBtnBlueLabel.value : DEFAULT_DIGITAL_THEME.btnBlueLabel,
                 btnBlueOpacity: clampThemeOpacity(
                     (Number(optDigitalBtnBlueOpacity && optDigitalBtnBlueOpacity.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.btnBlueOpacity
@@ -1270,11 +1534,18 @@ const QUALITY = {
             if (optDigitalBgOuterImageOpacityReadout) {
                 optDigitalBgOuterImageOpacityReadout.textContent = `${Math.round(t.bgOuterImageOpacity * 100)}%`;
             }
+            if (optDigitalBgPanelImageOpacity) {
+                optDigitalBgPanelImageOpacity.value = String(Math.round(t.bgPanelImageOpacity * 100));
+            }
+            if (optDigitalBgPanelImageOpacityReadout) {
+                optDigitalBgPanelImageOpacityReadout.textContent = `${Math.round(t.bgPanelImageOpacity * 100)}%`;
+            }
             if (optDigitalAccent) optDigitalAccent.value = t.accent;
             if (optDigitalFont && t.font) optDigitalFont.value = t.font;
             if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = t.btnBlueTop;
             if (optDigitalBtnBlueBase) optDigitalBtnBlueBase.value = t.btnBlueBase;
             if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = t.btnBlueAccent;
+            if (optDigitalBtnBlueLabel) optDigitalBtnBlueLabel.value = t.btnBlueLabel;
             if (optDigitalBtnBlueOpacity) optDigitalBtnBlueOpacity.value = String(Math.round(t.btnBlueOpacity * 100));
             if (optDigitalBtnBlueOpacityReadout) optDigitalBtnBlueOpacityReadout.textContent = `${Math.round(t.btnBlueOpacity * 100)}%`;
             if (optDigitalBtnBlueTextOpacity) {
@@ -1397,6 +1668,7 @@ const QUALITY = {
         function resetAppearanceOptionsSection() {
             saveDigitalThemeToStorage(DEFAULT_DIGITAL_THEME);
             clearDigitalBgOuterImage();
+            clearDigitalBgPanelImage();
             applyDigitalRadioTheme(DEFAULT_DIGITAL_THEME);
             applyDigitalThemeToControls(DEFAULT_DIGITAL_THEME);
             applyDigitalBgGifFromOptions('');
@@ -1506,8 +1778,8 @@ const QUALITY = {
             }
             [optDigitalBgA, optDigitalBgB, optDigitalBgC, optDigitalAccent,
                 optDigitalBgOuterA, optDigitalBgOuterB, optDigitalBgOuterC, optDigitalBgGradientAngle,
-                optDigitalBgOuterGradientAngle, optDigitalBgOuterImageOpacity,
-                optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent, optDigitalBtnBlueOpacity,
+                optDigitalBgOuterGradientAngle, optDigitalBgOuterImageOpacity, optDigitalBgPanelImageOpacity,
+                optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent, optDigitalBtnBlueLabel, optDigitalBtnBlueOpacity,
                 optDigitalBtnBlueTextOpacity, optDigitalBtnBlueBorderOpacity,
                 optDigitalBtnPurpleTop, optDigitalBtnPurpleBase, optDigitalBtnPurpleLabel, optDigitalBtnPurpleActive,
                 optDigitalBtnPurpleOpacity, optDigitalBtnPurpleTextOpacity, optDigitalBtnPurpleBorderOpacity,
@@ -1549,6 +1821,26 @@ const QUALITY = {
                     if (isOptionsOpen()) armOptionsAutoClose();
                 });
             }
+            if (optDigitalBgPanelImageUpload && optDigitalBgPanelImageFile) {
+                optDigitalBgPanelImageUpload.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    optDigitalBgPanelImageFile.click();
+                });
+                optDigitalBgPanelImageFile.addEventListener('change', async () => {
+                    const file = optDigitalBgPanelImageFile.files && optDigitalBgPanelImageFile.files[0];
+                    if (!file) return;
+                    await handleDigitalBgPanelImageUpload(file);
+                    onThemeChange();
+                    if (isOptionsOpen()) armOptionsAutoClose();
+                });
+            }
+            if (optDigitalBgPanelImageClear) {
+                optDigitalBgPanelImageClear.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    clearDigitalBgPanelImage();
+                    if (isOptionsOpen()) armOptionsAutoClose();
+                });
+            }
             if (optAppearanceReset) {
                 optAppearanceReset.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -1561,25 +1853,21 @@ const QUALITY = {
                 applySpectrumSettingsToControls(settings);
                 applyDigitalSpectrumSettings(settings);
             };
-            if (optSpectrumColorStream) {
-                optSpectrumColorStream.addEventListener('change', onSpectrumSettingsChange);
-            }
-            if (optSpectrumSize) {
-                optSpectrumSize.addEventListener('input', onSpectrumSettingsChange);
-                optSpectrumSize.addEventListener('change', onSpectrumSettingsChange);
-            }
-            if (optSpectrumOpacity) {
-                optSpectrumOpacity.addEventListener('input', onSpectrumSettingsChange);
-                optSpectrumOpacity.addEventListener('change', onSpectrumSettingsChange);
-            }
-            if (optSpectrumAudioStrength) {
-                optSpectrumAudioStrength.addEventListener('input', onSpectrumSettingsChange);
-                optSpectrumAudioStrength.addEventListener('change', onSpectrumSettingsChange);
-            }
-            if (optSpectrumColorFlow) {
-                optSpectrumColorFlow.addEventListener('input', onSpectrumSettingsChange);
-                optSpectrumColorFlow.addEventListener('change', onSpectrumSettingsChange);
-            }
+            [
+                optSpectrumColorStream, optSpectrumEqColorStream,
+                optSpectrumSize, optSpectrumOpacity, optSpectrumAudioStrength, optSpectrumColorFlow,
+                optSpectrumEqSize, optSpectrumEqOpacity, optSpectrumEqAudioStrength, optSpectrumEqColorFlow,
+                optSpectrumRotateLHi, optSpectrumRotateLMed, optSpectrumRotateLLo,
+                optSpectrumRotateRHi, optSpectrumRotateRMed, optSpectrumRotateRLo
+            ].forEach((el) => {
+                if (!el) return;
+                if (el.tagName === 'SELECT') {
+                    el.addEventListener('change', onSpectrumSettingsChange);
+                } else {
+                    el.addEventListener('input', onSpectrumSettingsChange);
+                    el.addEventListener('change', onSpectrumSettingsChange);
+                }
+            });
             if (optSpectrumReset) {
                 optSpectrumReset.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -4605,6 +4893,7 @@ function exposeAppBindingsToGlobal() {
     try { g.closeKeyboardShortcutsPanel = closeKeyboardShortcutsPanel; } catch (_) {}
     try { g.applyDigitalBgGifFromOptions = applyDigitalBgGifFromOptions; } catch (_) {}
     try { g.applyDigitalRadioTheme = applyDigitalRadioTheme; } catch (_) {}
+    try { g.reapplyDigitalThemeImageLayers = reapplyDigitalThemeImageLayers; } catch (_) {}
     try { g.applyDigitalSpectrumSettings = applyDigitalSpectrumSettings; } catch (_) {}
     try { g.closeOptionsPanel = closeOptionsPanel; } catch (_) {}
     try { g.code = code; } catch (_) {}

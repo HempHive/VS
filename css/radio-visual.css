@@ -71,13 +71,14 @@
             --rv-digital-bg-outer-c: var(--global-rv-digital-bg-outer-c, #0c1020);
             --rv-digital-bg-gradient-angle: var(--global-rv-digital-bg-gradient-angle, 165);
             --rv-digital-bg-outer-gradient-angle: var(--global-rv-digital-bg-outer-gradient-angle, 165);
-            --rv-digital-bg-outer-image: var(--global-rv-digital-bg-outer-image, none);
             --rv-digital-bg-outer-image-opacity: var(--global-rv-digital-bg-outer-image-opacity, 1);
+            --rv-digital-bg-panel-image-opacity: var(--global-rv-digital-bg-panel-image-opacity, 1);
             --rv-digital-accent-color: var(--global-rv-digital-accent-color, #ffd246);
             --rv-digital-ui-font: var(--global-rv-digital-ui-font, 'Orbitron', 'Share Tech Mono', ui-monospace, monospace);
             --rv-digital-btn-blue-top: var(--global-rv-digital-btn-blue-top, #123048);
             --rv-digital-btn-blue-base: var(--global-rv-digital-btn-blue-base, #081820);
             --rv-digital-btn-blue-accent: var(--global-rv-digital-btn-blue-accent, #00dcff);
+            --rv-digital-btn-blue-label: var(--global-rv-digital-btn-blue-label, #9eeeff);
             --rv-digital-btn-blue-opacity: var(--global-rv-digital-btn-blue-opacity, 1);
             --rv-digital-btn-blue-text-opacity: var(--global-rv-digital-btn-blue-text-opacity, 1);
             --rv-digital-btn-blue-border-opacity: var(--global-rv-digital-btn-blue-border-opacity, 1);
@@ -479,6 +480,27 @@
                 0 0 clamp(20px, 4.17cqw, 40px) rgba(0, 180, 255, 0.12),
                 inset 0 0 clamp(30px, 6.25cqw, 60px) rgba(0, 120, 200, 0.06);
         }
+        #radio-visual-root .radio-visual-digital-panel.has-panel-bg-image {
+            background:
+                linear-gradient(180deg, color-mix(in srgb, var(--rv-digital-accent-color) 14%, transparent) 0%, transparent 28%);
+        }
+        #radio-visual-root .radio-visual-digital-panel-image {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            pointer-events: none;
+            border-radius: inherit;
+            opacity: var(--rv-digital-bg-panel-image-opacity, 1);
+        }
+        #radio-visual-root .radio-visual-digital-panel.has-panel-bg-image > *:not(.radio-visual-digital-panel-image) {
+            position: relative;
+            z-index: 1;
+        }
         #radio-visual-root .radio-visual-digital-display {
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
             background: rgba(0, 20, 30, 0.85);
@@ -537,11 +559,15 @@
                 color-mix(in srgb, var(--rv-digital-btn-blue-top) calc(var(--rv-digital-btn-blue-opacity, 1) * 100%), transparent),
                 color-mix(in srgb, var(--rv-digital-btn-blue-base) calc(var(--rv-digital-btn-blue-opacity, 1) * 100%), transparent)
             );
-            color: color-mix(in srgb, var(--rv-digital-btn-blue-accent) 72%, white 28%);
+            color: var(--rv-digital-btn-blue-label);
             min-width: 72px;
         }
         #radio-visual-root .radio-visual-digital-station-row .radio-visual-btn .radio-visual-btn-label {
             opacity: var(--rv-digital-btn-blue-text-opacity, 1);
+            color: var(--rv-digital-btn-blue-label);
+            text-shadow:
+                0 0 6px color-mix(in srgb, var(--rv-digital-btn-blue-label) 95%, transparent),
+                0 0 14px color-mix(in srgb, var(--rv-digital-btn-blue-label) 55%, transparent);
         }
         #radio-visual-root .radio-visual-digital-eq {
             height: clamp(56px, 10vh, 80px);
@@ -573,18 +599,16 @@
             overflow: hidden;
             contain: paint;
         }
-        #radio-visual-root:has(.radio-visual-skin--digital.is-active)::before,
-        #radio-visual-root.radio-visual-root--digital-only::before,
-        #radio-visual-root.radio-visual-root--digital-active::before {
-            content: '';
+        #radio-visual-root .radio-visual-digital-theme-outer-image {
             position: absolute;
             inset: 0;
             z-index: 0;
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
             pointer-events: none;
-            background-image: var(--rv-digital-bg-outer-image, none);
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
             opacity: var(--rv-digital-bg-outer-image-opacity, 1);
         }
         #radio-visual-root:has(.radio-visual-skin--digital.is-active),
@@ -598,13 +622,14 @@
             --rv-digital-bg-outer-c: var(--global-rv-digital-bg-outer-c, #0c1020);
             --rv-digital-bg-gradient-angle: var(--global-rv-digital-bg-gradient-angle, 165);
             --rv-digital-bg-outer-gradient-angle: var(--global-rv-digital-bg-outer-gradient-angle, 165);
-            --rv-digital-bg-outer-image: var(--global-rv-digital-bg-outer-image, none);
             --rv-digital-bg-outer-image-opacity: var(--global-rv-digital-bg-outer-image-opacity, 1);
+            --rv-digital-bg-panel-image-opacity: var(--global-rv-digital-bg-panel-image-opacity, 1);
             --rv-digital-accent-color: var(--global-rv-digital-accent-color, #ffd246);
             --rv-digital-ui-font: var(--global-rv-digital-ui-font, 'Orbitron', 'Share Tech Mono', ui-monospace, monospace);
             --rv-digital-btn-blue-top: var(--global-rv-digital-btn-blue-top, #123048);
             --rv-digital-btn-blue-base: var(--global-rv-digital-btn-blue-base, #081820);
             --rv-digital-btn-blue-accent: var(--global-rv-digital-btn-blue-accent, #00dcff);
+            --rv-digital-btn-blue-label: var(--global-rv-digital-btn-blue-label, #9eeeff);
             --rv-digital-btn-blue-opacity: var(--global-rv-digital-btn-blue-opacity, 1);
             --rv-digital-btn-blue-text-opacity: var(--global-rv-digital-btn-blue-text-opacity, 1);
             --rv-digital-btn-blue-border-opacity: var(--global-rv-digital-btn-blue-border-opacity, 1);
@@ -626,9 +651,9 @@
                 linear-gradient(calc(var(--rv-digital-bg-outer-gradient-angle, 165) * 1deg), var(--rv-digital-bg-outer-a) 0%, var(--rv-digital-bg-outer-b) 38%, var(--rv-digital-bg-outer-c) 100%);
             color: #e8f4ff;
         }
-        #radio-visual-root:has(.radio-visual-skin--digital.is-active) > *,
-        #radio-visual-root.radio-visual-root--digital-only > *,
-        #radio-visual-root.radio-visual-root--digital-active > * {
+        #radio-visual-root:has(.radio-visual-skin--digital.is-active) > *:not(.radio-visual-digital-theme-outer-image),
+        #radio-visual-root.radio-visual-root--digital-only > *:not(.radio-visual-digital-theme-outer-image),
+        #radio-visual-root.radio-visual-root--digital-active > *:not(.radio-visual-digital-theme-outer-image) {
             position: relative;
             z-index: 1;
         }
@@ -2160,7 +2185,7 @@
                 color-mix(in srgb, var(--rv-digital-btn-blue-top) calc(var(--rv-digital-btn-blue-opacity, 1) * 100%), transparent),
                 color-mix(in srgb, var(--rv-digital-btn-blue-base) calc(var(--rv-digital-btn-blue-opacity, 1) * 100%), transparent)
             );
-            color: color-mix(in srgb, var(--rv-digital-btn-blue-accent) 72%, white 28%);
+            color: var(--rv-digital-btn-blue-label);
             box-shadow:
                 0 2px 0 color-mix(in srgb, var(--rv-digital-btn-blue-base) 90%, black),
                 0 4px 12px color-mix(in srgb, var(--rv-digital-btn-blue-base) 40%, transparent);
@@ -2261,7 +2286,7 @@
             display: block;
             width: 100%;
             opacity: var(--rv-digital-btn-blue-text-opacity, 1);
-            color: color-mix(in srgb, var(--rv-digital-btn-blue-accent) 72%, white 28%);
+            color: var(--rv-digital-btn-blue-label);
             font-weight: 800;
             letter-spacing: 0.02em;
             line-height: 1;
@@ -2270,7 +2295,9 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            text-shadow: 0 0 6px color-mix(in srgb, var(--rv-digital-btn-blue-accent) 45%, transparent);
+            text-shadow:
+                0 0 6px color-mix(in srgb, var(--rv-digital-btn-blue-label) 95%, transparent),
+                0 0 14px color-mix(in srgb, var(--rv-digital-btn-blue-label) 55%, transparent);
         }
         #radio-visual-root .radio-visual-digital-toolbar-text-btn[data-rv-digital="ai"] .radio-visual-btn-label {
             text-transform: none;

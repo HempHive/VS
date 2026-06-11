@@ -264,6 +264,20 @@
                         <input type="range" class="options-range" id="opt-digital-bg-gradient-angle" min="0" max="360" step="1" value="165" aria-label="Panel background gradient rotation angle">
                         <span class="options-readout" id="opt-digital-bg-gradient-angle-readout">165°</span>
                     </div>
+                    <div class="options-row options-row--stack">
+                        <label class="options-label" for="opt-digital-bg-panel-image-file">Panel image</label>
+                        <div class="options-upload-row">
+                            <input type="file" class="options-file-input" id="opt-digital-bg-panel-image-file" accept="image/png,image/jpeg,image/webp,image/gif" aria-label="Upload panel background image">
+                            <button type="button" class="options-btn options-btn--compact" id="opt-digital-bg-panel-image-upload">Upload image</button>
+                            <button type="button" class="options-btn options-btn--compact options-btn--ghost" id="opt-digital-bg-panel-image-clear">Remove</button>
+                        </div>
+                        <span class="options-hint options-hint--inline" id="opt-digital-bg-panel-image-status">No image uploaded — panel gradient colours are used</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-bg-panel-image-opacity">Panel image opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-bg-panel-image-opacity" min="0" max="100" step="1" value="100" aria-label="Panel background image opacity">
+                        <span class="options-readout" id="opt-digital-bg-panel-image-opacity-readout">100%</span>
+                    </div>
                     <p class="options-subsection-title">Screen background</p>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-bg-outer-a">Top</label>
@@ -285,11 +299,11 @@
                     <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-digital-bg-outer-image-file">Background image</label>
                         <div class="options-upload-row">
-                            <input type="file" class="options-file-input" id="opt-digital-bg-outer-image-file" accept="image/*" aria-label="Upload screen background image">
+                            <input type="file" class="options-file-input" id="opt-digital-bg-outer-image-file" accept="image/png,image/jpeg,image/webp,image/gif" aria-label="Upload screen background image">
                             <button type="button" class="options-btn options-btn--compact" id="opt-digital-bg-outer-image-upload">Upload image</button>
                             <button type="button" class="options-btn options-btn--compact options-btn--ghost" id="opt-digital-bg-outer-image-clear">Remove</button>
                         </div>
-                        <span class="options-hint options-hint--inline" id="opt-digital-bg-outer-image-status">No image uploaded</span>
+                        <span class="options-hint options-hint--inline" id="opt-digital-bg-outer-image-status">No image uploaded — PNG, JPEG, WebP, or animated GIF/WebP</span>
                     </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-bg-outer-image-opacity">Image opacity</label>
@@ -329,6 +343,10 @@
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-btn-blue-accent">Accent</label>
                         <input type="color" class="options-color" id="opt-digital-btn-blue-accent" value="#00dcff" aria-label="Blue toolbar button accent">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-btn-blue-label">Label</label>
+                        <input type="color" class="options-color" id="opt-digital-btn-blue-label" value="#9eeeff" aria-label="Blue toolbar button label colour">
                     </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-btn-blue-opacity">Fill opacity</label>
@@ -424,6 +442,8 @@
                         <h4 class="options-section-title">Spectrum</h4>
                         <button type="button" class="options-section-reset" id="opt-spectrum-reset" title="Reset Spectrum" aria-label="Reset Spectrum">🔄</button>
                     </div>
+                    <p class="options-hint options-hint--inline">Spectrum mode controls apply when the centre hub is in Spectrum. Equaliser controls apply to the left and right flowers in Equaliser and other hub modes.</p>
+                    <p class="options-subsection-title">Spectrum mode</p>
                     <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-spectrum-color-stream">Colour stream</label>
                         <select class="options-select options-select--full" id="opt-spectrum-color-stream" aria-label="Spectrum colour stream preset"></select>
@@ -447,6 +467,63 @@
                         <label class="options-label" for="opt-spectrum-color-flow">Colour flow</label>
                         <input type="range" class="options-range" id="opt-spectrum-color-flow" min="25" max="300" step="5" aria-label="Spectrum colour flow speed">
                         <span class="options-readout" id="opt-spectrum-color-flow-readout">100%</span>
+                    </div>
+                    <p class="options-subsection-title">Equaliser side spectrums</p>
+                    <div class="options-row options-row--stack">
+                        <label class="options-label" for="opt-spectrum-eq-color-stream">Colour stream</label>
+                        <select class="options-select options-select--full" id="opt-spectrum-eq-color-stream" aria-label="Equaliser spectrum colour stream preset"></select>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-eq-size">Size</label>
+                        <input type="range" class="options-range" id="opt-spectrum-eq-size" min="35" max="280" step="5" aria-label="Equaliser spectrum flower size">
+                        <span class="options-readout" id="opt-spectrum-eq-size-readout">100%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-eq-opacity">Opacity</label>
+                        <input type="range" class="options-range" id="opt-spectrum-eq-opacity" min="15" max="100" step="1" aria-label="Equaliser spectrum opacity">
+                        <span class="options-readout" id="opt-spectrum-eq-opacity-readout">100%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-eq-audio-strength">Audio strength</label>
+                        <input type="range" class="options-range" id="opt-spectrum-eq-audio-strength" min="25" max="300" step="5" aria-label="Equaliser spectrum audio response strength">
+                        <span class="options-readout" id="opt-spectrum-eq-audio-strength-readout">100%</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-eq-color-flow">Colour flow</label>
+                        <input type="range" class="options-range" id="opt-spectrum-eq-color-flow" min="25" max="300" step="5" aria-label="Equaliser spectrum colour flow speed">
+                        <span class="options-readout" id="opt-spectrum-eq-color-flow-readout">100%</span>
+                    </div>
+                    <p class="options-subsection-title">Left spectrum ribbon rotation</p>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-rotate-l-hi">Hi</label>
+                        <input type="range" class="options-range" id="opt-spectrum-rotate-l-hi" min="0" max="360" step="1" value="0" aria-label="Left spectrum high ribbon rotation">
+                        <span class="options-readout" id="opt-spectrum-rotate-l-hi-readout">0°</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-rotate-l-med">Med</label>
+                        <input type="range" class="options-range" id="opt-spectrum-rotate-l-med" min="0" max="360" step="1" value="0" aria-label="Left spectrum mid ribbon rotation">
+                        <span class="options-readout" id="opt-spectrum-rotate-l-med-readout">0°</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-rotate-l-lo">Lo</label>
+                        <input type="range" class="options-range" id="opt-spectrum-rotate-l-lo" min="0" max="360" step="1" value="0" aria-label="Left spectrum low ribbon rotation">
+                        <span class="options-readout" id="opt-spectrum-rotate-l-lo-readout">0°</span>
+                    </div>
+                    <p class="options-subsection-title">Right spectrum ribbon rotation</p>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-rotate-r-hi">Hi</label>
+                        <input type="range" class="options-range" id="opt-spectrum-rotate-r-hi" min="0" max="360" step="1" value="0" aria-label="Right spectrum high ribbon rotation">
+                        <span class="options-readout" id="opt-spectrum-rotate-r-hi-readout">0°</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-rotate-r-med">Med</label>
+                        <input type="range" class="options-range" id="opt-spectrum-rotate-r-med" min="0" max="360" step="1" value="0" aria-label="Right spectrum mid ribbon rotation">
+                        <span class="options-readout" id="opt-spectrum-rotate-r-med-readout">0°</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-spectrum-rotate-r-lo">Lo</label>
+                        <input type="range" class="options-range" id="opt-spectrum-rotate-r-lo" min="0" max="360" step="1" value="0" aria-label="Right spectrum low ribbon rotation">
+                        <span class="options-readout" id="opt-spectrum-rotate-r-lo-readout">0°</span>
                     </div>
                 </section>
                 <section class="options-section" aria-label="Auto-Mix">
