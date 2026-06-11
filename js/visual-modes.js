@@ -930,14 +930,15 @@
             if (!spin.fxAxis || !spin.fxFrontMesh || !spin.fxBackMesh) return;
             spin.fxFrontMesh.rotation.set(0, 0, 0);
             spin.fxFrontMesh.position.z = 0.001;
-            if (spin.frontMat) spin.fxFrontMesh.material = spin.frontMat;
             spin.fxBackMesh.position.z = -0.001;
+            if (spin.frontMat) spin.fxFrontMesh.material = spin.frontMat;
             if (spin.spinAxis === 'y') {
                 spin.fxBackMesh.rotation.set(0, Math.PI, 0);
+                if (spin.frontMat) spin.fxBackMesh.material = spin.frontMat;
             } else {
                 spin.fxBackMesh.rotation.set(Math.PI, 0, 0);
+                if (spin.backMatY) spin.fxBackMesh.material = spin.backMatY;
             }
-            if (spin.backMatY) spin.fxBackMesh.material = spin.backMatY;
         }
 
         function updateLogoCardBackFace(spin) {
