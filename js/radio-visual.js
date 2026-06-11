@@ -4619,13 +4619,15 @@
             _syncSpectrumStagingScale() {
                 const row = this.els.digitalSpectrumRow;
                 if (!row) return;
-                const sideScale = this._getActiveSpectrumSideScale();
+                const sideScale = this._digitalHubMode === 'spectrum'
+                    ? this._clampSpectrumSideScale(
+                        this._spectrumStagingScale,
+                        this._getSpectrumHubSideScale()
+                    )
+                    : this._getEqualiserSideScale();
                 try {
                     row.style.setProperty('--rv-spectrum-side-scale', String(sideScale));
                 } catch (_) {}
-                if (this._digitalHubMode === 'spectrum') {
-                    this._spectrumStagingScale = this._getSpectrumHubSideScale();
-                }
                 this._syncSpectrumStagingPan();
             }
 
@@ -4682,7 +4684,8 @@
                     applyScaleFromSlider();
                     try { this._persistSpectrumScaleFromStaging(); } catch (_) {}
                 };
-                applyScaleFromSlider();
+                this._spectrumStagingScale = this._getSpectrumHubSideScale();
+                slider.value = String(this._spectrumScaleToSliderPct(this._spectrumStagingScale));
                 this._applySpectrumStagingPanNorm(this._spectrumStagingPanNorm, { skipSlider: !panSlider });
 
                 slider.addEventListener('input', () => {
@@ -5437,6 +5440,11 @@
                     try { this._syncDigitalHubMixFxButtons(); } catch (_) {}
                 }
                 if (mode === 'spectrum') {
+                    this._spectrumStagingScale = this._getSpectrumHubSideScale();
+                    const scaleSlider = this.els && this.els.digitalSpectrumScaleSlider;
+                    if (scaleSlider) {
+                        scaleSlider.value = String(this._spectrumScaleToSliderPct(this._spectrumStagingScale));
+                    }
                     try { this._syncSpectrumStagingScale(); } catch (_) {}
                     try { this._hideDigitalSpectrumStagingSlider(true); } catch (_) {}
                 } else {
