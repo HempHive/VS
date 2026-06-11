@@ -97,6 +97,7 @@
             --rv-digital-clock-font: var(--global-rv-digital-clock-font, var(--rv-digital-ui-font));
             --rv-digital-clock-color: var(--global-rv-digital-clock-color, #fff566);
             --rv-digital-clock-font-scale: var(--global-rv-digital-clock-font-scale, 1);
+            --rv-digital-clock-opacity: var(--global-rv-digital-clock-opacity, 1);
         }
         #radio-visual-root .radio-visual-stations-line {
             display: flex;
@@ -688,6 +689,7 @@
             --rv-digital-clock-font: var(--global-rv-digital-clock-font, var(--rv-digital-ui-font));
             --rv-digital-clock-color: var(--global-rv-digital-clock-color, #fff566);
             --rv-digital-clock-font-scale: var(--global-rv-digital-clock-font-scale, 1);
+            --rv-digital-clock-opacity: var(--global-rv-digital-clock-opacity, 1);
             background:
                 radial-gradient(ellipse 120% 80% at 50% 0%, color-mix(in srgb, var(--rv-digital-accent-color) 22%, transparent), transparent 55%),
                 radial-gradient(ellipse 90% 70% at 50% 100%, color-mix(in srgb, var(--rv-digital-bg-outer-b) 45%, transparent), transparent 60%),
@@ -1208,7 +1210,7 @@
             min-width: 0;
             overflow: hidden;
             text-overflow: ellipsis;
-            opacity: 1;
+            opacity: var(--rv-digital-clock-opacity, 1);
             text-shadow:
                 0 0 12px rgba(0, 0, 0, 0.9),
                 0 1px 3px rgba(0, 0, 0, 0.85),
@@ -2466,6 +2468,7 @@
             font-variant-numeric: tabular-nums;
             letter-spacing: clamp(0.01em, 0.18cqw, 0.05em);
             color: var(--rv-digital-clock-color);
+            opacity: var(--rv-digital-clock-opacity, 1);
             text-shadow:
                 0 0 12px rgba(0, 0, 0, 0.9),
                 0 0 10px color-mix(in srgb, var(--rv-digital-clock-color) 35%, transparent);
@@ -2481,6 +2484,7 @@
             font-variant-numeric: tabular-nums;
             letter-spacing: clamp(0.02em, 0.25cqw, 0.06em);
             color: var(--rv-digital-clock-color);
+            opacity: var(--rv-digital-clock-opacity, 1);
             text-shadow:
                 0 0 12px rgba(0, 0, 0, 0.9),
                 0 0 10px color-mix(in srgb, var(--rv-digital-clock-color) 35%, transparent);

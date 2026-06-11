@@ -492,6 +492,7 @@ const QUALITY = {
             clockFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
             clockColor: '#fff566',
             clockFontScale: 1,
+            clockOpacity: 1,
             clockFormat: 'weekday-time',
             showButtonInfoOverlays: false,
             showBlueToolbar: true,
@@ -698,6 +699,8 @@ const QUALITY = {
         const optDigitalClockColor = document.getElementById('opt-digital-clock-color');
         const optDigitalClockFontScale = document.getElementById('opt-digital-clock-font-scale');
         const optDigitalClockFontScaleReadout = document.getElementById('opt-digital-clock-font-scale-readout');
+        const optDigitalClockOpacity = document.getElementById('opt-digital-clock-opacity');
+        const optDigitalClockOpacityReadout = document.getElementById('opt-digital-clock-opacity-readout');
         const optAppearanceReset = document.getElementById('opt-appearance-reset');
         const optAutomixReset = document.getElementById('opt-automix-reset');
         const optAutofadeReset = document.getElementById('opt-autofade-reset');
@@ -1255,6 +1258,7 @@ const QUALITY = {
                 clockFont: src.clockFont || d.clockFont,
                 clockColor: src.clockColor || d.clockColor,
                 clockFontScale: clampThemeFontScale(src.clockFontScale, d.clockFontScale),
+                clockOpacity: clampThemeOpacity(src.clockOpacity, d.clockOpacity, 0),
                 clockFormat,
                 showButtonInfoOverlays: src.showButtonInfoOverlays === true,
                 showBlueToolbar: src.showBlueToolbar !== false,
@@ -1363,6 +1367,7 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-clock-font', t.clockFont);
             target.style.setProperty('--rv-digital-clock-color', t.clockColor);
             target.style.setProperty('--rv-digital-clock-font-scale', String(t.clockFontScale));
+            target.style.setProperty('--rv-digital-clock-opacity', String(t.clockOpacity));
             target.style.setProperty('--rv-digital-staging-border-color', t.stagingBorderColor);
             target.style.setProperty('--rv-digital-staging-border-opacity', String(t.stagingBorderOpacity));
             target.style.setProperty('--rv-digital-staging-glow-color', t.stagingGlowColor);
@@ -1431,6 +1436,7 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-clock-font', t.clockFont);
             root.style.setProperty('--global-rv-digital-clock-color', t.clockColor);
             root.style.setProperty('--global-rv-digital-clock-font-scale', String(t.clockFontScale));
+            root.style.setProperty('--global-rv-digital-clock-opacity', String(t.clockOpacity));
             applyDigitalThemeCssVars(document.getElementById('radio-visual-root'), t);
             applyButtonInfoOverlaysFromTheme(t);
             reapplyDigitalThemeImageLayers();
@@ -1551,6 +1557,12 @@ const QUALITY = {
             if (optDigitalClockColor) optDigitalClockColor.value = theme.clockColor;
             if (optDigitalClockFontScale) optDigitalClockFontScale.value = String(Math.round(theme.clockFontScale * 100));
             if (optDigitalClockFontScaleReadout) optDigitalClockFontScaleReadout.textContent = `${Math.round(theme.clockFontScale * 100)}%`;
+            if (optDigitalClockOpacity) {
+                optDigitalClockOpacity.value = String(Math.round(theme.clockOpacity * 100));
+            }
+            if (optDigitalClockOpacityReadout) {
+                optDigitalClockOpacityReadout.textContent = `${Math.round(theme.clockOpacity * 100)}%`;
+            }
             if (optDigitalButtonInfoOverlays) optDigitalButtonInfoOverlays.checked = !!theme.showButtonInfoOverlays;
             if (optDigitalBlueToolbarVisible) optDigitalBlueToolbarVisible.checked = theme.showBlueToolbar !== false;
             if (optDigitalPurpleButtonsVisible) optDigitalPurpleButtonsVisible.checked = theme.showPurpleButtons !== false;
@@ -1695,6 +1707,11 @@ const QUALITY = {
                     (Number(optDigitalClockFontScale && optDigitalClockFontScale.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.clockFontScale
                 ),
+                clockOpacity: clampThemeOpacity(
+                    (Number(optDigitalClockOpacity && optDigitalClockOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.clockOpacity,
+                    0
+                ),
                 clockFormat: (optDigitalClockFormat && DIGITAL_CLOCK_FORMATS[optDigitalClockFormat.value])
                     ? optDigitalClockFormat.value
                     : DEFAULT_DIGITAL_THEME.clockFormat,
@@ -1815,6 +1832,12 @@ const QUALITY = {
             if (optDigitalClockColor) optDigitalClockColor.value = t.clockColor;
             if (optDigitalClockFontScale) optDigitalClockFontScale.value = String(Math.round(t.clockFontScale * 100));
             if (optDigitalClockFontScaleReadout) optDigitalClockFontScaleReadout.textContent = `${Math.round(t.clockFontScale * 100)}%`;
+            if (optDigitalClockOpacity) {
+                optDigitalClockOpacity.value = String(Math.round(t.clockOpacity * 100));
+            }
+            if (optDigitalClockOpacityReadout) {
+                optDigitalClockOpacityReadout.textContent = `${Math.round(t.clockOpacity * 100)}%`;
+            }
             if (optDigitalButtonInfoOverlays) optDigitalButtonInfoOverlays.checked = !!t.showButtonInfoOverlays;
             if (optDigitalBlueToolbarVisible) optDigitalBlueToolbarVisible.checked = t.showBlueToolbar !== false;
             if (optDigitalPurpleButtonsVisible) optDigitalPurpleButtonsVisible.checked = t.showPurpleButtons !== false;
@@ -1874,6 +1897,9 @@ const QUALITY = {
             }
             if (optDigitalClockFontScale && optDigitalClockFontScaleReadout) {
                 optDigitalClockFontScaleReadout.textContent = `${optDigitalClockFontScale.value}%`;
+            }
+            if (optDigitalClockOpacity && optDigitalClockOpacityReadout) {
+                optDigitalClockOpacityReadout.textContent = `${optDigitalClockOpacity.value}%`;
             }
             if (optDigitalBgGradientAngle && optDigitalBgGradientAngleReadout) {
                 optDigitalBgGradientAngleReadout.textContent = `${optDigitalBgGradientAngle.value}°`;
@@ -2017,6 +2043,7 @@ const QUALITY = {
                 clockFont: d.clockFont,
                 clockColor: d.clockColor,
                 clockFontScale: d.clockFontScale,
+                clockOpacity: d.clockOpacity,
                 clockFormat: d.clockFormat
             });
         }
@@ -2313,7 +2340,7 @@ const QUALITY = {
                 optDigitalBtnPurpleTop, optDigitalBtnPurpleBase, optDigitalBtnPurpleLabel, optDigitalBtnPurpleActive,
                 optDigitalBtnPurpleOpacity, optDigitalBtnPurpleTextOpacity, optDigitalBtnPurpleBorderOpacity,
                 optDigitalBtnBlueFontScale, optDigitalBtnPurpleFontScale,
-                optDigitalClockColor, optDigitalClockFontScale
+                optDigitalClockColor, optDigitalClockFontScale, optDigitalClockOpacity
             ].forEach((el) => {
                 if (!el) return;
                 el.addEventListener('input', onThemeChange);
