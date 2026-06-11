@@ -2932,18 +2932,6 @@
             return false;
         }
 
-        function shouldShowReturnRadioButton() {
-            try {
-                const visName = state.activeVisualizer && state.activeVisualizer.name;
-                if (visName === 'DJ Decks') return true;
-                if (!globalThis.__vizLaunchedFromRadioVisual) return false;
-                if (!visName || isRadioVisualModeName(visName)) return false;
-                return true;
-            } catch (_) {
-                return false;
-            }
-        }
-
         function updateDjDecksShortcutVisibility() {
             try {
                 const btn = document.getElementById('btn-dj-decks');
@@ -2981,13 +2969,10 @@
                 }
                 const btnRadio = document.getElementById('btn-return-radio');
                 if (btnRadio) {
-                    const visName = state.activeVisualizer && state.activeVisualizer.name;
                     const variant = activeRadioVariantKey();
                     const onAnalogueRadio = variant === 'analogue';
                     const onDigitalRadio = variant === 'digital';
-                    const showToggle = onAnalogueRadio || onDigitalRadio;
-                    const showReturn = shouldShowReturnRadioButton();
-                    btnRadio.classList.toggle('display-none', !showToggle && !showReturn);
+                    btnRadio.classList.remove('display-none');
                     if (onAnalogueRadio) {
                         btnRadio.title = 'Switch to Digital Radio';
                         btnRadio.setAttribute('aria-label', 'Switch to Digital Radio');
