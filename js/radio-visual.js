@@ -4466,11 +4466,36 @@
                 }
                 return {
                     colorStreamId: s.eqColorStreamId || s.colorStreamId || d.eqColorStreamId,
-                    scale: s.eqScale ?? s.scale ?? d.eqScale,
+                    scale: s.eqScale ?? d.eqScale,
                     opacity: s.eqOpacity ?? s.opacity ?? d.eqOpacity,
                     audioStrength: s.eqAudioStrength ?? s.audioStrength ?? d.eqAudioStrength,
                     colorFlow: s.eqColorFlow ?? s.colorFlow ?? d.eqColorFlow
                 };
+            }
+
+            _clampSpectrumSideScale(raw, fallback = 1) {
+                const min = RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN;
+                const max = RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX;
+                let scale = Number(raw);
+                if (!Number.isFinite(scale)) scale = fallback;
+                return Math.max(min, Math.min(max, scale));
+            }
+
+            _getSpectrumHubSideScale() {
+                const s = this._spectrumSettings || RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
+                const d = RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
+                return this._clampSpectrumSideScale(s.scale, d.scale);
+            }
+
+            _getEqualiserSideScale() {
+                const s = this._spectrumSettings || RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
+                const d = RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
+                return this._clampSpectrumSideScale(s.eqScale, d.eqScale);
+            }
+
+            _getActiveSpectrumSideScale() {
+                if (this._digitalHubMode === 'spectrum') return this._getSpectrumHubSideScale();
+                return this._getEqualiserSideScale();
             }
 
             _getSpectrumOpacityMult() {
@@ -4534,15 +4559,16 @@
                     ...(settings || {})
                 });
                 this._spectrumSettings = next;
-                const resolved = this._resolvedSpectrumDrawSettings();
-                this._spectrumStagingScale = resolved.scale;
+                if (this._digitalHubMode === 'spectrum') {
+                    this._spectrumStagingScale = this._getSpectrumHubSideScale();
+                }
                 if (!opts.skipSave) {
                     RadioVisualEngine.saveSpectrumSettingsToStorage(next);
                 }
                 this._syncSpectrumStagingScale();
                 const slider = this.els && this.els.digitalSpectrumScaleSlider;
-                if (slider && !opts.skipSlider) {
-                    slider.value = String(this._spectrumScaleToSliderPct(resolved.scale));
+                if (slider && !opts.skipSlider && this._digitalHubMode === 'spectrum') {
+                    slider.value = String(this._spectrumScaleToSliderPct(this._getSpectrumHubSideScale()));
                 }
             }
 
@@ -4589,21 +4615,17 @@
                 this._hideDigitalSpectrumStagingSlider(false);
             }
 
-            /** Scale entire spectrum row (both flowers) as one unit — not per-ribbon radii. */
+            /** Scale side spectrum flowers only — centre equaliser / dash stack stays fixed. */
             _syncSpectrumStagingScale() {
                 const row = this.els.digitalSpectrumRow;
                 if (!row) return;
-                const resolved = this._resolvedSpectrumDrawSettings();
-                const scale = Math.max(
-                    RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN,
-                    Math.min(
-                        RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX,
-                        Number(resolved.scale) || 1
-                    )
-                );
+                const sideScale = this._getActiveSpectrumSideScale();
                 try {
-                    row.style.setProperty('--rv-spectrum-staging-scale', String(scale));
+                    row.style.setProperty('--rv-spectrum-side-scale', String(sideScale));
                 } catch (_) {}
+                if (this._digitalHubMode === 'spectrum') {
+                    this._spectrumStagingScale = this._getSpectrumHubSideScale();
+                }
                 this._syncSpectrumStagingPan();
             }
 
@@ -4616,13 +4638,7 @@
                     return;
                 }
                 const spreadNorm = Math.max(0, Math.min(1, Number(this._spectrumStagingPanNorm) || 0));
-                const scale = Math.max(
-                    RadioVisualEngine.SPECTRUM_STAGING_SCALE_MIN,
-                    Math.min(
-                        RadioVisualEngine.SPECTRUM_STAGING_SCALE_MAX,
-                        Number(this._spectrumStagingScale) || 1
-                    )
-                );
+                const scale = this._getSpectrumHubSideScale();
                 const paneW = pane ? Math.max(1, pane.clientWidth || 0) : 400;
                 const maxSpread = Math.max(24, paneW * 0.22 * Math.max(1, scale * 0.85));
                 const spreadPx = spreadNorm * maxSpread;

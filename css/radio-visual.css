@@ -470,38 +470,12 @@
             display: flex;
             flex-direction: column;
             width: 100%;
-            overflow: hidden;
-            opacity: var(--rv-digital-panel-opacity, 1);
+            overflow: visible;
             border-radius: clamp(8px, 1.46cqw, 14px);
             padding: clamp(6px, 0.73cqw, 10px) clamp(12px, 1.67cqw, 24px);
-            background:
-                linear-gradient(180deg, color-mix(in srgb, var(--rv-digital-accent-color) 14%, transparent) 0%, transparent 28%),
-                linear-gradient(calc(var(--rv-digital-bg-gradient-angle, 165) * 1deg), var(--rv-digital-bg-a) 0%, var(--rv-digital-bg-b) 50%, var(--rv-digital-bg-c) 100%);
-            border: clamp(1px, 0.21cqw, 2px) solid rgba(0, 220, 255, 0.35);
-            box-shadow:
-                0 0 clamp(20px, 4.17cqw, 40px) rgba(0, 180, 255, 0.12),
-                inset 0 0 clamp(30px, 6.25cqw, 60px) rgba(0, 120, 200, 0.06);
-        }
-        #radio-visual-root .radio-visual-digital-panel.has-panel-bg-image {
-            background:
-                linear-gradient(180deg, color-mix(in srgb, var(--rv-digital-accent-color) 14%, transparent) 0%, transparent 28%);
-        }
-        #radio-visual-root .radio-visual-digital-panel-image {
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-            display: block;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-            pointer-events: none;
-            border-radius: inherit;
-            opacity: var(--rv-digital-bg-panel-image-opacity, 1);
-        }
-        #radio-visual-root .radio-visual-digital-panel.has-panel-bg-image > *:not(.radio-visual-digital-panel-image) {
-            position: relative;
-            z-index: 1;
+            background: transparent;
+            border: none;
+            box-shadow: none;
         }
         #radio-visual-root .radio-visual-digital-display {
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -584,10 +558,48 @@
             margin: clamp(2px, 0.31cqw, 4px) 0 clamp(4px, 0.52cqw, 6px);
             border-radius: clamp(8px, 1.25cqw, 12px);
             overflow: hidden;
-            border: clamp(1px, 0.21cqw, 2px) solid rgba(0, 220, 255, 0.28);
-            background: rgba(0, 12, 20, 0.85);
-            box-shadow: inset 0 0 clamp(20px, 4.17cqw, 40px) rgba(0, 180, 255, 0.08);
+            border: clamp(1px, 0.21cqw, 2px) solid rgba(0, 220, 255, 0.35);
+            background: transparent;
+            box-shadow:
+                0 0 clamp(20px, 4.17cqw, 40px) rgba(0, 180, 255, 0.12),
+                inset 0 0 clamp(30px, 6.25cqw, 60px) rgba(0, 120, 200, 0.06);
             cursor: pointer;
+        }
+        #radio-visual-root .radio-visual-digital-center::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            opacity: var(--rv-digital-panel-opacity, 1);
+            background:
+                linear-gradient(180deg, color-mix(in srgb, var(--rv-digital-accent-color) 14%, transparent) 0%, transparent 28%),
+                linear-gradient(calc(var(--rv-digital-bg-gradient-angle, 165) * 1deg), var(--rv-digital-bg-a) 0%, var(--rv-digital-bg-b) 50%, var(--rv-digital-bg-c) 100%);
+        }
+        #radio-visual-root .radio-visual-digital-center.has-panel-bg-image::before {
+            background:
+                linear-gradient(180deg, color-mix(in srgb, var(--rv-digital-accent-color) 14%, transparent) 0%, transparent 28%);
+        }
+        #radio-visual-root .radio-visual-digital-panel-image {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            pointer-events: none;
+            border-radius: inherit;
+            opacity: var(--rv-digital-bg-panel-image-opacity, 1);
+        }
+        #radio-visual-root .radio-visual-digital-center > *:not(.radio-visual-digital-panel-image) {
+            position: relative;
+            z-index: 1;
+        }
+        #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-center-pane[data-hub-mode="spectrum"].is-active) {
+            overflow: visible;
         }
         #radio-visual-root .radio-visual-digital-center-pane {
             position: absolute;
@@ -598,8 +610,7 @@
             overflow: hidden;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"] {
-            overflow: hidden;
-            contain: paint;
+            overflow: visible;
         }
         #radio-visual-root .radio-visual-digital-theme-outer-image {
             position: absolute;
@@ -699,12 +710,12 @@
             opacity: 0;
             pointer-events: none;
         }
-        #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-spectrum-bg.is-visible) {
+        #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-spectrum-bg.is-visible)::before {
             background: rgba(0, 12, 20, 0.35);
         }
         #radio-visual-root .radio-visual-digital-center:has(
             .radio-visual-digital-spectrum-bg.is-visible
-        ):has(.radio-visual-digital-staging-mount[data-rv-staging="bars"].is-active) {
+        ):has(.radio-visual-digital-staging-mount[data-rv-staging="bars"].is-active)::before {
             background: transparent;
         }
         #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-spectrum-bg.is-visible) .radio-visual-digital-spectrum-side {
@@ -1045,19 +1056,27 @@
             gap: clamp(6px, 1.25cqw, 12px);
             padding: clamp(8px, 1.46cqw, 14px);
             box-sizing: border-box;
-            transform: scale(var(--rv-spectrum-staging-scale, 1));
-            transform-origin: center center;
-            transition: transform 0.15s ease-out;
-            will-change: transform;
+            overflow: visible;
+            pointer-events: none;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"]
             .radio-visual-digital-spectrum-side--left {
-            transform: translateX(calc(-1 * var(--rv-spectrum-staging-spread, 0px)));
+            transform: scale(var(--rv-spectrum-side-scale, 1))
+                translateX(calc(-1 * var(--rv-spectrum-staging-spread, 0px)));
             transition: transform 0.15s ease-out;
+            z-index: 5;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"]
             .radio-visual-digital-spectrum-side--right {
-            transform: translateX(var(--rv-spectrum-staging-spread, 0px));
+            transform: scale(var(--rv-spectrum-side-scale, 1))
+                translateX(var(--rv-spectrum-staging-spread, 0px));
+            transition: transform 0.15s ease-out;
+            z-index: 5;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane:not([data-hub-mode="spectrum"])
+            .radio-visual-digital-spectrum-side {
+            transform: scale(var(--rv-spectrum-side-scale, 1));
+            transform-origin: center center;
             transition: transform 0.15s ease-out;
         }
         #radio-visual-root .radio-visual-digital-spectrum-side {
@@ -1067,6 +1086,8 @@
             border-radius: 10px;
             overflow: hidden;
             background: transparent;
+            transform-origin: center center;
+            pointer-events: auto;
         }
         #radio-visual-root .radio-visual-digital-spectrum-side.is-local-drop-target {
             box-shadow:

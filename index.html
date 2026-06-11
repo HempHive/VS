@@ -35,6 +35,12 @@
 
     <!-- START SCREEN -->
 	<div id="overlay" class="no-blur bg-lite">
+        <div id="start-loader" class="is-visible" aria-live="polite" aria-busy="true" aria-label="Loading">
+            <div class="start-loader-shell">
+                <div class="start-loader-ring" aria-hidden="true"></div>
+                <span id="start-loader-progress" class="start-loader-progress">0</span>
+            </div>
+        </div>
 		<h1 id="logo-omni" data-text="OMNI&gt;"><span class="logo-letter logo-o" data-ch="O">O</span><span class="logo-letter logo-m" data-ch="M">M</span><span class="logo-letter" data-ch="N">N</span><span class="logo-letter logo-midi" data-ch="I">I</span><span class="logo-letter logo-start" data-ch="&#62;">&gt;</span></h1>
 		<!-- Toggle URL input (shown via clicking 'N' in OMNI>) -->
 		<div id="url-flyover" class="is-hidden">
@@ -245,8 +251,8 @@
                         <label class="options-label" for="opt-digital-theme-preset">Theme preset</label>
                         <select class="options-select options-select--full" id="opt-digital-theme-preset" aria-label="Digital Radio theme preset"></select>
                     </div>
-                    <p class="options-hint options-hint--inline">Panel colours apply to the centre Digital Radio panel; screen colours apply to the furthest full-screen background.</p>
-                    <p class="options-subsection-title">Panel gradient</p>
+                    <p class="options-hint options-hint--inline">Staging colours apply to the centre display only (not toolbar or buttons). Screen colours apply to the furthest full-screen background.</p>
+                    <p class="options-subsection-title">Staging panel</p>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-bg-a">Top</label>
                         <input type="color" class="options-color" id="opt-digital-bg-a" value="#0a1628" aria-label="Digital Radio panel gradient top colour">
@@ -279,8 +285,8 @@
                         <span class="options-readout" id="opt-digital-bg-panel-image-opacity-readout">100%</span>
                     </div>
                     <div class="options-row">
-                        <label class="options-label" for="opt-digital-bg-panel-opacity">Panel opacity</label>
-                        <input type="range" class="options-range" id="opt-digital-bg-panel-opacity" min="0" max="100" step="1" value="100" aria-label="Digital Radio panel opacity">
+                        <label class="options-label" for="opt-digital-bg-panel-opacity">Staging opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-bg-panel-opacity" min="0" max="100" step="1" value="100" aria-label="Digital Radio staging panel opacity">
                         <span class="options-readout" id="opt-digital-bg-panel-opacity-readout">100%</span>
                     </div>
                     <p class="options-subsection-title">Screen background</p>
@@ -447,7 +453,7 @@
                         <h4 class="options-section-title">Spectrum</h4>
                         <button type="button" class="options-section-reset" id="opt-spectrum-reset" title="Reset Spectrum" aria-label="Reset Spectrum">🔄</button>
                     </div>
-                    <p class="options-hint options-hint--inline">Spectrum mode controls apply when the centre hub is in Spectrum. Equaliser controls apply to the left and right flowers in Equaliser and other hub modes.</p>
+                    <p class="options-hint options-hint--inline">Spectrum mode size scales only the side flowers in Spectrum hub (they may overlap the centre). Equaliser size scales only the side flowers in Equaliser and other hub modes — the centre equaliser is not resized.</p>
                     <p class="options-subsection-title">Spectrum mode</p>
                     <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-spectrum-color-stream">Colour stream</label>

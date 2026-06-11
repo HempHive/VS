@@ -957,8 +957,8 @@ const QUALITY = {
             if (!optDigitalBgPanelImageStatus) return;
             optDigitalBgPanelImageStatus.textContent = themeImageStatusLabel(
                 dataUrl,
-                'No image uploaded — panel gradient colours are used',
-                'Panel image applied (replaces gradient colours)'
+                'No image uploaded — staging gradient colours are used',
+                'Staging image applied (replaces gradient colours)'
             );
         }
         function ensureThemeOuterImageEl(rvRoot) {
@@ -1004,24 +1004,24 @@ const QUALITY = {
         function applyDigitalBgPanelImageToUi(dataUrl, imageOpacity = 1) {
             const op = clampThemeOpacity(imageOpacity, 1, 0);
             document.documentElement.style.setProperty('--global-rv-digital-bg-panel-image-opacity', String(op));
-            document.querySelectorAll('#radio-visual-root .radio-visual-digital-panel').forEach((panel) => {
-                panel.style.setProperty('--rv-digital-bg-panel-image-opacity', String(op));
+            document.querySelectorAll('#radio-visual-root .radio-visual-digital-center').forEach((staging) => {
+                staging.style.setProperty('--rv-digital-bg-panel-image-opacity', String(op));
                 if (dataUrl) {
-                    let img = panel.querySelector('.radio-visual-digital-panel-image');
+                    let img = staging.querySelector('.radio-visual-digital-panel-image');
                     if (!img) {
                         img = document.createElement('img');
                         img.className = 'radio-visual-digital-panel-image';
                         img.alt = '';
                         img.decoding = 'async';
                         img.setAttribute('aria-hidden', 'true');
-                        panel.insertBefore(img, panel.firstChild);
+                        staging.insertBefore(img, staging.firstChild);
                     }
                     if (img.src !== dataUrl) img.src = dataUrl;
-                    panel.classList.add('has-panel-bg-image');
+                    staging.classList.add('has-panel-bg-image');
                 } else {
-                    const img = panel.querySelector('.radio-visual-digital-panel-image');
+                    const img = staging.querySelector('.radio-visual-digital-panel-image');
                     if (img) img.remove();
-                    panel.classList.remove('has-panel-bg-image');
+                    staging.classList.remove('has-panel-bg-image');
                 }
             });
             syncDigitalBgPanelImageStatusUi(dataUrl);
@@ -3615,6 +3615,33 @@ const QUALITY = {
 			return patGifLoadPromise;
 		}
 		let startScreenRevealPromise = null;
+		function startScreenAssetsCached() {
+			return !!(tapGifLoadPromise && ptaGifLoadPromise && patGifLoadPromise);
+		}
+		function updateStartLoaderProgress(pct) {
+			const progressEl = document.getElementById('start-loader-progress');
+			const loader = document.getElementById('start-loader');
+			const n = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
+			if (progressEl) progressEl.textContent = String(n);
+			if (!loader) return;
+			loader.classList.add('is-visible');
+			loader.setAttribute('aria-hidden', 'false');
+			loader.setAttribute('aria-busy', n < 100 ? 'true' : 'false');
+		}
+		function showStartLoader() {
+			const loader = document.getElementById('start-loader');
+			if (!loader) return;
+			loader.classList.add('is-visible');
+			loader.setAttribute('aria-hidden', 'false');
+			loader.setAttribute('aria-busy', 'true');
+		}
+		function hideStartLoader() {
+			const loader = document.getElementById('start-loader');
+			if (!loader) return;
+			loader.classList.remove('is-visible');
+			loader.setAttribute('aria-hidden', 'true');
+			loader.setAttribute('aria-busy', 'false');
+		}
 		function resetStartScreenReveal() {
 			startScreenRevealPromise = null;
 			try {
@@ -3630,32 +3657,51 @@ const QUALITY = {
 				if (border) border.classList.remove('visible');
 			} catch (_) {}
 		}
+		function revealStartScreenVisuals() {
+			requestAnimationFrame(() => {
+				if (!isStartOverlayShowing()) return;
+				try {
+					const pta = document.getElementById('pta-start-bg');
+					if (pta) pta.classList.add('pta-visible');
+				} catch (_) {}
+				try {
+					const logo = document.getElementById('logo-omni');
+					if (logo) logo.classList.add('pat-revealed');
+				} catch (_) {}
+				try {
+					const border = document.getElementById('border-frame');
+					if (border) border.classList.add('visible');
+				} catch (_) {}
+				try {
+					const glow = globalThis.applyOverlayGlowFx;
+					if (typeof glow === 'function') glow();
+				} catch (_) {}
+			});
+		}
 		/** Fade in pta/tap/pat start visuals together once all three GIFs have decoded. */
 		function revealStartScreenAfterAssets() {
 			if (startScreenRevealPromise) return startScreenRevealPromise;
-			startScreenRevealPromise = Promise.all([
-				ensureTapGifLoaded(),
-				ensurePtaGifLoaded(),
-				ensurePatGifLoaded()
-			]).then(() => {
-				requestAnimationFrame(() => {
-					if (!isStartOverlayShowing()) return;
-					try {
-						const pta = document.getElementById('pta-start-bg');
-						if (pta) pta.classList.add('pta-visible');
-					} catch (_) {}
-					try {
-						const logo = document.getElementById('logo-omni');
-						if (logo) logo.classList.add('pat-revealed');
-					} catch (_) {}
-					try {
-						const border = document.getElementById('border-frame');
-						if (border) border.classList.add('visible');
-					} catch (_) {}
-					try {
-						const glow = globalThis.applyOverlayGlowFx;
-						if (typeof glow === 'function') glow();
-					} catch (_) {}
+			const loaders = [ensureTapGifLoaded, ensurePtaGifLoaded, ensurePatGifLoaded];
+			const skipLoader = startScreenAssetsCached();
+			if (!skipLoader) {
+				showStartLoader();
+				updateStartLoaderProgress(0);
+			}
+			let completed = 0;
+			const trackLoad = (promise) => promise.then(() => {
+				completed += 1;
+				if (!skipLoader) {
+					updateStartLoaderProgress(Math.round((completed / loaders.length) * 100));
+				}
+			});
+			startScreenRevealPromise = Promise.all(loaders.map((load) => trackLoad(load()))).then(() => {
+				if (!skipLoader) updateStartLoaderProgress(100);
+				return new Promise((resolve) => {
+					requestAnimationFrame(() => {
+						if (!skipLoader) hideStartLoader();
+						revealStartScreenVisuals();
+						resolve();
+					});
 				});
 			});
 			return startScreenRevealPromise;
@@ -5011,6 +5057,9 @@ function exposeAppBindingsToGlobal() {
     try { g.fa = fa; } catch (_) {}
     try { g.fadeInPtaStartBg = fadeInPtaStartBg; } catch (_) {}
     try { g.revealStartScreenAfterAssets = revealStartScreenAfterAssets; } catch (_) {}
+    try { g.hideStartLoader = hideStartLoader; } catch (_) {}
+    try { g.showStartLoader = showStartLoader; } catch (_) {}
+    try { g.updateStartLoaderProgress = updateStartLoaderProgress; } catch (_) {}
     try { g.resetStartScreenReveal = resetStartScreenReveal; } catch (_) {}
     try { g.fb = fb; } catch (_) {}
     try { g.feed = feed; } catch (_) {}

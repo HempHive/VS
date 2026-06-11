@@ -938,6 +938,9 @@
             overlay.style.display = 'none';
 			overlay.classList.remove('glow-on');
 			try {
+				if (typeof hideStartLoader === 'function') hideStartLoader();
+			} catch (_) {}
+			try {
 				if (typeof resetStartScreenReveal === 'function') resetStartScreenReveal();
 			} catch (_) {}
             try { cancelStartTextLoop(); } catch(e) {}

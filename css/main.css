@@ -402,6 +402,56 @@
         .hidden { opacity: 0 !important; pointer-events: none; }
         .display-none { display: none !important; }
         
+		/* Start-screen loader — same ring style as Digital Radio AI video loader */
+		#start-loader {
+			position: fixed;
+			inset: 0;
+			z-index: 102;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			pointer-events: none;
+			background: rgba(0, 0, 0, 0.35);
+		}
+		#start-loader.is-visible {
+			display: flex;
+		}
+		.start-loader-shell {
+			position: relative;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: clamp(44px, 11vw, 58px);
+			height: clamp(44px, 11vw, 58px);
+		}
+		.start-loader-ring {
+			position: absolute;
+			inset: 0;
+			border-radius: 50%;
+			border: 3px solid rgba(0, 200, 255, 0.18);
+			border-top-color: #8ef;
+			border-right-color: #b060ff;
+			box-shadow:
+				0 0 12px rgba(0, 220, 255, 0.45),
+				0 0 22px rgba(176, 96, 255, 0.25);
+			animation: start-loader-spin 0.9s linear infinite;
+		}
+		.start-loader-progress {
+			position: relative;
+			z-index: 1;
+			font-family: 'Orbitron', 'Share Tech Mono', ui-monospace, monospace !important;
+			font-size: clamp(11px, 2.8vw, 14px);
+			font-weight: 700;
+			font-variant-numeric: tabular-nums;
+			letter-spacing: 0.02em;
+			color: #9eeeff;
+			text-shadow: 0 0 10px rgba(0, 220, 255, 0.55);
+			line-height: 1;
+			user-select: none;
+		}
+		@keyframes start-loader-spin {
+			to { transform: rotate(360deg); }
+		}
 		#loading-status { color: #39ff14; margin-top: 6px; font-size: 12px; height: 20px; transition: opacity 0.6s ease; }
 		#overlay #loading-status:empty { display: none; margin: 0; height: 0; }
 		#shortcuts-status { 
