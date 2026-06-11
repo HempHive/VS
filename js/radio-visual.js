@@ -880,6 +880,9 @@
                     } else if (typeof g.setStation === 'function') {
                         g.setStation(idx);
                     }
+                    requestAnimationFrame(() => {
+                        try { this._scrollDigitalStationsListToActive(deck); } catch (_) {}
+                    });
                 };
                 const mkCol = (deck) => {
                     const col = document.createElement('div');
@@ -1014,9 +1017,6 @@
                     };
                     apply(this.root.querySelector('#rv-digital-stations-list-a'), g.currentStationIndex);
                     apply(this.root.querySelector('#rv-digital-stations-list-b'), g.currentStationBIndex);
-                    requestAnimationFrame(() => {
-                        try { this._scrollDigitalStationsListsToActive(); } catch (_) {}
-                    });
                 } catch (_) {}
             }
 
