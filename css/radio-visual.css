@@ -541,6 +541,7 @@
             min-width: 72px;
         }
         #radio-visual-root .radio-visual-digital-station-row .radio-visual-btn .radio-visual-btn-label {
+            font-family: var(--rv-digital-btn-blue-font, var(--rv-digital-ui-font)) !important;
             opacity: var(--rv-digital-btn-blue-text-opacity, 1);
             color: var(--rv-digital-btn-blue-label);
             text-shadow:
@@ -2133,7 +2134,7 @@
             display: block;
             width: 100%;
             max-height: 100%;
-            font-family: var(--rv-digital-btn-purple-font, var(--rv-digital-ui-font));
+            font-family: var(--rv-digital-btn-purple-font, var(--rv-digital-ui-font)) !important;
             opacity: var(--rv-digital-btn-purple-text-opacity, 1);
             color: var(--rv-digital-btn-purple-label);
             font-weight: 800;
@@ -2232,6 +2233,9 @@
             padding: 10px 14px;
             font-size: 1.25rem;
             line-height: 1;
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-center .radio-visual-digital-step-btn .radio-visual-btn-label {
+            font-family: var(--rv-digital-btn-blue-font, var(--rv-digital-ui-font)) !important;
         }
         /* Digital toolbar blue theme (overrides default brown .radio-visual-btn). */
         #radio-visual-root .radio-visual-digital-toolbar .radio-visual-btn {
@@ -2342,7 +2346,7 @@
             min-width: 0;
         }
         #radio-visual-root .radio-visual-digital-toolbar-text-btn .radio-visual-btn-label {
-            font-family: var(--rv-digital-btn-blue-font, var(--rv-digital-ui-font));
+            font-family: var(--rv-digital-btn-blue-font, var(--rv-digital-ui-font)) !important;
             display: block;
             width: 100%;
             opacity: var(--rv-digital-btn-blue-text-opacity, 1);
@@ -2660,6 +2664,7 @@
             order: 2;
         }
         #radio-visual-root .radio-visual-digital-toolbar-vol .radio-visual-digital-step-btn .radio-visual-btn-label {
+            font-family: var(--rv-digital-btn-blue-font, var(--rv-digital-ui-font)) !important;
             line-height: 1;
             font-size: inherit;
         }
