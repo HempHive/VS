@@ -555,6 +555,42 @@ const QUALITY = {
                 bgB: '#081828',
                 bgC: '#020610',
                 accent: '#3aa8ff'
+            },
+            trix: {
+                label: 'Trix',
+                bgA: '#0a1628',
+                bgB: '#061018',
+                bgC: '#0c1020',
+                bgOuterA: '#f31212',
+                bgOuterB: '#061018',
+                bgOuterC: '#db9706',
+                bgGradientAngle: 165,
+                bgOuterGradientAngle: 162,
+                bgOuterImageOpacity: 1,
+                bgPanelImageOpacity: 1,
+                bgPanelOpacity: 1,
+                accent: '#ffe747',
+                font: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
+                btnBlueTop: '#9ab512',
+                btnBlueBase: '#b9dd83',
+                btnBlueAccent: '#1bb139',
+                btnBlueLabel: '#fff824',
+                btnBlueOpacity: 0.15,
+                btnBlueTextOpacity: 1,
+                btnBlueBorderOpacity: 1,
+                btnPurpleTop: '#110e16',
+                btnPurpleBase: '#28d425',
+                btnPurpleLabel: '#b62534',
+                btnPurpleActive: '#ff5ce8',
+                btnPurpleOpacity: 0.2,
+                btnPurpleTextOpacity: 1,
+                btnPurpleBorderOpacity: 1,
+                btnBlueFontScale: 1.35,
+                btnPurpleFontScale: 1.25,
+                clockFont: "'Rajdhani', sans-serif",
+                clockColor: '#24db27',
+                clockFontScale: 1.6,
+                clockFormat: 'weekday-time'
             }
         };
         const optionsPanel = document.getElementById('options-panel');
@@ -1170,32 +1206,35 @@ const QUALITY = {
                 clockFormat
             };
         }
+        function digitalThemePresetKeys(preset) {
+            return Object.keys(preset).filter((key) => key !== 'label');
+        }
+        function themeMatchesPreset(theme, preset) {
+            const t = normalizeDigitalTheme(theme);
+            return digitalThemePresetKeys(preset).every((key) => {
+                const expected = preset[key];
+                const actual = t[key];
+                if (typeof expected === 'number') {
+                    return Math.abs(Number(actual) - expected) < 0.001;
+                }
+                return actual === expected;
+            });
+        }
         function themeFromPresetId(presetId, fontFallback, themeFallback) {
             const preset = DIGITAL_THEME_PRESETS[presetId];
             if (!preset) return null;
             const prev = normalizeDigitalTheme(themeFallback);
-            return normalizeDigitalTheme({
-                ...prev,
-                presetId,
-                bgA: preset.bgA,
-                bgB: preset.bgB,
-                bgC: preset.bgC,
-                bgOuterA: preset.bgA,
-                bgOuterB: preset.bgB,
-                bgOuterC: preset.bgC,
-                accent: preset.accent,
-                font: preset.font || fontFallback || prev.font
+            const patch = { presetId };
+            digitalThemePresetKeys(preset).forEach((key) => {
+                patch[key] = preset[key];
             });
+            if (!patch.font) patch.font = fontFallback || prev.font;
+            return normalizeDigitalTheme({ ...prev, ...patch });
         }
         function detectDigitalThemePresetId(theme) {
             if (!theme) return 'custom';
             for (const [id, preset] of Object.entries(DIGITAL_THEME_PRESETS)) {
-                if (theme.bgA === preset.bgA
-                    && theme.bgB === preset.bgB
-                    && theme.bgC === preset.bgC
-                    && theme.accent === preset.accent) {
-                    return id;
-                }
+                if (themeMatchesPreset(theme, preset)) return id;
             }
             return 'custom';
         }
