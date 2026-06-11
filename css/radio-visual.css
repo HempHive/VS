@@ -63,6 +63,11 @@
             width: min(960px, 100%);
             margin-left: auto;
             margin-right: auto;
+            --rv-digital-bg-a: var(--global-rv-digital-bg-a, #0a1628);
+            --rv-digital-bg-b: var(--global-rv-digital-bg-b, #061018);
+            --rv-digital-bg-c: var(--global-rv-digital-bg-c, #0c1020);
+            --rv-digital-accent-color: var(--global-rv-digital-accent-color, #ffd246);
+            --rv-digital-ui-font: var(--global-rv-digital-ui-font, 'Orbitron', 'Share Tech Mono', ui-monospace, monospace);
         }
         #radio-visual-root .radio-visual-stations-line {
             display: flex;
@@ -442,8 +447,8 @@
             border-radius: clamp(8px, 1.46cqw, 14px);
             padding: clamp(6px, 0.73cqw, 10px) clamp(12px, 1.67cqw, 24px);
             background:
-                linear-gradient(180deg, rgba(255, 210, 70, 0.14) 0%, transparent 28%),
-                linear-gradient(160deg, #0a1628 0%, #061018 50%, #0c1020 100%);
+                linear-gradient(180deg, color-mix(in srgb, var(--rv-digital-accent-color) 14%, transparent) 0%, transparent 28%),
+                linear-gradient(160deg, var(--rv-digital-bg-a) 0%, var(--rv-digital-bg-b) 50%, var(--rv-digital-bg-c) 100%);
             border: clamp(1px, 0.21cqw, 2px) solid rgba(0, 220, 255, 0.35);
             box-shadow:
                 0 0 clamp(20px, 4.17cqw, 40px) rgba(0, 180, 255, 0.12),
@@ -1020,7 +1025,7 @@
             flex: 1 1 auto;
             width: 100%;
             max-width: 100%;
-            font-family: 'Orbitron', 'Share Tech Mono', ui-monospace, monospace;
+            font-family: var(--rv-digital-ui-font);
             /* rv-clock: scale with dash column width without affecting crossfader A/B (rv-digital cqw) */
             font-size: clamp(7px, 6.2cqi, 16px);
             font-weight: 700;
@@ -2118,6 +2123,7 @@
             min-width: 0;
         }
         #radio-visual-root .radio-visual-digital-toolbar-text-btn .radio-visual-btn-label {
+            font-family: var(--rv-digital-ui-font);
             display: block;
             width: 100%;
             color: #8ef;
@@ -2179,6 +2185,8 @@
             justify-content: center;
             position: relative;
             overflow: hidden;
+            container-type: inline-size;
+            container-name: rv-toolbar-center;
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="crossfade"] .radio-visual-digital-center-slot {
             cursor: pointer;
@@ -2194,7 +2202,7 @@
             align-items: center;
             justify-content: center;
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-            font-size: clamp(9px, 1.55cqw, 13px);
+            font-size: clamp(7px, 1.35cqw, 13px);
             font-weight: 700;
             line-height: 1;
             padding: 0 clamp(1px, 0.2cqw, 2px);
@@ -2228,16 +2236,22 @@
             transition: color 0.55s ease, text-shadow 0.55s ease, opacity 0.45s ease;
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="clock"] .radio-visual-center-readout-text {
-            font-family: 'Orbitron', 'Share Tech Mono', ui-monospace, monospace;
+            font-family: var(--rv-digital-ui-font);
             font-variant-numeric: tabular-nums;
-            letter-spacing: clamp(0.02em, 0.25cqw, 0.06em);
+            letter-spacing: clamp(0.01em, 0.18cqw, 0.05em);
             color: #fff566;
             text-shadow:
                 0 0 12px rgba(0, 0, 0, 0.9),
                 0 0 10px rgba(255, 245, 80, 0.35);
         }
+        @container rv-toolbar-center (max-width: 72px) {
+            #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="clock"] .radio-visual-center-readout-text,
+            #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="volume"] .radio-visual-digital-center-readout[data-volume-peek="0"] .radio-visual-center-readout-text {
+                letter-spacing: 0.01em;
+            }
+        }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="volume"] .radio-visual-digital-center-readout[data-volume-peek="0"] .radio-visual-center-readout-text {
-            font-family: 'Orbitron', 'Share Tech Mono', ui-monospace, monospace;
+            font-family: var(--rv-digital-ui-font);
             font-variant-numeric: tabular-nums;
             letter-spacing: clamp(0.02em, 0.25cqw, 0.06em);
             color: #fff566;

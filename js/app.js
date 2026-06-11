@@ -448,32 +448,259 @@ const QUALITY = {
         let tapTimesA = [], tapTimesB = [];
         let phaseOffsetBms = 0; // apply to B grid ticks
         // --- OPTIONS PANEL HELPERS ---
+        const DIGITAL_THEME_STORAGE_KEY = 'radioVisual.digitalTheme.v1';
+        const DEFAULT_DIGITAL_THEME = {
+            bgA: '#0a1628',
+            bgB: '#061018',
+            bgC: '#0c1020',
+            accent: '#ffd246',
+            font: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace"
+        };
         const optionsPanel = document.getElementById('options-panel');
         const btnOptions = document.getElementById('btn-options');
         const btnOptionsClose = document.getElementById('btn-options-close');
+        const optDigitalBgA = document.getElementById('opt-digital-bg-a');
+        const optDigitalBgB = document.getElementById('opt-digital-bg-b');
+        const optDigitalBgC = document.getElementById('opt-digital-bg-c');
+        const optDigitalAccent = document.getElementById('opt-digital-accent');
+        const optDigitalFont = document.getElementById('opt-digital-font');
+        const optDigitalThemeReset = document.getElementById('opt-digital-theme-reset');
+        const optAutomixEnabled = document.getElementById('opt-automix-enabled');
+        const optAutomixMax = document.getElementById('opt-automix-max');
+        const optAutomixMaxReadout = document.getElementById('opt-automix-max-readout');
+        const optAutofadeDuration = document.getElementById('opt-autofade-duration');
+        const optAutofadeDurationReadout = document.getElementById('opt-autofade-duration-readout');
+        const optAutofadeChangeStation = document.getElementById('opt-autofade-change-station');
+        function loadDigitalThemeFromStorage() {
+            try {
+                const raw = localStorage.getItem(DIGITAL_THEME_STORAGE_KEY);
+                const parsed = raw ? JSON.parse(raw) : null;
+                if (!parsed || typeof parsed !== 'object') return { ...DEFAULT_DIGITAL_THEME };
+                return {
+                    bgA: parsed.bgA || DEFAULT_DIGITAL_THEME.bgA,
+                    bgB: parsed.bgB || DEFAULT_DIGITAL_THEME.bgB,
+                    bgC: parsed.bgC || DEFAULT_DIGITAL_THEME.bgC,
+                    accent: parsed.accent || DEFAULT_DIGITAL_THEME.accent,
+                    font: parsed.font || DEFAULT_DIGITAL_THEME.font
+                };
+            } catch (_) {
+                return { ...DEFAULT_DIGITAL_THEME };
+            }
+        }
+        function saveDigitalThemeToStorage(theme) {
+            try { localStorage.setItem(DIGITAL_THEME_STORAGE_KEY, JSON.stringify(theme)); } catch (_) {}
+        }
+        function applyDigitalRadioTheme(theme) {
+            const t = theme || loadDigitalThemeFromStorage();
+            const root = document.documentElement;
+            root.style.setProperty('--global-rv-digital-bg-a', t.bgA);
+            root.style.setProperty('--global-rv-digital-bg-b', t.bgB);
+            root.style.setProperty('--global-rv-digital-bg-c', t.bgC);
+            root.style.setProperty('--global-rv-digital-accent-color', t.accent);
+            root.style.setProperty('--global-rv-digital-ui-font', t.font);
+            const rvRoot = document.getElementById('radio-visual-root');
+            if (rvRoot) {
+                rvRoot.style.setProperty('--rv-digital-bg-a', t.bgA);
+                rvRoot.style.setProperty('--rv-digital-bg-b', t.bgB);
+                rvRoot.style.setProperty('--rv-digital-bg-c', t.bgC);
+                rvRoot.style.setProperty('--rv-digital-accent-color', t.accent);
+                rvRoot.style.setProperty('--rv-digital-ui-font', t.font);
+            }
+        }
+        function readAutoMixMaxMinFromStorage() {
+            try {
+                const v = Number(localStorage.getItem('dj.automix.max.min.v1'));
+                if (Number.isFinite(v)) return Math.max(1, Math.min(20, Math.round(v)));
+            } catch (_) {}
+            return 20;
+        }
+        function writeAutoMixMaxMinToStorage(mins) {
+            const v = Math.max(1, Math.min(20, Math.round(Number(mins) || 20)));
+            try { localStorage.setItem('dj.automix.max.min.v1', String(v)); } catch (_) {}
+            return v;
+        }
+        function readAutoFadeDurationMsFromStorage() {
+            try {
+                const v = Number(localStorage.getItem('dj.autofade.duration.ms.v1'));
+                if (Number.isFinite(v)) return Math.max(2000, Math.min(15000, v));
+            } catch (_) {}
+            return 5000;
+        }
+        function writeAutoFadeDurationMsToStorage(ms) {
+            const v = Math.max(2000, Math.min(15000, Math.round(Number(ms) || 5000)));
+            try { localStorage.setItem('dj.autofade.duration.ms.v1', String(v)); } catch (_) {}
+            return v;
+        }
+        function syncOptionsPanelControlsFromStorage() {
+            const theme = loadDigitalThemeFromStorage();
+            if (optDigitalBgA) optDigitalBgA.value = theme.bgA;
+            if (optDigitalBgB) optDigitalBgB.value = theme.bgB;
+            if (optDigitalBgC) optDigitalBgC.value = theme.bgC;
+            if (optDigitalAccent) optDigitalAccent.value = theme.accent;
+            if (optDigitalFont) optDigitalFont.value = theme.font;
+            const maxMin = readAutoMixMaxMinFromStorage();
+            if (optAutomixMax) optAutomixMax.value = String(maxMin);
+            if (optAutomixMaxReadout) optAutomixMaxReadout.textContent = `${maxMin}m`;
+            let automixOn = false;
+            try { automixOn = localStorage.getItem(AUTOMIX_ENABLED_STORAGE_KEY) === '1'; } catch (_) {}
+            try { automixOn = automixOn || !!(state && state.autoMixEnabled); } catch (_) {}
+            if (optAutomixEnabled) optAutomixEnabled.checked = automixOn;
+            const fadeMs = readAutoFadeDurationMsFromStorage();
+            if (optAutofadeDuration) optAutofadeDuration.value = String(fadeMs / 1000);
+            if (optAutofadeDurationReadout) optAutofadeDurationReadout.textContent = `${(fadeMs / 1000).toFixed(1)}s`;
+            let changeStation = true;
+            try {
+                const raw = localStorage.getItem(AUTOFADE_CHANGE_STATION_STORAGE_KEY);
+                if (raw != null) changeStation = raw === '1';
+            } catch (_) {}
+            if (optAutofadeChangeStation) optAutofadeChangeStation.checked = changeStation;
+        }
+        function syncRadioVisualMixPanelsFromOptions() {
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (!rv) return;
+                if (typeof rv._syncDigitalAutoMixPanelUi === 'function') rv._syncDigitalAutoMixPanelUi();
+                if (typeof rv._syncDigitalAutoFadePanelUi === 'function') rv._syncDigitalAutoFadePanelUi();
+                if (typeof rv._syncAutoMixKnob === 'function') rv._syncAutoMixKnob();
+                if (typeof rv._syncAutoFadeChangeStationKnob === 'function') rv._syncAutoFadeChangeStationKnob();
+                if (typeof rv._autoFadeDurationNorm === 'function' && typeof rv._setAutoFadeDurationNorm === 'function') {
+                    rv._setAutoFadeDurationNorm(rv._autoFadeDurationNorm());
+                }
+            } catch (_) {}
+        }
+        function collectDigitalThemeFromControls() {
+            return {
+                bgA: optDigitalBgA ? optDigitalBgA.value : DEFAULT_DIGITAL_THEME.bgA,
+                bgB: optDigitalBgB ? optDigitalBgB.value : DEFAULT_DIGITAL_THEME.bgB,
+                bgC: optDigitalBgC ? optDigitalBgC.value : DEFAULT_DIGITAL_THEME.bgC,
+                accent: optDigitalAccent ? optDigitalAccent.value : DEFAULT_DIGITAL_THEME.accent,
+                font: optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.font
+            };
+        }
         function isOptionsOpen() {
             return !!(optionsPanel && !optionsPanel.classList.contains('display-none') && optionsPanel.classList.contains('show'));
         }
         let optionsAutoCloseId = null;
+        function armOptionsAutoClose() {
+            if (optionsAutoCloseId) { clearTimeout(optionsAutoCloseId); optionsAutoCloseId = null; }
+            optionsAutoCloseId = setTimeout(() => { closeOptionsPanel(); }, 20000);
+        }
         function openOptionsPanel() {
             if (uiLocked) return;
             if (!optionsPanel) return;
+            try { syncOptionsPanelControlsFromStorage(); } catch (_) {}
             optionsPanel.classList.remove('display-none');
-            requestAnimationFrame(()=> optionsPanel.classList.add('show'));
-            // auto close after 15s
-            if (optionsAutoCloseId) { clearTimeout(optionsAutoCloseId); optionsAutoCloseId = null; }
-            optionsAutoCloseId = setTimeout(()=>{ closeOptionsPanel(); }, 20000);
+            requestAnimationFrame(() => optionsPanel.classList.add('show'));
+            armOptionsAutoClose();
         }
         function closeOptionsPanel() {
             if (!optionsPanel) return;
             if (optionsAutoCloseId) { clearTimeout(optionsAutoCloseId); optionsAutoCloseId = null; }
             optionsPanel.classList.remove('show');
-            setTimeout(()=> optionsPanel.classList.add('display-none'), 350);
+            setTimeout(() => optionsPanel.classList.add('display-none'), 350);
         }
         function toggleOptionsPanel() {
             if (isOptionsOpen()) closeOptionsPanel(); else openOptionsPanel();
         }
-        if (btnOptionsClose) btnOptionsClose.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); closeOptionsPanel(); });
+        if (btnOptions) {
+            btnOptions.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleOptionsPanel();
+            });
+        }
+        if (btnOptionsClose) btnOptionsClose.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); closeOptionsPanel(); });
+        if (optionsPanel) {
+            optionsPanel.addEventListener('pointerdown', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
+            optionsPanel.addEventListener('input', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
+        }
+        function wireOptionsPanelControls() {
+            const onThemeChange = () => {
+                const theme = collectDigitalThemeFromControls();
+                saveDigitalThemeToStorage(theme);
+                applyDigitalRadioTheme(theme);
+            };
+            [optDigitalBgA, optDigitalBgB, optDigitalBgC, optDigitalAccent].forEach((el) => {
+                if (!el) return;
+                el.addEventListener('input', onThemeChange);
+                el.addEventListener('change', onThemeChange);
+            });
+            if (optDigitalFont) {
+                optDigitalFont.addEventListener('change', onThemeChange);
+            }
+            if (optDigitalThemeReset) {
+                optDigitalThemeReset.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    saveDigitalThemeToStorage(DEFAULT_DIGITAL_THEME);
+                    applyDigitalRadioTheme(DEFAULT_DIGITAL_THEME);
+                    syncOptionsPanelControlsFromStorage();
+                });
+            }
+            if (optAutomixMax) {
+                const syncAutomixMax = () => {
+                    const mins = writeAutoMixMaxMinToStorage(optAutomixMax.value);
+                    if (optAutomixMaxReadout) optAutomixMaxReadout.textContent = `${mins}m`;
+                    syncRadioVisualMixPanelsFromOptions();
+                };
+                optAutomixMax.addEventListener('input', syncAutomixMax);
+                optAutomixMax.addEventListener('change', syncAutomixMax);
+            }
+            if (optAutomixEnabled) {
+                optAutomixEnabled.addEventListener('change', () => {
+                    const next = !!optAutomixEnabled.checked;
+                    let currentlyOn = false;
+                    try { currentlyOn = localStorage.getItem(AUTOMIX_ENABLED_STORAGE_KEY) === '1'; } catch (_) {}
+                    try { currentlyOn = currentlyOn || !!(state && state.autoMixEnabled); } catch (_) {}
+                    if (currentlyOn === next) return;
+                    const rv = getActiveRadioVisualEngine();
+                    if (rv && typeof rv._toggleAutoMix === 'function') {
+                        rv._toggleAutoMix();
+                    } else {
+                        const btn = document.getElementById('mix-automix') || document.getElementById('dj-automix');
+                        if (btn) btn.click();
+                        else {
+                            try { localStorage.setItem(AUTOMIX_ENABLED_STORAGE_KEY, next ? '1' : '0'); } catch (_) {}
+                            try { state.autoMixEnabled = next; } catch (_) {}
+                        }
+                    }
+                    syncRadioVisualMixPanelsFromOptions();
+                });
+            }
+            if (optAutofadeDuration) {
+                const syncFade = () => {
+                    const ms = writeAutoFadeDurationMsToStorage(Number(optAutofadeDuration.value) * 1000);
+                    if (optAutofadeDurationReadout) optAutofadeDurationReadout.textContent = `${(ms / 1000).toFixed(1)}s`;
+                    syncRadioVisualMixPanelsFromOptions();
+                };
+                optAutofadeDuration.addEventListener('input', syncFade);
+                optAutofadeDuration.addEventListener('change', syncFade);
+            }
+            if (optAutofadeChangeStation) {
+                optAutofadeChangeStation.addEventListener('change', () => {
+                    const next = !!optAutofadeChangeStation.checked;
+                    let currently = true;
+                    try {
+                        const raw = localStorage.getItem(AUTOFADE_CHANGE_STATION_STORAGE_KEY);
+                        if (raw != null) currently = raw === '1';
+                    } catch (_) {}
+                    if (currently === next) return;
+                    const rv = getActiveRadioVisualEngine();
+                    if (rv && typeof rv._toggleAutoFadeChangeStation === 'function') {
+                        rv._toggleAutoFadeChangeStation();
+                    } else {
+                        try { localStorage.setItem(AUTOFADE_CHANGE_STATION_STORAGE_KEY, next ? '1' : '0'); } catch (_) {}
+                        const cb = document.getElementById('dj-autofade-change-station');
+                        if (cb) {
+                            cb.checked = next;
+                            try { cb.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+                        }
+                    }
+                    syncRadioVisualMixPanelsFromOptions();
+                });
+            }
+        }
+        applyDigitalRadioTheme(loadDigitalThemeFromStorage());
+        wireOptionsPanelControls();
 
         const UI_HUD_POSITION_KEY = 'ui.hud.position.v1';
 
@@ -575,14 +802,6 @@ const QUALITY = {
         }
         initUiHudPosition();
         wireModeInfoOptionsLongPress();
-        const optTop = document.getElementById('opt-top');
-        const optLeft = document.getElementById('opt-left');
-        const optRight = document.getElementById('opt-right');
-        const optBottom = document.getElementById('opt-bottom');
-        if (optTop) optTop.addEventListener('click', (e)=>{ e.preventDefault(); try { toggleTopMenuPanel(); } catch(_){} closeOptionsPanel(); });
-        if (optLeft) optLeft.addEventListener('click', (e)=>{ e.preventDefault(); try { toggleTextInPanel(); } catch(_){} closeOptionsPanel(); });
-        if (optRight) optRight.addEventListener('click', (e)=>{ e.preventDefault(); try { toggleBottomMenuPanel(); } catch(_){} closeOptionsPanel(); });
-        if (optBottom) optBottom.addEventListener('click', (e)=>{ e.preventDefault(); try { toggleMixPanel(); } catch(_){} closeOptionsPanel(); });
         // Update Avatar play/stop button label helper
         function updateAvatarPlayButton() {
             try {
@@ -2327,9 +2546,9 @@ function randomGlowColor() {
 				radioQuickBtn.style.opacity = '1';
 				radioQuickBtn.style.pointerEvents = 'auto';
 			}
-            if (uiLockToggle && state.isPlaying) {
-                uiLockToggle.style.opacity = '1';
-                uiLockToggle.style.pointerEvents = 'auto';
+            if (btnOptions && state.isPlaying) {
+                btnOptions.style.opacity = '1';
+                btnOptions.style.pointerEvents = 'auto';
             }
             // Show volume slider on interaction
             const vs = document.getElementById('volume-slider-container');
@@ -2376,9 +2595,9 @@ function randomGlowColor() {
                     }
                     // Hide top bar on idle
                     if (topBar) { topBar.style.opacity = '0'; topBar.style.pointerEvents = 'none'; }
-                    if (uiLockToggle) {
-                        uiLockToggle.style.opacity = '0';
-                        uiLockToggle.style.pointerEvents = 'none';
+                    if (btnOptions) {
+                        btnOptions.style.opacity = '0';
+                        btnOptions.style.pointerEvents = 'none';
                     }
                     // Hide webm nav
                     webmPrevBtn.style.opacity = '0';

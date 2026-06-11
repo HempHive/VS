@@ -80,7 +80,7 @@
             <button class="icon-btn interactive display-none" id="btn-skip-preset" title="Next Visual Preset">⏭</button>
             <!-- WEBM TOGGLE -->
             <button class="icon-btn interactive" id="btn-webm" title="Keyboard shortcuts" aria-label="Keyboard shortcuts">⌨️</button>
-            <button id="ui-lock-toggle" class="icon-btn interactive" title="Lock UI" aria-pressed="false">🔒</button>
+            <button class="icon-btn interactive" id="btn-options" title="Options" aria-label="Options">⚙️</button>
             <button class="icon-btn interactive" id="btn-webm-panel-toggle" title="Avatar Settings">💃</button>
 
             <!-- TITLE INFO -->
@@ -231,11 +231,71 @@
     <!-- Center Options Panel -->
     <div id="options-panel" class="display-none" aria-label="Options Panel">
         <div id="options-modal">
-            <div id="options-grid">
-                <button class="tri-btn tri-top"    id="opt-top"    title="Open Radio Stations"><span class="tri-label">Radio Stations</span></button>
-                <button class="tri-btn tri-left"   id="opt-left"   title="Open Text-In"><span class="tri-label">Text-In</span></button>
-                <button class="tri-btn tri-right"  id="opt-right"  title="Open Avatar Settings"><span class="tri-label">Avatar</span></button>
-                <button class="tri-btn tri-bottom" id="opt-bottom" title="Open Mix Settings"><span class="tri-label">Mixer</span></button>
+            <div id="options-head">
+                <span>Options</span>
+                <button type="button" class="icon-btn interactive" id="btn-options-close" title="Close" aria-label="Close">✕</button>
+            </div>
+            <div id="options-body">
+                <section class="options-section" aria-label="Appearance">
+                    <h4 class="options-section-title">Appearance</h4>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-bg-a">Background top</label>
+                        <input type="color" class="options-color" id="opt-digital-bg-a" value="#0a1628" aria-label="Digital Radio background top colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-bg-b">Background mid</label>
+                        <input type="color" class="options-color" id="opt-digital-bg-b" value="#061018" aria-label="Digital Radio background mid colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-bg-c">Background base</label>
+                        <input type="color" class="options-color" id="opt-digital-bg-c" value="#0c1020" aria-label="Digital Radio background base colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-accent">Accent glow</label>
+                        <input type="color" class="options-color" id="opt-digital-accent" value="#ffd246" aria-label="Digital Radio accent glow colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-font">Display font</label>
+                        <select class="options-select" id="opt-digital-font" aria-label="Digital Radio display font">
+                            <option value="'Orbitron', 'Share Tech Mono', ui-monospace, monospace">Orbitron</option>
+                            <option value="'Share Tech Mono', ui-monospace, monospace">Share Tech Mono</option>
+                            <option value="'Audiowide', cursive">Audiowide</option>
+                            <option value="'Rajdhani', sans-serif">Rajdhani</option>
+                            <option value="'Quicksand', sans-serif">Quicksand</option>
+                            <option value="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">System Mono</option>
+                        </select>
+                    </div>
+                    <button type="button" class="options-btn options-btn--ghost" id="opt-digital-theme-reset">Reset colours &amp; font</button>
+                </section>
+                <section class="options-section" aria-label="Auto-Mix">
+                    <h4 class="options-section-title">Auto-Mix</h4>
+                    <label class="options-check">
+                        <input type="checkbox" id="opt-automix-enabled">
+                        <span>Enable Auto-Mix</span>
+                    </label>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-automix-max">Max interval</label>
+                        <input type="range" class="options-range" id="opt-automix-max" min="1" max="20" step="1" aria-label="Auto-mix maximum interval in minutes">
+                        <span class="options-readout" id="opt-automix-max-readout">20m</span>
+                    </div>
+                </section>
+                <section class="options-section" aria-label="Auto-Fade">
+                    <h4 class="options-section-title">Auto-Fade</h4>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-autofade-duration">Fade duration</label>
+                        <input type="range" class="options-range" id="opt-autofade-duration" min="2" max="15" step="0.5" aria-label="Auto-fade duration in seconds">
+                        <span class="options-readout" id="opt-autofade-duration-readout">5.0s</span>
+                    </div>
+                    <label class="options-check" title="When on, Auto-Fade and Auto-Mix pick a random station on the incoming deck before each crossfade">
+                        <input type="checkbox" id="opt-autofade-change-station">
+                        <span>Change station on Auto-Fade</span>
+                    </label>
+                </section>
+                <section class="options-section" aria-label="System">
+                    <h4 class="options-section-title">System</h4>
+                    <button type="button" id="ui-lock-toggle" class="options-btn options-lock-btn" title="Lock UI" aria-pressed="false">🔒 Lock UI</button>
+                    <p class="options-hint">Hold the HUD title or press <strong>G</strong> to reopen Options. Panel closes after 20 seconds.</p>
+                </section>
             </div>
         </div>
     </div>
@@ -624,7 +684,7 @@
                     </ul>
                 </div>
             </div>
-            <p class="kbd-note">Shortcuts are ignored while typing in fields, or when <strong>Lock UI</strong> is on (except <strong>L</strong> toggles lock). Hold the centre HUD titles (visual name / station) or press <strong>G</strong> for the options menu.</p>
+            <p class="kbd-note">Shortcuts are ignored while typing in fields, or when <strong>Lock UI</strong> is on (except <strong>L</strong> toggles lock). Press <strong>⚙️</strong> or <strong>G</strong>, or hold the centre HUD title, for Options.</p>
         </div>
     </div>
     

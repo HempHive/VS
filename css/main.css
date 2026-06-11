@@ -469,8 +469,8 @@
 			display: flex; align-items: center; justify-content: center;
 			min-width: 360px;
 		}
-        /* UI Lock (bottom HUD, after ⌨️) */
-        .center-controls #ui-lock-toggle {
+        /* UI Options (bottom HUD, after ⌨️) */
+        .center-controls #btn-options {
             position: static;
             width: auto;
             height: auto;
@@ -487,10 +487,11 @@
             opacity: 1;
             pointer-events: auto;
         }
-        .center-controls #ui-lock-toggle:hover { filter: brightness(1.15); }
-        .center-controls #ui-lock-toggle.on {
+        .center-controls #btn-options:hover { filter: brightness(1.15); }
+        .options-lock-btn.on {
             color: #e8c86a;
-            text-shadow: 0 0 12px rgba(212, 175, 55, 0.55);
+            border-color: rgba(212, 175, 55, 0.65);
+            box-shadow: 0 0 14px rgba(212, 175, 55, 0.28);
         }
         /* Shield to block interactions when locked */
         #ui-lock-shield {
@@ -502,7 +503,7 @@
         }
         #ui-lock-shield.active { display: block; }
         /* Hide lock button/shield on start overlay (before playback) */
-        #overlay:not(.hidden) ~ #ui-layer #ui-lock-toggle,
+        #overlay:not(.hidden) ~ #ui-layer #btn-options,
         #overlay:not(.hidden) ~ #ui-lock-shield {
             display: none !important;
         }
@@ -1315,65 +1316,158 @@
             box-shadow: 0 0 0 0 rgba(0,0,0,0);
             transition: background 0.2s, box-shadow 0.2s;
         }
-        /* Options Panel (center square, fade in/out)
-           Backdrop ignores pointer-events so the bottom HUD stays clickable to close */
+        /* Options Panel (center card, fade in/out; semi-translucent shell, opaque text) */
         #options-panel {
             position: fixed; inset: 0; display: none; place-items: center; z-index: 180;
             opacity: 0; transition: opacity 0.35s ease;
             pointer-events: none;
         }
-        #options-panel.show { display: grid; opacity: 1; }
+        #options-panel.show { display: grid; opacity: 1; pointer-events: auto; }
         #options-modal {
-            width: min(54vmin, 630px); height: min(54vmin, 630px);
-            background: rgba(0,0,0,0.82);
-            border: 1px solid rgba(255,255,255,0.2);
+            width: min(92vw, 420px);
+            max-height: min(82vh, 640px);
+            background: rgba(8, 16, 32, 0.58);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(120, 200, 255, 0.28);
             border-radius: 14px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
             position: relative;
-            display: grid; grid-template-rows: 1fr;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
             overflow: hidden;
             pointer-events: auto;
         }
         #options-head {
-            padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.12);
-            display:flex; align-items:center; justify-content:space-between; color:#ddd; font-size:14px; letter-spacing:1px; text-transform:uppercase;
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            color: #f2f6ff;
+            font-size: 14px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            font-weight: 700;
         }
-        #options-grid {
-            position: relative;
-            width: 100%; height: 100%;
+        #options-body {
+            overflow: auto;
+            padding: 12px 14px 16px;
+            color: #eef4ff;
         }
-        /* Triangle buttons fill the square; all point to center */
-        .tri-btn {
-            position: absolute; inset: 0;
+        .options-section + .options-section {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .options-section-title {
+            margin: 0 0 10px;
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #9fdcff;
+            font-weight: 700;
+        }
+        .options-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .options-label {
+            font-size: 12px;
+            color: #eef4ff;
+            letter-spacing: 0.03em;
+        }
+        .options-color {
+            width: 42px;
+            height: 28px;
+            padding: 0;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 6px;
             background: transparent;
-            border: 1.5px solid rgba(255,255,255,0.35);
-            box-shadow: inset 0 0 14px rgba(0,0,0,0.35);
-            color: #fff;
             cursor: pointer;
-            transition: filter 0.2s, transform 0.1s, background-color 0.2s, border-color 0.2s;
         }
-        .tri-btn:hover { filter: brightness(1.2); }
-        .tri-top    { clip-path: polygon(0% 0%, 100% 0%, 50% 50%); background: rgba(90,50,252,0.18); border-color: rgba(90,50,252,0.75); }
-        .tri-left   { clip-path: polygon(0% 0%, 0% 100%, 50% 50%); background: rgba(57,255,20,0.18); border-color: rgba(57,255,20,0.75); }
-        .tri-right  { clip-path: polygon(100% 0%, 100% 100%, 50% 50%); background: rgba(214,1,77,0.18); border-color: rgba(214,1,77,0.75); }
-        .tri-bottom { clip-path: polygon(0% 100%, 100% 100%, 50% 50%); background: rgba(253,232,2,0.18); border-color: rgba(253,232,2,0.75); }
-        /* Labels inside triangles */
-        .tri-label {
-            position: absolute; pointer-events: none; font-size: 24px; color: #fff; letter-spacing: 0.5px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        .options-select {
+            grid-column: 2 / -1;
+            width: 100%;
+            min-width: 0;
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: rgba(0, 0, 0, 0.35);
+            color: #fff;
+            font-size: 12px;
         }
-        .tri-top .tri-label { top: 12%; left: 50%; transform: translate(-50%, 0); }
-        .tri-left .tri-label { left: 12%; top: 50%; transform: translate(0, -50%); white-space: nowrap; }
-        .tri-right .tri-label { right: 12%; top: 50%; transform: translate(0, -50%); white-space: nowrap; }
-        .tri-bottom .tri-label { bottom: 12%; left: 50%; transform: translate(-50%, 0); }
-        #options-foot {
-            padding: 10px 12px; border-top: 1px solid rgba(255,255,255,0.12);
-            display:flex; justify-content:flex-end; gap:8px;
+        .options-range {
+            grid-column: 2;
+            width: 100%;
+            min-width: 0;
+        }
+        .options-readout {
+            font-size: 11px;
+            color: #8ef;
+            min-width: 2.8em;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .options-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 8px;
+            font-size: 12px;
+            color: #eef4ff;
+            cursor: pointer;
+        }
+        .options-check input {
+            accent-color: #38d9ff;
+        }
+        .options-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            margin-top: 4px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(120, 200, 255, 0.35);
+            background: rgba(12, 40, 72, 0.72);
+            color: #f2f8ff;
+            font-size: 13px;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+        }
+        .options-btn:hover { filter: brightness(1.12); }
+        .options-btn--ghost {
+            width: auto;
+            margin-top: 6px;
+            padding: 6px 10px;
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+        .options-lock-btn {
+            font-weight: 600;
+        }
+        .options-hint {
+            margin: 10px 0 0;
+            font-size: 11px;
+            line-height: 1.45;
+            color: rgba(220, 232, 255, 0.88);
+        }
+        .options-hint strong {
+            color: #fff;
+            font-weight: 700;
         }
         #btn-options-close {
-            padding: 6px 10px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: #fff; border-radius: 6px; cursor: pointer; font-size: 11px; letter-spacing:1px; text-transform:uppercase;
+            font-size: 18px;
+            line-height: 1;
+            padding: 4px 8px;
         }
-        #btn-options-close:hover { background:#fff; color:#000; }
         .status-dot.on {
             background: #22cc66;
             box-shadow: 0 0 10px rgba(34,204,102,0.8);

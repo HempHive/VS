@@ -3907,18 +3907,26 @@
                 }
             }
 
-            _formatDigitalClockReadout(date = new Date()) {
+            _formatDigitalClockReadout(date = new Date(), opts = {}) {
                 try {
-                    const day = date.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
                     const time = date.toLocaleTimeString(undefined, {
                         hour: '2-digit',
                         minute: '2-digit',
                         hour12: false
                     });
+                    if (opts && opts.compact) return time;
+                    const day = date.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
                     return `${day} ${time}`;
                 } catch (_) {
                     return '—';
                 }
+            }
+
+            _digitalToolbarClockReadoutCompact() {
+                const readout = this.els.volDigitalReadout;
+                if (!readout) return false;
+                const w = readout.clientWidth;
+                return w > 0 && w < 72;
             }
 
             _digitalAutoMixToolbarReadoutText() {
@@ -3947,14 +3955,15 @@
                     return;
                 }
                 let text = '—';
+                const clockCompact = this._digitalToolbarClockReadoutCompact();
                 if (mode === 'clock') {
-                    text = this._formatDigitalClockReadout();
+                    text = this._formatDigitalClockReadout(undefined, { compact: clockCompact });
                 } else if (mode === 'volume') {
                     if (this._digitalToolbarVolumePeekActive) {
                         const vs = document.getElementById('volume-slider');
                         text = this._formatDigitalVolumeReadout(vs ? Number(vs.value) : 0.5);
                     } else {
-                        text = this._formatDigitalClockReadout();
+                        text = this._formatDigitalClockReadout(undefined, { compact: clockCompact });
                     }
                 } else if (mode === 'automix') {
                     if (this._digitalToolbarVolumePeekActive) {
@@ -4163,20 +4172,47 @@
                 const label = readout?.querySelector('.radio-visual-center-readout-text');
                 if (!readout || !label) return;
                 label.style.fontSize = '';
+                label.style.letterSpacing = '';
                 if (readout.clientWidth < 8 || readout.clientHeight < 6) return;
                 const mode = this._digitalToolbarCenterMode || 'clock';
                 if (mode === 'crossfade') return;
                 const volumeShowsClock = mode === 'volume' && !this._digitalToolbarVolumePeekActive;
                 const fitAsClock = mode === 'clock' || volumeShowsClock;
+                if (fitAsClock) {
+                    const clockCompact = readout.clientWidth > 0 && readout.clientWidth < 72;
+                    const current = String(label.textContent || '');
+                    const next = this._formatDigitalClockReadout(undefined, { compact: clockCompact });
+                    if (current !== next) label.textContent = next;
+                }
+                const maxW = Math.max(6, readout.clientWidth - 1);
+                const maxH = Math.max(6, readout.clientHeight - 1);
+                const minPx = fitAsClock ? 4 : 6;
                 const maxCap = fitAsClock ? 11 : 13;
-                this._computeRvButtonLabelFitPx(readout, label, {
-                    fill: true,
-                    maxCap,
-                    heightFactor: 0.88,
-                    widthFactor: (fitAsClock || mode === 'automix' || mode === 'remaining') ? 0.92 : 0.55,
-                    minPx: 6,
-                    pad: 2
-                });
+                let size = Math.min(maxH * 0.9, maxCap);
+                label.style.fontSize = `${size}px`;
+                if (fitAsClock) label.style.letterSpacing = '0.03em';
+                for (let guard = 0; guard < 200 && size > minPx; guard++) {
+                    if (label.scrollWidth <= maxW && label.scrollHeight <= maxH) break;
+                    size -= 0.2;
+                    label.style.fontSize = `${size}px`;
+                }
+                if (fitAsClock && label.scrollWidth > maxW) {
+                    let spacing = 0.03;
+                    for (let i = 0; i < 30 && label.scrollWidth > maxW && spacing > -0.04; i++) {
+                        spacing -= 0.003;
+                        label.style.letterSpacing = `${spacing}em`;
+                    }
+                }
+                if (!fitAsClock) {
+                    this._computeRvButtonLabelFitPx(readout, label, {
+                        fill: true,
+                        maxCap,
+                        heightFactor: 0.88,
+                        widthFactor: (mode === 'automix' || mode === 'remaining') ? 0.92 : 0.55,
+                        minPx,
+                        pad: 2
+                    });
+                }
             }
 
             _scheduleDigitalSpectrumLayoutSync() {
@@ -6753,6 +6789,8 @@
                 rootEl.querySelectorAll('.radio-visual-btn').forEach((btn) => ro.observe(btn));
                 const volGroup = rootEl.querySelector('.radio-visual-digital-toolbar-vol');
                 if (volGroup) ro.observe(volGroup);
+                const centerSlot = rootEl.querySelector('.radio-visual-digital-center-slot');
+                if (centerSlot) ro.observe(centerSlot);
                 const panel = rootEl.closest('.radio-visual-digital-panel')
                     || rootEl.closest('.radio-visual-stage.radio-visual-skin--digital');
                 if (panel) ro.observe(panel);
