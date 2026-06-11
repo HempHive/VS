@@ -1694,6 +1694,16 @@ const QUALITY = {
             optionsPanel.addEventListener('input', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
             optionsPanel.addEventListener('mousemove', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
         }
+        function applyDigitalThemePartial(patch, afterApply) {
+            const theme = normalizeDigitalTheme({
+                ...loadDigitalThemeFromStorage(),
+                ...(patch || {})
+            });
+            saveDigitalThemeToStorage(theme);
+            applyDigitalThemeToControls(theme);
+            applyDigitalRadioTheme(theme);
+            if (typeof afterApply === 'function') afterApply();
+        }
         function resetAppearanceOptionsSection() {
             saveDigitalThemeToStorage(DEFAULT_DIGITAL_THEME);
             clearDigitalBgOuterImage();
@@ -1704,19 +1714,128 @@ const QUALITY = {
             if (optDigitalBgGif) optDigitalBgGif.value = '';
             try { populateDigitalBgGifSelect(); } catch (_) {}
         }
-        function resetSpectrumOptionsSection() {
+        function resetStagingPanelOptions() {
+            const d = DEFAULT_DIGITAL_THEME;
+            applyDigitalThemePartial({
+                bgA: d.bgA,
+                bgB: d.bgB,
+                bgC: d.bgC,
+                bgGradientAngle: d.bgGradientAngle,
+                bgPanelImageOpacity: d.bgPanelImageOpacity,
+                bgPanelOpacity: d.bgPanelOpacity
+            }, () => clearDigitalBgPanelImage());
+        }
+        function resetScreenBackgroundOptions() {
+            const d = DEFAULT_DIGITAL_THEME;
+            applyDigitalThemePartial({
+                bgOuterA: d.bgOuterA,
+                bgOuterB: d.bgOuterB,
+                bgOuterC: d.bgOuterC,
+                bgOuterGradientAngle: d.bgOuterGradientAngle,
+                bgOuterImageOpacity: d.bgOuterImageOpacity
+            }, () => {
+                clearDigitalBgOuterImage();
+                applyDigitalBgGifFromOptions('');
+                if (optDigitalBgGif) optDigitalBgGif.value = '';
+            });
+        }
+        function resetBlueToolbarButtonOptions() {
+            const d = DEFAULT_DIGITAL_THEME;
+            applyDigitalThemePartial({
+                btnBlueTop: d.btnBlueTop,
+                btnBlueBase: d.btnBlueBase,
+                btnBlueAccent: d.btnBlueAccent,
+                btnBlueLabel: d.btnBlueLabel,
+                btnBlueOpacity: d.btnBlueOpacity,
+                btnBlueTextOpacity: d.btnBlueTextOpacity,
+                btnBlueBorderOpacity: d.btnBlueBorderOpacity,
+                btnBlueFontScale: d.btnBlueFontScale
+            });
+        }
+        function resetPurpleFeatureButtonOptions() {
+            const d = DEFAULT_DIGITAL_THEME;
+            applyDigitalThemePartial({
+                btnPurpleTop: d.btnPurpleTop,
+                btnPurpleBase: d.btnPurpleBase,
+                btnPurpleLabel: d.btnPurpleLabel,
+                btnPurpleActive: d.btnPurpleActive,
+                btnPurpleOpacity: d.btnPurpleOpacity,
+                btnPurpleTextOpacity: d.btnPurpleTextOpacity,
+                btnPurpleBorderOpacity: d.btnPurpleBorderOpacity,
+                btnPurpleFontScale: d.btnPurpleFontScale
+            });
+        }
+        function resetClockOptions() {
+            const d = DEFAULT_DIGITAL_THEME;
+            applyDigitalThemePartial({
+                clockFont: d.clockFont,
+                clockColor: d.clockColor,
+                clockFontScale: d.clockFontScale,
+                clockFormat: d.clockFormat
+            });
+        }
+        function getDefaultSpectrumSettings() {
             const RVE = getSpectrumEngineClass();
-            const defaults = (RVE && RVE.DEFAULT_SPECTRUM_SETTINGS)
+            return (RVE && RVE.DEFAULT_SPECTRUM_SETTINGS)
                 ? { ...RVE.DEFAULT_SPECTRUM_SETTINGS }
-                : {
-                    colorStreamId: 'aurora',
-                    scale: 1,
-                    opacity: 1,
-                    audioStrength: 1,
-                    colorFlow: 1
-                };
+                : loadSpectrumSettingsFromStorage();
+        }
+        function applySpectrumPartial(patch) {
+            const next = {
+                ...loadSpectrumSettingsFromStorage(),
+                ...(patch || {})
+            };
+            applySpectrumSettingsToControls(next);
+            applyDigitalSpectrumSettings(next);
+        }
+        function resetSpectrumOptionsSection() {
+            const defaults = getDefaultSpectrumSettings();
             applySpectrumSettingsToControls(defaults);
             applyDigitalSpectrumSettings(defaults);
+        }
+        function resetSpectrumModeOptions() {
+            const d = getDefaultSpectrumSettings();
+            applySpectrumPartial({
+                colorStreamId: d.colorStreamId,
+                scale: d.scale,
+                opacity: d.opacity,
+                audioStrength: d.audioStrength,
+                colorFlow: d.colorFlow
+            });
+        }
+        function resetSpectrumEqOptions() {
+            const d = getDefaultSpectrumSettings();
+            applySpectrumPartial({
+                eqColorStreamId: d.eqColorStreamId,
+                eqScale: d.eqScale,
+                eqOpacity: d.eqOpacity,
+                eqAudioStrength: d.eqAudioStrength,
+                eqColorFlow: d.eqColorFlow
+            });
+        }
+        function resetSpectrumRotateLOptions() {
+            const d = getDefaultSpectrumSettings();
+            applySpectrumPartial({
+                rotateLHigh: d.rotateLHigh,
+                rotateLMid: d.rotateLMid,
+                rotateLLow: d.rotateLLow
+            });
+        }
+        function resetSpectrumRotateROptions() {
+            const d = getDefaultSpectrumSettings();
+            applySpectrumPartial({
+                rotateRHigh: d.rotateRHigh,
+                rotateRMid: d.rotateRMid,
+                rotateRLow: d.rotateRLow
+            });
+        }
+        function wireOptionsSubsectionReset(btn, handler) {
+            if (!btn) return;
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                handler();
+                if (isOptionsOpen()) armOptionsAutoClose();
+            });
         }
         function setAutomixEnabledFromOptions(next) {
             let currentlyOn = false;
@@ -1878,6 +1997,11 @@ const QUALITY = {
                     if (isOptionsOpen()) armOptionsAutoClose();
                 });
             }
+            wireOptionsSubsectionReset(document.getElementById('opt-staging-panel-reset'), resetStagingPanelOptions);
+            wireOptionsSubsectionReset(document.getElementById('opt-screen-bg-reset'), resetScreenBackgroundOptions);
+            wireOptionsSubsectionReset(document.getElementById('opt-blue-buttons-reset'), resetBlueToolbarButtonOptions);
+            wireOptionsSubsectionReset(document.getElementById('opt-purple-buttons-reset'), resetPurpleFeatureButtonOptions);
+            wireOptionsSubsectionReset(document.getElementById('opt-clock-reset'), resetClockOptions);
             const onSpectrumSettingsChange = () => {
                 const settings = collectSpectrumSettingsFromControls();
                 applySpectrumSettingsToControls(settings);
@@ -1905,6 +2029,10 @@ const QUALITY = {
                     if (isOptionsOpen()) armOptionsAutoClose();
                 });
             }
+            wireOptionsSubsectionReset(document.getElementById('opt-spectrum-mode-reset'), resetSpectrumModeOptions);
+            wireOptionsSubsectionReset(document.getElementById('opt-spectrum-eq-reset'), resetSpectrumEqOptions);
+            wireOptionsSubsectionReset(document.getElementById('opt-spectrum-rotate-l-reset'), resetSpectrumRotateLOptions);
+            wireOptionsSubsectionReset(document.getElementById('opt-spectrum-rotate-r-reset'), resetSpectrumRotateROptions);
             if (optAutomixReset) {
                 optAutomixReset.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -3619,7 +3747,7 @@ const QUALITY = {
 			return !!(tapGifLoadPromise && ptaGifLoadPromise && patGifLoadPromise);
 		}
 		function updateStartLoaderProgress(pct) {
-			const progressEl = document.getElementById('start-loader-progress');
+			const progressEl = document.getElementById('start-loader-pct');
 			const loader = document.getElementById('start-loader');
 			const n = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
 			if (progressEl) progressEl.textContent = String(n);

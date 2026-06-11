@@ -418,15 +418,16 @@
 		}
 		.start-loader-shell {
 			position: relative;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			width: clamp(44px, 11vw, 58px);
-			height: clamp(44px, 11vw, 58px);
+			display: grid;
+			place-items: center;
+			width: clamp(56px, 14vw, 72px);
+			height: clamp(56px, 14vw, 72px);
+			isolation: isolate;
 		}
 		.start-loader-ring {
 			position: absolute;
 			inset: 0;
+			box-sizing: border-box;
 			border-radius: 50%;
 			border: 3px solid rgba(0, 200, 255, 0.18);
 			border-top-color: #8ef;
@@ -435,19 +436,29 @@
 				0 0 12px rgba(0, 220, 255, 0.45),
 				0 0 22px rgba(176, 96, 255, 0.25);
 			animation: start-loader-spin 0.9s linear infinite;
+			pointer-events: none;
 		}
-		.start-loader-progress {
+		#start-loader .start-loader-pct {
 			position: relative;
-			z-index: 1;
-			font-family: 'Orbitron', 'Share Tech Mono', ui-monospace, monospace !important;
-			font-size: clamp(11px, 2.8vw, 14px);
+			z-index: 2;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 2.4em;
+			padding: 0 2px;
+			font-family: 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+			font-size: 13px;
 			font-weight: 700;
 			font-variant-numeric: tabular-nums;
-			letter-spacing: 0.02em;
-			color: #9eeeff;
-			text-shadow: 0 0 10px rgba(0, 220, 255, 0.55);
+			letter-spacing: 0;
+			color: #c8f4ff;
+			text-shadow: 0 0 8px rgba(0, 220, 255, 0.65);
 			line-height: 1;
 			user-select: none;
+			pointer-events: none;
+			background: none;
+			border: none;
+			-webkit-text-fill-color: #c8f4ff;
 		}
 		@keyframes start-loader-spin {
 			to { transform: rotate(360deg); }
@@ -1479,6 +1490,18 @@
             padding: 6px 10px;
             font-size: 11px;
         }
+        .options-subsection-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin: 10px 0 6px;
+        }
+        .options-subsection-head .options-subsection-title {
+            margin: 0;
+            flex: 1;
+            min-width: 0;
+        }
         .options-subsection-title {
             margin: 10px 0 6px;
             font-size: 10px;
@@ -1486,6 +1509,11 @@
             text-transform: uppercase;
             color: rgba(180, 220, 255, 0.82);
             font-weight: 600;
+        }
+        .options-subsection-reset {
+            width: 24px;
+            height: 24px;
+            font-size: 15px;
         }
         .options-row {
             display: grid;

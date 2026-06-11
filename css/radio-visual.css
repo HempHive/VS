@@ -1104,7 +1104,9 @@
             align-items: stretch;
             justify-content: center;
             gap: clamp(6px, 1.04cqw, 10px);
-            z-index: 4;
+            position: relative;
+            z-index: 6;
+            pointer-events: auto;
         }
         #radio-visual-root .radio-visual-digital-center-info {
             display: none !important;
@@ -1226,6 +1228,7 @@
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="equaliser"] .radio-visual-digital-car-main,
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="equaliser"] .radio-visual-digital-car-dash-canvas {
             cursor: pointer;
+            pointer-events: auto;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="live"] .radio-visual-digital-hub-ai-video,
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai"] .radio-visual-digital-hub-ai-video,
@@ -1864,6 +1867,9 @@
             border-top: 1px solid rgba(0, 200, 255, 0.28);
             background: linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(12, 14, 22, 0.72) 100%);
             opacity: 1;
+            position: relative;
+            z-index: 2;
+            pointer-events: auto;
         }
         #radio-visual-root .radio-visual-digital-dash-xfade-end {
             flex: 0 0 2em;
@@ -1929,6 +1935,9 @@
             pointer-events: none;
         }
         #radio-visual-root .radio-visual-digital-dash-xfade-range {
+            position: relative;
+            z-index: 1;
+            pointer-events: auto;
             -webkit-appearance: none;
             appearance: none;
             width: 100%;

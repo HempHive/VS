@@ -38,7 +38,7 @@
         <div id="start-loader" class="is-visible" aria-live="polite" aria-busy="true" aria-label="Loading">
             <div class="start-loader-shell">
                 <div class="start-loader-ring" aria-hidden="true"></div>
-                <span id="start-loader-progress" class="start-loader-progress">0</span>
+                <span id="start-loader-pct" class="start-loader-pct" aria-hidden="true">0</span>
             </div>
         </div>
 		<h1 id="logo-omni" data-text="OMNI&gt;"><span class="logo-letter logo-o" data-ch="O">O</span><span class="logo-letter logo-m" data-ch="M">M</span><span class="logo-letter" data-ch="N">N</span><span class="logo-letter logo-midi" data-ch="I">I</span><span class="logo-letter logo-start" data-ch="&#62;">&gt;</span></h1>
@@ -245,14 +245,17 @@
                 <section class="options-section" aria-label="Appearance">
                     <div class="options-section-head">
                         <h4 class="options-section-title">Appearance</h4>
-                        <button type="button" class="options-section-reset" id="opt-appearance-reset" title="Reset Appearance" aria-label="Reset Appearance">🔄</button>
+                        <button type="button" class="options-section-reset" id="opt-appearance-reset" title="Reset Appearance" aria-label="Reset Appearance">↺</button>
                     </div>
                     <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-digital-theme-preset">Theme preset</label>
                         <select class="options-select options-select--full" id="opt-digital-theme-preset" aria-label="Digital Radio theme preset"></select>
                     </div>
                     <p class="options-hint options-hint--inline">Staging colours apply to the centre display only (not toolbar or buttons). Screen colours apply to the furthest full-screen background.</p>
-                    <p class="options-subsection-title">Staging panel</p>
+                    <div class="options-subsection-head">
+                        <p class="options-subsection-title">Staging panel</p>
+                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-staging-panel-reset" title="Reset staging panel" aria-label="Reset staging panel">↺</button>
+                    </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-bg-a">Top</label>
                         <input type="color" class="options-color" id="opt-digital-bg-a" value="#0a1628" aria-label="Digital Radio panel gradient top colour">
@@ -289,7 +292,10 @@
                         <input type="range" class="options-range" id="opt-digital-bg-panel-opacity" min="0" max="100" step="1" value="100" aria-label="Digital Radio staging panel opacity">
                         <span class="options-readout" id="opt-digital-bg-panel-opacity-readout">100%</span>
                     </div>
-                    <p class="options-subsection-title">Screen background</p>
+                    <div class="options-subsection-head">
+                        <p class="options-subsection-title">Screen background</p>
+                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-screen-bg-reset" title="Reset screen background" aria-label="Reset screen background">↺</button>
+                    </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-bg-outer-a">Top</label>
                         <input type="color" class="options-color" id="opt-digital-bg-outer-a" value="#0a1628" aria-label="Full-screen background gradient top colour">
@@ -342,7 +348,10 @@
                             <option value="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">System Mono</option>
                         </select>
                     </div>
-                    <p class="options-subsection-title">Blue toolbar buttons</p>
+                    <div class="options-subsection-head">
+                        <p class="options-subsection-title">Blue toolbar buttons</p>
+                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-blue-buttons-reset" title="Reset blue toolbar buttons" aria-label="Reset blue toolbar buttons">↺</button>
+                    </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-btn-blue-top">Fill top</label>
                         <input type="color" class="options-color" id="opt-digital-btn-blue-top" value="#123048" aria-label="Blue toolbar button fill top">
@@ -379,7 +388,10 @@
                         <input type="range" class="options-range" id="opt-digital-btn-blue-font-scale" min="65" max="160" step="5" aria-label="Blue toolbar button text size">
                         <span class="options-readout" id="opt-digital-btn-blue-font-scale-readout">100%</span>
                     </div>
-                    <p class="options-subsection-title">Purple feature buttons</p>
+                    <div class="options-subsection-head">
+                        <p class="options-subsection-title">Purple feature buttons</p>
+                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-purple-buttons-reset" title="Reset purple feature buttons" aria-label="Reset purple feature buttons">↺</button>
+                    </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-btn-purple-top">Fill top</label>
                         <input type="color" class="options-color" id="opt-digital-btn-purple-top" value="#5a3488" aria-label="Purple feature button fill top">
@@ -416,7 +428,10 @@
                         <input type="range" class="options-range" id="opt-digital-btn-purple-font-scale" min="65" max="160" step="5" aria-label="Purple feature button text size">
                         <span class="options-readout" id="opt-digital-btn-purple-font-scale-readout">100%</span>
                     </div>
-                    <p class="options-subsection-title">Date &amp; time</p>
+                    <div class="options-subsection-head">
+                        <p class="options-subsection-title">Date &amp; time</p>
+                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-clock-reset" title="Reset date and time" aria-label="Reset date and time">↺</button>
+                    </div>
                     <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-digital-clock-format">Display type</label>
                         <select class="options-select options-select--full" id="opt-digital-clock-format" aria-label="Date and time display format">
@@ -451,10 +466,13 @@
                 <section class="options-section" aria-label="Spectrum">
                     <div class="options-section-head">
                         <h4 class="options-section-title">Spectrum</h4>
-                        <button type="button" class="options-section-reset" id="opt-spectrum-reset" title="Reset Spectrum" aria-label="Reset Spectrum">🔄</button>
+                        <button type="button" class="options-section-reset" id="opt-spectrum-reset" title="Reset Spectrum" aria-label="Reset Spectrum">↺</button>
                     </div>
                     <p class="options-hint options-hint--inline">Spectrum mode size scales only the side flowers in Spectrum hub (they may overlap the centre). Equaliser size scales only the side flowers in Equaliser and other hub modes — the centre equaliser is not resized.</p>
-                    <p class="options-subsection-title">Spectrum mode</p>
+                    <div class="options-subsection-head">
+                        <p class="options-subsection-title">Spectrum mode</p>
+                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-mode-reset" title="Reset spectrum mode" aria-label="Reset spectrum mode">↺</button>
+                    </div>
                     <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-spectrum-color-stream">Colour stream</label>
                         <select class="options-select options-select--full" id="opt-spectrum-color-stream" aria-label="Spectrum colour stream preset"></select>
@@ -479,7 +497,10 @@
                         <input type="range" class="options-range" id="opt-spectrum-color-flow" min="25" max="300" step="5" aria-label="Spectrum colour flow speed">
                         <span class="options-readout" id="opt-spectrum-color-flow-readout">100%</span>
                     </div>
-                    <p class="options-subsection-title">Equaliser side spectrums</p>
+                    <div class="options-subsection-head">
+                        <p class="options-subsection-title">Equaliser side spectrums</p>
+                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-eq-reset" title="Reset equaliser side spectrums" aria-label="Reset equaliser side spectrums">↺</button>
+                    </div>
                     <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-spectrum-eq-color-stream">Colour stream</label>
                         <select class="options-select options-select--full" id="opt-spectrum-eq-color-stream" aria-label="Equaliser spectrum colour stream preset"></select>
@@ -504,7 +525,10 @@
                         <input type="range" class="options-range" id="opt-spectrum-eq-color-flow" min="25" max="300" step="5" aria-label="Equaliser spectrum colour flow speed">
                         <span class="options-readout" id="opt-spectrum-eq-color-flow-readout">100%</span>
                     </div>
-                    <p class="options-subsection-title">Left spectrum ribbon rotation</p>
+                    <div class="options-subsection-head">
+                        <p class="options-subsection-title">Left spectrum ribbon rotation</p>
+                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-rotate-l-reset" title="Reset left ribbon rotation" aria-label="Reset left ribbon rotation">↺</button>
+                    </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-spectrum-rotate-l-hi">Hi</label>
                         <input type="range" class="options-range" id="opt-spectrum-rotate-l-hi" min="0" max="360" step="1" value="0" aria-label="Left spectrum high ribbon rotation">
@@ -520,7 +544,10 @@
                         <input type="range" class="options-range" id="opt-spectrum-rotate-l-lo" min="0" max="360" step="1" value="0" aria-label="Left spectrum low ribbon rotation">
                         <span class="options-readout" id="opt-spectrum-rotate-l-lo-readout">0°</span>
                     </div>
-                    <p class="options-subsection-title">Right spectrum ribbon rotation</p>
+                    <div class="options-subsection-head">
+                        <p class="options-subsection-title">Right spectrum ribbon rotation</p>
+                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-rotate-r-reset" title="Reset right ribbon rotation" aria-label="Reset right ribbon rotation">↺</button>
+                    </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-spectrum-rotate-r-hi">Hi</label>
                         <input type="range" class="options-range" id="opt-spectrum-rotate-r-hi" min="0" max="360" step="1" value="0" aria-label="Right spectrum high ribbon rotation">
@@ -540,7 +567,7 @@
                 <section class="options-section" aria-label="Auto-Mix">
                     <div class="options-section-head">
                         <h4 class="options-section-title">Auto-Mix</h4>
-                        <button type="button" class="options-section-reset" id="opt-automix-reset" title="Reset Auto-Mix" aria-label="Reset Auto-Mix">🔄</button>
+                        <button type="button" class="options-section-reset" id="opt-automix-reset" title="Reset Auto-Mix" aria-label="Reset Auto-Mix">↺</button>
                     </div>
                     <label class="options-check">
                         <input type="checkbox" id="opt-automix-enabled">
@@ -555,7 +582,7 @@
                 <section class="options-section" aria-label="Auto-Fade">
                     <div class="options-section-head">
                         <h4 class="options-section-title">Auto-Fade</h4>
-                        <button type="button" class="options-section-reset" id="opt-autofade-reset" title="Reset Auto-Fade" aria-label="Reset Auto-Fade">🔄</button>
+                        <button type="button" class="options-section-reset" id="opt-autofade-reset" title="Reset Auto-Fade" aria-label="Reset Auto-Fade">↺</button>
                     </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-autofade-duration">Fade duration</label>
@@ -570,7 +597,7 @@
                 <section class="options-section" aria-label="System">
                     <div class="options-section-head">
                         <h4 class="options-section-title">System</h4>
-                        <button type="button" class="options-section-reset" id="opt-system-reset" title="Reset System" aria-label="Reset System">🔄</button>
+                        <button type="button" class="options-section-reset" id="opt-system-reset" title="Reset System" aria-label="Reset System">↺</button>
                     </div>
                     <button type="button" id="ui-lock-toggle" class="options-btn options-lock-btn" title="Lock UI" aria-pressed="false">🔒 Lock UI</button>
                     <p class="options-hint">Hold the HUD title or press <strong>G</strong> to reopen Options. Panel closes after 30 seconds of inactivity (mouse movement resets the timer).</p>
