@@ -2798,9 +2798,9 @@
             new ThreeEngine("Audio Bars", sceneBars),
             new DjDecksEngine(),
             new RadioVisualEngine({ name: 'Digital Radio', skin: 'digital', skinLocked: true }),
-            new RadioVisualEngine({ name: 'Analogue radio', skin: 'analogue', skinLocked: true }),
             new LogoEngine("Logo Fx", sceneLogoFx),
             new LogoEngine("Logo", sceneLogo),
+            new RadioVisualEngine({ name: 'Analogue Radio', skin: 'analogue', skinLocked: true }),
             new ThreeEngine("Audio Bars (Circle)", sceneBarsCircle),
             new ThreeEngine("Audio Bars 3D", sceneBars3D),
             new ThreeEngine("Audio Bars: Vortex", sceneBarsVortex),
@@ -2858,7 +2858,7 @@
                     return RadioVisualEngine.isRadioModeName(name);
                 }
             } catch (_) {}
-            return name === 'Analogue radio' || name === 'Digital Radio'
+            return name === 'Analogue Radio' || name === 'Digital Radio'
                 || name === 'Radio' || name === 'Radio Visual';
         }
 
@@ -2869,7 +2869,7 @@
         function findAnalogueRadioModeIndex() {
             try {
                 if (!Array.isArray(modes)) return -1;
-                return modes.findIndex((m) => m && m.name === 'Analogue radio');
+                return modes.findIndex((m) => m && m.name === 'Analogue Radio');
             } catch (_) {
                 return -1;
             }
@@ -2912,7 +2912,7 @@
                 const vis = state.activeVisualizer;
                 if (!vis) return null;
                 if (vis.name === 'Digital Radio' || vis.skin === 'digital') return 'digital';
-                if (vis.name === 'Analogue radio' || vis.skin === 'analogue') return 'analogue';
+                if (vis.name === 'Analogue Radio' || vis.skin === 'analogue') return 'analogue';
             } catch (_) {}
             return null;
         }
@@ -2969,7 +2969,7 @@
                         } catch (_) { return false; }
                     })();
                     const visName = state.activeVisualizer && state.activeVisualizer.name;
-                    const onAnalogueRadio = visName === 'Analogue radio';
+                    const onAnalogueRadio = visName === 'Analogue Radio';
                     const onDigitalRadio = visName === 'Digital Radio';
                     const onRadioVisual = onAnalogueRadio || onDigitalRadio
                         || !!(state.activeVisualizer && isRadioVisualModeName(visName));
@@ -2992,8 +2992,8 @@
                         btnRadio.title = 'Switch to Digital Radio';
                         btnRadio.setAttribute('aria-label', 'Switch to Digital Radio');
                     } else if (onDigitalRadio) {
-                        btnRadio.title = 'Switch to Analogue radio';
-                        btnRadio.setAttribute('aria-label', 'Switch to Analogue radio');
+                        btnRadio.title = 'Switch to Analogue Radio';
+                        btnRadio.setAttribute('aria-label', 'Switch to Analogue Radio');
                     } else {
                         btnRadio.title = 'Return to Radio Visual';
                         btnRadio.setAttribute('aria-label', 'Return to Radio Visual');
@@ -3014,7 +3014,7 @@
                 if (isRadioVisualModeName(n)) {
                     globalThis.__vizLaunchedFromRadioVisual = false;
                     try {
-                        if (n === 'Analogue radio') {
+                        if (n === 'Analogue Radio') {
                             localStorage.setItem('radioVisual.lastVariant.v1', 'analogue');
                         } else if (n === 'Digital Radio') {
                             localStorage.setItem('radioVisual.lastVariant.v1', 'digital');

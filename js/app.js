@@ -3039,7 +3039,7 @@ const QUALITY = {
                     return;
                 }
                 const n = av.name;
-                const onRadio = n === 'Digital Radio' || n === 'Analogue radio' || n === 'Radio' || n === 'Radio Visual';
+                const onRadio = n === 'Digital Radio' || n === 'Analogue Radio' || n === 'Radio' || n === 'Radio Visual';
                 if (onRadio && typeof av._refreshDigitalDeckVideoMirrors === 'function') {
                     av._refreshDigitalDeckVideoMirrors();
                 }
@@ -8359,7 +8359,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
                 if (typeof globalThis.isRadioVisualModeName === 'function') {
                     return globalThis.isRadioVisualModeName(vis.name);
                 }
-                return vis.name === 'Analogue radio' || vis.name === 'Digital Radio'
+                return vis.name === 'Analogue Radio' || vis.name === 'Digital Radio'
                     || vis.name === 'Radio' || vis.name === 'Radio Visual';
             } catch (_) {
                 return false;
@@ -8536,7 +8536,7 @@ tiGlowColorRandBtn.addEventListener('click', () => {
             const av = state && state.activeVisualizer;
             if (!av || !av.name) return null;
             const n = av.name;
-            if (n === 'Digital Radio' || n === 'Analogue radio' || n === 'Radio' || n === 'Radio Visual') {
+            if (n === 'Digital Radio' || n === 'Analogue Radio' || n === 'Radio' || n === 'Radio Visual') {
                 return av;
             }
             try {

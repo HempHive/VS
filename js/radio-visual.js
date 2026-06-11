@@ -1,7 +1,7 @@
 /* Extracted from app.js — radio-visual. Uses globals via globalThis (see app.js exposeVsGlobals). */
         class RadioVisualEngine {
             static isRadioModeName(name) {
-                return name === 'Analogue radio' || name === 'Digital Radio'
+                return name === 'Analogue Radio' || name === 'Digital Radio'
                     || name === 'Radio' || name === 'Radio Visual';
             }
 
@@ -246,7 +246,7 @@
                 this._skinLocked = options.skinLocked !== false && !!lockedSkin;
                 if (this._skinLocked) {
                     this.skin = lockedSkin;
-                    this.name = options.name || (lockedSkin === 'digital' ? 'Digital Radio' : 'Analogue radio');
+                    this.name = options.name || (lockedSkin === 'digital' ? 'Digital Radio' : 'Analogue Radio');
                 } else {
                     this.skin = 'analogue';
                     this.name = options.name || 'Radio';
@@ -7470,7 +7470,7 @@
                 if (showAnalogue) {
                 stageA = document.createElement('section');
                 stageA.className = 'radio-visual-stage radio-visual-skin--analogue is-active';
-                stageA.setAttribute('aria-label', 'Analogue radio');
+                stageA.setAttribute('aria-label', 'Analogue Radio');
                 const tunerShell = document.createElement('div');
                 tunerShell.className = 'radio-visual-tuner-shell';
                 tunerRail = document.createElement('div');

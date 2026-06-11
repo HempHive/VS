@@ -2255,7 +2255,8 @@
                 try {
                     let idxToLoad = -1;
                     try {
-                        const savedName = localStorage.getItem('lastModeName');
+                        const savedNameRaw = localStorage.getItem('lastModeName');
+                        const savedName = savedNameRaw === 'Analogue radio' ? 'Analogue Radio' : savedNameRaw;
                         if (savedName) {
                             const savedIdx = modes.findIndex(m => m && m.name === savedName);
                             if (savedIdx >= 0) idxToLoad = savedIdx;
