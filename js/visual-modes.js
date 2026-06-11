@@ -2862,6 +2862,10 @@
                 || name === 'Radio' || name === 'Radio Visual';
         }
 
+        function isLogoFidgetVisualModeName(name) {
+            return name === 'Logo' || name === 'Logo Fx';
+        }
+
         function findAnalogueRadioModeIndex() {
             try {
                 if (!Array.isArray(modes)) return -1;
@@ -3047,5 +3051,6 @@
         try { globalThis.loadRadioVisualMode = loadRadioVisualMode; } catch (_) {}
         try { globalThis.toggleRadioVisualVariant = toggleRadioVisualVariant; } catch (_) {}
         try { globalThis.isRadioVisualModeName = isRadioVisualModeName; } catch (_) {}
+        try { globalThis.isLogoFidgetVisualModeName = isLogoFidgetVisualModeName; } catch (_) {}
         try { globalThis.updateDjDecksShortcutVisibility = updateDjDecksShortcutVisibility; } catch (_) {}
         try { globalThis.updateSkipPresetButtonVisibility = updateSkipPresetButtonVisibility; } catch (_) {}

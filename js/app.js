@@ -5290,6 +5290,17 @@ function randomGlowColor() {
                 const lockCanvasGestures = () => {
                     window.__canvasGestureLockUntil = Date.now() + CANVAS_GESTURE_COOLDOWN_MS;
                 };
+                const logoFidgetModeActive = () => {
+                    try {
+                        const n = state && state.activeVisualizer && state.activeVisualizer.name;
+                        if (typeof globalThis.isLogoFidgetVisualModeName === 'function') {
+                            return globalThis.isLogoFidgetVisualModeName(n);
+                        }
+                        return n === 'Logo' || n === 'Logo Fx';
+                    } catch (_) {
+                        return false;
+                    }
+                };
                 const onPointerDown = (e) => {
                     const t = e.target || null;
                     if (t && typeof t.closest === 'function'
@@ -5316,6 +5327,7 @@ function randomGlowColor() {
                     const adx = Math.abs(dx), ady = Math.abs(dy);
                     const swipeVerticalIntent = ady > SWIPE_PX && ady > adx * SWIPE_AXIS_DOMINANCE;
                     const swipeHorizontalIntent = adx > SWIPE_PX && adx > ady * SWIPE_AXIS_DOMINANCE;
+                    if (logoFidgetModeActive() && (swipeVerticalIntent || swipeHorizontalIntent)) return;
                     // Vertical swipe: down/up closes open panel first; only opens target if none open
                     if (swipeVerticalIntent) {
                         if (canvasGestureLocked()) return;
@@ -7498,7 +7510,18 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
 				const horizIntent = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? Math.abs(e.deltaX) : (e.shiftKey ? Math.abs(e.deltaY) : 0));
 				if (horizIntent > 5) {
 					const inUi = !!(e.target && (e.target.closest('#top-menu-content') || e.target.closest('#settings-panel') || e.target.closest('#webm-settings-panel') || e.target.closest('#bottom-avatar-content') || e.target.closest('#keyboard-shortcuts-panel') || e.target.closest('#dj-visual-root') || e.target.closest('#radio-visual-root')));
-					if (!inUi) {
+					const logoFidget = (() => {
+						try {
+							const n = state && state.activeVisualizer && state.activeVisualizer.name;
+							if (typeof globalThis.isLogoFidgetVisualModeName === 'function') {
+								return globalThis.isLogoFidgetVisualModeName(n);
+							}
+							return n === 'Logo' || n === 'Logo Fx';
+						} catch (_) {
+							return false;
+						}
+					})();
+					if (!inUi && !logoFidget) {
 						// One step per gesture: lock during momentum and unlock after wheel quiets down
 						if (!window.__wheelNavLocked) {
 							window.__wheelNavLocked = true;
