@@ -534,6 +534,121 @@
             }
         }
 
+        function attachLogoSpinInput(domEl, spin, opts = {}) {
+            if (!domEl || !spin) return () => {};
+            const WHEEL_GAIN = 0.0045;
+            const DRAG_GAIN = 0.014;
+            const CLICK_MOVE_THRESH = 8;
+            let pointerDown = false;
+            let pointerMoved = false;
+            let lastX = 0;
+            let lastY = 0;
+            let downX = 0;
+            let downY = 0;
+
+            const activeAxis = () => (typeof opts.getSpinAxis === 'function' ? opts.getSpinAxis() : null);
+
+            const applySpinDelta = (dx, dy, gain) => {
+                if (spin.homeActive) return;
+                if (dx || dy) {
+                    try { spin.touchInteraction?.(); } catch (_) {}
+                }
+                const axis = activeAxis();
+                if (axis === 'y') {
+                    if (dx) spin.velY += dx * gain;
+                    else if (dy) spin.velY += dy * gain;
+                    return;
+                }
+                if (axis === 'x') {
+                    if (dy) spin.velX += dy * gain;
+                    else if (dx) spin.velX += dx * gain;
+                    return;
+                }
+                spin.velY += dx * gain;
+                spin.velX += dy * gain;
+            };
+
+            const onWheel = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                applySpinDelta(e.deltaX || 0, e.deltaY || 0, WHEEL_GAIN);
+            };
+            const onPointerDown = (e) => {
+                if (e.button !== 0) return;
+                pointerDown = true;
+                pointerMoved = false;
+                downX = lastX = e.clientX;
+                downY = lastY = e.clientY;
+                if (spin.homeActive) spin.homeActive = false;
+                try { spin.touchInteraction?.(); } catch (_) {}
+                try { domEl.setPointerCapture(e.pointerId); } catch (_) {}
+            };
+            const onPointerMove = (e) => {
+                if (!pointerDown) return;
+                const dx = e.clientX - lastX;
+                const dy = e.clientY - lastY;
+                if (Math.abs(e.clientX - downX) > CLICK_MOVE_THRESH || Math.abs(e.clientY - downY) > CLICK_MOVE_THRESH) {
+                    pointerMoved = true;
+                }
+                lastX = e.clientX;
+                lastY = e.clientY;
+                applySpinDelta(dx, dy, DRAG_GAIN);
+            };
+            const onPointerUp = () => {
+                if (!pointerDown) return;
+                pointerDown = false;
+                if (!pointerMoved && typeof opts.onClick === 'function') opts.onClick();
+            };
+
+            domEl.addEventListener('wheel', onWheel, { passive: false, capture: true });
+            domEl.addEventListener('pointerdown', onPointerDown);
+            domEl.addEventListener('pointermove', onPointerMove);
+            domEl.addEventListener('pointerup', onPointerUp);
+            domEl.addEventListener('pointercancel', onPointerUp);
+            return () => {
+                domEl.removeEventListener('wheel', onWheel, { capture: true });
+                domEl.removeEventListener('pointerdown', onPointerDown);
+                domEl.removeEventListener('pointermove', onPointerMove);
+                domEl.removeEventListener('pointerup', onPointerUp);
+                domEl.removeEventListener('pointercancel', onPointerUp);
+            };
+        }
+
+        class LogoEngine extends ThreeEngine {
+            init() {
+                super.init();
+                try {
+                    const bloomPass = this.composer && this.composer.passes
+                        ? this.composer.passes.find((p) => p && p.strength != null && p.threshold != null && p.radius != null)
+                        : null;
+                    if (bloomPass) bloomPass.strength = 0.35;
+                } catch (_) {}
+                const spin = this.scene && this.scene.userData && this.scene.userData.logoSpin;
+                if (spin && this.renderer) {
+                    const inputOpts = {
+                        onClick: () => {
+                            if (spin.fxAxis && typeof spin.toggleSpinAxis === 'function') spin.toggleSpinAxis();
+                            else if (typeof spin.homeToRest === 'function') spin.homeToRest();
+                        },
+                    };
+                    if (spin.fxAxis) inputOpts.getSpinAxis = () => spin.spinAxis;
+                    this._detachLogoInput = attachLogoSpinInput(this.renderer.domElement, spin, inputOpts);
+                }
+            }
+
+            destroy() {
+                if (this._detachLogoInput) {
+                    this._detachLogoInput();
+                    this._detachLogoInput = null;
+                }
+                const spin = this.scene && this.scene.userData && this.scene.userData.logoSpin;
+                if (spin) {
+                    if (typeof spin.dispose === 'function') spin.dispose();
+                }
+                super.destroy();
+            }
+        }
+
         let __djBeatPadLoopMenuCleanup = null;
 
 // --- SCENES ---
@@ -700,6 +815,340 @@
                     mesh.material.color.setHSL(hue, 1, 0.55);
                     mesh.material.emissive.setHSL(hue, 1, 0.18);
                 }
+            };
+        };
+
+        // Logo — full-viewport fidget card with trackpad / drag spin
+        const LOGO_FIDGET_IMAGE = 'assets/fidget/cdl.png';
+        const LOGO_IDLE_SETTLE_MS = 5000;
+
+        function nearestFlatAngle(angle) {
+            return Math.round(angle / Math.PI) * Math.PI;
+        }
+
+        function getNearestFlatTargets(spin) {
+            if (spin.fxAxis && spin.spinAxis === 'y') {
+                return { x: 0, y: nearestFlatAngle(spin.rotY) };
+            }
+            if (spin.fxAxis && spin.spinAxis === 'x') {
+                return { x: nearestFlatAngle(spin.rotX), y: 0 };
+            }
+            return {
+                x: nearestFlatAngle(spin.rotX),
+                y: nearestFlatAngle(spin.rotY),
+            };
+        }
+
+        function createLogoFidgetSpinState({ fxAxis = false } = {}) {
+            const spin = {
+                fxAxis,
+                spinAxis: 'y',
+                card: null,
+                cardMesh: null,
+                velX: 0,
+                velY: 0,
+                rotX: 0,
+                rotY: 0,
+                imgAspect: 1,
+                textures: [],
+                materials: [],
+                lastInteractionAt: performance.now(),
+                homeActive: false,
+                homeFromX: 0,
+                homeFromY: 0,
+                homeToX: 0,
+                homeToY: 0,
+                homeStart: 0,
+                homeDuration: 4000,
+                touchInteraction() {
+                    this.lastInteractionAt = performance.now();
+                },
+                beginHomeTo(targetX, targetY) {
+                    this.velX = 0;
+                    this.velY = 0;
+                    this.homeActive = true;
+                    this.homeFromX = this.rotX;
+                    this.homeFromY = this.rotY;
+                    this.homeToX = targetX;
+                    this.homeToY = targetY;
+                    this.homeStart = performance.now();
+                    const span = Math.max(
+                        Math.abs(this.homeToX - this.homeFromX),
+                        Math.abs(this.homeToY - this.homeFromY)
+                    );
+                    const turns = span / (Math.PI * 2);
+                    this.homeDuration = (2 + Math.min(2, turns * 2)) * 1000;
+                },
+                homeToRest() {
+                    if (this.fxAxis) return;
+                    this.beginHomeTo(0, 0);
+                    this.homeDuration = (3 + Math.min(2, (Math.max(Math.abs(this.rotX), Math.abs(this.rotY)) / (Math.PI * 2)) * 2)) * 1000;
+                },
+                homeToNearestFlat() {
+                    const target = getNearestFlatTargets(this);
+                    this.beginHomeTo(target.x, target.y);
+                },
+                toggleSpinAxis() {
+                    if (!this.fxAxis) return;
+                    this.spinAxis = this.spinAxis === 'y' ? 'x' : 'y';
+                    this.velX = 0;
+                    this.velY = 0;
+                    if (this.spinAxis === 'y') this.rotX = 0;
+                    else this.rotY = 0;
+                    if (typeof this.applyFxBackFace === 'function') this.applyFxBackFace();
+                },
+                applyFxBackFace() {
+                    updateLogoCardBackFace(this);
+                },
+            };
+            return spin;
+        }
+
+        function pickLogoBackMaterial(spin) {
+            if (!spin.backMatY || !spin.frontMat) return null;
+            const twoPi = Math.PI * 2;
+            const norm = (a) => {
+                let v = a % twoPi;
+                if (v < 0) v += twoPi;
+                return v;
+            };
+            const rx = norm(spin.rotX);
+            const ry = norm(spin.rotY);
+            const xFlipped = rx > Math.PI / 2 && rx < (3 * Math.PI) / 2;
+            const yFlipped = ry > Math.PI / 2 && ry < (3 * Math.PI) / 2;
+            if (yFlipped && !xFlipped) return spin.frontMat;
+            if (xFlipped && !yFlipped) return spin.backMatY;
+            if (yFlipped && xFlipped) {
+                const xDev = Math.abs(Math.min(rx, twoPi - rx) - Math.PI / 2);
+                const yDev = Math.abs(Math.min(ry, twoPi - ry) - Math.PI / 2);
+                return yDev >= xDev ? spin.frontMat : spin.backMatY;
+            }
+            return spin.backMatY;
+        }
+
+        function applyLogoFxPlaneLayout(spin) {
+            if (!spin.fxAxis || !spin.fxFrontMesh || !spin.fxBackMesh) return;
+            spin.fxFrontMesh.rotation.set(0, 0, 0);
+            spin.fxFrontMesh.position.z = 0.001;
+            if (spin.frontMat) spin.fxFrontMesh.material = spin.frontMat;
+            spin.fxBackMesh.position.z = -0.001;
+            if (spin.spinAxis === 'y') {
+                spin.fxBackMesh.rotation.set(0, Math.PI, 0);
+            } else {
+                spin.fxBackMesh.rotation.set(Math.PI, 0, 0);
+            }
+            if (spin.backMatY) spin.fxBackMesh.material = spin.backMatY;
+        }
+
+        function updateLogoCardBackFace(spin) {
+            if (!spin || !spin.cardMesh) return;
+            if (spin.fxAxis && spin.fxBackMesh) {
+                applyLogoFxPlaneLayout(spin);
+                return;
+            }
+            if (!spin.frontMat || !spin.backMatY) return;
+            const mats = spin.cardMesh.material;
+            if (!Array.isArray(mats)) return;
+            const next = pickLogoBackMaterial(spin);
+            if (next) {
+                mats[4] = spin.frontMat;
+                mats[5] = next;
+            }
+        }
+
+        function assignLogoFidgetMaterials(spin, tex, placeholderMats) {
+            if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+            else if ('encoding' in tex) tex.encoding = THREE.sRGBEncoding;
+            tex.anisotropy = 8;
+            const img = tex.image;
+            if (img && img.width && img.height) spin.imgAspect = img.width / img.height;
+
+            const frontMat = new THREE.MeshStandardMaterial({
+                map: tex,
+                metalness: 0.04,
+                roughness: 0.42,
+            });
+            const backTexRotY = tex.clone();
+            backTexRotY.center.set(0.5, 0.5);
+            backTexRotY.rotation = Math.PI;
+            const backMatY = new THREE.MeshStandardMaterial({
+                map: backTexRotY,
+                metalness: 0.04,
+                roughness: 0.42,
+            });
+            spin.frontMat = frontMat;
+            spin.backMatY = backMatY;
+            spin.backMatX = frontMat;
+            spin.textures.push(tex, backTexRotY);
+            spin.materials.push(frontMat, backMatY, ...(placeholderMats || []));
+
+            if (spin.fxAxis && spin.fxFrontMesh && spin.fxBackMesh) {
+                applyLogoFxPlaneLayout(spin);
+            } else if (spin.cardMesh && spin.cardMesh.isMesh) {
+                const edgeMat = placeholderMats && placeholderMats[0];
+                spin.cardMesh.material = [edgeMat, edgeMat, edgeMat, edgeMat, frontMat, backMatY];
+            }
+        }
+
+        function mountLogoFidgetCard(scene, camera, spin) {
+            scene.background = new THREE.Color(0x000000);
+            camera.position.z = 5;
+
+            const cardGroup = new THREE.Group();
+            scene.add(cardGroup);
+            spin.card = cardGroup;
+
+            const placeholderFront = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.05, roughness: 0.9 });
+            const placeholderBack = new THREE.MeshStandardMaterial({ color: 0x121212, metalness: 0.05, roughness: 0.9 });
+
+            if (spin.fxAxis) {
+                const frontMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), placeholderFront);
+                const backMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), placeholderBack);
+                cardGroup.add(frontMesh, backMesh);
+                spin.cardMesh = cardGroup;
+                spin.fxFrontMesh = frontMesh;
+                spin.fxBackMesh = backMesh;
+                applyLogoFxPlaneLayout(spin);
+            } else {
+                const edgeMat = new THREE.MeshStandardMaterial({ color: 0x141414, metalness: 0.15, roughness: 0.85 });
+                const cardDepth = 0.035;
+                const cardMesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(1, 1, cardDepth),
+                    [edgeMat, edgeMat, edgeMat, edgeMat, placeholderFront, placeholderBack]
+                );
+                cardGroup.add(cardMesh);
+                spin.cardMesh = cardMesh;
+                spin.edgeMat = edgeMat;
+            }
+
+            const amb = new THREE.AmbientLight(0xffffff, 0.9);
+            const key = new THREE.DirectionalLight(0xffffff, 0.55);
+            key.position.set(1.5, 2.5, 6);
+            scene.add(amb, key);
+
+            const fitCardToView = () => {
+                const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+                const vFov = (camera.fov * Math.PI) / 180;
+                const dist = Math.abs(camera.position.z);
+                const viewH = 2 * Math.tan(vFov / 2) * dist;
+                const viewW = viewH * aspect;
+                const imgAspect = Math.max(0.05, spin.imgAspect || 1);
+                let w;
+                let h;
+                if (viewW / viewH > imgAspect) {
+                    h = viewH;
+                    w = h * imgAspect;
+                } else {
+                    w = viewW;
+                    h = w / imgAspect;
+                }
+                w *= 0.98;
+                h *= 0.98;
+                spin.cardMesh.scale.set(w, h, 1);
+            };
+
+            const onResize = () => fitCardToView();
+            window.addEventListener('resize', onResize);
+            const prevDispose = spin.dispose;
+            spin.dispose = () => {
+                window.removeEventListener('resize', onResize);
+                spin.textures.forEach((t) => { try { t.dispose(); } catch (_) {} });
+                spin.materials.forEach((m) => { try { m.dispose(); } catch (_) {} });
+                spin.textures = [];
+                spin.materials = [];
+                if (typeof prevDispose === 'function') prevDispose();
+            };
+
+            const loader = new THREE.TextureLoader();
+            const placeholderMats = spin.fxAxis
+                ? [placeholderFront, placeholderBack]
+                : [spin.edgeMat, placeholderFront, placeholderBack];
+            loader.load(
+                LOGO_FIDGET_IMAGE,
+                (tex) => {
+                    assignLogoFidgetMaterials(spin, tex, placeholderMats);
+                    fitCardToView();
+                },
+                undefined,
+                () => { fitCardToView(); }
+            );
+            fitCardToView();
+
+            return cardGroup;
+        }
+
+        function stepLogoFidgetSpin(spin, cardGroup, dt) {
+            const step = dt / 16.67;
+            if (spin.homeActive) {
+                const t = (performance.now() - spin.homeStart) / Math.max(1, spin.homeDuration);
+                if (t >= 1) {
+                    spin.rotX = spin.homeToX;
+                    spin.rotY = spin.homeToY;
+                    spin.homeActive = false;
+                    spin.touchInteraction();
+                } else {
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    spin.rotX = spin.homeFromX + (spin.homeToX - spin.homeFromX) * ease;
+                    spin.rotY = spin.homeFromY + (spin.homeToY - spin.homeFromY) * ease;
+                }
+            } else {
+                const friction = Math.pow(0.9, step);
+                spin.rotX += spin.velX * step;
+                spin.rotY += spin.velY * step;
+                spin.velX *= friction;
+                spin.velY *= friction;
+                if (Math.abs(spin.velX) < 1e-5) spin.velX = 0;
+                if (Math.abs(spin.velY) < 1e-5) spin.velY = 0;
+                const moving = Math.abs(spin.velX) > 1e-4 || Math.abs(spin.velY) > 1e-4;
+                if (moving) {
+                    spin.touchInteraction();
+                } else {
+                    const target = getNearestFlatTargets(spin);
+                    const settled = Math.abs(spin.rotX - target.x) < 0.02
+                        && Math.abs(spin.rotY - target.y) < 0.02;
+                    const idleMs = performance.now() - (spin.lastInteractionAt || 0);
+                    if (!settled && idleMs >= LOGO_IDLE_SETTLE_MS) {
+                        spin.homeToNearestFlat();
+                    }
+                }
+            }
+            if (spin.fxAxis) {
+                if (spin.spinAxis === 'y') {
+                    spin.rotX = 0;
+                    spin.velX = 0;
+                } else {
+                    spin.rotY = 0;
+                    spin.velY = 0;
+                }
+            }
+            cardGroup.rotation.x = spin.rotX;
+            cardGroup.rotation.y = spin.rotY;
+            updateLogoCardBackFace(spin);
+        }
+
+        const sceneLogo = (scene, camera) => {
+            const spin = createLogoFidgetSpinState({ fxAxis: false });
+            scene.userData.logoSpin = spin;
+            const cardGroup = mountLogoFidgetCard(scene, camera, spin);
+            let lastT = performance.now();
+            return () => {
+                const now = performance.now();
+                const dt = Math.min(48, Math.max(1, now - lastT));
+                lastT = now;
+                stepLogoFidgetSpin(spin, cardGroup, dt);
+            };
+        };
+
+        const sceneLogoFx = (scene, camera) => {
+            const spin = createLogoFidgetSpinState({ fxAxis: true });
+            scene.userData.logoSpin = spin;
+            const cardGroup = mountLogoFidgetCard(scene, camera, spin);
+            let lastT = performance.now();
+            return () => {
+                const now = performance.now();
+                const dt = Math.min(48, Math.max(1, now - lastT));
+                lastT = now;
+                stepLogoFidgetSpin(spin, cardGroup, dt);
             };
         };
 
@@ -2349,6 +2798,8 @@
             new DjDecksEngine(),
             new RadioVisualEngine({ name: 'Digital Radio', skin: 'digital', skinLocked: true }),
             new RadioVisualEngine({ name: 'Analogue radio', skin: 'analogue', skinLocked: true }),
+            new LogoEngine("Logo Fx", sceneLogoFx),
+            new LogoEngine("Logo", sceneLogo),
             new ThreeEngine("Audio Bars (Circle)", sceneBarsCircle),
             new ThreeEngine("Audio Bars 3D", sceneBars3D),
             new ThreeEngine("Audio Bars: Vortex", sceneBarsVortex),
