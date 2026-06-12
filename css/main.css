@@ -478,7 +478,7 @@
 				translate(-50%, -50%)
 				rotate(var(--char-angle, 0deg))
 				translateY(calc(-1 * var(--orbit-radius)))
-				rotate(calc(-1 * var(--char-angle, 0deg) - 190deg));
+				rotate(calc(-1 * var(--char-angle, 0deg) - 110deg));
 			transform-origin: center center;
 			user-select: none;
 			will-change: transform;
