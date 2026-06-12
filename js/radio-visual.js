@@ -1496,7 +1496,9 @@
                 } catch (_) {}
                 this._orangeButtons = buttons;
                 gridEl.innerHTML = '';
-                gridEl.style.setProperty('--rv-orange-btn-count', String(Math.max(1, buttons.length)));
+                const orangeCount = Math.max(1, buttons.length);
+                gridEl.style.setProperty('--rv-orange-btn-count', String(orangeCount));
+                gridEl.style.gridTemplateColumns = `repeat(${orangeCount}, minmax(0, 1fr))`;
                 buttons.forEach((entry) => {
                     const b = document.createElement('button');
                     b.type = 'button';
@@ -2616,6 +2618,21 @@
                 try { this._syncDeckSwitches(); } catch (_) {}
             }
 
+            /** A> / B> toolbar tap: always tune a random radio station on that deck. */
+            _deckTransportRandomStation(deckKey) {
+                const dk = deckKey === 'b' ? 'b' : 'a';
+                try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
+                try {
+                    if (typeof globalThis.cancelActiveAutoFade === 'function') {
+                        globalThis.cancelActiveAutoFade();
+                    }
+                } catch (_) {}
+                if (dk === 'b') this._stationBRand();
+                else this._stationRand();
+                try { this._updateStationUi(); } catch (_) {}
+                try { this._syncDeckSwitches(); } catch (_) {}
+            }
+
             /** A▶ / B▶ toolbar tap: resume paused output, else next local or random station. */
             async _deckTransportTap(deckKey) {
                 const dk = deckKey === 'b' ? 'b' : 'a';
@@ -3027,6 +3044,10 @@
                 if (this.els.crossKnob) {
                     this.els.crossKnob.classList.toggle('is-on', active);
                     this.els.crossKnob.setAttribute('aria-pressed', active ? 'true' : 'false');
+                }
+                if (this.els.btnDigitalFade) {
+                    this.els.btnDigitalFade.classList.toggle('is-active', active);
+                    this.els.btnDigitalFade.setAttribute('aria-pressed', active ? 'true' : 'false');
                 }
             }
 
@@ -3859,49 +3880,21 @@
             _wireDigitalDeckTransportBtn(btn, deckKey, sig) {
                 if (!btn) return;
                 const dk = deckKey === 'b' ? 'b' : 'a';
-                const HOLD_MS = 500;
-                let longPressTimer = null;
-                let longPressHandled = false;
-                const clearLongPress = () => {
-                    if (longPressTimer) {
-                        clearTimeout(longPressTimer);
-                        longPressTimer = null;
-                    }
-                };
+                const deckLabel = dk === 'b' ? 'Deck B' : 'Deck A';
                 try { btn.removeAttribute('title'); } catch (_) {}
-                btn.setAttribute('aria-label', dk === 'b' ? 'Deck B transport' : 'Deck A transport');
+                btn.title = 'Tap: random station · Right-click: pause deck';
+                btn.setAttribute('aria-label', `${deckLabel}; tap for random station, right-click to pause`);
                 btn.addEventListener('contextmenu', (ev) => {
                     try {
                         ev.preventDefault();
                         ev.stopPropagation();
                     } catch (_) {}
-                    if (dk === 'b') this._deckBPrevOrStation();
-                    else this._deckAPrevOrStation();
+                    this._pauseDeckOutput(dk);
                 }, sig);
-                btn.addEventListener('pointerdown', (ev) => {
-                    if (ev.button !== 0) return;
+                btn.addEventListener('click', (ev) => {
                     this._stopClick(ev);
-                    longPressHandled = false;
-                    clearLongPress();
-                    longPressTimer = setTimeout(() => {
-                        longPressTimer = null;
-                        longPressHandled = true;
-                        this._pauseDeckOutput(dk);
-                    }, HOLD_MS);
+                    this._deckTransportRandomStation(dk);
                 }, sig);
-                btn.addEventListener('pointerup', (ev) => {
-                    this._stopClick(ev);
-                    clearLongPress();
-                    if (!longPressHandled) {
-                        try { this._deckTransportTap(dk); } catch (_) {}
-                    }
-                    longPressHandled = false;
-                }, sig);
-                btn.addEventListener('pointercancel', () => {
-                    clearLongPress();
-                    longPressHandled = false;
-                }, sig);
-                btn.addEventListener('click', (ev) => this._stopClick(ev), sig);
             }
 
             _wireDigitalAiButton(btn, sig) {
@@ -4181,6 +4174,13 @@
                     this.els.deckBKnob.setAttribute('aria-pressed', bOn ? 'true' : 'false');
                     this._setKnobRotation(this.els.deckBKnob, (this._needlePercentB() / 100 * 270) - 135);
                 }
+                const syncTransportBtn = (btn, on) => {
+                    if (!btn) return;
+                    btn.classList.toggle('is-active', on);
+                    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                };
+                syncTransportBtn(this.els.btnDeckATransport, aOn);
+                syncTransportBtn(this.els.btnDeckBTransport, bOn);
             }
 
             _stepDigitalVolume(delta) {
@@ -8124,6 +8124,8 @@
                     btnVis,
                     btnDigitalAi,
                     btnDigitalFade,
+                    btnDeckATransport,
+                    btnDeckBTransport,
                     btnXfadeStation,
                     digitalStagingMount,
                     digitalAutoMixPanel,
@@ -8541,6 +8543,9 @@
                 }
                 try {
                     if (this.els.digitalBtns) this._fitDigitalFeatureButtonLabels(this.els.digitalBtns);
+                } catch (_) {}
+                try {
+                    if (this.els.digitalOrangeBtns) this._fitDigitalFeatureButtonLabels(this.els.digitalOrangeBtns);
                 } catch (_) {}
                 try {
                     const toolbar = document.getElementById('radio-visual-digital-toolbar');
