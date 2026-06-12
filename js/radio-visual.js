@@ -291,7 +291,7 @@
                 this._spectrumStagingPanNorm = 0;
                 this._spectrumSliderHideTimer = null;
                 this._digitalDeckBView = 'video';
-                /** Staging overlay in spectrum pane: null | video | projectm | bars | queue | karaoke | embed */
+                /** Staging overlay in spectrum pane: null | video | projectm | bars | logofx | queue | karaoke | embed */
                 this._digitalStagingView = null;
                 /** Active orange embed button id when _digitalStagingView === 'embed'. */
                 this._digitalStagingEmbedId = null;
@@ -360,14 +360,34 @@
                     { id: 'trading', label: 'TRADING', url: 'https://hemphive.github.io/ATB3/' }
                 ];
             }
+            static normalizeOrangeButtonAction(raw) {
+                const a = String(raw || '').trim().toLowerCase();
+                if (!a) return '';
+                if (a === 'text-in' || a === 'textin' || a === 'toggle-text-in' || a === 'toggletextinpanel') {
+                    return 'text-in';
+                }
+                return '';
+            }
             static normalizeOrangeButtonEntry(raw) {
                 if (!raw || typeof raw !== 'object') return null;
                 const label = String(raw.label || raw.name || raw.text || '').trim();
-                const url = String(raw.url || raw.site || raw.link || raw.href || '').trim();
-                if (!label || !url) return null;
+                const action = RadioVisualEngine.normalizeOrangeButtonAction(
+                    raw.action || raw.handler || raw.behavior
+                );
+                let url = String(raw.url || raw.site || raw.link || raw.href || '').trim();
+                if (!action && /^action:/i.test(url)) {
+                    const actionFromUrl = RadioVisualEngine.normalizeOrangeButtonAction(
+                        url.replace(/^action:/i, '').trim()
+                    );
+                    if (actionFromUrl) {
+                        url = '';
+                        return RadioVisualEngine.normalizeOrangeButtonEntry({ ...raw, label, action: actionFromUrl, url: '' });
+                    }
+                }
+                if (!label || (!action && !url)) return null;
                 const id = String(raw.id || label).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
                 if (!id) return null;
-                return { id, label: label.toUpperCase(), url };
+                return { id, label: label.toUpperCase(), url, action };
             }
             static parseOrangeButtonsJson(data) {
                 const list = Array.isArray(data) ? data : (data && Array.isArray(data.buttons) ? data.buttons : []);
@@ -388,7 +408,16 @@
                         const m = t.match(/^(\S+)\s+(.+)$/);
                         if (m) {
                             label = m[1].trim();
-                            url = m[2].trim();
+                            const rest = m[2].trim();
+                            if (/^action:/i.test(rest)) {
+                                const entry = RadioVisualEngine.normalizeOrangeButtonEntry({
+                                    label,
+                                    action: rest.replace(/^action:/i, '').trim()
+                                });
+                                if (entry) out.push(entry);
+                                return;
+                            }
+                            url = rest;
                         }
                     }
                     const entry = RadioVisualEngine.normalizeOrangeButtonEntry({ label, url });
@@ -1384,7 +1413,7 @@
             }
 
             _toggleDigitalStagingFeature(kind) {
-                const k = (kind === 'projectm' || kind === 'bars' || kind === 'queue' || kind === 'video' || kind === 'karaoke' || kind === 'embed')
+                const k = (kind === 'projectm' || kind === 'bars' || kind === 'logofx' || kind === 'queue' || kind === 'video' || kind === 'karaoke' || kind === 'embed')
                     ? kind : null;
                 if (!k) return;
                 if (k === 'video') {
@@ -1430,12 +1459,29 @@
                 try { this._syncDigitalSpectrumButtonState(); } catch (_) {}
             }
 
+            _isDigitalOrangeTextInActive() {
+                const panel = globalThis.textInPanel || document.getElementById('textin-panel');
+                return !!(
+                    panel
+                    && !panel.classList.contains('display-none')
+                    && panel.classList.contains('open')
+                );
+            }
+
             _syncDigitalOrangeButtons() {
                 const grid = this.els.digitalOrangeBtns;
                 if (!grid) return;
                 const activeId = (this._digitalStagingView === 'embed') ? this._digitalStagingEmbedId : null;
+                const textInActive = this._isDigitalOrangeTextInActive();
+                const buttonsById = new Map((this._orangeButtons || []).map((entry) => [entry.id, entry]));
                 grid.querySelectorAll('[data-rv-orange-embed]').forEach((btn) => {
-                    const on = !!(activeId && btn.dataset.rvOrangeEmbed === activeId);
+                    const entry = buttonsById.get(btn.dataset.rvOrangeEmbed);
+                    let on = false;
+                    if (entry && entry.action === 'text-in') {
+                        on = textInActive;
+                    } else {
+                        on = !!(activeId && btn.dataset.rvOrangeEmbed === activeId);
+                    }
                     btn.classList.toggle('is-active', on);
                     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
                 });
@@ -1462,13 +1508,39 @@
                 return fallback;
             }
 
-            _toggleDigitalOrangeEmbed(entry) {
-                if (!entry || !entry.id) return;
+            _toggleDigitalOrangeAction(entry) {
+                if (!entry || !entry.id || !entry.action) return;
                 try {
                     if (globalThis.uiLocked) return;
                 } catch (_) {}
                 try { this._closeDigitalLocalQueuePanel(); } catch (_) {}
                 try { this._closeDigitalStationsPanel(); } catch (_) {}
+                if (entry.action === 'text-in') {
+                    if (this._digitalStagingView === 'embed') {
+                        this._digitalStagingEmbedId = null;
+                        this._returnToDefaultDigitalSpectrumView();
+                    }
+                    try { globalThis.toggleTextInPanel?.(); } catch (_) {}
+                    this._syncDigitalStagingButtons();
+                    this._syncDigitalOrangeButtons();
+                    return;
+                }
+            }
+
+            _toggleDigitalOrangeEmbed(entry) {
+                if (!entry || !entry.id) return;
+                if (entry.action) {
+                    this._toggleDigitalOrangeAction(entry);
+                    return;
+                }
+                try {
+                    if (globalThis.uiLocked) return;
+                } catch (_) {}
+                try { this._closeDigitalLocalQueuePanel(); } catch (_) {}
+                try { this._closeDigitalStationsPanel(); } catch (_) {}
+                if (this._isDigitalOrangeTextInActive()) {
+                    try { globalThis.toggleTextInPanel?.(); } catch (_) {}
+                }
                 if (this._digitalStagingView === 'embed' && this._digitalStagingEmbedId === entry.id) {
                     this._digitalStagingEmbedId = null;
                     this._returnToDefaultDigitalSpectrumView();
@@ -1506,12 +1578,19 @@
                     b.type = 'button';
                     b.className = 'radio-visual-btn';
                     b.dataset.rvOrangeEmbed = entry.id;
+                    if (entry.action) b.dataset.rvOrangeAction = entry.action;
                     this._appendRvButtonLabel(b, entry.label);
-                    b.title = `${entry.label} — tap to open in staging · tap again for equaliser · right-click for new window`;
-                    b.setAttribute('aria-label', entry.label);
+                    if (entry.action === 'text-in') {
+                        b.title = `${entry.label} — tap to open or close Text-In panel`;
+                        b.setAttribute('aria-label', `${entry.label} Text-In panel`);
+                    } else {
+                        b.title = `${entry.label} — tap to open in staging · tap again for equaliser · right-click for new window`;
+                        b.setAttribute('aria-label', entry.label);
+                    }
                     b.addEventListener('contextmenu', (ev) => {
                         this._stopClick(ev);
                         try { ev.preventDefault(); } catch (_) {}
+                        if (entry.action || !entry.url) return;
                         const href = this._normalizeDigitalEmbedUrl(entry.url);
                         try { window.open(href, '_blank', 'noopener,noreferrer'); } catch (_) {}
                     }, { signal: this.abortCtrl.signal });
@@ -1546,6 +1625,25 @@
                     if (this._rvDigitalBarsAnimId) cancelAnimationFrame(this._rvDigitalBarsAnimId);
                 } catch (_) {}
                 this._rvDigitalBarsAnimId = null;
+                try {
+                    if (this._rvDigitalLogoFxAnimId) cancelAnimationFrame(this._rvDigitalLogoFxAnimId);
+                } catch (_) {}
+                this._rvDigitalLogoFxAnimId = null;
+                try {
+                    if (this._rvDigitalLogoFxDetachInput) this._rvDigitalLogoFxDetachInput();
+                } catch (_) {}
+                this._rvDigitalLogoFxDetachInput = null;
+                try {
+                    const spin = this._rvDigitalLogoFxScene
+                        && this._rvDigitalLogoFxScene.userData
+                        && this._rvDigitalLogoFxScene.userData.logoSpin;
+                    if (spin && typeof spin.dispose === 'function') spin.dispose();
+                } catch (_) {}
+                try {
+                    if (this._rvDigitalLogoFxRenderer) this._rvDigitalLogoFxRenderer.dispose();
+                } catch (_) {}
+                this._rvDigitalLogoFxRenderer = null;
+                this._rvDigitalLogoFxScene = null;
                 this._rvDigitalPmVisualizer = null;
                 this._rvDigitalPmCanvas = null;
                 this._rvDigitalPmResize = null;
@@ -1613,6 +1711,7 @@
                 }
                 if (view === 'projectm') this._showDigitalStagingProjectM();
                 else if (view === 'bars') this._showDigitalStagingAudioBars();
+                else if (view === 'logofx') this._showDigitalStagingLogoFx();
                 else if (view === 'queue') this._showDigitalStagingQueue();
                 else if (view === 'karaoke') this._showDigitalStagingKaraoke();
             }
@@ -2435,6 +2534,93 @@
                     } catch (_) {}
                 };
                 loop();
+            }
+
+            _fitDigitalStagingLogoFxCard(mount, camera, spin) {
+                if (!mount || !camera || !spin || !spin.cardMesh) return;
+                try {
+                    const rect = mount.getBoundingClientRect();
+                    const aspect = rect.width / Math.max(1, rect.height);
+                    const vFov = (camera.fov * Math.PI) / 180;
+                    const dist = Math.abs(camera.position.z);
+                    const viewH = 2 * Math.tan(vFov / 2) * dist;
+                    const viewW = viewH * aspect;
+                    const imgAspect = Math.max(0.05, spin.imgAspect || 1);
+                    let w;
+                    let h;
+                    if (viewW / viewH > imgAspect) {
+                        h = viewH;
+                        w = h * imgAspect;
+                    } else {
+                        w = viewW;
+                        h = w / imgAspect;
+                    }
+                    w *= 0.98;
+                    h *= 0.98;
+                    spin.cardMesh.scale.set(w, h, 1);
+                } catch (_) {}
+            }
+
+            _showDigitalStagingLogoFx(mountEl) {
+                const mount = mountEl || this._stagingContentMount();
+                if (!mount || typeof THREE === 'undefined' || typeof sceneLogoFx !== 'function') {
+                    this._failDigitalStagingView();
+                    return;
+                }
+                this._tearDownDigitalStagingView();
+                mount.classList.add('is-active');
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+                try { renderer.setClearColor(0x000000, 1); } catch (_) {}
+                const canvas = renderer.domElement;
+                canvas.className = 'radio-visual-digital-deck-b-canvas radio-visual-digital-deck-b-canvas--logofx';
+                mount.appendChild(canvas);
+                try { this._syncDigitalStagingBgVisibility(); } catch (_) {}
+                const updateFn = sceneLogoFx(scene, camera);
+                const spin = scene.userData && scene.userData.logoSpin;
+                if (spin && typeof attachLogoSpinInput === 'function') {
+                    const inputOpts = {
+                        onClick: () => {
+                            if (spin.fxAxis && typeof spin.toggleSpinAxis === 'function') spin.toggleSpinAxis();
+                            else if (typeof spin.homeToRest === 'function') spin.homeToRest();
+                        },
+                    };
+                    if (spin.fxAxis) inputOpts.getSpinAxis = () => spin.spinAxis;
+                    this._rvDigitalLogoFxDetachInput = attachLogoSpinInput(canvas, spin, inputOpts);
+                }
+                const resizeLogoFx = () => {
+                    try {
+                        const rect = mount.getBoundingClientRect();
+                        const w = Math.max(64, Math.floor(rect.width));
+                        const h = Math.max(64, Math.floor(rect.height));
+                        camera.aspect = w / h;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(w, h, false);
+                        this._fitDigitalStagingLogoFxCard(mount, camera, spin);
+                    } catch (_) {}
+                };
+                this._rvDigitalLogoFxRenderer = renderer;
+                this._rvDigitalLogoFxScene = scene;
+                this._rvDigitalPmResize = resizeLogoFx;
+                resizeLogoFx();
+                let lastLogoFxImgAspect = spin && spin.imgAspect ? spin.imgAspect : 0;
+                const loop = () => {
+                    this._rvDigitalLogoFxAnimId = requestAnimationFrame(loop);
+                    try {
+                        if (spin && spin.imgAspect && spin.imgAspect !== lastLogoFxImgAspect) {
+                            lastLogoFxImgAspect = spin.imgAspect;
+                            this._fitDigitalStagingLogoFxCard(mount, camera, spin);
+                        }
+                        if (updateFn) updateFn();
+                        renderer.render(scene, camera);
+                    } catch (_) {}
+                };
+                loop();
+                try {
+                    mount.title = 'Drag to spin · click to toggle axis · Esc exits fullscreen';
+                } catch (_) {}
             }
 
             _showDigitalStagingQueue(mountEl) {
@@ -7299,6 +7485,7 @@
                 const stagingByLabel = {
                     ProjectM: 'projectm',
                     'Audio:Bar': 'bars',
+                    LOGOFX: 'logofx',
                     KARAOKE: 'karaoke'
                 };
                 const items = [
@@ -7320,7 +7507,7 @@
                     ...(deckBInPanel ? [
                         { label: 'Audio:Bar', fn: () => { this._toggleDigitalStagingFeature('bars'); } },
                         { label: 'ProjectM', fn: () => { this._toggleDigitalStagingFeature('projectm'); } },
-                        { label: 'CHAT', fn: () => { try { g.toggleTextInPanel?.(); } catch (_) {} } }
+                        { label: 'LOGOFX', fn: () => { this._toggleDigitalStagingFeature('logofx'); } }
                     ] : [
                         { label: 'Video', fn: () => {
                             this._withDjDeck((dj) => {
@@ -7367,9 +7554,9 @@
                         b.title = 'Open DJ Decks visual';
                         b.setAttribute('aria-label', 'Open DJ Decks visual');
                     }
-                    if (deckBInPanel && it.label === 'CHAT') {
-                        b.title = 'Open or close CHAT panel';
-                        b.setAttribute('aria-label', 'CHAT panel');
+                    if (deckBInPanel && it.label === 'LOGOFX') {
+                        b.title = 'Toggle Logo FX in staging area';
+                        b.setAttribute('aria-label', 'Logo FX staging');
                     }
                     const stagingKind = stagingByLabel[it.label];
                     if (deckBInPanel && stagingKind) {

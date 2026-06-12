@@ -1,4 +1,6 @@
-# Orange buttons — label and site URL (one per line: LABEL URL or LABEL|URL)
+# Orange buttons — one per line:
+#   LABEL URL          embed site in staging (LABEL|URL also works)
+#   LABEL action:text-in   open/close Text-In panel (no URL)
 ANIME https://jannerap.github.io/Trailers/
 BUBBLES https://mindseye.dev/
 HUGGINF https://huggingface.co/spaces

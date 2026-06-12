@@ -2,8 +2,8 @@
   "buttons": [
     { "label": "ANIME", "url": "https://jannerap.github.io/Trailers/" },
     { "label": "BUBBLES", "url": "https://mindseye.dev/" },
-    { "label": "IDEAS", "url": "https://kbop.us/" },
-    { "label": "LINKS", "url": "https://hemphive.farm/" },
+    { "label": "CHAT", "action": "text-in" },
+    { "label": "IDEAS", "url": "https://hemphive.farm/" },
     { "label": "RACING", "url": "https://hemphive.github.io/CHR/" },
     { "label": "SUGGEST", "url": "https://streamurl.link/" },
     { "label": "TRADING", "url": "https://hemphive.github.io/ATB3/" }

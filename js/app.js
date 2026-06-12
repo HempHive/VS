@@ -476,6 +476,7 @@ const QUALITY = {
             btnBlueBase: '#081820',
             btnBlueAccent: '#00dcff',
             btnBlueLabel: '#9eeeff',
+            btnBlueAccentOpacity: 1,
             btnBlueOpacity: 1,
             btnBlueTextOpacity: 1,
             btnBlueBorderOpacity: 1,
@@ -483,6 +484,7 @@ const QUALITY = {
             btnPurpleBase: '#1a0c30',
             btnPurpleLabel: '#5cff9e',
             btnPurpleActive: '#ff5ce8',
+            btnPurpleAccentOpacity: 1,
             btnPurpleOpacity: 1,
             btnPurpleTextOpacity: 1,
             btnPurpleBorderOpacity: 1,
@@ -494,6 +496,7 @@ const QUALITY = {
             btnOrangeBase: '#8a4010',
             btnOrangeLabel: '#ffe8cc',
             btnOrangeActive: '#ffcc00',
+            btnOrangeAccentOpacity: 1,
             btnOrangeOpacity: 1,
             btnOrangeTextOpacity: 1,
             btnOrangeBorderOpacity: 1,
@@ -709,6 +712,8 @@ const QUALITY = {
         const optDigitalBtnBlueTop = document.getElementById('opt-digital-btn-blue-top');
         const optDigitalBtnBlueBase = document.getElementById('opt-digital-btn-blue-base');
         const optDigitalBtnBlueAccent = document.getElementById('opt-digital-btn-blue-accent');
+        const optDigitalBtnBlueAccentOpacity = document.getElementById('opt-digital-btn-blue-accent-opacity');
+        const optDigitalBtnBlueAccentOpacityReadout = document.getElementById('opt-digital-btn-blue-accent-opacity-readout');
         const optDigitalBtnBlueLabel = document.getElementById('opt-digital-btn-blue-label');
         const optDigitalBtnBlueOpacity = document.getElementById('opt-digital-btn-blue-opacity');
         const optDigitalBtnBlueOpacityReadout = document.getElementById('opt-digital-btn-blue-opacity-readout');
@@ -720,6 +725,8 @@ const QUALITY = {
         const optDigitalBtnPurpleBase = document.getElementById('opt-digital-btn-purple-base');
         const optDigitalBtnPurpleLabel = document.getElementById('opt-digital-btn-purple-label');
         const optDigitalBtnPurpleActive = document.getElementById('opt-digital-btn-purple-active');
+        const optDigitalBtnPurpleAccentOpacity = document.getElementById('opt-digital-btn-purple-accent-opacity');
+        const optDigitalBtnPurpleAccentOpacityReadout = document.getElementById('opt-digital-btn-purple-accent-opacity-readout');
         const optDigitalBtnPurpleOpacity = document.getElementById('opt-digital-btn-purple-opacity');
         const optDigitalBtnPurpleOpacityReadout = document.getElementById('opt-digital-btn-purple-opacity-readout');
         const optDigitalBtnPurpleTextOpacity = document.getElementById('opt-digital-btn-purple-text-opacity');
@@ -730,6 +737,8 @@ const QUALITY = {
         const optDigitalBtnOrangeBase = document.getElementById('opt-digital-btn-orange-base');
         const optDigitalBtnOrangeLabel = document.getElementById('opt-digital-btn-orange-label');
         const optDigitalBtnOrangeActive = document.getElementById('opt-digital-btn-orange-active');
+        const optDigitalBtnOrangeAccentOpacity = document.getElementById('opt-digital-btn-orange-accent-opacity');
+        const optDigitalBtnOrangeAccentOpacityReadout = document.getElementById('opt-digital-btn-orange-accent-opacity-readout');
         const optDigitalBtnOrangeOpacity = document.getElementById('opt-digital-btn-orange-opacity');
         const optDigitalBtnOrangeOpacityReadout = document.getElementById('opt-digital-btn-orange-opacity-readout');
         const optDigitalBtnOrangeTextOpacity = document.getElementById('opt-digital-btn-orange-text-opacity');
@@ -1322,6 +1331,7 @@ const QUALITY = {
                 btnBlueBase: src.btnBlueBase || d.btnBlueBase,
                 btnBlueAccent: src.btnBlueAccent || d.btnBlueAccent,
                 btnBlueLabel: src.btnBlueLabel || d.btnBlueLabel,
+                btnBlueAccentOpacity: clampThemeOpacity(src.btnBlueAccentOpacity, d.btnBlueAccentOpacity, 0),
                 btnBlueOpacity: clampThemeOpacity(src.btnBlueOpacity, d.btnBlueOpacity),
                 btnBlueTextOpacity: clampThemeOpacity(src.btnBlueTextOpacity, d.btnBlueTextOpacity),
                 btnBlueBorderOpacity: clampThemeOpacity(src.btnBlueBorderOpacity, d.btnBlueBorderOpacity, 0),
@@ -1329,6 +1339,7 @@ const QUALITY = {
                 btnPurpleBase: src.btnPurpleBase || d.btnPurpleBase,
                 btnPurpleLabel: src.btnPurpleLabel || d.btnPurpleLabel,
                 btnPurpleActive: src.btnPurpleActive || d.btnPurpleActive,
+                btnPurpleAccentOpacity: clampThemeOpacity(src.btnPurpleAccentOpacity, d.btnPurpleAccentOpacity, 0),
                 btnPurpleOpacity: clampThemeOpacity(src.btnPurpleOpacity, d.btnPurpleOpacity),
                 btnPurpleTextOpacity: clampThemeOpacity(src.btnPurpleTextOpacity, d.btnPurpleTextOpacity),
                 btnPurpleBorderOpacity: clampThemeOpacity(src.btnPurpleBorderOpacity, d.btnPurpleBorderOpacity, 0),
@@ -1338,6 +1349,7 @@ const QUALITY = {
                 btnOrangeBase: src.btnOrangeBase || d.btnOrangeBase,
                 btnOrangeLabel: src.btnOrangeLabel || d.btnOrangeLabel,
                 btnOrangeActive: src.btnOrangeActive || d.btnOrangeActive,
+                btnOrangeAccentOpacity: clampThemeOpacity(src.btnOrangeAccentOpacity, d.btnOrangeAccentOpacity, 0),
                 btnOrangeOpacity: clampThemeOpacity(src.btnOrangeOpacity, d.btnOrangeOpacity),
                 btnOrangeTextOpacity: clampThemeOpacity(src.btnOrangeTextOpacity, d.btnOrangeTextOpacity),
                 btnOrangeBorderOpacity: clampThemeOpacity(src.btnOrangeBorderOpacity, d.btnOrangeBorderOpacity, 0),
@@ -1452,6 +1464,7 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-btn-blue-base', t.btnBlueBase);
             target.style.setProperty('--rv-digital-btn-blue-accent', t.btnBlueAccent);
             target.style.setProperty('--rv-digital-btn-blue-label', t.btnBlueLabel);
+            target.style.setProperty('--rv-digital-btn-blue-accent-opacity', String(t.btnBlueAccentOpacity));
             target.style.setProperty('--rv-digital-btn-blue-opacity', String(t.btnBlueOpacity));
             target.style.setProperty('--rv-digital-btn-blue-text-opacity', String(t.btnBlueTextOpacity));
             target.style.setProperty('--rv-digital-btn-blue-border-opacity', String(t.btnBlueBorderOpacity));
@@ -1459,6 +1472,7 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-btn-purple-base', t.btnPurpleBase);
             target.style.setProperty('--rv-digital-btn-purple-label', t.btnPurpleLabel);
             target.style.setProperty('--rv-digital-btn-purple-active', t.btnPurpleActive);
+            target.style.setProperty('--rv-digital-btn-purple-accent-opacity', String(t.btnPurpleAccentOpacity));
             target.style.setProperty('--rv-digital-btn-purple-opacity', String(t.btnPurpleOpacity));
             target.style.setProperty('--rv-digital-btn-purple-text-opacity', String(t.btnPurpleTextOpacity));
             target.style.setProperty('--rv-digital-btn-purple-border-opacity', String(t.btnPurpleBorderOpacity));
@@ -1469,6 +1483,7 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-btn-orange-base', t.btnOrangeBase);
             target.style.setProperty('--rv-digital-btn-orange-label', t.btnOrangeLabel);
             target.style.setProperty('--rv-digital-btn-orange-active', t.btnOrangeActive);
+            target.style.setProperty('--rv-digital-btn-orange-accent-opacity', String(t.btnOrangeAccentOpacity));
             target.style.setProperty('--rv-digital-btn-orange-opacity', String(t.btnOrangeOpacity));
             target.style.setProperty('--rv-digital-btn-orange-text-opacity', String(t.btnOrangeTextOpacity));
             target.style.setProperty('--rv-digital-btn-orange-border-opacity', String(t.btnOrangeBorderOpacity));
@@ -1542,6 +1557,7 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-btn-blue-base', t.btnBlueBase);
             root.style.setProperty('--global-rv-digital-btn-blue-accent', t.btnBlueAccent);
             root.style.setProperty('--global-rv-digital-btn-blue-label', t.btnBlueLabel);
+            root.style.setProperty('--global-rv-digital-btn-blue-accent-opacity', String(t.btnBlueAccentOpacity));
             root.style.setProperty('--global-rv-digital-btn-blue-opacity', String(t.btnBlueOpacity));
             root.style.setProperty('--global-rv-digital-btn-blue-text-opacity', String(t.btnBlueTextOpacity));
             root.style.setProperty('--global-rv-digital-btn-blue-border-opacity', String(t.btnBlueBorderOpacity));
@@ -1549,6 +1565,7 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-btn-purple-base', t.btnPurpleBase);
             root.style.setProperty('--global-rv-digital-btn-purple-label', t.btnPurpleLabel);
             root.style.setProperty('--global-rv-digital-btn-purple-active', t.btnPurpleActive);
+            root.style.setProperty('--global-rv-digital-btn-purple-accent-opacity', String(t.btnPurpleAccentOpacity));
             root.style.setProperty('--global-rv-digital-btn-purple-opacity', String(t.btnPurpleOpacity));
             root.style.setProperty('--global-rv-digital-btn-purple-text-opacity', String(t.btnPurpleTextOpacity));
             root.style.setProperty('--global-rv-digital-btn-purple-border-opacity', String(t.btnPurpleBorderOpacity));
@@ -1559,6 +1576,7 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-btn-orange-base', t.btnOrangeBase);
             root.style.setProperty('--global-rv-digital-btn-orange-label', t.btnOrangeLabel);
             root.style.setProperty('--global-rv-digital-btn-orange-active', t.btnOrangeActive);
+            root.style.setProperty('--global-rv-digital-btn-orange-accent-opacity', String(t.btnOrangeAccentOpacity));
             root.style.setProperty('--global-rv-digital-btn-orange-opacity', String(t.btnOrangeOpacity));
             root.style.setProperty('--global-rv-digital-btn-orange-text-opacity', String(t.btnOrangeTextOpacity));
             root.style.setProperty('--global-rv-digital-btn-orange-border-opacity', String(t.btnOrangeBorderOpacity));
@@ -1663,6 +1681,12 @@ const QUALITY = {
             if (optDigitalBtnBlueBase) optDigitalBtnBlueBase.value = theme.btnBlueBase;
             if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = theme.btnBlueAccent;
             if (optDigitalBtnBlueLabel) optDigitalBtnBlueLabel.value = theme.btnBlueLabel;
+            if (optDigitalBtnBlueAccentOpacity) {
+                optDigitalBtnBlueAccentOpacity.value = String(Math.round(theme.btnBlueAccentOpacity * 100));
+            }
+            if (optDigitalBtnBlueAccentOpacityReadout) {
+                optDigitalBtnBlueAccentOpacityReadout.textContent = `${Math.round(theme.btnBlueAccentOpacity * 100)}%`;
+            }
             if (optDigitalBtnBlueOpacity) optDigitalBtnBlueOpacity.value = String(Math.round(theme.btnBlueOpacity * 100));
             if (optDigitalBtnBlueOpacityReadout) optDigitalBtnBlueOpacityReadout.textContent = `${Math.round(theme.btnBlueOpacity * 100)}%`;
             if (optDigitalBtnBlueTextOpacity) {
@@ -1681,6 +1705,12 @@ const QUALITY = {
             if (optDigitalBtnPurpleBase) optDigitalBtnPurpleBase.value = theme.btnPurpleBase;
             if (optDigitalBtnPurpleLabel) optDigitalBtnPurpleLabel.value = theme.btnPurpleLabel;
             if (optDigitalBtnPurpleActive) optDigitalBtnPurpleActive.value = theme.btnPurpleActive;
+            if (optDigitalBtnPurpleAccentOpacity) {
+                optDigitalBtnPurpleAccentOpacity.value = String(Math.round(theme.btnPurpleAccentOpacity * 100));
+            }
+            if (optDigitalBtnPurpleAccentOpacityReadout) {
+                optDigitalBtnPurpleAccentOpacityReadout.textContent = `${Math.round(theme.btnPurpleAccentOpacity * 100)}%`;
+            }
             if (optDigitalBtnPurpleOpacity) optDigitalBtnPurpleOpacity.value = String(Math.round(theme.btnPurpleOpacity * 100));
             if (optDigitalBtnPurpleOpacityReadout) optDigitalBtnPurpleOpacityReadout.textContent = `${Math.round(theme.btnPurpleOpacity * 100)}%`;
             if (optDigitalBtnPurpleTextOpacity) {
@@ -1747,6 +1777,12 @@ const QUALITY = {
             if (optDigitalBtnOrangeBase) optDigitalBtnOrangeBase.value = theme.btnOrangeBase;
             if (optDigitalBtnOrangeLabel) optDigitalBtnOrangeLabel.value = theme.btnOrangeLabel;
             if (optDigitalBtnOrangeActive) optDigitalBtnOrangeActive.value = theme.btnOrangeActive;
+            if (optDigitalBtnOrangeAccentOpacity) {
+                optDigitalBtnOrangeAccentOpacity.value = String(Math.round(theme.btnOrangeAccentOpacity * 100));
+            }
+            if (optDigitalBtnOrangeAccentOpacityReadout) {
+                optDigitalBtnOrangeAccentOpacityReadout.textContent = `${Math.round(theme.btnOrangeAccentOpacity * 100)}%`;
+            }
             if (optDigitalBtnOrangeOpacity) {
                 optDigitalBtnOrangeOpacity.value = String(Math.round(theme.btnOrangeOpacity * 100));
             }
@@ -1887,6 +1923,11 @@ const QUALITY = {
                 btnBlueBase: optDigitalBtnBlueBase ? optDigitalBtnBlueBase.value : DEFAULT_DIGITAL_THEME.btnBlueBase,
                 btnBlueAccent: optDigitalBtnBlueAccent ? optDigitalBtnBlueAccent.value : DEFAULT_DIGITAL_THEME.btnBlueAccent,
                 btnBlueLabel: optDigitalBtnBlueLabel ? optDigitalBtnBlueLabel.value : DEFAULT_DIGITAL_THEME.btnBlueLabel,
+                btnBlueAccentOpacity: clampThemeOpacity(
+                    (Number(optDigitalBtnBlueAccentOpacity && optDigitalBtnBlueAccentOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnBlueAccentOpacity,
+                    0
+                ),
                 btnBlueOpacity: clampThemeOpacity(
                     (Number(optDigitalBtnBlueOpacity && optDigitalBtnBlueOpacity.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.btnBlueOpacity
@@ -1904,6 +1945,11 @@ const QUALITY = {
                 btnPurpleBase: optDigitalBtnPurpleBase ? optDigitalBtnPurpleBase.value : DEFAULT_DIGITAL_THEME.btnPurpleBase,
                 btnPurpleLabel: optDigitalBtnPurpleLabel ? optDigitalBtnPurpleLabel.value : DEFAULT_DIGITAL_THEME.btnPurpleLabel,
                 btnPurpleActive: optDigitalBtnPurpleActive ? optDigitalBtnPurpleActive.value : DEFAULT_DIGITAL_THEME.btnPurpleActive,
+                btnPurpleAccentOpacity: clampThemeOpacity(
+                    (Number(optDigitalBtnPurpleAccentOpacity && optDigitalBtnPurpleAccentOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnPurpleAccentOpacity,
+                    0
+                ),
                 btnPurpleOpacity: clampThemeOpacity(
                     (Number(optDigitalBtnPurpleOpacity && optDigitalBtnPurpleOpacity.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.btnPurpleOpacity
@@ -1932,6 +1978,11 @@ const QUALITY = {
                 btnOrangeBase: optDigitalBtnOrangeBase ? optDigitalBtnOrangeBase.value : DEFAULT_DIGITAL_THEME.btnOrangeBase,
                 btnOrangeLabel: optDigitalBtnOrangeLabel ? optDigitalBtnOrangeLabel.value : DEFAULT_DIGITAL_THEME.btnOrangeLabel,
                 btnOrangeActive: optDigitalBtnOrangeActive ? optDigitalBtnOrangeActive.value : DEFAULT_DIGITAL_THEME.btnOrangeActive,
+                btnOrangeAccentOpacity: clampThemeOpacity(
+                    (Number(optDigitalBtnOrangeAccentOpacity && optDigitalBtnOrangeAccentOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnOrangeAccentOpacity,
+                    0
+                ),
                 btnOrangeOpacity: clampThemeOpacity(
                     (Number(optDigitalBtnOrangeOpacity && optDigitalBtnOrangeOpacity.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.btnOrangeOpacity
@@ -2089,6 +2140,12 @@ const QUALITY = {
             if (optDigitalBtnBlueBase) optDigitalBtnBlueBase.value = t.btnBlueBase;
             if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = t.btnBlueAccent;
             if (optDigitalBtnBlueLabel) optDigitalBtnBlueLabel.value = t.btnBlueLabel;
+            if (optDigitalBtnBlueAccentOpacity) {
+                optDigitalBtnBlueAccentOpacity.value = String(Math.round(t.btnBlueAccentOpacity * 100));
+            }
+            if (optDigitalBtnBlueAccentOpacityReadout) {
+                optDigitalBtnBlueAccentOpacityReadout.textContent = `${Math.round(t.btnBlueAccentOpacity * 100)}%`;
+            }
             if (optDigitalBtnBlueOpacity) optDigitalBtnBlueOpacity.value = String(Math.round(t.btnBlueOpacity * 100));
             if (optDigitalBtnBlueOpacityReadout) optDigitalBtnBlueOpacityReadout.textContent = `${Math.round(t.btnBlueOpacity * 100)}%`;
             if (optDigitalBtnBlueTextOpacity) {
@@ -2107,6 +2164,12 @@ const QUALITY = {
             if (optDigitalBtnPurpleBase) optDigitalBtnPurpleBase.value = t.btnPurpleBase;
             if (optDigitalBtnPurpleLabel) optDigitalBtnPurpleLabel.value = t.btnPurpleLabel;
             if (optDigitalBtnPurpleActive) optDigitalBtnPurpleActive.value = t.btnPurpleActive;
+            if (optDigitalBtnPurpleAccentOpacity) {
+                optDigitalBtnPurpleAccentOpacity.value = String(Math.round(t.btnPurpleAccentOpacity * 100));
+            }
+            if (optDigitalBtnPurpleAccentOpacityReadout) {
+                optDigitalBtnPurpleAccentOpacityReadout.textContent = `${Math.round(t.btnPurpleAccentOpacity * 100)}%`;
+            }
             if (optDigitalBtnPurpleOpacity) optDigitalBtnPurpleOpacity.value = String(Math.round(t.btnPurpleOpacity * 100));
             if (optDigitalBtnPurpleOpacityReadout) optDigitalBtnPurpleOpacityReadout.textContent = `${Math.round(t.btnPurpleOpacity * 100)}%`;
             if (optDigitalBtnPurpleTextOpacity) {
@@ -2169,6 +2232,12 @@ const QUALITY = {
             if (optDigitalBtnOrangeBase) optDigitalBtnOrangeBase.value = t.btnOrangeBase;
             if (optDigitalBtnOrangeLabel) optDigitalBtnOrangeLabel.value = t.btnOrangeLabel;
             if (optDigitalBtnOrangeActive) optDigitalBtnOrangeActive.value = t.btnOrangeActive;
+            if (optDigitalBtnOrangeAccentOpacity) {
+                optDigitalBtnOrangeAccentOpacity.value = String(Math.round(t.btnOrangeAccentOpacity * 100));
+            }
+            if (optDigitalBtnOrangeAccentOpacityReadout) {
+                optDigitalBtnOrangeAccentOpacityReadout.textContent = `${Math.round(t.btnOrangeAccentOpacity * 100)}%`;
+            }
             if (optDigitalBtnOrangeOpacity) {
                 optDigitalBtnOrangeOpacity.value = String(Math.round(t.btnOrangeOpacity * 100));
             }
@@ -2261,6 +2330,9 @@ const QUALITY = {
             if (optDigitalBtnBlueBorderOpacity && optDigitalBtnBlueBorderOpacityReadout) {
                 optDigitalBtnBlueBorderOpacityReadout.textContent = `${optDigitalBtnBlueBorderOpacity.value}%`;
             }
+            if (optDigitalBtnBlueAccentOpacity && optDigitalBtnBlueAccentOpacityReadout) {
+                optDigitalBtnBlueAccentOpacityReadout.textContent = `${optDigitalBtnBlueAccentOpacity.value}%`;
+            }
             if (optDigitalBtnPurpleFontScale && optDigitalBtnPurpleFontScaleReadout) {
                 optDigitalBtnPurpleFontScaleReadout.textContent = `${optDigitalBtnPurpleFontScale.value}%`;
             }
@@ -2273,6 +2345,9 @@ const QUALITY = {
             if (optDigitalBtnPurpleBorderOpacity && optDigitalBtnPurpleBorderOpacityReadout) {
                 optDigitalBtnPurpleBorderOpacityReadout.textContent = `${optDigitalBtnPurpleBorderOpacity.value}%`;
             }
+            if (optDigitalBtnPurpleAccentOpacity && optDigitalBtnPurpleAccentOpacityReadout) {
+                optDigitalBtnPurpleAccentOpacityReadout.textContent = `${optDigitalBtnPurpleAccentOpacity.value}%`;
+            }
             if (optDigitalBtnOrangeFontScale && optDigitalBtnOrangeFontScaleReadout) {
                 optDigitalBtnOrangeFontScaleReadout.textContent = `${optDigitalBtnOrangeFontScale.value}%`;
             }
@@ -2284,6 +2359,9 @@ const QUALITY = {
             }
             if (optDigitalBtnOrangeBorderOpacity && optDigitalBtnOrangeBorderOpacityReadout) {
                 optDigitalBtnOrangeBorderOpacityReadout.textContent = `${optDigitalBtnOrangeBorderOpacity.value}%`;
+            }
+            if (optDigitalBtnOrangeAccentOpacity && optDigitalBtnOrangeAccentOpacityReadout) {
+                optDigitalBtnOrangeAccentOpacityReadout.textContent = `${optDigitalBtnOrangeAccentOpacity.value}%`;
             }
             if (optDigitalBgOuterGradientAngle && optDigitalBgOuterGradientAngleReadout) {
                 optDigitalBgOuterGradientAngleReadout.textContent = `${optDigitalBgOuterGradientAngle.value}°`;
@@ -2416,6 +2494,7 @@ const QUALITY = {
                 btnBlueBase: d.btnBlueBase,
                 btnBlueAccent: d.btnBlueAccent,
                 btnBlueLabel: d.btnBlueLabel,
+                btnBlueAccentOpacity: d.btnBlueAccentOpacity,
                 btnBlueOpacity: d.btnBlueOpacity,
                 btnBlueTextOpacity: d.btnBlueTextOpacity,
                 btnBlueBorderOpacity: d.btnBlueBorderOpacity,
@@ -2450,6 +2529,7 @@ const QUALITY = {
                 btnPurpleBase: d.btnPurpleBase,
                 btnPurpleLabel: d.btnPurpleLabel,
                 btnPurpleActive: d.btnPurpleActive,
+                btnPurpleAccentOpacity: d.btnPurpleAccentOpacity,
                 btnPurpleOpacity: d.btnPurpleOpacity,
                 btnPurpleTextOpacity: d.btnPurpleTextOpacity,
                 btnPurpleBorderOpacity: d.btnPurpleBorderOpacity,
@@ -2464,6 +2544,7 @@ const QUALITY = {
                 btnOrangeBase: d.btnOrangeBase,
                 btnOrangeLabel: d.btnOrangeLabel,
                 btnOrangeActive: d.btnOrangeActive,
+                btnOrangeAccentOpacity: d.btnOrangeAccentOpacity,
                 btnOrangeOpacity: d.btnOrangeOpacity,
                 btnOrangeTextOpacity: d.btnOrangeTextOpacity,
                 btnOrangeBorderOpacity: d.btnOrangeBorderOpacity,
@@ -2769,12 +2850,13 @@ const QUALITY = {
                 optDigitalBgPanelOpacity, optDigitalBgGifOpacity,
                 optDigitalStagingBorderColor, optDigitalStagingBorderOpacity,
                 optDigitalStagingGlowColor, optDigitalStagingGlowOpacity, optDigitalStagingScale,
-                optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent, optDigitalBtnBlueLabel, optDigitalBtnBlueOpacity,
+                optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent, optDigitalBtnBlueLabel,
+                optDigitalBtnBlueAccentOpacity, optDigitalBtnBlueOpacity,
                 optDigitalBtnBlueTextOpacity, optDigitalBtnBlueBorderOpacity,
                 optDigitalBtnPurpleTop, optDigitalBtnPurpleBase, optDigitalBtnPurpleLabel, optDigitalBtnPurpleActive,
-                optDigitalBtnPurpleOpacity, optDigitalBtnPurpleTextOpacity, optDigitalBtnPurpleBorderOpacity,
+                optDigitalBtnPurpleAccentOpacity, optDigitalBtnPurpleOpacity, optDigitalBtnPurpleTextOpacity, optDigitalBtnPurpleBorderOpacity,
                 optDigitalBtnOrangeTop, optDigitalBtnOrangeBase, optDigitalBtnOrangeLabel, optDigitalBtnOrangeActive,
-                optDigitalBtnOrangeOpacity, optDigitalBtnOrangeTextOpacity, optDigitalBtnOrangeBorderOpacity,
+                optDigitalBtnOrangeAccentOpacity, optDigitalBtnOrangeOpacity, optDigitalBtnOrangeTextOpacity, optDigitalBtnOrangeBorderOpacity,
                 optDigitalBtnBlueFontScale, optDigitalBtnPurpleFontScale, optDigitalBtnOrangeFontScale,
                 optDigitalToolbarDividerHeight, optDigitalToolbarDividerColor, optDigitalToolbarDividerGlow,
                 optDigitalToolbarDividerSpacing,
@@ -8381,6 +8463,12 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             if (!open) showTextInPanel();
             syncDjTextInDeckLights();
         }
+        function syncRadioVisualOrangeButtons() {
+            try {
+                const av = state && state.activeVisualizer;
+                if (av && typeof av._syncDigitalOrangeButtons === 'function') av._syncDigitalOrangeButtons();
+            } catch (_) {}
+        }
         function showTextInPanel() {
             if (uiLocked) return;
             if (!textInPanel) return;
@@ -8388,12 +8476,17 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             void textInPanel.offsetWidth;
             textInPanel.classList.add('open');
             try { syncDjTextInDeckLights(); } catch(_) {}
+            syncRadioVisualOrangeButtons();
         }
         function hideTextInPanel(opts) {
             if (!textInPanel) return;
             const forceCloseDeckB = !!(opts && opts.forceCloseDeckB);
             textInPanel.classList.remove('open');
-            setTimeout(() => { textInPanel.classList.add('display-none'); }, 350);
+            syncRadioVisualOrangeButtons();
+            setTimeout(() => {
+                textInPanel.classList.add('display-none');
+                syncRadioVisualOrangeButtons();
+            }, 350);
             const keepDeckB = !forceCloseDeckB && textInPanel.dataset.textTarget === 'deck-b';
             if (!keepDeckB) {
                 try { setDeckBTextMode(false); } catch(_) {}
