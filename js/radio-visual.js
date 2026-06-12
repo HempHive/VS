@@ -3885,6 +3885,9 @@
                 const deckLabel = dk === 'b' ? 'Deck B' : 'Deck A';
                 let suppressNextTransportClick = false;
                 let suppressTransportClickTimer = 0;
+                const stopDeckTransportEvent = (ev) => {
+                    try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                };
                 const armTransportClickSuppress = () => {
                     suppressNextTransportClick = true;
                     if (suppressTransportClickTimer) {
@@ -3899,14 +3902,13 @@
                 btn.title = 'Tap: random station · Right-click: pause deck';
                 btn.setAttribute('aria-label', `${deckLabel}; tap for random station, right-click to pause`);
                 btn.addEventListener('contextmenu', (ev) => {
-                    this._stopClick(ev);
+                    stopDeckTransportEvent(ev);
                     armTransportClickSuppress();
                     this._pauseDeckOutput(dk);
                 }, sig);
                 btn.addEventListener('pointerdown', (ev) => {
                     if (ev.button !== 2) return;
-                    try { ev.preventDefault(); } catch (_) {}
-                    this._stopClick(ev);
+                    stopDeckTransportEvent(ev);
                     armTransportClickSuppress();
                     this._pauseDeckOutput(dk);
                 }, sig);
@@ -3917,17 +3919,10 @@
                             try { clearTimeout(suppressTransportClickTimer); } catch (_) {}
                             suppressTransportClickTimer = 0;
                         }
-                        this._stopClick(ev);
+                        stopDeckTransportEvent(ev);
                         return;
                     }
-                    try {
-                        if (window.__suppressNextClick) {
-                            window.__suppressNextClick = false;
-                            this._stopClick(ev);
-                            return;
-                        }
-                    } catch (_) {}
-                    this._stopClick(ev);
+                    stopDeckTransportEvent(ev);
                     this._deckTransportRandomStation(dk);
                 }, sig);
             }
