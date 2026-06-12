@@ -476,6 +476,7 @@ const QUALITY = {
             btnBlueBase: '#081820',
             btnBlueAccent: '#00dcff',
             btnBlueLabel: '#9eeeff',
+            btnBlueActive: '#ffe566',
             btnBlueAccentOpacity: 1,
             btnBlueOpacity: 1,
             btnBlueTextOpacity: 1,
@@ -715,6 +716,7 @@ const QUALITY = {
         const optDigitalBtnBlueAccentOpacity = document.getElementById('opt-digital-btn-blue-accent-opacity');
         const optDigitalBtnBlueAccentOpacityReadout = document.getElementById('opt-digital-btn-blue-accent-opacity-readout');
         const optDigitalBtnBlueLabel = document.getElementById('opt-digital-btn-blue-label');
+        const optDigitalBtnBlueActive = document.getElementById('opt-digital-btn-blue-active');
         const optDigitalBtnBlueOpacity = document.getElementById('opt-digital-btn-blue-opacity');
         const optDigitalBtnBlueOpacityReadout = document.getElementById('opt-digital-btn-blue-opacity-readout');
         const optDigitalBtnBlueTextOpacity = document.getElementById('opt-digital-btn-blue-text-opacity');
@@ -1331,6 +1333,7 @@ const QUALITY = {
                 btnBlueBase: src.btnBlueBase || d.btnBlueBase,
                 btnBlueAccent: src.btnBlueAccent || d.btnBlueAccent,
                 btnBlueLabel: src.btnBlueLabel || d.btnBlueLabel,
+                btnBlueActive: src.btnBlueActive || src.btnBlueAccent || d.btnBlueActive,
                 btnBlueAccentOpacity: clampThemeOpacity(src.btnBlueAccentOpacity, d.btnBlueAccentOpacity, 0),
                 btnBlueOpacity: clampThemeOpacity(src.btnBlueOpacity, d.btnBlueOpacity),
                 btnBlueTextOpacity: clampThemeOpacity(src.btnBlueTextOpacity, d.btnBlueTextOpacity),
@@ -1464,6 +1467,7 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-btn-blue-base', t.btnBlueBase);
             target.style.setProperty('--rv-digital-btn-blue-accent', t.btnBlueAccent);
             target.style.setProperty('--rv-digital-btn-blue-label', t.btnBlueLabel);
+            target.style.setProperty('--rv-digital-btn-blue-active', t.btnBlueActive);
             target.style.setProperty('--rv-digital-btn-blue-accent-opacity', String(t.btnBlueAccentOpacity));
             target.style.setProperty('--rv-digital-btn-blue-opacity', String(t.btnBlueOpacity));
             target.style.setProperty('--rv-digital-btn-blue-text-opacity', String(t.btnBlueTextOpacity));
@@ -1557,6 +1561,7 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-btn-blue-base', t.btnBlueBase);
             root.style.setProperty('--global-rv-digital-btn-blue-accent', t.btnBlueAccent);
             root.style.setProperty('--global-rv-digital-btn-blue-label', t.btnBlueLabel);
+            root.style.setProperty('--global-rv-digital-btn-blue-active', t.btnBlueActive);
             root.style.setProperty('--global-rv-digital-btn-blue-accent-opacity', String(t.btnBlueAccentOpacity));
             root.style.setProperty('--global-rv-digital-btn-blue-opacity', String(t.btnBlueOpacity));
             root.style.setProperty('--global-rv-digital-btn-blue-text-opacity', String(t.btnBlueTextOpacity));
@@ -1681,6 +1686,7 @@ const QUALITY = {
             if (optDigitalBtnBlueBase) optDigitalBtnBlueBase.value = theme.btnBlueBase;
             if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = theme.btnBlueAccent;
             if (optDigitalBtnBlueLabel) optDigitalBtnBlueLabel.value = theme.btnBlueLabel;
+            if (optDigitalBtnBlueActive) optDigitalBtnBlueActive.value = theme.btnBlueActive;
             if (optDigitalBtnBlueAccentOpacity) {
                 optDigitalBtnBlueAccentOpacity.value = String(Math.round(theme.btnBlueAccentOpacity * 100));
             }
@@ -1923,6 +1929,7 @@ const QUALITY = {
                 btnBlueBase: optDigitalBtnBlueBase ? optDigitalBtnBlueBase.value : DEFAULT_DIGITAL_THEME.btnBlueBase,
                 btnBlueAccent: optDigitalBtnBlueAccent ? optDigitalBtnBlueAccent.value : DEFAULT_DIGITAL_THEME.btnBlueAccent,
                 btnBlueLabel: optDigitalBtnBlueLabel ? optDigitalBtnBlueLabel.value : DEFAULT_DIGITAL_THEME.btnBlueLabel,
+                btnBlueActive: optDigitalBtnBlueActive ? optDigitalBtnBlueActive.value : DEFAULT_DIGITAL_THEME.btnBlueActive,
                 btnBlueAccentOpacity: clampThemeOpacity(
                     (Number(optDigitalBtnBlueAccentOpacity && optDigitalBtnBlueAccentOpacity.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.btnBlueAccentOpacity,
@@ -2140,6 +2147,7 @@ const QUALITY = {
             if (optDigitalBtnBlueBase) optDigitalBtnBlueBase.value = t.btnBlueBase;
             if (optDigitalBtnBlueAccent) optDigitalBtnBlueAccent.value = t.btnBlueAccent;
             if (optDigitalBtnBlueLabel) optDigitalBtnBlueLabel.value = t.btnBlueLabel;
+            if (optDigitalBtnBlueActive) optDigitalBtnBlueActive.value = t.btnBlueActive;
             if (optDigitalBtnBlueAccentOpacity) {
                 optDigitalBtnBlueAccentOpacity.value = String(Math.round(t.btnBlueAccentOpacity * 100));
             }
@@ -2494,6 +2502,7 @@ const QUALITY = {
                 btnBlueBase: d.btnBlueBase,
                 btnBlueAccent: d.btnBlueAccent,
                 btnBlueLabel: d.btnBlueLabel,
+                btnBlueActive: d.btnBlueActive,
                 btnBlueAccentOpacity: d.btnBlueAccentOpacity,
                 btnBlueOpacity: d.btnBlueOpacity,
                 btnBlueTextOpacity: d.btnBlueTextOpacity,
@@ -2850,7 +2859,7 @@ const QUALITY = {
                 optDigitalBgPanelOpacity, optDigitalBgGifOpacity,
                 optDigitalStagingBorderColor, optDigitalStagingBorderOpacity,
                 optDigitalStagingGlowColor, optDigitalStagingGlowOpacity, optDigitalStagingScale,
-                optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent, optDigitalBtnBlueLabel,
+                optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent, optDigitalBtnBlueLabel, optDigitalBtnBlueActive,
                 optDigitalBtnBlueAccentOpacity, optDigitalBtnBlueOpacity,
                 optDigitalBtnBlueTextOpacity, optDigitalBtnBlueBorderOpacity,
                 optDigitalBtnPurpleTop, optDigitalBtnPurpleBase, optDigitalBtnPurpleLabel, optDigitalBtnPurpleActive,
