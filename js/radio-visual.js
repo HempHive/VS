@@ -179,7 +179,7 @@
                 return {
                     equaliser: 'EQUALISER',
                     spectrum: 'SPECTRUM',
-                    volume: 'VOLUME',
+                    volume: 'MIXER',
                     effects: 'EFFECTS',
                     live: 'LIVE',
                     video: 'VIDEO',
@@ -8392,7 +8392,7 @@
                     return b;
                 };
                 btnDeckATransport = mkRvStationBtn('A >', 'a');
-                const btnAi = mkRvDigitalBtn('ai', 'Ai');
+                const btnAi = mkRvDigitalBtn('ai', 'A i');
                 const btnFade = mkRvDigitalBtn('fade', 'Fade');
                 btnDeckBTransport = mkRvStationBtn('B >', 'b');
                 btnXfadeStation = document.createElement('button');
