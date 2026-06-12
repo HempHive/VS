@@ -1,6 +1,6 @@
 {
   "buttons": [
-    { "label": "ANIME", "url": "https://jannerap.github.io/Trailers/" },
+    { "label": "ANIME", "url": "https://jannerap.github.io/Trailers/", "interaction": "none" },
     { "label": "BUBBLES", "url": "https://mindseye.dev/" },
     { "label": "CHAT", "action": "text-in" },
     { "label": "IDEAS", "url": "https://hemphive.farm/" },

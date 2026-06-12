@@ -1019,6 +1019,16 @@
             display: block;
             background: #000;
         }
+        #radio-visual-root .radio-visual-digital-embed-shell.is-view-only .radio-visual-digital-embed-frame {
+            pointer-events: none;
+        }
+        #radio-visual-root .radio-visual-digital-embed-shield {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            cursor: default;
+            background: transparent;
+        }
         #radio-visual-root .radio-visual-digital-staging-video-stack {
             position: absolute;
             inset: 0;

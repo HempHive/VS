@@ -368,6 +368,35 @@
                 }
                 return '';
             }
+            static normalizeOrangeButtonInteraction(raw, fallback = 'full') {
+                if (raw === false || raw === 0) return 'full';
+                if (raw === true || raw === 1) return 'none';
+                const v = String(raw || '').trim().toLowerCase();
+                if (!v) return fallback === 'none' ? 'none' : 'full';
+                if (v === 'none' || v === 'off' || v === 'false' || v === '0'
+                    || v === 'no' || v === 'view-only' || v === 'viewonly' || v === 'readonly') {
+                    return 'none';
+                }
+                if (v === 'full' || v === 'on' || v === 'true' || v === '1' || v === 'yes' || v === 'interactive') {
+                    return 'full';
+                }
+                return fallback === 'none' ? 'none' : 'full';
+            }
+            static parseOrangeButtonManifestFlags(parts) {
+                const flags = { url: '', action: '', interaction: '' };
+                parts.forEach((part) => {
+                    const p = String(part || '').trim();
+                    if (!p) return;
+                    if (/^action:/i.test(p)) {
+                        flags.action = p.replace(/^action:/i, '').trim();
+                    } else if (/^interaction:/i.test(p)) {
+                        flags.interaction = p.replace(/^interaction:/i, '').trim();
+                    } else if (!flags.url) {
+                        flags.url = p;
+                    }
+                });
+                return flags;
+            }
             static normalizeOrangeButtonEntry(raw) {
                 if (!raw || typeof raw !== 'object') return null;
                 const label = String(raw.label || raw.name || raw.text || '').trim();
@@ -384,10 +413,15 @@
                         return RadioVisualEngine.normalizeOrangeButtonEntry({ ...raw, label, action: actionFromUrl, url: '' });
                     }
                 }
+                const interaction = RadioVisualEngine.normalizeOrangeButtonInteraction(
+                    raw.interaction != null ? raw.interaction
+                        : (raw.noInteraction === true || raw.viewOnly === true || raw.readonly === true ? 'none' : ''),
+                    'full'
+                );
                 if (!label || (!action && !url)) return null;
                 const id = String(raw.id || label).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
                 if (!id) return null;
-                return { id, label: label.toUpperCase(), url, action };
+                return { id, label: label.toUpperCase(), url, action, interaction };
             }
             static parseOrangeButtonsJson(data) {
                 const list = Array.isArray(data) ? data : (data && Array.isArray(data.buttons) ? data.buttons : []);
@@ -401,24 +435,40 @@
                     let label = '';
                     let url = '';
                     if (t.includes('|')) {
-                        const parts = t.split('|');
-                        label = parts[0].trim();
-                        url = parts.slice(1).join('|').trim();
-                    } else {
-                        const m = t.match(/^(\S+)\s+(.+)$/);
-                        if (m) {
-                            label = m[1].trim();
-                            const rest = m[2].trim();
-                            if (/^action:/i.test(rest)) {
-                                const entry = RadioVisualEngine.normalizeOrangeButtonEntry({
-                                    label,
-                                    action: rest.replace(/^action:/i, '').trim()
-                                });
-                                if (entry) out.push(entry);
-                                return;
-                            }
-                            url = rest;
+                        const parts = t.split('|').map((p) => p.trim()).filter(Boolean);
+                        label = parts[0] || '';
+                        const flags = RadioVisualEngine.parseOrangeButtonManifestFlags(parts.slice(1));
+                        const entry = RadioVisualEngine.normalizeOrangeButtonEntry({
+                            label,
+                            url: flags.url,
+                            action: flags.action,
+                            interaction: flags.interaction
+                        });
+                        if (entry) out.push(entry);
+                        return;
+                    }
+                    const m = t.match(/^(\S+)\s+(.+)$/);
+                    if (m) {
+                        label = m[1].trim();
+                        let rest = m[2].trim();
+                        if (/^action:/i.test(rest)) {
+                            const entry = RadioVisualEngine.normalizeOrangeButtonEntry({
+                                label,
+                                action: rest.replace(/^action:/i, '').trim()
+                            });
+                            if (entry) out.push(entry);
+                            return;
                         }
+                        const interactionMatch = rest.match(/\s+interaction:(\S+)\s*$/i);
+                        let interaction = '';
+                        if (interactionMatch) {
+                            interaction = interactionMatch[1];
+                            rest = rest.slice(0, interactionMatch.index).trim();
+                        }
+                        url = rest;
+                        const entry = RadioVisualEngine.normalizeOrangeButtonEntry({ label, url, interaction });
+                        if (entry) out.push(entry);
+                        return;
                     }
                     const entry = RadioVisualEngine.normalizeOrangeButtonEntry({ label, url });
                     if (entry) out.push(entry);
@@ -1556,7 +1606,7 @@
                 this._syncDigitalHubPanel();
                 this._syncDigitalSpectrumLayout();
                 this._syncDigitalSpectrumButtonState();
-                this._showDigitalStagingEmbed(entry.url, entry.label);
+                this._showDigitalStagingEmbed(entry);
                 this._syncDigitalStagingButtons();
                 this._syncDigitalOrangeButtons();
             }
@@ -1583,6 +1633,9 @@
                     if (entry.action === 'text-in') {
                         b.title = `${entry.label} — tap to open or close Text-In panel`;
                         b.setAttribute('aria-label', `${entry.label} Text-In panel`);
+                    } else if (entry.interaction === 'none') {
+                        b.title = `${entry.label} — view only in staging · tap again for equaliser · right-click for new window`;
+                        b.setAttribute('aria-label', `${entry.label} view only`);
                     } else {
                         b.title = `${entry.label} — tap to open in staging · tap again for equaliser · right-click for new window`;
                         b.setAttribute('aria-label', entry.label);
@@ -1749,9 +1802,12 @@
                 } catch (_) {}
             }
 
-            _showDigitalStagingEmbed(url, title) {
+            _showDigitalStagingEmbed(entry) {
                 const mount = this._stagingContentMount();
-                if (!mount) return;
+                if (!mount || !entry) return;
+                const url = entry.url;
+                const title = entry.label || 'Embedded site';
+                const viewOnly = entry.interaction === 'none';
                 this._tearDownDigitalStagingView();
                 mount.classList.add('is-active');
                 mount.setAttribute('aria-hidden', 'false');
@@ -1761,15 +1817,26 @@
                 try { this._syncDigitalStagingBgVisibility(); } catch (_) {}
                 const href = this._normalizeDigitalEmbedUrl(url);
                 const shell = document.createElement('div');
-                shell.className = 'radio-visual-digital-embed-shell';
+                shell.className = 'radio-visual-digital-embed-shell' + (viewOnly ? ' is-view-only' : '');
                 const iframe = document.createElement('iframe');
                 iframe.className = 'radio-visual-digital-embed-frame';
-                RadioVisualEngine.configureEmbeddableIframe(iframe, title || 'Embedded site');
+                if (viewOnly) {
+                    try { iframe.setAttribute('tabindex', '-1'); } catch (_) {}
+                }
+                RadioVisualEngine.configureEmbeddableIframe(iframe, title);
                 iframe.src = href;
                 shell.appendChild(iframe);
+                if (viewOnly) {
+                    const shield = document.createElement('div');
+                    shield.className = 'radio-visual-digital-embed-shield';
+                    shield.setAttribute('aria-hidden', 'true');
+                    shell.appendChild(shield);
+                }
                 mount.appendChild(shell);
                 try {
-                    mount.title = `${title || 'Site'} · tap orange button again to return to equaliser · right-click button for new window`;
+                    mount.title = viewOnly
+                        ? `${title} — view only · tap orange button again to return to equaliser · right-click button for new window`
+                        : `${title} · tap orange button again to return to equaliser · right-click button for new window`;
                 } catch (_) {}
             }
 
