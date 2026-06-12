@@ -2618,9 +2618,7 @@
                     } catch (_) {}
                 };
                 loop();
-                try {
-                    mount.title = 'Drag to spin · click to toggle axis · Esc exits fullscreen';
-                } catch (_) {}
+                try { mount.removeAttribute('title'); } catch (_) {}
             }
 
             _showDigitalStagingQueue(mountEl) {
@@ -5109,9 +5107,13 @@
                     return;
                 }
                 const spreadNorm = Math.max(0, Math.min(1, Number(this._spectrumStagingPanNorm) || 0));
-                const scale = this._getSpectrumHubSideScale();
+                const scale = this._clampSpectrumSideScale(
+                    this._spectrumStagingScale,
+                    this._getSpectrumHubSideScale()
+                );
                 const paneW = pane ? Math.max(1, pane.clientWidth || 0) : 400;
-                const maxSpread = Math.max(24, paneW * 0.22 * Math.max(1, scale * 0.85));
+                const spreadGuard = Math.max(0.12, 1.25 - scale * 0.4);
+                const maxSpread = Math.max(8, paneW * 0.22 * spreadGuard);
                 const spreadPx = spreadNorm * maxSpread;
                 try { row.style.setProperty('--rv-spectrum-staging-spread', `${spreadPx}px`); } catch (_) {}
             }

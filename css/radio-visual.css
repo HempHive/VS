@@ -652,9 +652,6 @@
         #radio-visual-root .radio-visual-digital-center > .radio-visual-digital-center-pane {
             z-index: 1;
         }
-        #radio-visual-root .radio-visual-digital-center:has(.radio-visual-digital-center-pane[data-hub-mode="spectrum"].is-active) {
-            overflow: visible;
-        }
         #radio-visual-root .radio-visual-digital-center-pane {
             position: absolute;
             inset: 0;
@@ -663,9 +660,6 @@
             justify-content: stretch;
             overflow: hidden;
             z-index: 1;
-        }
-        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"] {
-            overflow: visible;
         }
         #radio-visual-root .radio-visual-digital-theme-outer-image {
             position: absolute;
@@ -1140,7 +1134,7 @@
             gap: clamp(6px, 1.25cqw, 12px);
             padding: clamp(8px, 1.46cqw, 14px);
             box-sizing: border-box;
-            overflow: visible;
+            overflow: hidden;
             pointer-events: none;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="spectrum"]
