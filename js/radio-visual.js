@@ -578,7 +578,7 @@
                 return !!this._digitalBgGifEnabled;
             }
 
-            _setDigitalBgGifEnabled(enabled) {
+            _setDigitalBgGifEnabled(enabled, skipApply = false) {
                 this._digitalBgGifEnabled = !!enabled;
                 try {
                     localStorage.setItem(
@@ -596,6 +596,7 @@
                     }
                     return;
                 }
+                if (skipApply) return;
                 this._refreshDigitalBgGifList().then(() => {
                     this._applyCurrentDigitalBgGif();
                 }).catch(() => {});
@@ -669,7 +670,7 @@
                     const files = this._digitalBgGifFiles();
                     if (!this.els.spectrumBg || !files.length) return;
                     if (!this._isDigitalBgGifEnabled()) {
-                        this._setDigitalBgGifEnabled(true);
+                        this._setDigitalBgGifEnabled(true, true);
                     }
                     this._applyDigitalSpectrumBgFile(files[0], 0);
                     this._syncDigitalVisBgButton();
@@ -687,8 +688,9 @@
                     const files = this._digitalBgGifFiles();
                     const idx = files.indexOf(name);
                     if (idx < 0) return;
-                    this._setDigitalBgGifEnabled(true);
-                    this._applyDigitalSpectrumBgFile(name, idx);
+                    this._setDigitalBgGifEnabled(true, true);
+                    this._digitalBgGifIdx = idx;
+                    this._applyDigitalSpectrumBgFile(files[idx], idx);
                     this._syncDigitalVisBgButton();
                 }).catch(() => {});
             }
