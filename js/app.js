@@ -6971,7 +6971,12 @@ async function loadExtractedChunks() {
     });
 }
 
-await loadExtractedChunks();
+try {
+    await loadExtractedChunks();
+} catch (err) {
+    console.error('[VS] Failed to load app chunks:', err);
+    try { hideStartLoader(); } catch (_) {}
+}
 try { globalThis.syncSpectrumOptionsControlsFromStorage?.(); } catch (_) {}
 
 // Bridge extracted globals into this module (same bindings as former single-file scope).

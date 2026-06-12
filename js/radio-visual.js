@@ -7653,6 +7653,8 @@
                 let digitalToolbar = null;
                 let btnDigitalAi = null;
                 let btnDigitalFade = null;
+                let btnDeckATransport = null;
+                let btnDeckBTransport = null;
                 let digitalStagingMount = null;
                 let digitalLocalQueuePanel = null;
                 let digitalStationsPanel = null;
@@ -8057,10 +8059,10 @@
                     this._appendRvButtonLabel(b, lab);
                     return b;
                 };
-                const btnDeckATransport = mkRvStationBtn('A >', 'a');
+                btnDeckATransport = mkRvStationBtn('A >', 'a');
                 const btnAi = mkRvDigitalBtn('ai', 'Ai');
                 const btnFade = mkRvDigitalBtn('fade', 'Fade');
-                const btnDeckBTransport = mkRvStationBtn('B >', 'b');
+                btnDeckBTransport = mkRvStationBtn('B >', 'b');
                 btnXfadeStation = document.createElement('button');
                 btnXfadeStation.type = 'button';
                 btnXfadeStation.className = 'radio-visual-btn radio-visual-digital-toolbar-icon-btn radio-visual-digital-xfade-station-btn';

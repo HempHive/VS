@@ -420,8 +420,11 @@
 			position: relative;
 			display: grid;
 			place-items: center;
-			width: clamp(108px, 24vw, 136px);
-			height: clamp(108px, 24vw, 136px);
+			--shell-size: clamp(108px, 24vw, 136px);
+			width: var(--shell-size);
+			height: var(--shell-size);
+			/* Ring midline: 14% inset → 72% diameter, minus half the 3px stroke */
+			--orbit-radius: calc(var(--shell-size) * 0.36 - 1.5px);
 			isolation: isolate;
 		}
 		.start-loader-ring {
@@ -449,8 +452,6 @@
 			inset: 0;
 			opacity: var(--phrase-opacity, 0);
 			transition: opacity 0.15s ease;
-			/* Match ring midline: shell inset 14% → 72% diameter, minus half the 3px stroke */
-			--orbit-radius: calc(36% - 1.5px);
 			--phrase-color: #9ffcff;
 			--phrase-glow: #00e8ff;
 		}
