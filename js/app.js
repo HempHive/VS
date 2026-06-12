@@ -469,6 +469,7 @@ const QUALITY = {
             bgOuterImageOpacity: 1,
             bgPanelImageOpacity: 1,
             bgPanelOpacity: 1,
+            bgGifOpacity: 1,
             accent: '#ffd246',
             font: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
             btnBlueTop: '#123048',
@@ -502,8 +503,13 @@ const QUALITY = {
             stagingBorderOpacity: 0.35,
             stagingGlowColor: '#00b4ff',
             stagingGlowOpacity: 0.12,
-            stagingScale: 1
+            stagingScale: 1,
+            toolbarDividerHeight: 2,
+            toolbarDividerColor: '#00dcff',
+            toolbarDividerGlow: 0,
+            toolbarDividerStyle: 'groove'
         };
+        const TOOLBAR_DIVIDER_STYLE_IDS = ['groove', 'solid', 'pulse', 'shimmer', 'scan', 'rainbow', 'wave'];
         const DIGITAL_CLOCK_FORMATS = {
             'weekday-time': 'Weekday + 24h time',
             'time-24': '24-hour time only',
@@ -663,6 +669,8 @@ const QUALITY = {
         const optDigitalBgPanelImageOpacityReadout = document.getElementById('opt-digital-bg-panel-image-opacity-readout');
         const optDigitalBgPanelOpacity = document.getElementById('opt-digital-bg-panel-opacity');
         const optDigitalBgPanelOpacityReadout = document.getElementById('opt-digital-bg-panel-opacity-readout');
+        const optDigitalBgGifOpacity = document.getElementById('opt-digital-bg-gif-opacity');
+        const optDigitalBgGifOpacityReadout = document.getElementById('opt-digital-bg-gif-opacity-readout');
         const optDigitalButtonInfoOverlays = document.getElementById('opt-digital-button-info-overlays');
         const optDigitalBlueToolbarVisible = document.getElementById('opt-digital-blue-toolbar-visible');
         const optDigitalPurpleButtonsVisible = document.getElementById('opt-digital-purple-buttons-visible');
@@ -702,6 +710,12 @@ const QUALITY = {
         const optDigitalBtnPurpleBorderOpacityReadout = document.getElementById('opt-digital-btn-purple-border-opacity-readout');
         const optDigitalBtnBlueFontScale = document.getElementById('opt-digital-btn-blue-font-scale');
         const optDigitalBtnBlueFontScaleReadout = document.getElementById('opt-digital-btn-blue-font-scale-readout');
+        const optDigitalToolbarDividerStyle = document.getElementById('opt-digital-toolbar-divider-style');
+        const optDigitalToolbarDividerHeight = document.getElementById('opt-digital-toolbar-divider-height');
+        const optDigitalToolbarDividerHeightReadout = document.getElementById('opt-digital-toolbar-divider-height-readout');
+        const optDigitalToolbarDividerColor = document.getElementById('opt-digital-toolbar-divider-color');
+        const optDigitalToolbarDividerGlow = document.getElementById('opt-digital-toolbar-divider-glow');
+        const optDigitalToolbarDividerGlowReadout = document.getElementById('opt-digital-toolbar-divider-glow-readout');
         const optDigitalBtnPurpleFontScale = document.getElementById('opt-digital-btn-purple-font-scale');
         const optDigitalBtnPurpleFontScaleReadout = document.getElementById('opt-digital-btn-purple-font-scale-readout');
         const optDigitalClockFormat = document.getElementById('opt-digital-clock-format');
@@ -1223,6 +1237,15 @@ const QUALITY = {
             if (!Number.isFinite(v)) return fallback;
             return Math.max(min, Math.min(1, Math.round(v * 100) / 100));
         }
+        function clampToolbarDividerHeight(raw, fallback = 2) {
+            const v = Number(raw);
+            if (!Number.isFinite(v)) return fallback;
+            return Math.max(1, Math.min(8, Math.round(v)));
+        }
+        function normalizeToolbarDividerStyle(raw, fallback = 'groove') {
+            const v = String(raw || '').trim().toLowerCase();
+            return TOOLBAR_DIVIDER_STYLE_IDS.includes(v) ? v : fallback;
+        }
         function normalizeDigitalTheme(parsed) {
             const d = DEFAULT_DIGITAL_THEME;
             const src = (parsed && typeof parsed === 'object') ? parsed : {};
@@ -1245,6 +1268,7 @@ const QUALITY = {
                 bgOuterImageOpacity: clampThemeOpacity(src.bgOuterImageOpacity, d.bgOuterImageOpacity, 0),
                 bgPanelImageOpacity: clampThemeOpacity(src.bgPanelImageOpacity, d.bgPanelImageOpacity, 0),
                 bgPanelOpacity: clampThemeOpacity(src.bgPanelOpacity, d.bgPanelOpacity, 0),
+                bgGifOpacity: clampThemeOpacity(src.bgGifOpacity, d.bgGifOpacity, 0),
                 accent: src.accent || d.accent,
                 font: src.font || d.font,
                 btnBlueFont: src.btnBlueFont || src.font || d.btnBlueFont || d.font,
@@ -1278,7 +1302,11 @@ const QUALITY = {
                 stagingBorderOpacity: clampThemeOpacity(src.stagingBorderOpacity, d.stagingBorderOpacity, 0),
                 stagingGlowColor: src.stagingGlowColor || d.stagingGlowColor,
                 stagingGlowOpacity: clampThemeOpacity(src.stagingGlowOpacity, d.stagingGlowOpacity, 0),
-                stagingScale: clampStagingScale(src.stagingScale, d.stagingScale)
+                stagingScale: clampStagingScale(src.stagingScale, d.stagingScale),
+                toolbarDividerHeight: clampToolbarDividerHeight(src.toolbarDividerHeight, d.toolbarDividerHeight),
+                toolbarDividerColor: src.toolbarDividerColor || d.toolbarDividerColor,
+                toolbarDividerGlow: clampThemeOpacity(src.toolbarDividerGlow, d.toolbarDividerGlow, 0),
+                toolbarDividerStyle: normalizeToolbarDividerStyle(src.toolbarDividerStyle, d.toolbarDividerStyle)
             };
         }
         function digitalThemePresetKeys(preset) {
@@ -1354,6 +1382,7 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-bg-outer-image-opacity', String(t.bgOuterImageOpacity));
             target.style.setProperty('--rv-digital-bg-panel-image-opacity', String(t.bgPanelImageOpacity));
             target.style.setProperty('--rv-digital-panel-opacity', String(t.bgPanelOpacity));
+            target.style.setProperty('--rv-digital-bg-gif-opacity', String(t.bgGifOpacity));
             target.style.setProperty('--rv-digital-accent-color', t.accent);
             target.style.setProperty('--rv-digital-ui-font', t.font);
             target.style.setProperty('--rv-digital-btn-blue-font', t.btnBlueFont || t.font);
@@ -1387,11 +1416,15 @@ const QUALITY = {
                 String(Math.min(1, Math.max(0, t.stagingGlowOpacity * 0.5)))
             );
             target.style.setProperty('--rv-digital-staging-scale', String(t.stagingScale));
+            target.style.setProperty('--rv-digital-toolbar-divider-height', `${t.toolbarDividerHeight}px`);
+            target.style.setProperty('--rv-digital-toolbar-divider-color', t.toolbarDividerColor);
+            target.style.setProperty('--rv-digital-toolbar-divider-glow', String(t.toolbarDividerGlow));
             if (target.dataset) {
                 target.dataset.rvClockFormat = t.clockFormat;
                 target.dataset.rvShowStaging = t.showStagingPanel ? '1' : '0';
                 target.dataset.rvShowBlueToolbar = t.showBlueToolbar ? '1' : '0';
                 target.dataset.rvShowPurpleButtons = t.showPurpleButtons ? '1' : '0';
+                target.dataset.rvToolbarDividerStyle = t.toolbarDividerStyle;
             }
         }
         function applyButtonInfoOverlaysFromTheme(theme) {
@@ -1423,6 +1456,7 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-bg-outer-image-opacity', String(t.bgOuterImageOpacity));
             root.style.setProperty('--global-rv-digital-bg-panel-image-opacity', String(t.bgPanelImageOpacity));
             root.style.setProperty('--global-rv-digital-panel-opacity', String(t.bgPanelOpacity));
+            root.style.setProperty('--global-rv-digital-bg-gif-opacity', String(t.bgGifOpacity));
             root.style.setProperty('--global-rv-digital-accent-color', t.accent);
             root.style.setProperty('--global-rv-digital-ui-font', t.font);
             root.style.setProperty('--global-rv-digital-btn-blue-font', t.btnBlueFont || t.font);
@@ -1447,6 +1481,9 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-clock-color', t.clockColor);
             root.style.setProperty('--global-rv-digital-clock-font-scale', String(t.clockFontScale));
             root.style.setProperty('--global-rv-digital-clock-opacity', String(t.clockOpacity));
+            root.style.setProperty('--global-rv-digital-toolbar-divider-height', `${t.toolbarDividerHeight}px`);
+            root.style.setProperty('--global-rv-digital-toolbar-divider-color', t.toolbarDividerColor);
+            root.style.setProperty('--global-rv-digital-toolbar-divider-glow', String(t.toolbarDividerGlow));
             applyDigitalThemeCssVars(document.getElementById('radio-visual-root'), t);
             applyButtonInfoOverlaysFromTheme(t);
             reapplyDigitalThemeImageLayers();
@@ -1509,6 +1546,12 @@ const QUALITY = {
             if (optDigitalBgPanelOpacityReadout) {
                 optDigitalBgPanelOpacityReadout.textContent = `${Math.round(theme.bgPanelOpacity * 100)}%`;
             }
+            if (optDigitalBgGifOpacity) {
+                optDigitalBgGifOpacity.value = String(Math.round(theme.bgGifOpacity * 100));
+            }
+            if (optDigitalBgGifOpacityReadout) {
+                optDigitalBgGifOpacityReadout.textContent = `${Math.round(theme.bgGifOpacity * 100)}%`;
+            }
             syncDigitalBgOuterImageStatusUi(loadDigitalBgOuterImageFromStorage());
             syncDigitalBgPanelImageStatusUi(loadDigitalBgPanelImageFromStorage());
             if (optDigitalAccent) optDigitalAccent.value = theme.accent;
@@ -1561,6 +1604,22 @@ const QUALITY = {
             }
             if (optDigitalBtnBlueFontScale) optDigitalBtnBlueFontScale.value = String(Math.round(theme.btnBlueFontScale * 100));
             if (optDigitalBtnBlueFontScaleReadout) optDigitalBtnBlueFontScaleReadout.textContent = `${Math.round(theme.btnBlueFontScale * 100)}%`;
+            if (optDigitalToolbarDividerStyle) {
+                optDigitalToolbarDividerStyle.value = theme.toolbarDividerStyle;
+            }
+            if (optDigitalToolbarDividerHeight) {
+                optDigitalToolbarDividerHeight.value = String(theme.toolbarDividerHeight);
+            }
+            if (optDigitalToolbarDividerHeightReadout) {
+                optDigitalToolbarDividerHeightReadout.textContent = `${theme.toolbarDividerHeight}px`;
+            }
+            if (optDigitalToolbarDividerColor) optDigitalToolbarDividerColor.value = theme.toolbarDividerColor;
+            if (optDigitalToolbarDividerGlow) {
+                optDigitalToolbarDividerGlow.value = String(Math.round(theme.toolbarDividerGlow * 100));
+            }
+            if (optDigitalToolbarDividerGlowReadout) {
+                optDigitalToolbarDividerGlowReadout.textContent = `${Math.round(theme.toolbarDividerGlow * 100)}%`;
+            }
             if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(theme.btnPurpleFontScale * 100));
             if (optDigitalBtnPurpleFontScaleReadout) optDigitalBtnPurpleFontScaleReadout.textContent = `${Math.round(theme.btnPurpleFontScale * 100)}%`;
             if (optDigitalClockFormat) optDigitalClockFormat.value = theme.clockFormat;
@@ -1661,6 +1720,11 @@ const QUALITY = {
                     DEFAULT_DIGITAL_THEME.bgPanelOpacity,
                     0
                 ),
+                bgGifOpacity: clampThemeOpacity(
+                    (Number(optDigitalBgGifOpacity && optDigitalBgGifOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.bgGifOpacity,
+                    0
+                ),
                 accent: optDigitalAccent ? optDigitalAccent.value : DEFAULT_DIGITAL_THEME.accent,
                 font: optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.font,
                 btnBlueFont: optDigitalBtnBlueFont
@@ -1748,6 +1812,22 @@ const QUALITY = {
                 stagingScale: clampStagingScale(
                     (Number(optDigitalStagingScale && optDigitalStagingScale.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.stagingScale
+                ),
+                toolbarDividerHeight: clampToolbarDividerHeight(
+                    Number(optDigitalToolbarDividerHeight && optDigitalToolbarDividerHeight.value),
+                    DEFAULT_DIGITAL_THEME.toolbarDividerHeight
+                ),
+                toolbarDividerColor: optDigitalToolbarDividerColor
+                    ? optDigitalToolbarDividerColor.value
+                    : DEFAULT_DIGITAL_THEME.toolbarDividerColor,
+                toolbarDividerGlow: clampThemeOpacity(
+                    (Number(optDigitalToolbarDividerGlow && optDigitalToolbarDividerGlow.value) || 0) / 100,
+                    DEFAULT_DIGITAL_THEME.toolbarDividerGlow,
+                    0
+                ),
+                toolbarDividerStyle: normalizeToolbarDividerStyle(
+                    optDigitalToolbarDividerStyle && optDigitalToolbarDividerStyle.value,
+                    DEFAULT_DIGITAL_THEME.toolbarDividerStyle
                 )
             };
             theme.presetId = detectDigitalThemePresetId(theme);
@@ -1785,6 +1865,12 @@ const QUALITY = {
             }
             if (optDigitalBgPanelOpacityReadout) {
                 optDigitalBgPanelOpacityReadout.textContent = `${Math.round(t.bgPanelOpacity * 100)}%`;
+            }
+            if (optDigitalBgGifOpacity) {
+                optDigitalBgGifOpacity.value = String(Math.round(t.bgGifOpacity * 100));
+            }
+            if (optDigitalBgGifOpacityReadout) {
+                optDigitalBgGifOpacityReadout.textContent = `${Math.round(t.bgGifOpacity * 100)}%`;
             }
             if (optDigitalAccent) optDigitalAccent.value = t.accent;
             if (typeof populateSiteFontSelect === 'function') {
@@ -1836,6 +1922,20 @@ const QUALITY = {
             }
             if (optDigitalBtnBlueFontScale) optDigitalBtnBlueFontScale.value = String(Math.round(t.btnBlueFontScale * 100));
             if (optDigitalBtnBlueFontScaleReadout) optDigitalBtnBlueFontScaleReadout.textContent = `${Math.round(t.btnBlueFontScale * 100)}%`;
+            if (optDigitalToolbarDividerStyle) optDigitalToolbarDividerStyle.value = t.toolbarDividerStyle;
+            if (optDigitalToolbarDividerHeight) {
+                optDigitalToolbarDividerHeight.value = String(t.toolbarDividerHeight);
+            }
+            if (optDigitalToolbarDividerHeightReadout) {
+                optDigitalToolbarDividerHeightReadout.textContent = `${t.toolbarDividerHeight}px`;
+            }
+            if (optDigitalToolbarDividerColor) optDigitalToolbarDividerColor.value = t.toolbarDividerColor;
+            if (optDigitalToolbarDividerGlow) {
+                optDigitalToolbarDividerGlow.value = String(Math.round(t.toolbarDividerGlow * 100));
+            }
+            if (optDigitalToolbarDividerGlowReadout) {
+                optDigitalToolbarDividerGlowReadout.textContent = `${Math.round(t.toolbarDividerGlow * 100)}%`;
+            }
             if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(t.btnPurpleFontScale * 100));
             if (optDigitalBtnPurpleFontScaleReadout) optDigitalBtnPurpleFontScaleReadout.textContent = `${Math.round(t.btnPurpleFontScale * 100)}%`;
             if (optDigitalClockFormat) optDigitalClockFormat.value = t.clockFormat;
@@ -1878,6 +1978,12 @@ const QUALITY = {
             if (optDigitalBtnBlueFontScale && optDigitalBtnBlueFontScaleReadout) {
                 optDigitalBtnBlueFontScaleReadout.textContent = `${optDigitalBtnBlueFontScale.value}%`;
             }
+            if (optDigitalToolbarDividerHeight && optDigitalToolbarDividerHeightReadout) {
+                optDigitalToolbarDividerHeightReadout.textContent = `${optDigitalToolbarDividerHeight.value}px`;
+            }
+            if (optDigitalToolbarDividerGlow && optDigitalToolbarDividerGlowReadout) {
+                optDigitalToolbarDividerGlowReadout.textContent = `${optDigitalToolbarDividerGlow.value}%`;
+            }
             if (optDigitalBtnBlueOpacity && optDigitalBtnBlueOpacityReadout) {
                 optDigitalBtnBlueOpacityReadout.textContent = `${optDigitalBtnBlueOpacity.value}%`;
             }
@@ -1919,6 +2025,9 @@ const QUALITY = {
             }
             if (optDigitalBgPanelOpacity && optDigitalBgPanelOpacityReadout) {
                 optDigitalBgPanelOpacityReadout.textContent = `${optDigitalBgPanelOpacity.value}%`;
+            }
+            if (optDigitalBgGifOpacity && optDigitalBgGifOpacityReadout) {
+                optDigitalBgGifOpacityReadout.textContent = `${optDigitalBgGifOpacity.value}%`;
             }
             if (optDigitalStagingBorderOpacity && optDigitalStagingBorderOpacityReadout) {
                 optDigitalStagingBorderOpacityReadout.textContent = `${optDigitalStagingBorderOpacity.value}%`;
@@ -1997,6 +2106,7 @@ const QUALITY = {
                 bgGradientAngle: d.bgGradientAngle,
                 bgPanelImageOpacity: d.bgPanelImageOpacity,
                 bgPanelOpacity: d.bgPanelOpacity,
+                bgGifOpacity: d.bgGifOpacity,
                 showStagingPanel: d.showStagingPanel,
                 stagingBorderColor: d.stagingBorderColor,
                 stagingBorderOpacity: d.stagingBorderOpacity,
@@ -2031,6 +2141,15 @@ const QUALITY = {
                 btnBlueBorderOpacity: d.btnBlueBorderOpacity,
                 btnBlueFont: d.btnBlueFont,
                 btnBlueFontScale: d.btnBlueFontScale
+            });
+        }
+        function resetToolbarDividerOptions() {
+            const d = DEFAULT_DIGITAL_THEME;
+            applyDigitalThemePartial({
+                toolbarDividerHeight: d.toolbarDividerHeight,
+                toolbarDividerColor: d.toolbarDividerColor,
+                toolbarDividerGlow: d.toolbarDividerGlow,
+                toolbarDividerStyle: d.toolbarDividerStyle
             });
         }
         function resetPurpleFeatureButtonOptions() {
@@ -2342,7 +2461,7 @@ const QUALITY = {
             [optDigitalBgA, optDigitalBgB, optDigitalBgC, optDigitalAccent,
                 optDigitalBgOuterA, optDigitalBgOuterB, optDigitalBgOuterC, optDigitalBgGradientAngle,
                 optDigitalBgOuterGradientAngle, optDigitalBgOuterImageOpacity, optDigitalBgPanelImageOpacity,
-                optDigitalBgPanelOpacity,
+                optDigitalBgPanelOpacity, optDigitalBgGifOpacity,
                 optDigitalStagingBorderColor, optDigitalStagingBorderOpacity,
                 optDigitalStagingGlowColor, optDigitalStagingGlowOpacity, optDigitalStagingScale,
                 optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent, optDigitalBtnBlueLabel, optDigitalBtnBlueOpacity,
@@ -2350,12 +2469,14 @@ const QUALITY = {
                 optDigitalBtnPurpleTop, optDigitalBtnPurpleBase, optDigitalBtnPurpleLabel, optDigitalBtnPurpleActive,
                 optDigitalBtnPurpleOpacity, optDigitalBtnPurpleTextOpacity, optDigitalBtnPurpleBorderOpacity,
                 optDigitalBtnBlueFontScale, optDigitalBtnPurpleFontScale,
+                optDigitalToolbarDividerHeight, optDigitalToolbarDividerColor, optDigitalToolbarDividerGlow,
                 optDigitalClockColor, optDigitalClockFontScale, optDigitalClockOpacity
             ].forEach((el) => {
                 if (!el) return;
                 el.addEventListener('input', onThemeChange);
                 el.addEventListener('change', onThemeChange);
             });
+            if (optDigitalToolbarDividerStyle) optDigitalToolbarDividerStyle.addEventListener('change', onThemeChange);
             if (optDigitalClockFormat) optDigitalClockFormat.addEventListener('change', onThemeChange);
             [optDigitalClockFont, optDigitalFont, optDigitalBtnBlueFont, optDigitalBtnPurpleFont].forEach((el) => {
                 if (!el) return;
@@ -2417,6 +2538,7 @@ const QUALITY = {
             wireOptionsSubsectionReset(document.getElementById('opt-staging-panel-reset'), resetStagingPanelOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-screen-bg-reset'), resetScreenBackgroundOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-blue-buttons-reset'), resetBlueToolbarButtonOptions);
+            wireOptionsSubsectionReset(document.getElementById('opt-toolbar-divider-reset'), resetToolbarDividerOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-purple-buttons-reset'), resetPurpleFeatureButtonOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-clock-reset'), resetClockOptions);
             const onSpectrumSettingsChange = () => {

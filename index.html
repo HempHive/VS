@@ -101,7 +101,7 @@
 
             <!-- SETTINGS BUTTONS -->
             <button class="icon-btn interactive" id="btn-dj-decks" title="Open DJ Decks visual">🎧</button>
-            <button class="icon-btn interactive" id="btn-return-radio" title="Return to Radio Visual" aria-label="Return to Radio Visual">📻</button>
+            <button class="icon-btn interactive" id="btn-return-radio" title="Return to Digital Radio" aria-label="Return to Digital Radio">📻</button>
             <button class="icon-btn interactive" id="btn-settings" title="Visualizer Settings">🎚️</button>
             
         </div>
@@ -315,6 +315,12 @@
                         <span class="options-readout" id="opt-digital-bg-panel-opacity-readout">100%</span>
                     </div>
                     <div class="options-row">
+                        <label class="options-label" for="opt-digital-bg-gif-opacity">Centre GIF opacity</label>
+                        <input type="range" class="options-range" id="opt-digital-bg-gif-opacity" min="0" max="100" step="1" value="100" aria-label="Staging centre animated GIF opacity">
+                        <span class="options-readout" id="opt-digital-bg-gif-opacity-readout">100%</span>
+                    </div>
+                    <p class="options-hint options-hint--inline">Centre GIF opacity applies to the animated GIF behind the staging panel (chosen under Screen background → Background GIF).</p>
+                    <div class="options-row">
                         <label class="options-label" for="opt-digital-staging-border-color">Border colour</label>
                         <input type="color" class="options-color" id="opt-digital-staging-border-color" value="#00dcff" aria-label="Staging panel border colour">
                     </div>
@@ -429,6 +435,37 @@
                         <label class="options-label" for="opt-digital-btn-blue-font-scale">Text size</label>
                         <input type="range" class="options-range" id="opt-digital-btn-blue-font-scale" min="65" max="160" step="5" aria-label="Blue toolbar button text size">
                         <span class="options-readout" id="opt-digital-btn-blue-font-scale-readout">100%</span>
+                    </div>
+                    <div class="options-subsection-head options-subsection-head--cyan">
+                        <p class="options-subsection-title">Toolbar divider</p>
+                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-toolbar-divider-reset" title="Reset toolbar divider" aria-label="Reset toolbar divider">↺</button>
+                    </div>
+                    <p class="options-hint options-hint--inline">Line between the blue toolbar and purple feature buttons. Glow uses outer light only — it does not change line thickness.</p>
+                    <div class="options-row options-row--stack">
+                        <label class="options-label" for="opt-digital-toolbar-divider-style">Line style</label>
+                        <select class="options-select options-select--full" id="opt-digital-toolbar-divider-style" aria-label="Toolbar divider line style">
+                            <option value="groove">Groove (embossed)</option>
+                            <option value="solid">Solid</option>
+                            <option value="pulse">Pulse glow</option>
+                            <option value="shimmer">Shimmer</option>
+                            <option value="scan">Scan line</option>
+                            <option value="rainbow">Rainbow cycle</option>
+                            <option value="wave">Wave</option>
+                        </select>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-toolbar-divider-height">Line height</label>
+                        <input type="range" class="options-range" id="opt-digital-toolbar-divider-height" min="1" max="8" step="1" value="2" aria-label="Toolbar divider line height">
+                        <span class="options-readout" id="opt-digital-toolbar-divider-height-readout">2px</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-toolbar-divider-color">Colour</label>
+                        <input type="color" class="options-color" id="opt-digital-toolbar-divider-color" value="#00dcff" aria-label="Toolbar divider colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-toolbar-divider-glow">Glow strength</label>
+                        <input type="range" class="options-range" id="opt-digital-toolbar-divider-glow" min="0" max="100" step="1" value="0" aria-label="Toolbar divider glow strength">
+                        <span class="options-readout" id="opt-digital-toolbar-divider-glow-readout">0%</span>
                     </div>
                     <div class="options-subsection-head options-subsection-head--purple">
                         <p class="options-subsection-title">Purple feature buttons</p>

@@ -74,6 +74,7 @@
             --rv-digital-bg-outer-image-opacity: var(--global-rv-digital-bg-outer-image-opacity, 1);
             --rv-digital-bg-panel-image-opacity: var(--global-rv-digital-bg-panel-image-opacity, 1);
             --rv-digital-panel-opacity: var(--global-rv-digital-panel-opacity, 1);
+            --rv-digital-bg-gif-opacity: var(--global-rv-digital-bg-gif-opacity, 1);
             --rv-digital-accent-color: var(--global-rv-digital-accent-color, #ffd246);
             --rv-digital-ui-font: var(--global-rv-digital-ui-font, 'Orbitron', 'Share Tech Mono', ui-monospace, monospace);
             --rv-digital-btn-blue-font: var(--global-rv-digital-btn-blue-font, var(--rv-digital-ui-font));
@@ -98,6 +99,9 @@
             --rv-digital-clock-color: var(--global-rv-digital-clock-color, #fff566);
             --rv-digital-clock-font-scale: var(--global-rv-digital-clock-font-scale, 1);
             --rv-digital-clock-opacity: var(--global-rv-digital-clock-opacity, 1);
+            --rv-digital-toolbar-divider-height: var(--global-rv-digital-toolbar-divider-height, 2px);
+            --rv-digital-toolbar-divider-color: var(--global-rv-digital-toolbar-divider-color, #00dcff);
+            --rv-digital-toolbar-divider-glow: var(--global-rv-digital-toolbar-divider-glow, 0);
         }
         #radio-visual-root .radio-visual-stations-line {
             display: flex;
@@ -666,6 +670,7 @@
             --rv-digital-bg-outer-image-opacity: var(--global-rv-digital-bg-outer-image-opacity, 1);
             --rv-digital-bg-panel-image-opacity: var(--global-rv-digital-bg-panel-image-opacity, 1);
             --rv-digital-panel-opacity: var(--global-rv-digital-panel-opacity, 1);
+            --rv-digital-bg-gif-opacity: var(--global-rv-digital-bg-gif-opacity, 1);
             --rv-digital-accent-color: var(--global-rv-digital-accent-color, #ffd246);
             --rv-digital-ui-font: var(--global-rv-digital-ui-font, 'Orbitron', 'Share Tech Mono', ui-monospace, monospace);
             --rv-digital-btn-blue-font: var(--global-rv-digital-btn-blue-font, var(--rv-digital-ui-font));
@@ -690,6 +695,9 @@
             --rv-digital-clock-color: var(--global-rv-digital-clock-color, #fff566);
             --rv-digital-clock-font-scale: var(--global-rv-digital-clock-font-scale, 1);
             --rv-digital-clock-opacity: var(--global-rv-digital-clock-opacity, 1);
+            --rv-digital-toolbar-divider-height: var(--global-rv-digital-toolbar-divider-height, 2px);
+            --rv-digital-toolbar-divider-color: var(--global-rv-digital-toolbar-divider-color, #00dcff);
+            --rv-digital-toolbar-divider-glow: var(--global-rv-digital-toolbar-divider-glow, 0);
             background:
                 radial-gradient(ellipse 120% 80% at 50% 0%, color-mix(in srgb, var(--rv-digital-accent-color) 22%, transparent), transparent 55%),
                 radial-gradient(ellipse 90% 70% at 50% 100%, color-mix(in srgb, var(--rv-digital-bg-outer-b) 45%, transparent), transparent 60%),
@@ -716,7 +724,7 @@
             transition: opacity 0.35s ease-in-out;
         }
         #radio-visual-root .radio-visual-digital-spectrum-bg.is-visible {
-            opacity: 1;
+            opacity: var(--rv-digital-bg-gif-opacity, 1);
         }
         #radio-visual-root .radio-visual-digital-spectrum-bg.is-staging-suppressed {
             opacity: 0 !important;
@@ -2293,23 +2301,109 @@
             overflow: visible;
             box-sizing: border-box;
         }
-        /* Embossed 2px groove between blue toolbar and purple feature row */
+        /* Divider between blue toolbar and purple feature row */
+        @keyframes rv-toolbar-divider-pulse {
+            0%, 100% { opacity: 0.45; }
+            50% { opacity: 1; }
+        }
+        @keyframes rv-toolbar-divider-shimmer {
+            0% { background-position: 200% 50%; }
+            100% { background-position: -200% 50%; }
+        }
+        @keyframes rv-toolbar-divider-scan {
+            0% { background-position: -120% 50%; }
+            100% { background-position: 220% 50%; }
+        }
+        @keyframes rv-toolbar-divider-wave {
+            0%, 100% { opacity: 0.55; }
+            25% { opacity: 0.95; }
+            50% { opacity: 0.65; }
+            75% { opacity: 1; }
+        }
         #radio-visual-root .radio-visual-digital-toolbar::after {
             content: '';
             position: absolute;
             left: 0;
             right: 0;
             bottom: 0;
-            height: 2px;
+            height: var(--rv-digital-toolbar-divider-height, 2px);
             pointer-events: none;
+            box-sizing: border-box;
+            --rv-toolbar-divider-glow-a: calc(var(--rv-digital-toolbar-divider-glow, 0) * 0.85);
+            --rv-toolbar-divider-glow-b: calc(var(--rv-digital-toolbar-divider-glow, 0) * 0.45);
+            filter:
+                drop-shadow(0 0 calc(6px * var(--rv-toolbar-divider-glow-a)) color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 80%, transparent))
+                drop-shadow(0 0 calc(14px * var(--rv-toolbar-divider-glow-b)) color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 55%, transparent));
+        }
+        #radio-visual-root:not([data-rv-toolbar-divider-style]) .radio-visual-digital-toolbar::after,
+        #radio-visual-root[data-rv-toolbar-divider-style="groove"] .radio-visual-digital-toolbar::after {
             background: linear-gradient(
                 180deg,
                 rgba(0, 0, 0, 0.72) 0%,
-                color-mix(in srgb, var(--rv-digital-btn-blue-accent) 55%, transparent) 42%,
-                color-mix(in srgb, var(--rv-digital-btn-blue-accent) 38%, transparent) 58%,
-                color-mix(in srgb, var(--rv-digital-btn-blue-accent) 22%, transparent) 100%
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 55%, transparent) 42%,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 38%, transparent) 58%,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 22%, transparent) 100%
             );
             box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.45);
+        }
+        #radio-visual-root[data-rv-toolbar-divider-style="solid"] .radio-visual-digital-toolbar::after {
+            background: var(--rv-digital-toolbar-divider-color);
+            box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.35);
+        }
+        #radio-visual-root[data-rv-toolbar-divider-style="pulse"] .radio-visual-digital-toolbar::after {
+            background: var(--rv-digital-toolbar-divider-color);
+            animation: rv-toolbar-divider-pulse 2.4s ease-in-out infinite;
+        }
+        #radio-visual-root[data-rv-toolbar-divider-style="shimmer"] .radio-visual-digital-toolbar::after {
+            background: linear-gradient(
+                90deg,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 18%, transparent) 0%,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 95%, white 8%) 45%,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 18%, transparent) 90%
+            );
+            background-size: 220% 100%;
+            animation: rv-toolbar-divider-shimmer 2.8s linear infinite;
+        }
+        #radio-visual-root[data-rv-toolbar-divider-style="scan"] .radio-visual-digital-toolbar::after {
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                transparent 42%,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 35%, transparent) 46%,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 100%, white 12%) 50%,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 35%, transparent) 54%,
+                transparent 58%,
+                transparent 100%
+            );
+            background-size: 240% 100%;
+            animation: rv-toolbar-divider-scan 2.2s linear infinite;
+        }
+        #radio-visual-root[data-rv-toolbar-divider-style="rainbow"] .radio-visual-digital-toolbar::after {
+            background: linear-gradient(
+                90deg,
+                #ff4d4d,
+                #ffb347,
+                #ffe747,
+                #5cff9e,
+                #00dcff,
+                #c86bff,
+                #ff5ce8,
+                #ff4d4d
+            );
+            background-size: 300% 100%;
+            animation: rv-toolbar-divider-shimmer 3.5s linear infinite;
+        }
+        #radio-visual-root[data-rv-toolbar-divider-style="wave"] .radio-visual-digital-toolbar::after {
+            background: linear-gradient(
+                90deg,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 35%, transparent) 0%,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 100%, white 10%) 25%,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 40%, transparent) 50%,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 100%, white 10%) 75%,
+                color-mix(in srgb, var(--rv-digital-toolbar-divider-color) 35%, transparent) 100%
+            );
+            background-size: 200% 100%;
+            animation: rv-toolbar-divider-shimmer 3.6s ease-in-out infinite, rv-toolbar-divider-wave 3.6s ease-in-out infinite;
         }
         /* Centre strip: Spectrum · A> · Fade · vol · Mix · B> · VIDEO (original order). */
         #radio-visual-root .radio-visual-digital-toolbar-main {

@@ -2887,9 +2887,9 @@
         function findRadioVisualModeIndex() {
             try {
                 if (!Array.isArray(modes)) return -1;
-                let idx = findAnalogueRadioModeIndex();
+                let idx = findDigitalRadioModeIndex();
                 if (idx >= 0) return idx;
-                idx = findDigitalRadioModeIndex();
+                idx = findAnalogueRadioModeIndex();
                 if (idx >= 0) return idx;
                 return modes.findIndex((m) => m && (m.name === 'Radio' || m.name === 'Radio Visual'));
             } catch (_) {
@@ -2898,12 +2898,7 @@
         }
 
         function loadRadioVisualMode() {
-            let variant = 'analogue';
-            try {
-                const stored = localStorage.getItem('radioVisual.lastVariant.v1');
-                if (stored === 'digital' || stored === 'analogue') variant = stored;
-            } catch (_) {}
-            const idx = variant === 'digital' ? findDigitalRadioModeIndex() : findAnalogueRadioModeIndex();
+            const idx = findDigitalRadioModeIndex();
             if (idx >= 0) loadMode(idx);
         }
 
@@ -2980,8 +2975,8 @@
                         btnRadio.title = 'Switch to Analogue Radio';
                         btnRadio.setAttribute('aria-label', 'Switch to Analogue Radio');
                     } else {
-                        btnRadio.title = 'Return to Radio Visual';
-                        btnRadio.setAttribute('aria-label', 'Return to Radio Visual');
+                        btnRadio.title = 'Return to Digital Radio';
+                        btnRadio.setAttribute('aria-label', 'Return to Digital Radio');
                     }
                 }
             } catch (_) {}
