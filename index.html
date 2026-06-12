@@ -441,13 +441,13 @@
                         <span class="options-readout" id="opt-digital-btn-blue-font-scale-readout">100%</span>
                     </div>
                     <div class="options-subsection-head options-subsection-head--cyan">
-                        <p class="options-subsection-title">Toolbar divider</p>
-                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-toolbar-divider-reset" title="Reset toolbar divider" aria-label="Reset toolbar divider">↺</button>
+                        <p class="options-subsection-title">Blue–purple divider</p>
+                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-toolbar-divider-reset" title="Reset blue–purple divider" aria-label="Reset blue–purple divider">↺</button>
                     </div>
                     <p class="options-hint options-hint--inline">Line between the blue toolbar and purple feature buttons. Glow uses outer light only — it does not change line thickness.</p>
                     <div class="options-row options-row--stack">
                         <label class="options-label" for="opt-digital-toolbar-divider-style">Line style</label>
-                        <select class="options-select options-select--full" id="opt-digital-toolbar-divider-style" aria-label="Toolbar divider line style">
+                        <select class="options-select options-select--full" id="opt-digital-toolbar-divider-style" aria-label="Blue–purple divider line style">
                             <option value="groove">Groove (embossed)</option>
                             <option value="solid">Solid</option>
                             <option value="pulse">Pulse glow</option>
@@ -459,16 +459,21 @@
                     </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-toolbar-divider-height">Line height</label>
-                        <input type="range" class="options-range" id="opt-digital-toolbar-divider-height" min="1" max="8" step="1" value="2" aria-label="Toolbar divider line height">
+                        <input type="range" class="options-range" id="opt-digital-toolbar-divider-height" min="0" max="8" step="1" value="2" aria-label="Blue–purple divider line height">
                         <span class="options-readout" id="opt-digital-toolbar-divider-height-readout">2px</span>
                     </div>
                     <div class="options-row">
+                        <label class="options-label" for="opt-digital-toolbar-divider-spacing">Line spacing</label>
+                        <input type="range" class="options-range" id="opt-digital-toolbar-divider-spacing" min="0" max="24" step="1" value="3" aria-label="Blue–purple divider spacing above and below line">
+                        <span class="options-readout" id="opt-digital-toolbar-divider-spacing-readout">3px</span>
+                    </div>
+                    <div class="options-row">
                         <label class="options-label" for="opt-digital-toolbar-divider-color">Colour</label>
-                        <input type="color" class="options-color" id="opt-digital-toolbar-divider-color" value="#00dcff" aria-label="Toolbar divider colour">
+                        <input type="color" class="options-color" id="opt-digital-toolbar-divider-color" value="#00dcff" aria-label="Blue–purple divider colour">
                     </div>
                     <div class="options-row">
                         <label class="options-label" for="opt-digital-toolbar-divider-glow">Glow strength</label>
-                        <input type="range" class="options-range" id="opt-digital-toolbar-divider-glow" min="0" max="100" step="1" value="0" aria-label="Toolbar divider glow strength">
+                        <input type="range" class="options-range" id="opt-digital-toolbar-divider-glow" min="0" max="100" step="1" value="0" aria-label="Blue–purple divider glow strength">
                         <span class="options-readout" id="opt-digital-toolbar-divider-glow-readout">0%</span>
                     </div>
                     <div class="options-subsection-head options-subsection-head--purple">
@@ -558,6 +563,42 @@
                         <label class="options-label" for="opt-digital-btn-orange-font-scale">Text size</label>
                         <input type="range" class="options-range" id="opt-digital-btn-orange-font-scale" min="65" max="160" step="5" aria-label="Orange link button text size">
                         <span class="options-readout" id="opt-digital-btn-orange-font-scale-readout">100%</span>
+                    </div>
+                    <div class="options-subsection-head options-subsection-head--orange">
+                        <p class="options-subsection-title">Purple–orange divider</p>
+                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-feature-divider-reset" title="Reset purple–orange divider" aria-label="Reset purple–orange divider">↺</button>
+                    </div>
+                    <p class="options-hint options-hint--inline">Line between the purple feature buttons and orange link buttons. Glow uses outer light only — it does not change line thickness.</p>
+                    <div class="options-row options-row--stack">
+                        <label class="options-label" for="opt-digital-feature-divider-style">Line style</label>
+                        <select class="options-select options-select--full" id="opt-digital-feature-divider-style" aria-label="Purple–orange divider line style">
+                            <option value="groove">Groove (embossed)</option>
+                            <option value="solid">Solid</option>
+                            <option value="pulse">Pulse glow</option>
+                            <option value="shimmer">Shimmer</option>
+                            <option value="scan">Scan line</option>
+                            <option value="rainbow">Rainbow cycle</option>
+                            <option value="wave">Wave</option>
+                        </select>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-feature-divider-height">Line height</label>
+                        <input type="range" class="options-range" id="opt-digital-feature-divider-height" min="0" max="8" step="1" value="2" aria-label="Purple–orange divider line height">
+                        <span class="options-readout" id="opt-digital-feature-divider-height-readout">2px</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-feature-divider-spacing">Line spacing</label>
+                        <input type="range" class="options-range" id="opt-digital-feature-divider-spacing" min="0" max="24" step="1" value="3" aria-label="Purple–orange divider spacing above and below line">
+                        <span class="options-readout" id="opt-digital-feature-divider-spacing-readout">3px</span>
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-feature-divider-color">Colour</label>
+                        <input type="color" class="options-color" id="opt-digital-feature-divider-color" value="#c86bff" aria-label="Purple–orange divider colour">
+                    </div>
+                    <div class="options-row">
+                        <label class="options-label" for="opt-digital-feature-divider-glow">Glow strength</label>
+                        <input type="range" class="options-range" id="opt-digital-feature-divider-glow" min="0" max="100" step="1" value="0" aria-label="Purple–orange divider glow strength">
+                        <span class="options-readout" id="opt-digital-feature-divider-glow-readout">0%</span>
                     </div>
                     <div class="options-subsection-head options-subsection-head--lime">
                         <p class="options-subsection-title">Date &amp; time</p>

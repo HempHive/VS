@@ -517,9 +517,15 @@ const QUALITY = {
             toolbarDividerHeight: 2,
             toolbarDividerColor: '#00dcff',
             toolbarDividerGlow: 0,
-            toolbarDividerStyle: 'groove'
+            toolbarDividerStyle: 'groove',
+            toolbarDividerSpacing: 3,
+            featureDividerHeight: 2,
+            featureDividerColor: '#c86bff',
+            featureDividerGlow: 0,
+            featureDividerStyle: 'groove',
+            featureDividerSpacing: 3
         };
-        const TOOLBAR_DIVIDER_STYLE_IDS = ['groove', 'solid', 'pulse', 'shimmer', 'scan', 'rainbow', 'wave'];
+        const ROW_DIVIDER_STYLE_IDS = ['groove', 'solid', 'pulse', 'shimmer', 'scan', 'rainbow', 'wave'];
         const DIGITAL_CLOCK_FORMATS = {
             'weekday-time': 'Weekday + 24h time',
             'time-24': '24-hour time only',
@@ -738,6 +744,16 @@ const QUALITY = {
         const optDigitalToolbarDividerColor = document.getElementById('opt-digital-toolbar-divider-color');
         const optDigitalToolbarDividerGlow = document.getElementById('opt-digital-toolbar-divider-glow');
         const optDigitalToolbarDividerGlowReadout = document.getElementById('opt-digital-toolbar-divider-glow-readout');
+        const optDigitalToolbarDividerSpacing = document.getElementById('opt-digital-toolbar-divider-spacing');
+        const optDigitalToolbarDividerSpacingReadout = document.getElementById('opt-digital-toolbar-divider-spacing-readout');
+        const optDigitalFeatureDividerStyle = document.getElementById('opt-digital-feature-divider-style');
+        const optDigitalFeatureDividerHeight = document.getElementById('opt-digital-feature-divider-height');
+        const optDigitalFeatureDividerHeightReadout = document.getElementById('opt-digital-feature-divider-height-readout');
+        const optDigitalFeatureDividerColor = document.getElementById('opt-digital-feature-divider-color');
+        const optDigitalFeatureDividerGlow = document.getElementById('opt-digital-feature-divider-glow');
+        const optDigitalFeatureDividerGlowReadout = document.getElementById('opt-digital-feature-divider-glow-readout');
+        const optDigitalFeatureDividerSpacing = document.getElementById('opt-digital-feature-divider-spacing');
+        const optDigitalFeatureDividerSpacingReadout = document.getElementById('opt-digital-feature-divider-spacing-readout');
         const optDigitalBtnPurpleFontScale = document.getElementById('opt-digital-btn-purple-font-scale');
         const optDigitalBtnPurpleFontScaleReadout = document.getElementById('opt-digital-btn-purple-font-scale-readout');
         const optDigitalBtnOrangeFontScale = document.getElementById('opt-digital-btn-orange-font-scale');
@@ -1261,14 +1277,19 @@ const QUALITY = {
             if (!Number.isFinite(v)) return fallback;
             return Math.max(min, Math.min(1, Math.round(v * 100) / 100));
         }
-        function clampToolbarDividerHeight(raw, fallback = 2) {
+        function clampRowDividerHeight(raw, fallback = 2) {
             const v = Number(raw);
             if (!Number.isFinite(v)) return fallback;
-            return Math.max(1, Math.min(8, Math.round(v)));
+            return Math.max(0, Math.min(8, Math.round(v)));
         }
-        function normalizeToolbarDividerStyle(raw, fallback = 'groove') {
+        function clampRowDividerSpacing(raw, fallback = 3) {
+            const v = Number(raw);
+            if (!Number.isFinite(v)) return fallback;
+            return Math.max(0, Math.min(24, Math.round(v)));
+        }
+        function normalizeRowDividerStyle(raw, fallback = 'groove') {
             const v = String(raw || '').trim().toLowerCase();
-            return TOOLBAR_DIVIDER_STYLE_IDS.includes(v) ? v : fallback;
+            return ROW_DIVIDER_STYLE_IDS.includes(v) ? v : fallback;
         }
         function normalizeDigitalTheme(parsed) {
             const d = DEFAULT_DIGITAL_THEME;
@@ -1337,10 +1358,16 @@ const QUALITY = {
                 stagingGlowColor: src.stagingGlowColor || d.stagingGlowColor,
                 stagingGlowOpacity: clampThemeOpacity(src.stagingGlowOpacity, d.stagingGlowOpacity, 0),
                 stagingScale: clampStagingScale(src.stagingScale, d.stagingScale),
-                toolbarDividerHeight: clampToolbarDividerHeight(src.toolbarDividerHeight, d.toolbarDividerHeight),
+                toolbarDividerHeight: clampRowDividerHeight(src.toolbarDividerHeight, d.toolbarDividerHeight),
                 toolbarDividerColor: src.toolbarDividerColor || d.toolbarDividerColor,
                 toolbarDividerGlow: clampThemeOpacity(src.toolbarDividerGlow, d.toolbarDividerGlow, 0),
-                toolbarDividerStyle: normalizeToolbarDividerStyle(src.toolbarDividerStyle, d.toolbarDividerStyle)
+                toolbarDividerStyle: normalizeRowDividerStyle(src.toolbarDividerStyle, d.toolbarDividerStyle),
+                toolbarDividerSpacing: clampRowDividerSpacing(src.toolbarDividerSpacing, d.toolbarDividerSpacing),
+                featureDividerHeight: clampRowDividerHeight(src.featureDividerHeight, d.featureDividerHeight),
+                featureDividerColor: src.featureDividerColor || d.featureDividerColor,
+                featureDividerGlow: clampThemeOpacity(src.featureDividerGlow, d.featureDividerGlow, 0),
+                featureDividerStyle: normalizeRowDividerStyle(src.featureDividerStyle, d.featureDividerStyle),
+                featureDividerSpacing: clampRowDividerSpacing(src.featureDividerSpacing, d.featureDividerSpacing)
             };
         }
         function digitalThemePresetKeys(preset) {
@@ -1462,6 +1489,11 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-toolbar-divider-height', `${t.toolbarDividerHeight}px`);
             target.style.setProperty('--rv-digital-toolbar-divider-color', t.toolbarDividerColor);
             target.style.setProperty('--rv-digital-toolbar-divider-glow', String(t.toolbarDividerGlow));
+            target.style.setProperty('--rv-digital-toolbar-divider-spacing', `${t.toolbarDividerSpacing}px`);
+            target.style.setProperty('--rv-digital-feature-divider-height', `${t.featureDividerHeight}px`);
+            target.style.setProperty('--rv-digital-feature-divider-color', t.featureDividerColor);
+            target.style.setProperty('--rv-digital-feature-divider-glow', String(t.featureDividerGlow));
+            target.style.setProperty('--rv-digital-feature-divider-spacing', `${t.featureDividerSpacing}px`);
             if (target.dataset) {
                 target.dataset.rvClockFormat = t.clockFormat;
                 target.dataset.rvShowStaging = t.showStagingPanel ? '1' : '0';
@@ -1469,6 +1501,7 @@ const QUALITY = {
                 target.dataset.rvShowPurpleButtons = t.showPurpleButtons ? '1' : '0';
                 target.dataset.rvShowOrangeButtons = t.showOrangeButtons ? '1' : '0';
                 target.dataset.rvToolbarDividerStyle = t.toolbarDividerStyle;
+                target.dataset.rvFeatureDividerStyle = t.featureDividerStyle;
             }
         }
         function applyButtonInfoOverlaysFromTheme(theme) {
@@ -1537,6 +1570,11 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-toolbar-divider-height', `${t.toolbarDividerHeight}px`);
             root.style.setProperty('--global-rv-digital-toolbar-divider-color', t.toolbarDividerColor);
             root.style.setProperty('--global-rv-digital-toolbar-divider-glow', String(t.toolbarDividerGlow));
+            root.style.setProperty('--global-rv-digital-toolbar-divider-spacing', `${t.toolbarDividerSpacing}px`);
+            root.style.setProperty('--global-rv-digital-feature-divider-height', `${t.featureDividerHeight}px`);
+            root.style.setProperty('--global-rv-digital-feature-divider-color', t.featureDividerColor);
+            root.style.setProperty('--global-rv-digital-feature-divider-glow', String(t.featureDividerGlow));
+            root.style.setProperty('--global-rv-digital-feature-divider-spacing', `${t.featureDividerSpacing}px`);
             applyDigitalThemeCssVars(document.getElementById('radio-visual-root'), t);
             applyButtonInfoOverlaysFromTheme(t);
             reapplyDigitalThemeImageLayers();
@@ -1674,6 +1712,34 @@ const QUALITY = {
             }
             if (optDigitalToolbarDividerGlowReadout) {
                 optDigitalToolbarDividerGlowReadout.textContent = `${Math.round(theme.toolbarDividerGlow * 100)}%`;
+            }
+            if (optDigitalToolbarDividerSpacing) {
+                optDigitalToolbarDividerSpacing.value = String(theme.toolbarDividerSpacing);
+            }
+            if (optDigitalToolbarDividerSpacingReadout) {
+                optDigitalToolbarDividerSpacingReadout.textContent = `${theme.toolbarDividerSpacing}px`;
+            }
+            if (optDigitalFeatureDividerStyle) {
+                optDigitalFeatureDividerStyle.value = theme.featureDividerStyle;
+            }
+            if (optDigitalFeatureDividerHeight) {
+                optDigitalFeatureDividerHeight.value = String(theme.featureDividerHeight);
+            }
+            if (optDigitalFeatureDividerHeightReadout) {
+                optDigitalFeatureDividerHeightReadout.textContent = `${theme.featureDividerHeight}px`;
+            }
+            if (optDigitalFeatureDividerColor) optDigitalFeatureDividerColor.value = theme.featureDividerColor;
+            if (optDigitalFeatureDividerGlow) {
+                optDigitalFeatureDividerGlow.value = String(Math.round(theme.featureDividerGlow * 100));
+            }
+            if (optDigitalFeatureDividerGlowReadout) {
+                optDigitalFeatureDividerGlowReadout.textContent = `${Math.round(theme.featureDividerGlow * 100)}%`;
+            }
+            if (optDigitalFeatureDividerSpacing) {
+                optDigitalFeatureDividerSpacing.value = String(theme.featureDividerSpacing);
+            }
+            if (optDigitalFeatureDividerSpacingReadout) {
+                optDigitalFeatureDividerSpacingReadout.textContent = `${theme.featureDividerSpacing}px`;
             }
             if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(theme.btnPurpleFontScale * 100));
             if (optDigitalBtnPurpleFontScaleReadout) optDigitalBtnPurpleFontScaleReadout.textContent = `${Math.round(theme.btnPurpleFontScale * 100)}%`;
@@ -1922,7 +1988,7 @@ const QUALITY = {
                     (Number(optDigitalStagingScale && optDigitalStagingScale.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.stagingScale
                 ),
-                toolbarDividerHeight: clampToolbarDividerHeight(
+                toolbarDividerHeight: clampRowDividerHeight(
                     Number(optDigitalToolbarDividerHeight && optDigitalToolbarDividerHeight.value),
                     DEFAULT_DIGITAL_THEME.toolbarDividerHeight
                 ),
@@ -1934,9 +2000,33 @@ const QUALITY = {
                     DEFAULT_DIGITAL_THEME.toolbarDividerGlow,
                     0
                 ),
-                toolbarDividerStyle: normalizeToolbarDividerStyle(
+                toolbarDividerStyle: normalizeRowDividerStyle(
                     optDigitalToolbarDividerStyle && optDigitalToolbarDividerStyle.value,
                     DEFAULT_DIGITAL_THEME.toolbarDividerStyle
+                ),
+                toolbarDividerSpacing: clampRowDividerSpacing(
+                    Number(optDigitalToolbarDividerSpacing && optDigitalToolbarDividerSpacing.value),
+                    DEFAULT_DIGITAL_THEME.toolbarDividerSpacing
+                ),
+                featureDividerHeight: clampRowDividerHeight(
+                    Number(optDigitalFeatureDividerHeight && optDigitalFeatureDividerHeight.value),
+                    DEFAULT_DIGITAL_THEME.featureDividerHeight
+                ),
+                featureDividerColor: optDigitalFeatureDividerColor
+                    ? optDigitalFeatureDividerColor.value
+                    : DEFAULT_DIGITAL_THEME.featureDividerColor,
+                featureDividerGlow: clampThemeOpacity(
+                    (Number(optDigitalFeatureDividerGlow && optDigitalFeatureDividerGlow.value) || 0) / 100,
+                    DEFAULT_DIGITAL_THEME.featureDividerGlow,
+                    0
+                ),
+                featureDividerStyle: normalizeRowDividerStyle(
+                    optDigitalFeatureDividerStyle && optDigitalFeatureDividerStyle.value,
+                    DEFAULT_DIGITAL_THEME.featureDividerStyle
+                ),
+                featureDividerSpacing: clampRowDividerSpacing(
+                    Number(optDigitalFeatureDividerSpacing && optDigitalFeatureDividerSpacing.value),
+                    DEFAULT_DIGITAL_THEME.featureDividerSpacing
                 )
             };
             theme.presetId = detectDigitalThemePresetId(theme);
@@ -2047,6 +2137,32 @@ const QUALITY = {
             if (optDigitalToolbarDividerGlowReadout) {
                 optDigitalToolbarDividerGlowReadout.textContent = `${Math.round(t.toolbarDividerGlow * 100)}%`;
             }
+            if (optDigitalToolbarDividerSpacing) {
+                optDigitalToolbarDividerSpacing.value = String(t.toolbarDividerSpacing);
+            }
+            if (optDigitalToolbarDividerSpacingReadout) {
+                optDigitalToolbarDividerSpacingReadout.textContent = `${t.toolbarDividerSpacing}px`;
+            }
+            if (optDigitalFeatureDividerStyle) optDigitalFeatureDividerStyle.value = t.featureDividerStyle;
+            if (optDigitalFeatureDividerHeight) {
+                optDigitalFeatureDividerHeight.value = String(t.featureDividerHeight);
+            }
+            if (optDigitalFeatureDividerHeightReadout) {
+                optDigitalFeatureDividerHeightReadout.textContent = `${t.featureDividerHeight}px`;
+            }
+            if (optDigitalFeatureDividerColor) optDigitalFeatureDividerColor.value = t.featureDividerColor;
+            if (optDigitalFeatureDividerGlow) {
+                optDigitalFeatureDividerGlow.value = String(Math.round(t.featureDividerGlow * 100));
+            }
+            if (optDigitalFeatureDividerGlowReadout) {
+                optDigitalFeatureDividerGlowReadout.textContent = `${Math.round(t.featureDividerGlow * 100)}%`;
+            }
+            if (optDigitalFeatureDividerSpacing) {
+                optDigitalFeatureDividerSpacing.value = String(t.featureDividerSpacing);
+            }
+            if (optDigitalFeatureDividerSpacingReadout) {
+                optDigitalFeatureDividerSpacingReadout.textContent = `${t.featureDividerSpacing}px`;
+            }
             if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(t.btnPurpleFontScale * 100));
             if (optDigitalBtnPurpleFontScaleReadout) optDigitalBtnPurpleFontScaleReadout.textContent = `${Math.round(t.btnPurpleFontScale * 100)}%`;
             if (optDigitalBtnOrangeTop) optDigitalBtnOrangeTop.value = t.btnOrangeTop;
@@ -2121,8 +2237,20 @@ const QUALITY = {
             if (optDigitalToolbarDividerHeight && optDigitalToolbarDividerHeightReadout) {
                 optDigitalToolbarDividerHeightReadout.textContent = `${optDigitalToolbarDividerHeight.value}px`;
             }
+            if (optDigitalToolbarDividerSpacing && optDigitalToolbarDividerSpacingReadout) {
+                optDigitalToolbarDividerSpacingReadout.textContent = `${optDigitalToolbarDividerSpacing.value}px`;
+            }
+            if (optDigitalFeatureDividerHeight && optDigitalFeatureDividerHeightReadout) {
+                optDigitalFeatureDividerHeightReadout.textContent = `${optDigitalFeatureDividerHeight.value}px`;
+            }
+            if (optDigitalFeatureDividerSpacing && optDigitalFeatureDividerSpacingReadout) {
+                optDigitalFeatureDividerSpacingReadout.textContent = `${optDigitalFeatureDividerSpacing.value}px`;
+            }
             if (optDigitalToolbarDividerGlow && optDigitalToolbarDividerGlowReadout) {
                 optDigitalToolbarDividerGlowReadout.textContent = `${optDigitalToolbarDividerGlow.value}%`;
+            }
+            if (optDigitalFeatureDividerGlow && optDigitalFeatureDividerGlowReadout) {
+                optDigitalFeatureDividerGlowReadout.textContent = `${optDigitalFeatureDividerGlow.value}%`;
             }
             if (optDigitalBtnBlueOpacity && optDigitalBtnBlueOpacityReadout) {
                 optDigitalBtnBlueOpacityReadout.textContent = `${optDigitalBtnBlueOpacity.value}%`;
@@ -2301,7 +2429,18 @@ const QUALITY = {
                 toolbarDividerHeight: d.toolbarDividerHeight,
                 toolbarDividerColor: d.toolbarDividerColor,
                 toolbarDividerGlow: d.toolbarDividerGlow,
-                toolbarDividerStyle: d.toolbarDividerStyle
+                toolbarDividerStyle: d.toolbarDividerStyle,
+                toolbarDividerSpacing: d.toolbarDividerSpacing
+            });
+        }
+        function resetFeatureDividerOptions() {
+            const d = DEFAULT_DIGITAL_THEME;
+            applyDigitalThemePartial({
+                featureDividerHeight: d.featureDividerHeight,
+                featureDividerColor: d.featureDividerColor,
+                featureDividerGlow: d.featureDividerGlow,
+                featureDividerStyle: d.featureDividerStyle,
+                featureDividerSpacing: d.featureDividerSpacing
             });
         }
         function resetPurpleFeatureButtonOptions() {
@@ -2638,6 +2777,9 @@ const QUALITY = {
                 optDigitalBtnOrangeOpacity, optDigitalBtnOrangeTextOpacity, optDigitalBtnOrangeBorderOpacity,
                 optDigitalBtnBlueFontScale, optDigitalBtnPurpleFontScale, optDigitalBtnOrangeFontScale,
                 optDigitalToolbarDividerHeight, optDigitalToolbarDividerColor, optDigitalToolbarDividerGlow,
+                optDigitalToolbarDividerSpacing,
+                optDigitalFeatureDividerHeight, optDigitalFeatureDividerColor, optDigitalFeatureDividerGlow,
+                optDigitalFeatureDividerSpacing,
                 optDigitalClockColor, optDigitalClockFontScale, optDigitalClockOpacity
             ].forEach((el) => {
                 if (!el) return;
@@ -2645,6 +2787,7 @@ const QUALITY = {
                 el.addEventListener('change', onThemeChange);
             });
             if (optDigitalToolbarDividerStyle) optDigitalToolbarDividerStyle.addEventListener('change', onThemeChange);
+            if (optDigitalFeatureDividerStyle) optDigitalFeatureDividerStyle.addEventListener('change', onThemeChange);
             if (optDigitalClockFormat) optDigitalClockFormat.addEventListener('change', onThemeChange);
             [optDigitalClockFont, optDigitalFont, optDigitalBtnBlueFont, optDigitalBtnPurpleFont, optDigitalBtnOrangeFont].forEach((el) => {
                 if (!el) return;
@@ -2707,6 +2850,7 @@ const QUALITY = {
             wireOptionsSubsectionReset(document.getElementById('opt-screen-bg-reset'), resetScreenBackgroundOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-blue-buttons-reset'), resetBlueToolbarButtonOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-toolbar-divider-reset'), resetToolbarDividerOptions);
+            wireOptionsSubsectionReset(document.getElementById('opt-feature-divider-reset'), resetFeatureDividerOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-purple-buttons-reset'), resetPurpleFeatureButtonOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-orange-buttons-reset'), resetOrangeFeatureButtonOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-clock-reset'), resetClockOptions);
