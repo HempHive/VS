@@ -7695,7 +7695,7 @@
             _rvLabelFitOpts(kind) {
                 if (kind === 'toolbar-vol') {
                     const blueScale = this._readRvThemeCssNumber('--rv-digital-btn-blue-font-scale', 1);
-                    return { fill: true, maxCap: 13 * blueScale, heightFactor: 0.82, widthFactor: 0.5, minPx: 7 };
+                    return { fill: true, maxCap: 12 * blueScale, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
                 }
                 if (kind === 'feature-orange') {
                     const orangeScale = this._readRvThemeCssNumber('--rv-digital-btn-orange-font-scale', 1);
