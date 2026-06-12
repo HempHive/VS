@@ -449,7 +449,8 @@
 			inset: 0;
 			opacity: var(--phrase-opacity, 0);
 			transition: opacity 0.15s ease;
-			--orbit-radius: clamp(42px, 10.5vw, 54px);
+			/* Match ring midline: shell inset 14% → 72% diameter, minus half the 3px stroke */
+			--orbit-radius: calc(36% - 1.5px);
 			--phrase-color: #9ffcff;
 			--phrase-glow: #00e8ff;
 		}
@@ -473,9 +474,10 @@
 				0 0 10px color-mix(in srgb, var(--phrase-glow) 70%, transparent),
 				0 0 18px color-mix(in srgb, var(--phrase-glow) 45%, transparent);
 			transform:
+				translate(-50%, -50%)
 				rotate(var(--char-angle, 0deg))
 				translateY(calc(-1 * var(--orbit-radius)))
-				rotate(calc(-1 * var(--char-angle, 0deg) + 240deg));
+				rotate(calc(-1 * var(--char-angle, 0deg)));
 			transform-origin: center center;
 			user-select: none;
 			will-change: transform;
