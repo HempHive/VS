@@ -1650,6 +1650,14 @@
                 0 0 20px rgba(160, 60, 255, 0.55),
                 0 0 28px rgba(120, 40, 220, 0.35);
         }
+        #options-panel .options-subsection-head--orange .options-subsection-title {
+            color: #ffb347;
+            text-shadow:
+                0 0 5px rgba(255, 160, 60, 0.98),
+                0 0 12px rgba(255, 120, 40, 0.82),
+                0 0 20px rgba(230, 90, 20, 0.55),
+                0 0 28px rgba(200, 70, 10, 0.35);
+        }
         #options-panel .options-subsection-head--lime .options-subsection-title {
             color: #8fff9a;
             text-shadow:

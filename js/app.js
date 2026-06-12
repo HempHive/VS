@@ -490,6 +490,15 @@ const QUALITY = {
             btnPurpleFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
             btnBlueFontScale: 1,
             btnPurpleFontScale: 1,
+            btnOrangeTop: '#e87820',
+            btnOrangeBase: '#8a4010',
+            btnOrangeLabel: '#ffe8cc',
+            btnOrangeActive: '#ffcc00',
+            btnOrangeOpacity: 1,
+            btnOrangeTextOpacity: 1,
+            btnOrangeBorderOpacity: 1,
+            btnOrangeFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
+            btnOrangeFontScale: 1,
             clockFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
             clockColor: '#fff566',
             clockFontScale: 1,
@@ -498,6 +507,7 @@ const QUALITY = {
             showButtonInfoOverlays: false,
             showBlueToolbar: true,
             showPurpleButtons: true,
+            showOrangeButtons: false,
             showStagingPanel: true,
             stagingBorderColor: '#00dcff',
             stagingBorderOpacity: 0.35,
@@ -674,6 +684,7 @@ const QUALITY = {
         const optDigitalButtonInfoOverlays = document.getElementById('opt-digital-button-info-overlays');
         const optDigitalBlueToolbarVisible = document.getElementById('opt-digital-blue-toolbar-visible');
         const optDigitalPurpleButtonsVisible = document.getElementById('opt-digital-purple-buttons-visible');
+        const optDigitalOrangeButtonsVisible = document.getElementById('opt-digital-orange-buttons-visible');
         const optDigitalStagingVisible = document.getElementById('opt-digital-staging-visible');
         const optDigitalStagingBorderColor = document.getElementById('opt-digital-staging-border-color');
         const optDigitalStagingBorderOpacity = document.getElementById('opt-digital-staging-border-opacity');
@@ -688,6 +699,7 @@ const QUALITY = {
         const optDigitalFont = document.getElementById('opt-digital-font');
         const optDigitalBtnBlueFont = document.getElementById('opt-digital-btn-blue-font');
         const optDigitalBtnPurpleFont = document.getElementById('opt-digital-btn-purple-font');
+        const optDigitalBtnOrangeFont = document.getElementById('opt-digital-btn-orange-font');
         const optDigitalBtnBlueTop = document.getElementById('opt-digital-btn-blue-top');
         const optDigitalBtnBlueBase = document.getElementById('opt-digital-btn-blue-base');
         const optDigitalBtnBlueAccent = document.getElementById('opt-digital-btn-blue-accent');
@@ -708,6 +720,16 @@ const QUALITY = {
         const optDigitalBtnPurpleTextOpacityReadout = document.getElementById('opt-digital-btn-purple-text-opacity-readout');
         const optDigitalBtnPurpleBorderOpacity = document.getElementById('opt-digital-btn-purple-border-opacity');
         const optDigitalBtnPurpleBorderOpacityReadout = document.getElementById('opt-digital-btn-purple-border-opacity-readout');
+        const optDigitalBtnOrangeTop = document.getElementById('opt-digital-btn-orange-top');
+        const optDigitalBtnOrangeBase = document.getElementById('opt-digital-btn-orange-base');
+        const optDigitalBtnOrangeLabel = document.getElementById('opt-digital-btn-orange-label');
+        const optDigitalBtnOrangeActive = document.getElementById('opt-digital-btn-orange-active');
+        const optDigitalBtnOrangeOpacity = document.getElementById('opt-digital-btn-orange-opacity');
+        const optDigitalBtnOrangeOpacityReadout = document.getElementById('opt-digital-btn-orange-opacity-readout');
+        const optDigitalBtnOrangeTextOpacity = document.getElementById('opt-digital-btn-orange-text-opacity');
+        const optDigitalBtnOrangeTextOpacityReadout = document.getElementById('opt-digital-btn-orange-text-opacity-readout');
+        const optDigitalBtnOrangeBorderOpacity = document.getElementById('opt-digital-btn-orange-border-opacity');
+        const optDigitalBtnOrangeBorderOpacityReadout = document.getElementById('opt-digital-btn-orange-border-opacity-readout');
         const optDigitalBtnBlueFontScale = document.getElementById('opt-digital-btn-blue-font-scale');
         const optDigitalBtnBlueFontScaleReadout = document.getElementById('opt-digital-btn-blue-font-scale-readout');
         const optDigitalToolbarDividerStyle = document.getElementById('opt-digital-toolbar-divider-style');
@@ -718,6 +740,8 @@ const QUALITY = {
         const optDigitalToolbarDividerGlowReadout = document.getElementById('opt-digital-toolbar-divider-glow-readout');
         const optDigitalBtnPurpleFontScale = document.getElementById('opt-digital-btn-purple-font-scale');
         const optDigitalBtnPurpleFontScaleReadout = document.getElementById('opt-digital-btn-purple-font-scale-readout');
+        const optDigitalBtnOrangeFontScale = document.getElementById('opt-digital-btn-orange-font-scale');
+        const optDigitalBtnOrangeFontScaleReadout = document.getElementById('opt-digital-btn-orange-font-scale-readout');
         const optDigitalClockFormat = document.getElementById('opt-digital-clock-format');
         const optDigitalClockFont = document.getElementById('opt-digital-clock-font');
         const optDigitalClockColor = document.getElementById('opt-digital-clock-color');
@@ -1289,6 +1313,15 @@ const QUALITY = {
                 btnPurpleBorderOpacity: clampThemeOpacity(src.btnPurpleBorderOpacity, d.btnPurpleBorderOpacity, 0),
                 btnBlueFontScale: clampThemeFontScale(src.btnBlueFontScale, d.btnBlueFontScale),
                 btnPurpleFontScale: clampThemeFontScale(src.btnPurpleFontScale, d.btnPurpleFontScale),
+                btnOrangeTop: src.btnOrangeTop || d.btnOrangeTop,
+                btnOrangeBase: src.btnOrangeBase || d.btnOrangeBase,
+                btnOrangeLabel: src.btnOrangeLabel || d.btnOrangeLabel,
+                btnOrangeActive: src.btnOrangeActive || d.btnOrangeActive,
+                btnOrangeOpacity: clampThemeOpacity(src.btnOrangeOpacity, d.btnOrangeOpacity),
+                btnOrangeTextOpacity: clampThemeOpacity(src.btnOrangeTextOpacity, d.btnOrangeTextOpacity),
+                btnOrangeBorderOpacity: clampThemeOpacity(src.btnOrangeBorderOpacity, d.btnOrangeBorderOpacity, 0),
+                btnOrangeFont: src.btnOrangeFont || src.font || d.btnOrangeFont || d.font,
+                btnOrangeFontScale: clampThemeFontScale(src.btnOrangeFontScale, d.btnOrangeFontScale),
                 clockFont: src.clockFont || d.clockFont,
                 clockColor: src.clockColor || d.clockColor,
                 clockFontScale: clampThemeFontScale(src.clockFontScale, d.clockFontScale),
@@ -1297,6 +1330,7 @@ const QUALITY = {
                 showButtonInfoOverlays: src.showButtonInfoOverlays === true,
                 showBlueToolbar: src.showBlueToolbar !== false,
                 showPurpleButtons: src.showPurpleButtons !== false,
+                showOrangeButtons: src.showOrangeButtons === true,
                 showStagingPanel: src.showStagingPanel !== false,
                 stagingBorderColor: src.stagingBorderColor || d.stagingBorderColor,
                 stagingBorderOpacity: clampThemeOpacity(src.stagingBorderOpacity, d.stagingBorderOpacity, 0),
@@ -1403,6 +1437,15 @@ const QUALITY = {
             target.style.setProperty('--rv-digital-btn-purple-border-opacity', String(t.btnPurpleBorderOpacity));
             target.style.setProperty('--rv-digital-btn-blue-font-scale', String(t.btnBlueFontScale));
             target.style.setProperty('--rv-digital-btn-purple-font-scale', String(t.btnPurpleFontScale));
+            target.style.setProperty('--rv-digital-btn-orange-font', t.btnOrangeFont || t.font);
+            target.style.setProperty('--rv-digital-btn-orange-top', t.btnOrangeTop);
+            target.style.setProperty('--rv-digital-btn-orange-base', t.btnOrangeBase);
+            target.style.setProperty('--rv-digital-btn-orange-label', t.btnOrangeLabel);
+            target.style.setProperty('--rv-digital-btn-orange-active', t.btnOrangeActive);
+            target.style.setProperty('--rv-digital-btn-orange-opacity', String(t.btnOrangeOpacity));
+            target.style.setProperty('--rv-digital-btn-orange-text-opacity', String(t.btnOrangeTextOpacity));
+            target.style.setProperty('--rv-digital-btn-orange-border-opacity', String(t.btnOrangeBorderOpacity));
+            target.style.setProperty('--rv-digital-btn-orange-font-scale', String(t.btnOrangeFontScale));
             target.style.setProperty('--rv-digital-clock-font', t.clockFont);
             target.style.setProperty('--rv-digital-clock-color', t.clockColor);
             target.style.setProperty('--rv-digital-clock-font-scale', String(t.clockFontScale));
@@ -1424,6 +1467,7 @@ const QUALITY = {
                 target.dataset.rvShowStaging = t.showStagingPanel ? '1' : '0';
                 target.dataset.rvShowBlueToolbar = t.showBlueToolbar ? '1' : '0';
                 target.dataset.rvShowPurpleButtons = t.showPurpleButtons ? '1' : '0';
+                target.dataset.rvShowOrangeButtons = t.showOrangeButtons ? '1' : '0';
                 target.dataset.rvToolbarDividerStyle = t.toolbarDividerStyle;
             }
         }
@@ -1477,6 +1521,15 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-btn-purple-border-opacity', String(t.btnPurpleBorderOpacity));
             root.style.setProperty('--global-rv-digital-btn-blue-font-scale', String(t.btnBlueFontScale));
             root.style.setProperty('--global-rv-digital-btn-purple-font-scale', String(t.btnPurpleFontScale));
+            root.style.setProperty('--global-rv-digital-btn-orange-font', t.btnOrangeFont || t.font);
+            root.style.setProperty('--global-rv-digital-btn-orange-top', t.btnOrangeTop);
+            root.style.setProperty('--global-rv-digital-btn-orange-base', t.btnOrangeBase);
+            root.style.setProperty('--global-rv-digital-btn-orange-label', t.btnOrangeLabel);
+            root.style.setProperty('--global-rv-digital-btn-orange-active', t.btnOrangeActive);
+            root.style.setProperty('--global-rv-digital-btn-orange-opacity', String(t.btnOrangeOpacity));
+            root.style.setProperty('--global-rv-digital-btn-orange-text-opacity', String(t.btnOrangeTextOpacity));
+            root.style.setProperty('--global-rv-digital-btn-orange-border-opacity', String(t.btnOrangeBorderOpacity));
+            root.style.setProperty('--global-rv-digital-btn-orange-font-scale', String(t.btnOrangeFontScale));
             root.style.setProperty('--global-rv-digital-clock-font', t.clockFont);
             root.style.setProperty('--global-rv-digital-clock-color', t.clockColor);
             root.style.setProperty('--global-rv-digital-clock-font-scale', String(t.clockFontScale));
@@ -1559,11 +1612,13 @@ const QUALITY = {
                 populateSiteFontSelect(optDigitalFont, theme.font);
                 populateSiteFontSelect(optDigitalBtnBlueFont, theme.btnBlueFont || theme.font);
                 populateSiteFontSelect(optDigitalBtnPurpleFont, theme.btnPurpleFont || theme.font);
+                populateSiteFontSelect(optDigitalBtnOrangeFont, theme.btnOrangeFont || theme.font);
                 populateSiteFontSelect(optDigitalClockFont, theme.clockFont);
             } else {
                 if (optDigitalFont) optDigitalFont.value = theme.font;
                 if (optDigitalBtnBlueFont) optDigitalBtnBlueFont.value = theme.btnBlueFont || theme.font;
                 if (optDigitalBtnPurpleFont) optDigitalBtnPurpleFont.value = theme.btnPurpleFont || theme.font;
+                if (optDigitalBtnOrangeFont) optDigitalBtnOrangeFont.value = theme.btnOrangeFont || theme.font;
                 if (optDigitalClockFont) optDigitalClockFont.value = theme.clockFont;
             }
             if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = theme.btnBlueTop;
@@ -1622,6 +1677,34 @@ const QUALITY = {
             }
             if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(theme.btnPurpleFontScale * 100));
             if (optDigitalBtnPurpleFontScaleReadout) optDigitalBtnPurpleFontScaleReadout.textContent = `${Math.round(theme.btnPurpleFontScale * 100)}%`;
+            if (optDigitalBtnOrangeTop) optDigitalBtnOrangeTop.value = theme.btnOrangeTop;
+            if (optDigitalBtnOrangeBase) optDigitalBtnOrangeBase.value = theme.btnOrangeBase;
+            if (optDigitalBtnOrangeLabel) optDigitalBtnOrangeLabel.value = theme.btnOrangeLabel;
+            if (optDigitalBtnOrangeActive) optDigitalBtnOrangeActive.value = theme.btnOrangeActive;
+            if (optDigitalBtnOrangeOpacity) {
+                optDigitalBtnOrangeOpacity.value = String(Math.round(theme.btnOrangeOpacity * 100));
+            }
+            if (optDigitalBtnOrangeOpacityReadout) {
+                optDigitalBtnOrangeOpacityReadout.textContent = `${Math.round(theme.btnOrangeOpacity * 100)}%`;
+            }
+            if (optDigitalBtnOrangeTextOpacity) {
+                optDigitalBtnOrangeTextOpacity.value = String(Math.round(theme.btnOrangeTextOpacity * 100));
+            }
+            if (optDigitalBtnOrangeTextOpacityReadout) {
+                optDigitalBtnOrangeTextOpacityReadout.textContent = `${Math.round(theme.btnOrangeTextOpacity * 100)}%`;
+            }
+            if (optDigitalBtnOrangeBorderOpacity) {
+                optDigitalBtnOrangeBorderOpacity.value = String(Math.round(theme.btnOrangeBorderOpacity * 100));
+            }
+            if (optDigitalBtnOrangeBorderOpacityReadout) {
+                optDigitalBtnOrangeBorderOpacityReadout.textContent = `${Math.round(theme.btnOrangeBorderOpacity * 100)}%`;
+            }
+            if (optDigitalBtnOrangeFontScale) {
+                optDigitalBtnOrangeFontScale.value = String(Math.round(theme.btnOrangeFontScale * 100));
+            }
+            if (optDigitalBtnOrangeFontScaleReadout) {
+                optDigitalBtnOrangeFontScaleReadout.textContent = `${Math.round(theme.btnOrangeFontScale * 100)}%`;
+            }
             if (optDigitalClockFormat) optDigitalClockFormat.value = theme.clockFormat;
             if (optDigitalClockColor) optDigitalClockColor.value = theme.clockColor;
             if (optDigitalClockFontScale) optDigitalClockFontScale.value = String(Math.round(theme.clockFontScale * 100));
@@ -1635,6 +1718,7 @@ const QUALITY = {
             if (optDigitalButtonInfoOverlays) optDigitalButtonInfoOverlays.checked = !!theme.showButtonInfoOverlays;
             if (optDigitalBlueToolbarVisible) optDigitalBlueToolbarVisible.checked = theme.showBlueToolbar !== false;
             if (optDigitalPurpleButtonsVisible) optDigitalPurpleButtonsVisible.checked = theme.showPurpleButtons !== false;
+            if (optDigitalOrangeButtonsVisible) optDigitalOrangeButtonsVisible.checked = theme.showOrangeButtons === true;
             if (optDigitalStagingVisible) optDigitalStagingVisible.checked = theme.showStagingPanel !== false;
             if (optDigitalStagingBorderColor) optDigitalStagingBorderColor.value = theme.stagingBorderColor;
             if (optDigitalStagingBorderOpacity) {
@@ -1775,6 +1859,30 @@ const QUALITY = {
                     (Number(optDigitalBtnPurpleFontScale && optDigitalBtnPurpleFontScale.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.btnPurpleFontScale
                 ),
+                btnOrangeFont: optDigitalBtnOrangeFont
+                    ? optDigitalBtnOrangeFont.value
+                    : (optDigitalFont ? optDigitalFont.value : DEFAULT_DIGITAL_THEME.btnOrangeFont),
+                btnOrangeTop: optDigitalBtnOrangeTop ? optDigitalBtnOrangeTop.value : DEFAULT_DIGITAL_THEME.btnOrangeTop,
+                btnOrangeBase: optDigitalBtnOrangeBase ? optDigitalBtnOrangeBase.value : DEFAULT_DIGITAL_THEME.btnOrangeBase,
+                btnOrangeLabel: optDigitalBtnOrangeLabel ? optDigitalBtnOrangeLabel.value : DEFAULT_DIGITAL_THEME.btnOrangeLabel,
+                btnOrangeActive: optDigitalBtnOrangeActive ? optDigitalBtnOrangeActive.value : DEFAULT_DIGITAL_THEME.btnOrangeActive,
+                btnOrangeOpacity: clampThemeOpacity(
+                    (Number(optDigitalBtnOrangeOpacity && optDigitalBtnOrangeOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnOrangeOpacity
+                ),
+                btnOrangeTextOpacity: clampThemeOpacity(
+                    (Number(optDigitalBtnOrangeTextOpacity && optDigitalBtnOrangeTextOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnOrangeTextOpacity
+                ),
+                btnOrangeBorderOpacity: clampThemeOpacity(
+                    (Number(optDigitalBtnOrangeBorderOpacity && optDigitalBtnOrangeBorderOpacity.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnOrangeBorderOpacity,
+                    0
+                ),
+                btnOrangeFontScale: clampThemeFontScale(
+                    (Number(optDigitalBtnOrangeFontScale && optDigitalBtnOrangeFontScale.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.btnOrangeFontScale
+                ),
                 clockFont: optDigitalClockFont ? optDigitalClockFont.value : DEFAULT_DIGITAL_THEME.clockFont,
                 clockColor: optDigitalClockColor ? optDigitalClockColor.value : DEFAULT_DIGITAL_THEME.clockColor,
                 clockFontScale: clampThemeFontScale(
@@ -1792,6 +1900,7 @@ const QUALITY = {
                 showButtonInfoOverlays: !!(optDigitalButtonInfoOverlays && optDigitalButtonInfoOverlays.checked),
                 showBlueToolbar: !(optDigitalBlueToolbarVisible && !optDigitalBlueToolbarVisible.checked),
                 showPurpleButtons: !(optDigitalPurpleButtonsVisible && !optDigitalPurpleButtonsVisible.checked),
+                showOrangeButtons: !!(optDigitalOrangeButtonsVisible && optDigitalOrangeButtonsVisible.checked),
                 showStagingPanel: !(optDigitalStagingVisible && !optDigitalStagingVisible.checked),
                 stagingBorderColor: optDigitalStagingBorderColor
                     ? optDigitalStagingBorderColor.value
@@ -1877,11 +1986,13 @@ const QUALITY = {
                 populateSiteFontSelect(optDigitalFont, t.font);
                 populateSiteFontSelect(optDigitalBtnBlueFont, t.btnBlueFont || t.font);
                 populateSiteFontSelect(optDigitalBtnPurpleFont, t.btnPurpleFont || t.font);
+                populateSiteFontSelect(optDigitalBtnOrangeFont, t.btnOrangeFont || t.font);
                 populateSiteFontSelect(optDigitalClockFont, t.clockFont);
             } else {
                 if (optDigitalFont && t.font) optDigitalFont.value = t.font;
                 if (optDigitalBtnBlueFont) optDigitalBtnBlueFont.value = t.btnBlueFont || t.font;
                 if (optDigitalBtnPurpleFont) optDigitalBtnPurpleFont.value = t.btnPurpleFont || t.font;
+                if (optDigitalBtnOrangeFont) optDigitalBtnOrangeFont.value = t.btnOrangeFont || t.font;
                 if (optDigitalClockFont) optDigitalClockFont.value = t.clockFont;
             }
             if (optDigitalBtnBlueTop) optDigitalBtnBlueTop.value = t.btnBlueTop;
@@ -1938,6 +2049,34 @@ const QUALITY = {
             }
             if (optDigitalBtnPurpleFontScale) optDigitalBtnPurpleFontScale.value = String(Math.round(t.btnPurpleFontScale * 100));
             if (optDigitalBtnPurpleFontScaleReadout) optDigitalBtnPurpleFontScaleReadout.textContent = `${Math.round(t.btnPurpleFontScale * 100)}%`;
+            if (optDigitalBtnOrangeTop) optDigitalBtnOrangeTop.value = t.btnOrangeTop;
+            if (optDigitalBtnOrangeBase) optDigitalBtnOrangeBase.value = t.btnOrangeBase;
+            if (optDigitalBtnOrangeLabel) optDigitalBtnOrangeLabel.value = t.btnOrangeLabel;
+            if (optDigitalBtnOrangeActive) optDigitalBtnOrangeActive.value = t.btnOrangeActive;
+            if (optDigitalBtnOrangeOpacity) {
+                optDigitalBtnOrangeOpacity.value = String(Math.round(t.btnOrangeOpacity * 100));
+            }
+            if (optDigitalBtnOrangeOpacityReadout) {
+                optDigitalBtnOrangeOpacityReadout.textContent = `${Math.round(t.btnOrangeOpacity * 100)}%`;
+            }
+            if (optDigitalBtnOrangeTextOpacity) {
+                optDigitalBtnOrangeTextOpacity.value = String(Math.round(t.btnOrangeTextOpacity * 100));
+            }
+            if (optDigitalBtnOrangeTextOpacityReadout) {
+                optDigitalBtnOrangeTextOpacityReadout.textContent = `${Math.round(t.btnOrangeTextOpacity * 100)}%`;
+            }
+            if (optDigitalBtnOrangeBorderOpacity) {
+                optDigitalBtnOrangeBorderOpacity.value = String(Math.round(t.btnOrangeBorderOpacity * 100));
+            }
+            if (optDigitalBtnOrangeBorderOpacityReadout) {
+                optDigitalBtnOrangeBorderOpacityReadout.textContent = `${Math.round(t.btnOrangeBorderOpacity * 100)}%`;
+            }
+            if (optDigitalBtnOrangeFontScale) {
+                optDigitalBtnOrangeFontScale.value = String(Math.round(t.btnOrangeFontScale * 100));
+            }
+            if (optDigitalBtnOrangeFontScaleReadout) {
+                optDigitalBtnOrangeFontScaleReadout.textContent = `${Math.round(t.btnOrangeFontScale * 100)}%`;
+            }
             if (optDigitalClockFormat) optDigitalClockFormat.value = t.clockFormat;
             if (optDigitalClockColor) optDigitalClockColor.value = t.clockColor;
             if (optDigitalClockFontScale) optDigitalClockFontScale.value = String(Math.round(t.clockFontScale * 100));
@@ -1951,6 +2090,7 @@ const QUALITY = {
             if (optDigitalButtonInfoOverlays) optDigitalButtonInfoOverlays.checked = !!t.showButtonInfoOverlays;
             if (optDigitalBlueToolbarVisible) optDigitalBlueToolbarVisible.checked = t.showBlueToolbar !== false;
             if (optDigitalPurpleButtonsVisible) optDigitalPurpleButtonsVisible.checked = t.showPurpleButtons !== false;
+            if (optDigitalOrangeButtonsVisible) optDigitalOrangeButtonsVisible.checked = t.showOrangeButtons === true;
             if (optDigitalStagingVisible) optDigitalStagingVisible.checked = t.showStagingPanel !== false;
             if (optDigitalStagingBorderColor) optDigitalStagingBorderColor.value = t.stagingBorderColor;
             if (optDigitalStagingBorderOpacity) {
@@ -2004,6 +2144,18 @@ const QUALITY = {
             }
             if (optDigitalBtnPurpleBorderOpacity && optDigitalBtnPurpleBorderOpacityReadout) {
                 optDigitalBtnPurpleBorderOpacityReadout.textContent = `${optDigitalBtnPurpleBorderOpacity.value}%`;
+            }
+            if (optDigitalBtnOrangeFontScale && optDigitalBtnOrangeFontScaleReadout) {
+                optDigitalBtnOrangeFontScaleReadout.textContent = `${optDigitalBtnOrangeFontScale.value}%`;
+            }
+            if (optDigitalBtnOrangeOpacity && optDigitalBtnOrangeOpacityReadout) {
+                optDigitalBtnOrangeOpacityReadout.textContent = `${optDigitalBtnOrangeOpacity.value}%`;
+            }
+            if (optDigitalBtnOrangeTextOpacity && optDigitalBtnOrangeTextOpacityReadout) {
+                optDigitalBtnOrangeTextOpacityReadout.textContent = `${optDigitalBtnOrangeTextOpacity.value}%`;
+            }
+            if (optDigitalBtnOrangeBorderOpacity && optDigitalBtnOrangeBorderOpacityReadout) {
+                optDigitalBtnOrangeBorderOpacityReadout.textContent = `${optDigitalBtnOrangeBorderOpacity.value}%`;
             }
             if (optDigitalBgOuterGradientAngle && optDigitalBgOuterGradientAngleReadout) {
                 optDigitalBgOuterGradientAngleReadout.textContent = `${optDigitalBgOuterGradientAngle.value}°`;
@@ -2164,6 +2316,20 @@ const QUALITY = {
                 btnPurpleBorderOpacity: d.btnPurpleBorderOpacity,
                 btnPurpleFont: d.btnPurpleFont,
                 btnPurpleFontScale: d.btnPurpleFontScale
+            });
+        }
+        function resetOrangeFeatureButtonOptions() {
+            const d = DEFAULT_DIGITAL_THEME;
+            applyDigitalThemePartial({
+                btnOrangeTop: d.btnOrangeTop,
+                btnOrangeBase: d.btnOrangeBase,
+                btnOrangeLabel: d.btnOrangeLabel,
+                btnOrangeActive: d.btnOrangeActive,
+                btnOrangeOpacity: d.btnOrangeOpacity,
+                btnOrangeTextOpacity: d.btnOrangeTextOpacity,
+                btnOrangeBorderOpacity: d.btnOrangeBorderOpacity,
+                btnOrangeFont: d.btnOrangeFont,
+                btnOrangeFontScale: d.btnOrangeFontScale
             });
         }
         function resetClockOptions() {
@@ -2453,7 +2619,7 @@ const QUALITY = {
             }
             [
                 optDigitalButtonInfoOverlays, optDigitalBlueToolbarVisible,
-                optDigitalPurpleButtonsVisible, optDigitalStagingVisible
+                optDigitalPurpleButtonsVisible, optDigitalOrangeButtonsVisible, optDigitalStagingVisible
             ].forEach((el) => {
                 if (!el) return;
                 el.addEventListener('change', onThemeChange);
@@ -2468,7 +2634,9 @@ const QUALITY = {
                 optDigitalBtnBlueTextOpacity, optDigitalBtnBlueBorderOpacity,
                 optDigitalBtnPurpleTop, optDigitalBtnPurpleBase, optDigitalBtnPurpleLabel, optDigitalBtnPurpleActive,
                 optDigitalBtnPurpleOpacity, optDigitalBtnPurpleTextOpacity, optDigitalBtnPurpleBorderOpacity,
-                optDigitalBtnBlueFontScale, optDigitalBtnPurpleFontScale,
+                optDigitalBtnOrangeTop, optDigitalBtnOrangeBase, optDigitalBtnOrangeLabel, optDigitalBtnOrangeActive,
+                optDigitalBtnOrangeOpacity, optDigitalBtnOrangeTextOpacity, optDigitalBtnOrangeBorderOpacity,
+                optDigitalBtnBlueFontScale, optDigitalBtnPurpleFontScale, optDigitalBtnOrangeFontScale,
                 optDigitalToolbarDividerHeight, optDigitalToolbarDividerColor, optDigitalToolbarDividerGlow,
                 optDigitalClockColor, optDigitalClockFontScale, optDigitalClockOpacity
             ].forEach((el) => {
@@ -2478,7 +2646,7 @@ const QUALITY = {
             });
             if (optDigitalToolbarDividerStyle) optDigitalToolbarDividerStyle.addEventListener('change', onThemeChange);
             if (optDigitalClockFormat) optDigitalClockFormat.addEventListener('change', onThemeChange);
-            [optDigitalClockFont, optDigitalFont, optDigitalBtnBlueFont, optDigitalBtnPurpleFont].forEach((el) => {
+            [optDigitalClockFont, optDigitalFont, optDigitalBtnBlueFont, optDigitalBtnPurpleFont, optDigitalBtnOrangeFont].forEach((el) => {
                 if (!el) return;
                 el.addEventListener('change', onThemeChange);
             });
@@ -2540,6 +2708,7 @@ const QUALITY = {
             wireOptionsSubsectionReset(document.getElementById('opt-blue-buttons-reset'), resetBlueToolbarButtonOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-toolbar-divider-reset'), resetToolbarDividerOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-purple-buttons-reset'), resetPurpleFeatureButtonOptions);
+            wireOptionsSubsectionReset(document.getElementById('opt-orange-buttons-reset'), resetOrangeFeatureButtonOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-clock-reset'), resetClockOptions);
             const onSpectrumSettingsChange = () => {
                 const settings = collectSpectrumSettingsFromControls();

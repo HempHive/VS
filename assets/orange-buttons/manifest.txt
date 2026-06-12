@@ -1,0 +1,8 @@
+# Orange buttons — label and site URL (one per line: LABEL URL or LABEL|URL)
+ANIME https://jannerap.github.io/Trailers/
+BUBBLES https://mindseye.dev/
+HUGGINF https://huggingface.co/spaces
+LINKS https://streamurl.link/
+RACING https://hemphive.github.io/CHR/
+SHAZAM https://streamurl.link/
+TRADING https://hemphive.github.io/ATB3/

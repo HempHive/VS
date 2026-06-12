@@ -1,0 +1,11 @@
+{
+  "buttons": [
+    { "label": "ANIME", "url": "https://jannerap.github.io/Trailers/" },
+    { "label": "BUBBLES", "url": "https://mindseye.dev/" },
+    { "label": "HUGGINF", "url": "https://huggingface.co/spaces" },
+    { "label": "LINKS", "url": "https://streamurl.link/" },
+    { "label": "RACING", "url": "https://hemphive.github.io/CHR/" },
+    { "label": "SHAZAM", "url": "https://streamurl.link/" },
+    { "label": "TRADING", "url": "https://hemphive.github.io/ATB3/" }
+  ]
+}

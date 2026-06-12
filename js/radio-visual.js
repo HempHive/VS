@@ -291,8 +291,11 @@
                 this._spectrumStagingPanNorm = 0;
                 this._spectrumSliderHideTimer = null;
                 this._digitalDeckBView = 'video';
-                /** Staging overlay in spectrum pane: null | video | projectm | bars | queue | karaoke */
+                /** Staging overlay in spectrum pane: null | video | projectm | bars | queue | karaoke | embed */
                 this._digitalStagingView = null;
+                /** Active orange embed button id when _digitalStagingView === 'embed'. */
+                this._digitalStagingEmbedId = null;
+                this._orangeButtons = RadioVisualEngine.defaultOrangeButtons();
                 this._digitalKaraokeUrl = (typeof globalThis.KARAOKE_NERDS_EMBED_URL === 'string')
                     ? globalThis.KARAOKE_NERDS_EMBED_URL
                     : 'https://www.karaokenerds.com/#query';
@@ -344,6 +347,55 @@
             static get DIGITAL_BG_GIF_MANIFEST() { return 'assets/gifs/digital/manifest.json'; }
             static get DIGITAL_BG_GIF_STORAGE_KEY() { return 'radioVisual.digitalBgGif.v1'; }
             static get DIGITAL_BG_GIF_ENABLED_KEY() { return 'radioVisual.digitalBgGif.enabled.v1'; }
+            static get ORANGE_BUTTONS_MANIFEST_URL() { return 'assets/orange-buttons/manifest.json'; }
+            static get ORANGE_BUTTONS_TXT_URL() { return 'assets/orange-buttons/manifest.txt'; }
+            static defaultOrangeButtons() {
+                return [
+                    { id: 'anime', label: 'ANIME', url: 'https://jannerap.github.io/Trailers/' },
+                    { id: 'bubbles', label: 'BUBBLES', url: 'https://mindseye.dev/' },
+                    { id: 'hugginf', label: 'HUGGINF', url: 'https://huggingface.co/spaces' },
+                    { id: 'links', label: 'LINKS', url: 'https://streamurl.link/' },
+                    { id: 'racing', label: 'RACING', url: 'https://hemphive.github.io/CHR/' },
+                    { id: 'shazam', label: 'SHAZAM', url: 'https://streamurl.link/' },
+                    { id: 'trading', label: 'TRADING', url: 'https://hemphive.github.io/ATB3/' }
+                ];
+            }
+            static normalizeOrangeButtonEntry(raw) {
+                if (!raw || typeof raw !== 'object') return null;
+                const label = String(raw.label || raw.name || raw.text || '').trim();
+                const url = String(raw.url || raw.site || raw.link || raw.href || '').trim();
+                if (!label || !url) return null;
+                const id = String(raw.id || label).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+                if (!id) return null;
+                return { id, label: label.toUpperCase(), url };
+            }
+            static parseOrangeButtonsJson(data) {
+                const list = Array.isArray(data) ? data : (data && Array.isArray(data.buttons) ? data.buttons : []);
+                return list.map((entry) => RadioVisualEngine.normalizeOrangeButtonEntry(entry)).filter(Boolean);
+            }
+            static parseOrangeButtonsText(text) {
+                const out = [];
+                String(text || '').split(/\r?\n/).forEach((line) => {
+                    const t = line.trim();
+                    if (!t || t.startsWith('#')) return;
+                    let label = '';
+                    let url = '';
+                    if (t.includes('|')) {
+                        const parts = t.split('|');
+                        label = parts[0].trim();
+                        url = parts.slice(1).join('|').trim();
+                    } else {
+                        const m = t.match(/^(\S+)\s+(.+)$/);
+                        if (m) {
+                            label = m[1].trim();
+                            url = m[2].trim();
+                        }
+                    }
+                    const entry = RadioVisualEngine.normalizeOrangeButtonEntry({ label, url });
+                    if (entry) out.push(entry);
+                });
+                return out;
+            }
             /** Set after the one-time AI toolbar intro blink on first Digital Radio load. */
             static get DIGITAL_AI_INTRO_SEEN_KEY() { return 'radioVisual.digitalAiIntroSeen.v1'; }
 
@@ -1330,7 +1382,7 @@
             }
 
             _toggleDigitalStagingFeature(kind) {
-                const k = (kind === 'projectm' || kind === 'bars' || kind === 'queue' || kind === 'video' || kind === 'karaoke')
+                const k = (kind === 'projectm' || kind === 'bars' || kind === 'queue' || kind === 'video' || kind === 'karaoke' || kind === 'embed')
                     ? kind : null;
                 if (!k) return;
                 if (k === 'video') {
@@ -1343,10 +1395,12 @@
                 if (this._digitalStationsVisible) {
                     try { this._closeDigitalStationsPanel(); } catch (_) {}
                 }
+                if (k !== 'embed') this._digitalStagingEmbedId = null;
                 if (this._digitalStagingView === k) {
                     this._digitalStagingView = null;
                     this._tearDownDigitalStagingView();
                     this._syncDigitalStagingButtons();
+                    this._syncDigitalOrangeButtons();
                     return;
                 }
                 this._digitalStagingView = k;
@@ -1355,6 +1409,7 @@
                 }
                 this._setDigitalStagingView(k);
                 this._syncDigitalStagingButtons();
+                this._syncDigitalOrangeButtons();
             }
 
             _syncDigitalStagingButtons() {
@@ -1362,7 +1417,7 @@
                 const on = this._digitalStagingView;
                 if (grid) {
                     grid.querySelectorAll('[data-rv-staging]').forEach((btn) => {
-                        const active = !!(on && btn.dataset.rvStaging === on);
+                        const active = !!(on && on !== 'embed' && btn.dataset.rvStaging === on);
                         btn.classList.toggle('is-active', active);
                         btn.setAttribute('aria-pressed', active ? 'true' : 'false');
                     });
@@ -1371,6 +1426,100 @@
                     this._syncDigitalVideoToolbarButton();
                 }
                 try { this._syncDigitalSpectrumButtonState(); } catch (_) {}
+            }
+
+            _syncDigitalOrangeButtons() {
+                const grid = this.els.digitalOrangeBtns;
+                if (!grid) return;
+                const activeId = (this._digitalStagingView === 'embed') ? this._digitalStagingEmbedId : null;
+                grid.querySelectorAll('[data-rv-orange-embed]').forEach((btn) => {
+                    const on = !!(activeId && btn.dataset.rvOrangeEmbed === activeId);
+                    btn.classList.toggle('is-active', on);
+                    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+            }
+
+            async _loadOrangeButtonsManifest() {
+                const fallback = RadioVisualEngine.defaultOrangeButtons();
+                try {
+                    const res = await fetch(RadioVisualEngine.ORANGE_BUTTONS_MANIFEST_URL);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const list = RadioVisualEngine.parseOrangeButtonsJson(data);
+                        if (list.length) return list;
+                    }
+                } catch (_) {}
+                try {
+                    const res = await fetch(RadioVisualEngine.ORANGE_BUTTONS_TXT_URL);
+                    if (res.ok) {
+                        const text = await res.text();
+                        const list = RadioVisualEngine.parseOrangeButtonsText(text);
+                        if (list.length) return list;
+                    }
+                } catch (_) {}
+                return fallback;
+            }
+
+            _toggleDigitalOrangeEmbed(entry) {
+                if (!entry || !entry.id) return;
+                try {
+                    if (globalThis.uiLocked) return;
+                } catch (_) {}
+                try { this._closeDigitalLocalQueuePanel(); } catch (_) {}
+                try { this._closeDigitalStationsPanel(); } catch (_) {}
+                if (this._digitalStagingView === 'embed' && this._digitalStagingEmbedId === entry.id) {
+                    this._digitalStagingEmbedId = null;
+                    this._returnToDefaultDigitalSpectrumView();
+                    this._syncDigitalOrangeButtons();
+                    return;
+                }
+                this._digitalStagingEmbedId = entry.id;
+                this._digitalStagingView = 'embed';
+                if (this.digitalCenterMode !== 'spectrum') {
+                    this._setDigitalCenterMode('spectrum');
+                }
+                this._digitalHubMode = 'equaliser';
+                this._syncDigitalHubPanel();
+                this._syncDigitalSpectrumLayout();
+                this._syncDigitalSpectrumButtonState();
+                this._showDigitalStagingEmbed(entry.url, entry.label);
+                this._syncDigitalStagingButtons();
+                this._syncDigitalOrangeButtons();
+            }
+
+            async _initOrangeButtons(gridEl) {
+                if (!gridEl) return;
+                this.els.digitalOrangeBtns = gridEl;
+                let buttons = RadioVisualEngine.defaultOrangeButtons();
+                try {
+                    buttons = await this._loadOrangeButtonsManifest();
+                } catch (_) {}
+                this._orangeButtons = buttons;
+                gridEl.innerHTML = '';
+                gridEl.style.setProperty('--rv-orange-btn-count', String(Math.max(1, buttons.length)));
+                buttons.forEach((entry) => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'radio-visual-btn';
+                    b.dataset.rvOrangeEmbed = entry.id;
+                    this._appendRvButtonLabel(b, entry.label);
+                    b.title = `${entry.label} — tap to open in staging · tap again for equaliser · right-click for new window`;
+                    b.setAttribute('aria-label', entry.label);
+                    b.addEventListener('contextmenu', (ev) => {
+                        this._stopClick(ev);
+                        try { ev.preventDefault(); } catch (_) {}
+                        const href = this._normalizeDigitalEmbedUrl(entry.url);
+                        try { window.open(href, '_blank', 'noopener,noreferrer'); } catch (_) {}
+                    }, { signal: this.abortCtrl.signal });
+                    b.addEventListener('click', (ev) => {
+                        this._stopClick(ev);
+                        this._toggleDigitalOrangeEmbed(entry);
+                        try { resetIdleTimer(); } catch (_) {}
+                    }, { signal: this.abortCtrl.signal });
+                    gridEl.appendChild(b);
+                });
+                this._wireDigitalFeatureButtonLabelFit(gridEl);
+                this._syncDigitalOrangeButtons();
             }
 
             _failDigitalStagingView() {
@@ -1494,6 +1643,30 @@
                 mount.appendChild(shell);
                 try {
                     mount.title = 'Double-click for fullscreen · Esc to exit';
+                } catch (_) {}
+            }
+
+            _showDigitalStagingEmbed(url, title) {
+                const mount = this._stagingContentMount();
+                if (!mount) return;
+                this._tearDownDigitalStagingView();
+                mount.classList.add('is-active');
+                mount.setAttribute('aria-hidden', 'false');
+                try {
+                    mount.dataset.rvStaging = 'embed';
+                } catch (_) {}
+                try { this._syncDigitalStagingBgVisibility(); } catch (_) {}
+                const href = this._normalizeDigitalEmbedUrl(url);
+                const shell = document.createElement('div');
+                shell.className = 'radio-visual-digital-embed-shell';
+                const iframe = document.createElement('iframe');
+                iframe.className = 'radio-visual-digital-embed-frame';
+                RadioVisualEngine.configureEmbeddableIframe(iframe, title || 'Embedded site');
+                iframe.src = href;
+                shell.appendChild(iframe);
+                mount.appendChild(shell);
+                try {
+                    mount.title = `${title || 'Site'} · tap orange button again to return to equaliser · right-click button for new window`;
                 } catch (_) {}
             }
 
@@ -4159,6 +4332,15 @@
             }
 
             _reflowDigitalThemeUi() {
+                try {
+                    const rvRoot = document.getElementById('radio-visual-root');
+                    if (rvRoot && rvRoot.dataset.rvShowOrangeButtons === '0'
+                        && this._digitalStagingView === 'embed' && this._digitalStagingEmbedId) {
+                        this._digitalStagingEmbedId = null;
+                        this._returnToDefaultDigitalSpectrumView();
+                        this._syncDigitalOrangeButtons();
+                    }
+                } catch (_) {}
                 try { this._tickClock(); } catch (_) {}
                 try {
                     const toolbar = this.els.digitalToolbar || document.getElementById('radio-visual-digital-toolbar');
@@ -4169,6 +4351,9 @@
                 } catch (_) {}
                 try {
                     if (this.els.digitalBtns) this._fitDigitalFeatureButtonLabels(this.els.digitalBtns);
+                } catch (_) {}
+                try {
+                    if (this.els.digitalOrangeBtns) this._fitDigitalFeatureButtonLabels(this.els.digitalOrangeBtns);
                 } catch (_) {}
             }
 
@@ -5610,10 +5795,12 @@
             _returnToDefaultDigitalSpectrumView() {
                 try { this._closeDigitalLocalQueuePanel(); } catch (_) {}
                 try { this._closeDigitalStationsPanel(); } catch (_) {}
+                this._digitalStagingEmbedId = null;
                 if (this._digitalStagingView) {
                     this._digitalStagingView = null;
                     try { this._tearDownDigitalStagingView(); } catch (_) {}
                     try { this._syncDigitalStagingButtons(); } catch (_) {}
+                    try { this._syncDigitalOrangeButtons(); } catch (_) {}
                 }
                 if (this.digitalCenterMode !== 'spectrum') {
                     this._setDigitalCenterMode('spectrum');
@@ -5623,8 +5810,10 @@
                 this._digitalSpectrumLayout = 'full';
                 this._resetDigitalVideoToolbarStep();
                 this._pauseDigitalHubDeckVideo();
+                try { this._syncDigitalHubPanel(); } catch (_) {}
                 try { this._syncDigitalSpectrumLayout(); } catch (_) {}
-                const mount = this.els.digitalStagingMount;
+                try { this._syncDigitalSpectrumButtonState(); } catch (_) {}
+                const mount = this._stagingContentMount();
                 if (mount) {
                     mount.classList.remove('is-active');
                     mount.setAttribute('aria-hidden', 'true');
@@ -7176,6 +7365,10 @@
                     const blueScale = this._readRvThemeCssNumber('--rv-digital-btn-blue-font-scale', 1);
                     return { fill: true, maxCap: 13 * blueScale, heightFactor: 0.82, widthFactor: 0.5, minPx: 7 };
                 }
+                if (kind === 'feature-orange') {
+                    const orangeScale = this._readRvThemeCssNumber('--rv-digital-btn-orange-font-scale', 1);
+                    return { fill: true, maxCap: 12 * orangeScale, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
+                }
                 if (kind === 'feature') {
                     const purpleScale = this._readRvThemeCssNumber('--rv-digital-btn-purple-font-scale', 1);
                     return { fill: true, maxCap: 12 * purpleScale, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
@@ -7186,7 +7379,8 @@
 
             _fitDigitalFeatureButtonLabels(gridEl) {
                 if (!gridEl) return;
-                const opts = this._rvLabelFitOpts('feature');
+                const isOrange = gridEl.classList.contains('radio-visual-digital-orange-btns');
+                const opts = this._rvLabelFitOpts(isOrange ? 'feature-orange' : 'feature');
                 gridEl.querySelectorAll('.radio-visual-btn').forEach((btn) => {
                     const label = btn.querySelector('.radio-visual-btn-label');
                     if (!label) return;
@@ -7421,6 +7615,7 @@
                 let dClk = null;
                 let digitalAutoMixTimer = null;
                 let digBtns = null;
+                let digOrangeBtns = null;
                 let digitalCenter = null;
                 let crossDig = null;
                 let btnDigitalSpectrum = null;
@@ -7636,6 +7831,10 @@
                 digBtns = document.createElement('div');
                 digBtns.className = 'radio-visual-btn-grid radio-visual-digital-feature-btns';
                 digBtns.id = 'radio-visual-digital-btns';
+                digOrangeBtns = document.createElement('div');
+                digOrangeBtns.className = 'radio-visual-btn-grid radio-visual-digital-orange-btns';
+                digOrangeBtns.id = 'radio-visual-digital-orange-btns';
+                digOrangeBtns.setAttribute('aria-label', 'Orange link buttons');
                 digitalCenter = document.createElement('div');
                 digitalCenter.className = 'radio-visual-digital-center';
                 digitalCenterSpectrum = document.createElement('div');
@@ -7884,6 +8083,7 @@
                 dPanel.appendChild(digitalAutoMixPanel);
                 dPanel.appendChild(digitalAutoFadePanel);
                 dPanel.appendChild(digBtns);
+                dPanel.appendChild(digOrangeBtns);
                 stageD.appendChild(dPanel);
                 }
 
@@ -7974,11 +8174,15 @@
                     digitalAutoMixTimer,
                     digitalCenter,
                     analogBtns,
-                    digitalBtns: digBtns
+                    digitalBtns: digBtns,
+                    digitalOrangeBtns: digOrangeBtns
                 };
 
                 if (analogBtns) this._buildFeatureButtons(analogBtns);
                 if (digBtns) this._buildFeatureButtons(digBtns, { deckBInPanel: true });
+                if (digOrangeBtns) {
+                    this._initOrangeButtons(digOrangeBtns).catch(() => {});
+                }
                 if (digitalToolbar) this._wireDigitalToolbarLabelFit(digitalToolbar);
                 if (digitalCenter) this._bindDigitalStageInteractions(digitalCenter);
                 try { this._wireDigitalHubAiVideoInteractions(this.abortCtrl.signal); } catch (_) {}
