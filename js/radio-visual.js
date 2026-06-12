@@ -2599,11 +2599,7 @@
                         globalThis.cancelActiveAutoFade();
                     }
                 } catch (_) {}
-                try {
-                    if (typeof globalThis.clearCrossfadeResumeSuppress === 'function') {
-                        globalThis.clearCrossfadeResumeSuppress();
-                    }
-                } catch (_) {}
+                this._suppressCrossfadeResume = true;
                 try {
                     if (dk === 'b') {
                         const mediaB = this._deckBPlaybackMedia();
@@ -2621,6 +2617,7 @@
             /** A> / B> toolbar tap: always tune a random radio station on that deck. */
             _deckTransportRandomStation(deckKey) {
                 const dk = deckKey === 'b' ? 'b' : 'a';
+                this._clearSuppressCrossfadeResume();
                 try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
                 try {
                     if (typeof globalThis.cancelActiveAutoFade === 'function') {
@@ -3040,7 +3037,7 @@
             }
 
             _syncFadeKnobs() {
-                const active = !!(this._rvFadeActive || this._rvAutoFadeRaf);
+                const active = !!this._rvFadeActive;
                 if (this.els.crossKnob) {
                     this.els.crossKnob.classList.toggle('is-on', active);
                     this.els.crossKnob.setAttribute('aria-pressed', active ? 'true' : 'false');
@@ -3049,6 +3046,20 @@
                     this.els.btnDigitalFade.classList.toggle('is-active', active);
                     this.els.btnDigitalFade.setAttribute('aria-pressed', active ? 'true' : 'false');
                 }
+            }
+
+            _clearAutoFadeVisualState() {
+                if (this._rvAutoFadeRaf) {
+                    try { cancelAnimationFrame(this._rvAutoFadeRaf); } catch (_) {}
+                    this._rvAutoFadeRaf = null;
+                }
+                this._rvFadeTargetDeck = null;
+                this._rvFadeActive = false;
+                if (this._rvFadeLedTimer) {
+                    try { clearTimeout(this._rvFadeLedTimer); } catch (_) {}
+                    this._rvFadeLedTimer = null;
+                }
+                try { this._syncFadeKnobs(); } catch (_) {}
             }
 
             _readAutoFadeDurationMs() {
@@ -3361,17 +3372,7 @@
 
             /** Stop in-flight radio auto-fade so manual play/pause (V / B) is not overridden each frame. */
             cancelAutoFade() {
-                if (this._rvAutoFadeRaf) {
-                    try { cancelAnimationFrame(this._rvAutoFadeRaf); } catch (_) {}
-                    this._rvAutoFadeRaf = null;
-                }
-                this._rvFadeTargetDeck = null;
-                this._rvFadeActive = false;
-                if (this._rvFadeLedTimer) {
-                    try { clearTimeout(this._rvFadeLedTimer); } catch (_) {}
-                    this._rvFadeLedTimer = null;
-                }
-                try { this._syncFadeKnobs(); } catch (_) {}
+                this._clearAutoFadeVisualState();
             }
 
             _clearSuppressCrossfadeResume() {
@@ -3423,10 +3424,8 @@
                 this._rvFadeActive = true;
                 this._syncFadeKnobs();
                 const endFadeLed = () => {
-                    if (!this._rvAutoFadeRaf) {
-                        this._rvFadeActive = false;
-                        this._syncFadeKnobs();
-                    }
+                    this._rvFadeActive = false;
+                    this._syncFadeKnobs();
                 };
                 const scheduleFadeLedOff = () => {
                     const dur = this._readAutoFadeDurationMs();
@@ -3472,30 +3471,35 @@
                     this._rvFadeLedTimer = null;
                 }
                 this._rvFadeLedTimer = setTimeout(() => {
-                    if (!this._rvAutoFadeRaf) {
-                        this._rvFadeActive = false;
-                        this._syncFadeKnobs();
-                    }
+                    endFadeLed();
                     this._rvFadeLedTimer = null;
                 }, durMs + 120);
                 const startTs = performance.now();
                 const tick = (ts) => {
-                    const t = Math.max(0, Math.min(1, (ts - startTs) / durMs));
-                    const eased = 1 - Math.pow(1 - t, 3);
-                    this._setCrossfadeX(startVal + ((endVal - startVal) * eased));
-                    this._resumeDecksForCrossfade();
-                    if (t >= 1) {
-                        this._rvAutoFadeRaf = null;
-                        this._rvFadeTargetDeck = null;
-                        this._rvFadeActive = false;
-                        this._syncFadeKnobs();
-                        this._rvAutoMixCyclePending = false;
-                        if (this._isAutoMixEnabled()) {
-                            try { this._scheduleRadioAutoMix(); } catch (_) {}
+                    try {
+                        const t = Math.max(0, Math.min(1, (ts - startTs) / durMs));
+                        const eased = 1 - Math.pow(1 - t, 3);
+                        this._setCrossfadeX(startVal + ((endVal - startVal) * eased));
+                        this._resumeDecksForCrossfade();
+                        if (t >= 1) {
+                            this._rvAutoFadeRaf = null;
+                            this._rvFadeTargetDeck = null;
+                            this._rvFadeActive = false;
+                            if (this._rvFadeLedTimer) {
+                                try { clearTimeout(this._rvFadeLedTimer); } catch (_) {}
+                                this._rvFadeLedTimer = null;
+                            }
+                            this._syncFadeKnobs();
+                            this._rvAutoMixCyclePending = false;
+                            if (this._isAutoMixEnabled()) {
+                                try { this._scheduleRadioAutoMix(); } catch (_) {}
+                            }
+                            return;
                         }
-                        return;
+                        this._rvAutoFadeRaf = requestAnimationFrame(tick);
+                    } catch (_) {
+                        this._clearAutoFadeVisualState();
                     }
-                    this._rvAutoFadeRaf = requestAnimationFrame(tick);
                 };
                 this._rvAutoFadeRaf = requestAnimationFrame(tick);
             }
@@ -3518,10 +3522,8 @@
                         try { clearTimeout(this._rvFadeLedTimer); } catch (_) {}
                     }
                     this._rvFadeLedTimer = setTimeout(() => {
-                        if (!this._rvAutoFadeRaf) {
-                            this._rvFadeActive = false;
-                            this._syncFadeKnobs();
-                        }
+                        this._rvFadeActive = false;
+                        this._syncFadeKnobs();
                         this._rvFadeLedTimer = null;
                     }, dur + 120);
                     return;
@@ -3881,17 +3883,50 @@
                 if (!btn) return;
                 const dk = deckKey === 'b' ? 'b' : 'a';
                 const deckLabel = dk === 'b' ? 'Deck B' : 'Deck A';
+                let suppressNextTransportClick = false;
+                let suppressTransportClickTimer = 0;
+                const armTransportClickSuppress = () => {
+                    suppressNextTransportClick = true;
+                    if (suppressTransportClickTimer) {
+                        try { clearTimeout(suppressTransportClickTimer); } catch (_) {}
+                    }
+                    suppressTransportClickTimer = setTimeout(() => {
+                        suppressNextTransportClick = false;
+                        suppressTransportClickTimer = 0;
+                    }, 400);
+                };
                 try { btn.removeAttribute('title'); } catch (_) {}
                 btn.title = 'Tap: random station · Right-click: pause deck';
                 btn.setAttribute('aria-label', `${deckLabel}; tap for random station, right-click to pause`);
                 btn.addEventListener('contextmenu', (ev) => {
-                    try {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                    } catch (_) {}
+                    this._stopClick(ev);
+                    armTransportClickSuppress();
+                    this._pauseDeckOutput(dk);
+                }, sig);
+                btn.addEventListener('pointerdown', (ev) => {
+                    if (ev.button !== 2) return;
+                    try { ev.preventDefault(); } catch (_) {}
+                    this._stopClick(ev);
+                    armTransportClickSuppress();
                     this._pauseDeckOutput(dk);
                 }, sig);
                 btn.addEventListener('click', (ev) => {
+                    if (suppressNextTransportClick) {
+                        suppressNextTransportClick = false;
+                        if (suppressTransportClickTimer) {
+                            try { clearTimeout(suppressTransportClickTimer); } catch (_) {}
+                            suppressTransportClickTimer = 0;
+                        }
+                        this._stopClick(ev);
+                        return;
+                    }
+                    try {
+                        if (window.__suppressNextClick) {
+                            window.__suppressNextClick = false;
+                            this._stopClick(ev);
+                            return;
+                        }
+                    } catch (_) {}
                     this._stopClick(ev);
                     this._deckTransportRandomStation(dk);
                 }, sig);
