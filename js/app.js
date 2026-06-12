@@ -4883,9 +4883,12 @@ const QUALITY = {
 			const spreadSpan = Math.min(310, Math.max(170, n * 24));
 			const s = Math.max(0, Math.min(1, Number(spread) || 0));
 			const spanDeg = clusterSpan + (spreadSpan - clusterSpan) * s;
-			const startAngle = -90 - spanDeg / 2;
+			// Top of ring = -90°; centered glyphs need −100° to correct clockwise arc placement
+			const ORBIT_PLACEMENT_OFFSET = -100;
+			const orbitTop = -90 + ORBIT_PLACEMENT_OFFSET;
+			const startAngle = orbitTop - spanDeg / 2;
 			chars.forEach((el, i) => {
-				const angle = n === 1 ? -90 : startAngle + (i / (n - 1)) * spanDeg;
+				const angle = n === 1 ? orbitTop : startAngle + (i / (n - 1)) * spanDeg;
 				el.style.setProperty('--char-angle', `${angle}deg`);
 			});
 			phraseEl.style.setProperty('--phrase-opacity', String(Math.max(0, Math.min(1, Number(opacity) || 0))));
