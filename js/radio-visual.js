@@ -2614,18 +2614,62 @@
                 try { this._syncDeckSwitches(); } catch (_) {}
             }
 
-            /** A> / B> toolbar tap: always tune a random radio station on that deck. */
-            _deckTransportRandomStation(deckKey) {
+            _deckTransportMedia(deckKey) {
                 const dk = deckKey === 'b' ? 'b' : 'a';
-                this._clearSuppressCrossfadeResume();
+                if (dk === 'b') return this._deckBPlaybackMedia();
+                return (typeof getDeckAMediaForPlaybackState === 'function')
+                    ? getDeckAMediaForPlaybackState()
+                    : audioEl;
+            }
+
+            /** A> / B> tap: resume paused station; if already playing, tune random radio on that deck. */
+            async _deckTransportToolbarTap(deckKey) {
+                const dk = deckKey === 'b' ? 'b' : 'a';
                 try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
                 try {
                     if (typeof globalThis.cancelActiveAutoFade === 'function') {
                         globalThis.cancelActiveAutoFade();
                     }
                 } catch (_) {}
-                if (dk === 'b') this._stationBRand();
-                else this._stationRand();
+                const media = this._deckTransportMedia(dk);
+                const isPlaying = dk === 'b' ? this._deckBActive() : this._deckAActive();
+                if (isPlaying) {
+                    this._clearSuppressCrossfadeResume();
+                    if (dk === 'b') this._stationBRand();
+                    else this._stationRand();
+                } else if (media && this._deckHasSource(media) && !media.ended) {
+                    this._deckEngClearSuppress();
+                    try {
+                        if (typeof releaseAutoMixDeferredLocal === 'function') {
+                            releaseAutoMixDeferredLocal(dk, 'play');
+                        }
+                    } catch (_) {}
+                    try {
+                        await media.play();
+                        if (dk === 'b') {
+                            try {
+                                if (typeof connectDeckMediaToEq === 'function') connectDeckMediaToEq('b');
+                            } catch (_) {}
+                        }
+                    } catch (_) {
+                        try {
+                            if (dk === 'b') {
+                                if (typeof playRadioB === 'function') playRadioB();
+                            } else if (typeof playRadio === 'function') {
+                                playRadio();
+                            }
+                        } catch (_) {}
+                    }
+                } else {
+                    this._deckEngClearSuppress();
+                    try {
+                        if (dk === 'b') {
+                            if (typeof playRadioB === 'function') playRadioB();
+                        } else if (typeof playRadio === 'function') {
+                            playRadio();
+                        }
+                    } catch (_) {}
+                }
                 try { this._updateStationUi(); } catch (_) {}
                 try { this._syncDeckSwitches(); } catch (_) {}
             }
@@ -3899,8 +3943,8 @@
                     }, 400);
                 };
                 try { btn.removeAttribute('title'); } catch (_) {}
-                btn.title = 'Tap: random station · Right-click: pause deck';
-                btn.setAttribute('aria-label', `${deckLabel}; tap for random station, right-click to pause`);
+                btn.title = 'Tap: play or next random station · Right-click: pause deck';
+                btn.setAttribute('aria-label', `${deckLabel}; tap to play or next random station, right-click to pause`);
                 btn.addEventListener('contextmenu', (ev) => {
                     stopDeckTransportEvent(ev);
                     armTransportClickSuppress();
@@ -3923,7 +3967,7 @@
                         return;
                     }
                     stopDeckTransportEvent(ev);
-                    this._deckTransportRandomStation(dk);
+                    this._deckTransportToolbarTap(dk);
                 }, sig);
             }
 
