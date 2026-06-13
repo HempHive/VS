@@ -7219,6 +7219,15 @@
                 );
             }
 
+            _isCrossfadeTrackpadInverted() {
+                try {
+                    const root = this.root || document.getElementById('radio-visual-root');
+                    return !!(root && root.dataset && root.dataset.rvCrossfadeTrackpadInvert === '1');
+                } catch (_) {
+                    return false;
+                }
+            }
+
             _onDigitalEqualiserCrossfadeWheel(ev) {
                 if (!this._isDigitalEqualiserCrossfadeWheelTarget(ev.target)) return;
                 const { dx, dy } = this._normalizeDigitalWheelDelta(ev);
@@ -7231,7 +7240,9 @@
                     return;
                 }
                 const resp = this._readRvThemeCssNumber('--rv-digital-crossfade-trackpad-responsiveness', 1);
-                const step = raw * 0.0015 * resp;
+                const invert = this._isCrossfadeTrackpadInverted();
+                const direction = invert ? 1 : -1;
+                const step = raw * 0.0015 * resp * direction;
                 if (!Number.isFinite(step) || Math.abs(step) < 0.00001) return;
                 try { ev.preventDefault(); } catch (_) {}
                 try { ev.stopPropagation(); } catch (_) {}

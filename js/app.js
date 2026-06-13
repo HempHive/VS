@@ -528,7 +528,8 @@ const QUALITY = {
             featureDividerGlow: 0,
             featureDividerStyle: 'groove',
             featureDividerSpacing: 3,
-            crossfadeTrackpadResponsiveness: 1
+            crossfadeTrackpadResponsiveness: 1,
+            crossfadeTrackpadInvert: false
         };
         const ROW_DIVIDER_STYLE_IDS = ['groove', 'solid', 'pulse', 'shimmer', 'scan', 'rainbow', 'wave'];
         const DIGITAL_CLOCK_FORMATS = {
@@ -707,6 +708,7 @@ const QUALITY = {
         const optDigitalStagingScaleReadout = document.getElementById('opt-digital-staging-scale-readout');
         const optDigitalCrossfadeTrackpadResponsiveness = document.getElementById('opt-digital-crossfade-trackpad-responsiveness');
         const optDigitalCrossfadeTrackpadResponsivenessReadout = document.getElementById('opt-digital-crossfade-trackpad-responsiveness-readout');
+        const optDigitalCrossfadeTrackpadInvert = document.getElementById('opt-digital-crossfade-trackpad-invert');
         const optDigitalBgGif = document.getElementById('opt-digital-bg-gif');
         const optDigitalAccent = document.getElementById('opt-digital-accent');
         const optDigitalFont = document.getElementById('opt-digital-font');
@@ -1394,7 +1396,8 @@ const QUALITY = {
                 crossfadeTrackpadResponsiveness: clampCrossfadeTrackpadResponsiveness(
                     src.crossfadeTrackpadResponsiveness,
                     d.crossfadeTrackpadResponsiveness
-                )
+                ),
+                crossfadeTrackpadInvert: src.crossfadeTrackpadInvert === true
             };
         }
         function digitalThemePresetKeys(preset) {
@@ -1537,6 +1540,7 @@ const QUALITY = {
                 target.dataset.rvShowOrangeButtons = t.showOrangeButtons ? '1' : '0';
                 target.dataset.rvToolbarDividerStyle = t.toolbarDividerStyle;
                 target.dataset.rvFeatureDividerStyle = t.featureDividerStyle;
+                target.dataset.rvCrossfadeTrackpadInvert = t.crossfadeTrackpadInvert ? '1' : '0';
             }
         }
         function applyButtonInfoOverlaysFromTheme(theme) {
@@ -1876,6 +1880,9 @@ const QUALITY = {
             if (optDigitalCrossfadeTrackpadResponsivenessReadout) {
                 optDigitalCrossfadeTrackpadResponsivenessReadout.textContent = `${Math.round(theme.crossfadeTrackpadResponsiveness * 100)}%`;
             }
+            if (optDigitalCrossfadeTrackpadInvert) {
+                optDigitalCrossfadeTrackpadInvert.checked = theme.crossfadeTrackpadInvert === true;
+            }
             const maxMin = readAutoMixMaxMinFromStorage();
             if (optAutomixMax) optAutomixMax.value = String(maxMin);
             if (optAutomixMaxReadout) optAutomixMaxReadout.textContent = `${maxMin}m`;
@@ -2078,6 +2085,7 @@ const QUALITY = {
                     (Number(optDigitalCrossfadeTrackpadResponsiveness && optDigitalCrossfadeTrackpadResponsiveness.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.crossfadeTrackpadResponsiveness
                 ),
+                crossfadeTrackpadInvert: !!(optDigitalCrossfadeTrackpadInvert && optDigitalCrossfadeTrackpadInvert.checked),
                 toolbarDividerHeight: clampRowDividerHeight(
                     Number(optDigitalToolbarDividerHeight && optDigitalToolbarDividerHeight.value),
                     DEFAULT_DIGITAL_THEME.toolbarDividerHeight
@@ -2344,6 +2352,9 @@ const QUALITY = {
             }
             if (optDigitalCrossfadeTrackpadResponsivenessReadout) {
                 optDigitalCrossfadeTrackpadResponsivenessReadout.textContent = `${Math.round(t.crossfadeTrackpadResponsiveness * 100)}%`;
+            }
+            if (optDigitalCrossfadeTrackpadInvert) {
+                optDigitalCrossfadeTrackpadInvert.checked = t.crossfadeTrackpadInvert === true;
             }
             if (optDigitalThemePreset) optDigitalThemePreset.value = t.presetId || detectDigitalThemePresetId(t);
         }
@@ -2891,7 +2902,8 @@ const QUALITY = {
             }
             [
                 optDigitalButtonInfoOverlays, optDigitalBlueToolbarVisible,
-                optDigitalPurpleButtonsVisible, optDigitalOrangeButtonsVisible, optDigitalStagingVisible
+                optDigitalPurpleButtonsVisible, optDigitalOrangeButtonsVisible, optDigitalStagingVisible,
+                optDigitalCrossfadeTrackpadInvert
             ].forEach((el) => {
                 if (!el) return;
                 el.addEventListener('change', onThemeChange);
