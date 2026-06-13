@@ -1904,54 +1904,19 @@
             }
 
             _pauseDigitalHubDeckVideo() {
-                const vid = this.els.digitalHubDeckVideo;
-                if (!vid) return;
-                try { if (!vid.paused) vid.pause(); } catch (_) {}
-            }
-
-            _applyDigitalHubDeckVideoPayload(vid, cur) {
-                if (!vid || !cur || !cur.url) return;
-                this._digitalHubDeckVideoMode = cur.mode || 'idle';
-                if (!cur.syncFrom && cur.mode === 'idle') {
-                    this._applyDigitalIdleLogoVideo(vid, cur.url);
-                } else {
-                    this._applyDigitalStagingVideoPayload(vid, cur);
-                }
-                this._digitalHubDeckVideoSrc = String(cur.url);
+                [this.els.digitalHubDeckVideoA, this.els.digitalHubDeckVideoB].forEach((vid) => {
+                    if (!vid) return;
+                    try { if (!vid.paused) vid.pause(); } catch (_) {}
+                });
             }
 
             _syncDigitalHubDeckVideo(forceLoad) {
                 if (!RadioVisualEngine.digitalHubShowsDeckVideo(this._digitalHubMode)) return;
-                const vid = this.els.digitalHubDeckVideo;
-                if (!vid) return;
+                const vidA = this.els.digitalHubDeckVideoA;
+                const vidB = this.els.digitalHubDeckVideoB;
+                if (!vidA || !vidB) return;
                 try {
-                    const payload = this._resolveDigitalStagingVideoPayload();
-                    const want = String(payload.url || '');
-                    if (!payload.syncFrom && payload.mode === 'idle') {
-                        const same = this._digitalHubDeckVideoSrc && want && (
-                            (typeof urlsMediaMatch === 'function')
-                                ? urlsMediaMatch(this._digitalHubDeckVideoSrc, want)
-                                : this._digitalHubDeckVideoSrc === want
-                        );
-                        if (!forceLoad && same && !vid.paused) return;
-                        this._applyDigitalIdleLogoVideo(vid, want);
-                        this._digitalHubDeckVideoSrc = want;
-                        this._digitalHubDeckVideoMode = 'idle';
-                        return;
-                    }
-                    if (!forceLoad && this._digitalHubDeckVideoSrc && want && (
-                        (typeof urlsMediaMatch === 'function')
-                            ? urlsMediaMatch(this._digitalHubDeckVideoSrc, want)
-                            : this._digitalHubDeckVideoSrc === want
-                    )) {
-                        if (payload.syncFrom) {
-                            this._applyDigitalHubDeckVideoPayload(vid, payload);
-                        } else if (vid.paused) {
-                            vid.play().catch(() => {});
-                        }
-                        return;
-                    }
-                    this._applyDigitalHubDeckVideoPayload(vid, payload);
+                    this._syncDualVideoCrossfade(vidA, vidB, '_digitalHubDeckVideoMode', forceLoad);
                 } catch (_) {}
             }
 
@@ -2242,21 +2207,47 @@
                 }
             }
 
-            _setDigitalStagingVideoLayer(vid, layer, op) {
+            _setDigitalVideoLayer(vid, layer, op) {
                 if (!vid) return;
                 const o = Math.max(0, Math.min(1, Number(op) || 0));
                 this._setDigitalStagingVideoOpacity(vid, o);
                 if (o <= 0.001) return;
-                if (layer && layer.url && typeof applyDeckBVideoPayloadToElement === 'function') {
-                    applyDeckBVideoPayloadToElement(vid, layer, null);
+                if (!layer || !layer.url) return;
+                if (layer.mode === 'idle' || layer.loop) {
+                    this._applyDigitalIdleLogoVideo(vid, layer.url);
+                    return;
                 }
+                if (typeof applyDeckBVideoPayloadToElement === 'function') {
+                    applyDeckBVideoPayloadToElement(vid, layer, null);
+                    return;
+                }
+                this._applyDigitalStagingVideoPayload(vid, layer);
             }
 
-            _applyDigitalStagingVideoCrossfadeOpacities() {
-                if (this._digitalStagingView !== 'video') return;
-                const vidA = this.els.digitalStagingVideoA;
-                const vidB = this.els.digitalStagingVideoB;
-                if (!vidA || !vidB || this._digitalStagingVideoMode !== 'deck-dual') return;
+            _setDigitalStagingVideoLayer(vid, layer, op) {
+                this._setDigitalVideoLayer(vid, layer, op);
+            }
+
+            _syncDualVideoCrossfade(vidA, vidB, modeKey, forceLoad) {
+                if (!vidA || !vidB) return;
+                if (forceLoad) this[modeKey] = '';
+                const plan = (typeof computeDigitalStagingVideoCrossfadePlan === 'function')
+                    ? computeDigitalStagingVideoCrossfadePlan()
+                    : null;
+                if (!plan) return;
+                if (plan.bothIdle || !plan.dual) {
+                    this[modeKey] = 'idle';
+                    this._setDigitalVideoLayer(vidB, null, 0);
+                    this._setDigitalVideoLayer(vidA, plan.layerA, 1);
+                    return;
+                }
+                this[modeKey] = 'deck-dual';
+                this._setDigitalVideoLayer(vidA, plan.layerA, plan.opA);
+                this._setDigitalVideoLayer(vidB, plan.layerB, plan.opB);
+            }
+
+            _applyDigitalVideoCrossfadeOpacities(modeKey, vidA, vidB) {
+                if (!vidA || !vidB || this[modeKey] !== 'deck-dual') return;
                 try {
                     const plan = (typeof computeDigitalStagingVideoCrossfadePlan === 'function')
                         ? computeDigitalStagingVideoCrossfadePlan()
@@ -2265,6 +2256,28 @@
                     this._setDigitalStagingVideoOpacity(vidA, plan.opA);
                     this._setDigitalStagingVideoOpacity(vidB, plan.opB);
                 } catch (_) {}
+            }
+
+            _applyAllDigitalVideoCrossfadeOpacities() {
+                this._applyDigitalVideoCrossfadeOpacities(
+                    '_digitalStagingVideoMode',
+                    this.els.digitalStagingVideoA,
+                    this.els.digitalStagingVideoB
+                );
+                this._applyDigitalVideoCrossfadeOpacities(
+                    '_digitalHubDeckVideoMode',
+                    this.els.digitalHubDeckVideoA,
+                    this.els.digitalHubDeckVideoB
+                );
+                this._applyDigitalVideoCrossfadeOpacities(
+                    '_digitalDeckBVideoMode',
+                    this.els.digitalDeckBVideoA,
+                    this.els.digitalDeckBVideoB
+                );
+            }
+
+            _applyDigitalStagingVideoCrossfadeOpacities() {
+                this._applyAllDigitalVideoCrossfadeOpacities();
             }
 
             _syncDigitalStagingVideo(vidEl, forceLoad) {
@@ -2282,44 +2295,7 @@
                     return;
                 }
                 try {
-                    const plan = (typeof computeDigitalStagingVideoCrossfadePlan === 'function')
-                        ? computeDigitalStagingVideoCrossfadePlan()
-                        : null;
-                    if (plan && (plan.layerA || plan.layerB)) {
-                        if (plan.dual) {
-                            this._digitalStagingVideoMode = 'deck-dual';
-                            this._setDigitalStagingVideoLayer(vidA, plan.layerA, plan.opA);
-                            this._setDigitalStagingVideoLayer(vidB, plan.layerB, plan.opB);
-                            return;
-                        }
-                        const single = plan.layerB && plan.opB >= plan.opA ? { layer: plan.layerB, vid: vidB, other: vidA }
-                            : { layer: plan.layerA, vid: vidA, other: vidB };
-                        this._digitalStagingVideoMode = 'deck-sync';
-                        this._setDigitalStagingVideoLayer(single.other, null, 0);
-                        this._setDigitalStagingVideoLayer(single.vid, single.layer, 1);
-                        return;
-                    }
-                    if (!forceLoad && this._digitalStagingVideoMode === 'idle') {
-                        const payload = this._resolveDigitalStagingVideoPayload();
-                        const want = String(payload.url || '');
-                        if (this._digitalStagingVideoSrc && want && (
-                            (typeof urlsMediaMatch === 'function')
-                                ? urlsMediaMatch(this._digitalStagingVideoSrc, want)
-                                : this._digitalStagingVideoSrc === want
-                        )) {
-                            if (vidA.paused) vidA.play().catch(() => {});
-                            return;
-                        }
-                    }
-                    this._digitalStagingVideoMode = 'idle';
-                    this._setDigitalStagingVideoLayer(vidB, null, 0);
-                    const payload = this._resolveDigitalStagingVideoPayload();
-                    if (!payload.syncFrom && payload.mode === 'idle') {
-                        this._applyDigitalIdleLogoVideo(vidA, payload.url);
-                        this._digitalStagingVideoSrc = String(payload.url || '');
-                    } else {
-                        this._applyDigitalStagingVideoPayload(vidA, payload);
-                    }
+                    this._syncDualVideoCrossfade(vidA, vidB, '_digitalStagingVideoMode', forceLoad);
                 } catch (_) {}
             }
 
@@ -3095,7 +3071,7 @@
                 } catch (_) {}
                 if (this.els.crossDigital) this.els.crossDigital.value = String(v);
                 this._syncCrossfadeKnob();
-                try { this._applyDigitalStagingVideoCrossfadeOpacities(); } catch (_) {}
+                try { this._applyAllDigitalVideoCrossfadeOpacities(); } catch (_) {}
                 if (this.els.digitalToolbarCenterXfade) {
                     this._syncDigitalToolbarCenterXfadeSlider();
                 }
@@ -5480,13 +5456,21 @@
 
                 const deckVideoWrap = document.createElement('div');
                 deckVideoWrap.className = 'radio-visual-digital-hub-deck-video';
-                const deckVideoEl = document.createElement('video');
-                deckVideoEl.className = 'radio-visual-digital-hub-deck-video-el';
-                deckVideoEl.muted = true;
-                deckVideoEl.playsInline = true;
-                deckVideoEl.setAttribute('playsinline', '');
-                deckVideoEl.preload = 'auto';
-                deckVideoWrap.appendChild(deckVideoEl);
+                const deckVideoStack = document.createElement('div');
+                deckVideoStack.className = 'radio-visual-digital-hub-deck-video-stack';
+                const deckVideoA = document.createElement('video');
+                deckVideoA.className = 'radio-visual-digital-hub-deck-video-el radio-visual-digital-hub-deck-video-el--a';
+                const deckVideoB = document.createElement('video');
+                deckVideoB.className = 'radio-visual-digital-hub-deck-video-el radio-visual-digital-hub-deck-video-el--b';
+                [deckVideoA, deckVideoB].forEach((v) => {
+                    v.muted = true;
+                    v.playsInline = true;
+                    v.setAttribute('playsinline', '');
+                    v.preload = 'auto';
+                });
+                deckVideoStack.appendChild(deckVideoA);
+                deckVideoStack.appendChild(deckVideoB);
+                deckVideoWrap.appendChild(deckVideoStack);
 
                 const off = document.createElement('div');
                 off.className = 'radio-visual-digital-hub-off';
@@ -5863,12 +5847,12 @@
             }
 
             _toggleDigitalHubDeckVideoFullscreen() {
-                const video = this.els.digitalHubDeckVideo;
+                const stack = this.els.digitalHubDeckVideoStack || this.els.digitalHubDeckVideo;
                 const wrap = this.els.digitalHubDeckVideoWrap;
-                if (!video || !wrap) return;
+                if (!stack || !wrap) return;
                 try {
                     if (typeof toggleVideoSurfaceFullscreen === 'function') {
-                        toggleVideoSurfaceFullscreen(video, wrap);
+                        toggleVideoSurfaceFullscreen(stack, wrap);
                         return;
                     }
                 } catch (_) {}
@@ -5886,8 +5870,8 @@
 
             _wireDigitalHubDeckVideoInteractions(abortSignal) {
                 const wrap = this.els.digitalHubDeckVideoWrap;
-                const video = this.els.digitalHubDeckVideo;
-                if (!wrap || !video || wrap.dataset.rvHubDeckVideoWired === '1') return;
+                const stack = this.els.digitalHubDeckVideoStack || this.els.digitalHubDeckVideo;
+                if (!wrap || !stack || wrap.dataset.rvHubDeckVideoWired === '1') return;
                 const sig = abortSignal && abortSignal.signal ? abortSignal.signal : abortSignal;
                 const capOpts = sig ? { signal: sig, capture: true } : { capture: true };
                 try { wrap.title = 'Double-click for fullscreen · Esc to exit'; } catch (_) {}
@@ -6187,52 +6171,21 @@
                 try { this._tearDownDigitalStagingView(); } catch (_) {}
                 this._digitalDeckBVideoSrc = '';
                 this._digitalDeckBVideoMode = 'idle';
-                try {
-                    if (this.els.digitalDeckBVideo) {
-                        this.els.digitalDeckBVideo.pause();
-                        this.els.digitalDeckBVideo.removeAttribute('src');
-                    }
-                } catch (_) {}
+                [this.els.digitalDeckBVideoA, this.els.digitalDeckBVideoB].forEach((vid) => {
+                    if (!vid) return;
+                    try {
+                        vid.pause();
+                        vid.removeAttribute('src');
+                    } catch (_) {}
+                });
             }
 
             _syncDigitalDeckBVideo(forceLoad) {
-                const vid = this.els.digitalDeckBVideo;
-                if (!vid || this.digitalCenterMode !== 'deckB') return;
+                const vidA = this.els.digitalDeckBVideoA;
+                const vidB = this.els.digitalDeckBVideoB;
+                if (!vidA || !vidB || this.digitalCenterMode !== 'deckB') return;
                 try {
-                    const payload = this._resolveDigitalStagingVideoPayload();
-                    const want = String(payload.url || '');
-                    if (!payload.syncFrom && payload.mode === 'idle') {
-                        const same = this._digitalDeckBVideoSrc && want && (
-                            (typeof urlsMediaMatch === 'function')
-                                ? urlsMediaMatch(this._digitalDeckBVideoSrc, want)
-                                : this._digitalDeckBVideoSrc === want
-                        );
-                        if (!forceLoad && same && !vid.paused) return;
-                        this._applyDigitalIdleLogoVideo(vid, want);
-                        this._digitalDeckBVideoSrc = want;
-                        this._digitalDeckBVideoMode = 'idle';
-                        return;
-                    }
-                    if (!forceLoad && this._digitalDeckBVideoSrc && want && (
-                        (typeof urlsMediaMatch === 'function')
-                            ? urlsMediaMatch(this._digitalDeckBVideoSrc, want)
-                            : this._digitalDeckBVideoSrc === want
-                    )) {
-                        if (payload.syncFrom) {
-                            this._applyDigitalStagingVideoPayload(vid, payload);
-                        } else if (vid.paused) {
-                            vid.play().catch(() => {});
-                        }
-                        this._digitalDeckBVideoMode = payload.mode || 'idle';
-                        return;
-                    }
-                    this._digitalDeckBVideoMode = payload.mode || 'idle';
-                    if (!payload.syncFrom && payload.loop) {
-                        this._applyDigitalIdleLogoVideo(vid, want);
-                    } else {
-                        this._applyDigitalStagingVideoPayload(vid, payload);
-                    }
-                    this._digitalDeckBVideoSrc = want;
+                    this._syncDualVideoCrossfade(vidA, vidB, '_digitalDeckBVideoMode', forceLoad);
                 } catch (_) {}
             }
 
@@ -7233,6 +7186,62 @@
                 );
             }
 
+            _normalizeDigitalWheelDelta(ev) {
+                let dx = Number(ev && ev.deltaX) || 0;
+                let dy = Number(ev && ev.deltaY) || 0;
+                if (ev && ev.deltaMode === 1) {
+                    dx *= 16;
+                    dy *= 16;
+                } else if (ev && ev.deltaMode === 2) {
+                    dx *= 800;
+                    dy *= 800;
+                }
+                return { dx, dy };
+            }
+
+            _isDigitalEqualiserCrossfadeWheelTarget(el) {
+                if (!el || !el.closest) return false;
+                if (this.skin !== 'digital') return false;
+                if (this._digitalHubMode !== 'equaliser') return false;
+                if (this.digitalCenterMode !== 'spectrum') return false;
+                if (this._digitalStagingView) return false;
+                if (el.closest(
+                    '#options-panel, #top-menu-content, #settings-panel, #keyboard-shortcuts-panel, '
+                    + '#bottom-avatar-content, #webm-settings-panel, #mix-panel, #dj-visual-root'
+                )) return false;
+                if (el.closest('.radio-visual-digital-staging-mount.is-active')) return false;
+                if (el.closest('.radio-visual-digital-local-queue-panel:not(.display-none)')) return false;
+                if (el.closest('.radio-visual-digital-stations-panel:not(.display-none)')) return false;
+                if (el.closest('.radio-visual-digital-toolbar')) return false;
+                return !!el.closest(
+                    '.radio-visual-digital-center-pane[data-hub-mode="equaliser"] .radio-visual-digital-spectrum-row, '
+                    + '.radio-visual-digital-center-pane[data-hub-mode="equaliser"] .radio-visual-digital-dash-stack'
+                );
+            }
+
+            _onDigitalEqualiserCrossfadeWheel(ev) {
+                if (!this._isDigitalEqualiserCrossfadeWheelTarget(ev.target)) return;
+                const { dx, dy } = this._normalizeDigitalWheelDelta(ev);
+                let raw = 0;
+                if (Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) > 0.5) {
+                    raw = dx;
+                } else if (ev.shiftKey && Math.abs(dy) > 0.5) {
+                    raw = dy;
+                } else {
+                    return;
+                }
+                const resp = this._readRvThemeCssNumber('--rv-digital-crossfade-trackpad-responsiveness', 1);
+                const step = raw * 0.0015 * resp;
+                if (!Number.isFinite(step) || Math.abs(step) < 0.00001) return;
+                try { ev.preventDefault(); } catch (_) {}
+                try { ev.stopPropagation(); } catch (_) {}
+                this._setCrossfadeX(this._getCrossfadeX() + step);
+                try { this._resumeDecksForCrossfade(); } catch (_) {}
+                try {
+                    if (typeof resetIdleTimer === 'function') resetIdleTimer();
+                } catch (_) {}
+            }
+
             _wireDigitalHubAiVideoInteractions(abortSignal) {
                 const wrap = this.els.digitalHubAi;
                 const videos = [this.els.digitalHubAiVideoA, this.els.digitalHubAiVideoB].filter(Boolean);
@@ -7381,10 +7390,10 @@
                         if (RadioVisualEngine.digitalHubShowsDeckVideo(this._digitalHubMode) && ev.target && ev.target.closest) {
                             const hubVid = ev.target.closest('.radio-visual-digital-hub-deck-video-el, .radio-visual-digital-hub-deck-video');
                             if (hubVid) {
-                                const vid = this.els.digitalHubDeckVideo;
+                                const stack = this.els.digitalHubDeckVideoStack || this.els.digitalHubDeckVideo;
                                 const mount = this.els.digitalHubDeckVideoWrap;
-                                if (vid && mount && typeof toggleVideoSurfaceFullscreen === 'function') {
-                                    toggleVideoSurfaceFullscreen(vid, mount);
+                                if (stack && mount && typeof toggleVideoSurfaceFullscreen === 'function') {
+                                    toggleVideoSurfaceFullscreen(stack, mount);
                                     return;
                                 }
                             }
@@ -7421,6 +7430,9 @@
                 };
                 document.addEventListener('fullscreenchange', onStagingPmFs, sig);
                 document.addEventListener('webkitfullscreenchange', onStagingPmFs, sig);
+                digitalCenterEl.addEventListener('wheel', (ev) => {
+                    this._onDigitalEqualiserCrossfadeWheel(ev);
+                }, { signal: sig, passive: false, capture: true });
             }
 
             _applySkinUi() {
@@ -7971,6 +7983,9 @@
                 let spectrumPanSlider = null;
                 let digitalSpectrumRow = null;
                 let digitalDeckBVideo = null;
+                let digitalDeckBVideoStack = null;
+                let digitalDeckBVideoA = null;
+                let digitalDeckBVideoB = null;
                 let digitalDeckBMount = null;
                 let digitalDeckBContent = null;
                 let volDigitalReadout = null;
@@ -8284,13 +8299,22 @@
                 digitalDeckBMount.className = 'radio-visual-digital-deck-b-mount';
                 digitalDeckBContent = document.createElement('div');
                 digitalDeckBContent.className = 'radio-visual-digital-deck-b-content';
-                digitalDeckBVideo = document.createElement('video');
-                digitalDeckBVideo.className = 'radio-visual-digital-deck-b-video';
-                digitalDeckBVideo.playsInline = true;
-                digitalDeckBVideo.muted = true;
+                digitalDeckBVideoStack = document.createElement('div');
+                digitalDeckBVideoStack.className = 'radio-visual-digital-deck-b-video-stack';
+                digitalDeckBVideoA = document.createElement('video');
+                digitalDeckBVideoA.className = 'radio-visual-digital-deck-b-video radio-visual-digital-deck-b-video--a';
+                digitalDeckBVideoB = document.createElement('video');
+                digitalDeckBVideoB.className = 'radio-visual-digital-deck-b-video radio-visual-digital-deck-b-video--b';
+                [digitalDeckBVideoA, digitalDeckBVideoB].forEach((v) => {
+                    v.playsInline = true;
+                    v.muted = true;
+                });
+                digitalDeckBVideoStack.appendChild(digitalDeckBVideoA);
+                digitalDeckBVideoStack.appendChild(digitalDeckBVideoB);
+                digitalDeckBVideo = digitalDeckBVideoStack;
                 digitalDeckBMount.appendChild(digitalDeckBContent);
-                digitalDeckBMount.appendChild(digitalDeckBVideo);
-                try { this._wireDigitalDeckBVideoFullscreen(digitalDeckBVideo, digitalDeckBMount, sig); } catch (_) {}
+                digitalDeckBMount.appendChild(digitalDeckBVideoStack);
+                try { this._wireDigitalDeckBVideoFullscreen(digitalDeckBVideoStack, digitalDeckBMount, sig); } catch (_) {}
                 digitalCenterDeckB.appendChild(digitalDeckBMount);
                 digitalCenter.appendChild(digitalCenterSpectrum);
                 digitalCenter.appendChild(digitalCenterDeckB);
@@ -8492,9 +8516,15 @@
                     digitalHubAi: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai'),
                     digitalHubAiLoader: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai-loader'),
                     digitalHubDeckVideoWrap: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video'),
-                    digitalHubDeckVideo: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video-el'),
+                    digitalHubDeckVideoStack: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video-stack'),
+                    digitalHubDeckVideoA: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video-el--a'),
+                    digitalHubDeckVideoB: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video-el--b'),
+                    digitalHubDeckVideo: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video-stack'),
                     digitalCarDisplay,
                     digitalDeckBVideo,
+                    digitalDeckBVideoStack,
+                    digitalDeckBVideoA,
+                    digitalDeckBVideoB,
                     digitalDashXfade: dashXfade,
                     volDigitalReadout,
                     volDown,
@@ -8768,14 +8798,18 @@
                                 try { this._syncDigitalHubDeckVideo(); } catch (_) {}
                             }
                         }
+                        if (
+                            this._digitalStagingVideoMode === 'deck-dual'
+                            || this._digitalHubDeckVideoMode === 'deck-dual'
+                            || this._digitalDeckBVideoMode === 'deck-dual'
+                        ) {
+                            this._applyAllDigitalVideoCrossfadeOpacities();
+                        }
                         if (this._digitalStagingView === 'video') {
                             const now = performance.now();
-                            if (this._digitalStagingVideoMode === 'deck-dual') {
-                                this._applyDigitalStagingVideoCrossfadeOpacities();
-                            }
-                            const syncDeck = this._digitalStagingVideoMode === 'deck-sync'
-                                || this._digitalStagingVideoMode === 'deck-dual';
-                            const interval = syncDeck ? 800 : 4000;
+                            const interval = (this._digitalStagingVideoMode === 'deck-dual' || this._digitalStagingVideoMode === 'idle')
+                                ? 800
+                                : 4000;
                             if (!this._deckBVideoSyncAt || (now - this._deckBVideoSyncAt) > interval) {
                                 this._deckBVideoSyncAt = now;
                                 this._syncDigitalStagingVideo();

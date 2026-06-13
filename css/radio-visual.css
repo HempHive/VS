@@ -120,6 +120,7 @@
             --rv-digital-feature-divider-color: var(--global-rv-digital-feature-divider-color, #c86bff);
             --rv-digital-feature-divider-glow: var(--global-rv-digital-feature-divider-glow, 0);
             --rv-digital-feature-divider-spacing: var(--global-rv-digital-feature-divider-spacing, 3px);
+            --rv-digital-crossfade-trackpad-responsiveness: var(--global-rv-digital-crossfade-trackpad-responsiveness, 1);
         }
         #radio-visual-root .radio-visual-stations-line {
             display: flex;
@@ -734,6 +735,7 @@
             --rv-digital-feature-divider-color: var(--global-rv-digital-feature-divider-color, #c86bff);
             --rv-digital-feature-divider-glow: var(--global-rv-digital-feature-divider-glow, 0);
             --rv-digital-feature-divider-spacing: var(--global-rv-digital-feature-divider-spacing, 3px);
+            --rv-digital-crossfade-trackpad-responsiveness: var(--global-rv-digital-crossfade-trackpad-responsiveness, 1);
             background:
                 radial-gradient(ellipse 120% 80% at 50% 0%, color-mix(in srgb, var(--rv-digital-accent-color) 22%, transparent), transparent 55%),
                 radial-gradient(ellipse 90% 70% at 50% 100%, color-mix(in srgb, var(--rv-digital-bg-outer-b) 45%, transparent), transparent 60%),
@@ -1881,12 +1883,24 @@
             height: 100%;
             min-height: 0;
         }
+        #radio-visual-root .radio-visual-digital-hub-deck-video-stack {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+        }
         #radio-visual-root .radio-visual-digital-hub-deck-video-el {
             width: 100%;
             height: 100%;
             object-fit: contain;
             display: block;
             background: #000;
+        }
+        #radio-visual-root .radio-visual-digital-hub-deck-video-stack .radio-visual-digital-hub-deck-video-el {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            pointer-events: none;
         }
         #radio-visual-root .radio-visual-digital-hub-ai-stack {
             position: relative;
@@ -2096,6 +2110,28 @@
             width: 100%;
             height: 100%;
             display: block;
+        }
+        #radio-visual-root .radio-visual-digital-deck-b-video-stack {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            max-height: 100%;
+        }
+        #radio-visual-root .radio-visual-digital-deck-b-video-stack .radio-visual-digital-deck-b-video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #radio-visual-root .radio-visual-digital-deck-b-video-stack.is-hidden {
+            display: none;
         }
         #radio-visual-root .radio-visual-digital-deck-b-video {
             position: absolute;

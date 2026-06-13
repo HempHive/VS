@@ -527,7 +527,8 @@ const QUALITY = {
             featureDividerColor: '#c86bff',
             featureDividerGlow: 0,
             featureDividerStyle: 'groove',
-            featureDividerSpacing: 3
+            featureDividerSpacing: 3,
+            crossfadeTrackpadResponsiveness: 1
         };
         const ROW_DIVIDER_STYLE_IDS = ['groove', 'solid', 'pulse', 'shimmer', 'scan', 'rainbow', 'wave'];
         const DIGITAL_CLOCK_FORMATS = {
@@ -704,6 +705,8 @@ const QUALITY = {
         const optDigitalStagingGlowOpacityReadout = document.getElementById('opt-digital-staging-glow-opacity-readout');
         const optDigitalStagingScale = document.getElementById('opt-digital-staging-scale');
         const optDigitalStagingScaleReadout = document.getElementById('opt-digital-staging-scale-readout');
+        const optDigitalCrossfadeTrackpadResponsiveness = document.getElementById('opt-digital-crossfade-trackpad-responsiveness');
+        const optDigitalCrossfadeTrackpadResponsivenessReadout = document.getElementById('opt-digital-crossfade-trackpad-responsiveness-readout');
         const optDigitalBgGif = document.getElementById('opt-digital-bg-gif');
         const optDigitalAccent = document.getElementById('opt-digital-accent');
         const optDigitalFont = document.getElementById('opt-digital-font');
@@ -1283,6 +1286,11 @@ const QUALITY = {
             if (!Number.isFinite(v)) return fallback;
             return Math.max(0.5, Math.min(1.5, Math.round(v * 100) / 100));
         }
+        function clampCrossfadeTrackpadResponsiveness(raw, fallback = 1) {
+            const v = Number(raw);
+            if (!Number.isFinite(v)) return fallback;
+            return Math.max(0.25, Math.min(2, Math.round(v * 100) / 100));
+        }
         function clampThemeOpacity(raw, fallback = 1, min = 0.15) {
             const v = Number(raw);
             if (!Number.isFinite(v)) return fallback;
@@ -1382,7 +1390,11 @@ const QUALITY = {
                 featureDividerColor: src.featureDividerColor || d.featureDividerColor,
                 featureDividerGlow: clampThemeOpacity(src.featureDividerGlow, d.featureDividerGlow, 0),
                 featureDividerStyle: normalizeRowDividerStyle(src.featureDividerStyle, d.featureDividerStyle),
-                featureDividerSpacing: clampRowDividerSpacing(src.featureDividerSpacing, d.featureDividerSpacing)
+                featureDividerSpacing: clampRowDividerSpacing(src.featureDividerSpacing, d.featureDividerSpacing),
+                crossfadeTrackpadResponsiveness: clampCrossfadeTrackpadResponsiveness(
+                    src.crossfadeTrackpadResponsiveness,
+                    d.crossfadeTrackpadResponsiveness
+                )
             };
         }
         function digitalThemePresetKeys(preset) {
@@ -1505,6 +1517,10 @@ const QUALITY = {
                 String(Math.min(1, Math.max(0, t.stagingGlowOpacity * 0.5)))
             );
             target.style.setProperty('--rv-digital-staging-scale', String(t.stagingScale));
+            target.style.setProperty(
+                '--rv-digital-crossfade-trackpad-responsiveness',
+                String(t.crossfadeTrackpadResponsiveness)
+            );
             target.style.setProperty('--rv-digital-toolbar-divider-height', `${t.toolbarDividerHeight}px`);
             target.style.setProperty('--rv-digital-toolbar-divider-color', t.toolbarDividerColor);
             target.style.setProperty('--rv-digital-toolbar-divider-glow', String(t.toolbarDividerGlow));
@@ -1598,6 +1614,10 @@ const QUALITY = {
             root.style.setProperty('--global-rv-digital-feature-divider-color', t.featureDividerColor);
             root.style.setProperty('--global-rv-digital-feature-divider-glow', String(t.featureDividerGlow));
             root.style.setProperty('--global-rv-digital-feature-divider-spacing', `${t.featureDividerSpacing}px`);
+            root.style.setProperty(
+                '--global-rv-digital-crossfade-trackpad-responsiveness',
+                String(t.crossfadeTrackpadResponsiveness)
+            );
             applyDigitalThemeCssVars(document.getElementById('radio-visual-root'), t);
             applyButtonInfoOverlaysFromTheme(t);
             reapplyDigitalThemeImageLayers();
@@ -1848,6 +1868,14 @@ const QUALITY = {
             if (optDigitalStagingScaleReadout) {
                 optDigitalStagingScaleReadout.textContent = `${Math.round(theme.stagingScale * 100)}%`;
             }
+            if (optDigitalCrossfadeTrackpadResponsiveness) {
+                optDigitalCrossfadeTrackpadResponsiveness.value = String(
+                    Math.round(theme.crossfadeTrackpadResponsiveness * 100)
+                );
+            }
+            if (optDigitalCrossfadeTrackpadResponsivenessReadout) {
+                optDigitalCrossfadeTrackpadResponsivenessReadout.textContent = `${Math.round(theme.crossfadeTrackpadResponsiveness * 100)}%`;
+            }
             const maxMin = readAutoMixMaxMinFromStorage();
             if (optAutomixMax) optAutomixMax.value = String(maxMin);
             if (optAutomixMaxReadout) optAutomixMaxReadout.textContent = `${maxMin}m`;
@@ -2045,6 +2073,10 @@ const QUALITY = {
                 stagingScale: clampStagingScale(
                     (Number(optDigitalStagingScale && optDigitalStagingScale.value) || 100) / 100,
                     DEFAULT_DIGITAL_THEME.stagingScale
+                ),
+                crossfadeTrackpadResponsiveness: clampCrossfadeTrackpadResponsiveness(
+                    (Number(optDigitalCrossfadeTrackpadResponsiveness && optDigitalCrossfadeTrackpadResponsiveness.value) || 100) / 100,
+                    DEFAULT_DIGITAL_THEME.crossfadeTrackpadResponsiveness
                 ),
                 toolbarDividerHeight: clampRowDividerHeight(
                     Number(optDigitalToolbarDividerHeight && optDigitalToolbarDividerHeight.value),
@@ -2305,6 +2337,14 @@ const QUALITY = {
             if (optDigitalStagingScaleReadout) {
                 optDigitalStagingScaleReadout.textContent = `${Math.round(t.stagingScale * 100)}%`;
             }
+            if (optDigitalCrossfadeTrackpadResponsiveness) {
+                optDigitalCrossfadeTrackpadResponsiveness.value = String(
+                    Math.round(t.crossfadeTrackpadResponsiveness * 100)
+                );
+            }
+            if (optDigitalCrossfadeTrackpadResponsivenessReadout) {
+                optDigitalCrossfadeTrackpadResponsivenessReadout.textContent = `${Math.round(t.crossfadeTrackpadResponsiveness * 100)}%`;
+            }
             if (optDigitalThemePreset) optDigitalThemePreset.value = t.presetId || detectDigitalThemePresetId(t);
         }
         function syncDigitalThemeScaleReadoutsFromControls() {
@@ -2403,6 +2443,9 @@ const QUALITY = {
             }
             if (optDigitalStagingScale && optDigitalStagingScaleReadout) {
                 optDigitalStagingScaleReadout.textContent = `${optDigitalStagingScale.value}%`;
+            }
+            if (optDigitalCrossfadeTrackpadResponsiveness && optDigitalCrossfadeTrackpadResponsivenessReadout) {
+                optDigitalCrossfadeTrackpadResponsivenessReadout.textContent = `${optDigitalCrossfadeTrackpadResponsiveness.value}%`;
             }
         }
         function isOptionsOpen() {
@@ -2859,6 +2902,7 @@ const QUALITY = {
                 optDigitalBgPanelOpacity, optDigitalBgGifOpacity,
                 optDigitalStagingBorderColor, optDigitalStagingBorderOpacity,
                 optDigitalStagingGlowColor, optDigitalStagingGlowOpacity, optDigitalStagingScale,
+                optDigitalCrossfadeTrackpadResponsiveness,
                 optDigitalBtnBlueTop, optDigitalBtnBlueBase, optDigitalBtnBlueAccent, optDigitalBtnBlueLabel, optDigitalBtnBlueActive,
                 optDigitalBtnBlueAccentOpacity, optDigitalBtnBlueOpacity,
                 optDigitalBtnBlueTextOpacity, optDigitalBtnBlueBorderOpacity,
@@ -3701,7 +3745,11 @@ const QUALITY = {
                     }
                 }
                 const feed = deckVideoFeeds[k];
-                const media = k === 'b' ? audioElB : audioEl;
+                const media = k === 'b'
+                    ? audioElB
+                    : ((typeof getDeckAMediaForPlaybackState === 'function')
+                        ? getDeckAMediaForPlaybackState()
+                        : audioEl);
                 if (!feed || !feed.url || !media) return null;
                 const vf = feed.videoFile === undefined ? isLikelyVideoUrl(feed.url) : !!feed.videoFile;
                 if (!vf) return null;
@@ -3763,7 +3811,21 @@ const QUALITY = {
                 return 0;
             }
         }
-        /** Digital Radio VIDEO staging: blend deck A/B mirrors by crossfader (no queue layer). */
+        function getDigitalVideoIdleLayer() {
+            const url = (typeof DECK_B_IDLE_LOGO_URL === 'string' && DECK_B_IDLE_LOGO_URL)
+                ? DECK_B_IDLE_LOGO_URL
+                : 'assets/video/logo.mp4';
+            return { url, label: 'Video', loop: true, mode: 'idle' };
+        }
+        function deckVideoMetaToCrossfadeLayer(meta) {
+            if (!meta || !meta.url) return null;
+            return {
+                url: meta.url,
+                label: meta.label,
+                syncFrom: meta.syncFrom || meta.media
+            };
+        }
+        /** Digital Radio VIDEO surfaces: blend deck A/B mirrors by crossfader; idle decks show logo.mp4. */
         function computeDigitalStagingVideoCrossfadePlan() {
             let x = getAppCrossfade01();
             const EDGE_SNAP = 0.03;
@@ -3773,22 +3835,34 @@ const QUALITY = {
             const gb = x;
             const metaA = getDeckActiveVideoMeta('a');
             const metaB = getDeckActiveVideoMeta('b');
-            const layerA = metaA ? { url: metaA.url, label: metaA.label, syncFrom: metaA.syncFrom || metaA.media } : null;
-            const layerB = metaB ? { url: metaB.url, label: metaB.label, syncFrom: metaB.syncFrom || metaB.media } : null;
-            let opA = 0;
-            let opB = 0;
-            if (layerA && layerB) {
-                opA = ga;
-                opB = gb;
-            } else if (layerA) {
-                opA = 1;
-            } else if (layerB) {
-                opB = 1;
+            const idle = getDigitalVideoIdleLayer();
+            const hasA = !!metaA;
+            const hasB = !!metaB;
+            if (!hasA && !hasB) {
+                return {
+                    layerA: idle,
+                    layerB: null,
+                    opA: 1,
+                    opB: 0,
+                    label: idle.label,
+                    dual: false,
+                    bothIdle: true
+                };
             }
+            const layerA = deckVideoMetaToCrossfadeLayer(metaA) || idle;
+            const layerB = deckVideoMetaToCrossfadeLayer(metaB) || idle;
             let label = 'Video';
-            if (opB >= opA && layerB) label = layerB.label;
-            else if (layerA) label = layerA.label;
-            return { layerA, layerB, opA, opB, label, dual: !!(layerA && layerB) };
+            if (gb >= ga && metaB) label = metaB.label;
+            else if (metaA) label = metaA.label;
+            return {
+                layerA,
+                layerB,
+                opA: ga,
+                opB: gb,
+                label,
+                dual: true,
+                bothIdle: false
+            };
         }
         /**
          * MP4 etc. play through <audio> into the mix; VIDEO mirror follows the deck winning the DJ crossfader
@@ -6422,6 +6496,7 @@ function exposeAppBindingsToGlobal() {
     try { g.code = code; } catch (_) {}
     try { g.computeDeckBVideoCrossfadePlan = computeDeckBVideoCrossfadePlan; } catch (_) {}
     try { g.computeDigitalStagingVideoCrossfadePlan = computeDigitalStagingVideoCrossfadePlan; } catch (_) {}
+    try { g.getDigitalVideoIdleLayer = getDigitalVideoIdleLayer; } catch (_) {}
     try { g.container = container; } catch (_) {}
     try { g.cs = cs; } catch (_) {}
     try { g.cur = cur; } catch (_) {}
