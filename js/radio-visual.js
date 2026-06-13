@@ -33,8 +33,8 @@
             static get DEFAULT_SPECTRUM_RIBBON_ROTATE() {
                 return {
                     rotateLHigh: 0,
-                    rotateLMid: 0,
-                    rotateLLow: 0,
+                    rotateLMid: 342,
+                    rotateLLow: 310,
                     rotateRHigh: 0,
                     rotateRMid: 0,
                     rotateRLow: 0
@@ -43,7 +43,7 @@
             static get DEFAULT_SPECTRUM_SETTINGS() {
                 return {
                     colorStreamId: 'aurora',
-                    scale: 1,
+                    scale: 1.45,
                     opacity: 1,
                     audioStrength: 1,
                     colorFlow: 1,

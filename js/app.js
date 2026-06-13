@@ -456,79 +456,100 @@ const QUALITY = {
         const DIGITAL_BG_GIF_MANIFEST_URL = 'assets/gifs/digital/manifest.json';
         const DIGITAL_BG_GIF_STORAGE_KEY = 'radioVisual.digitalBgGif.v1';
         const DIGITAL_BG_GIF_ENABLED_KEY = 'radioVisual.digitalBgGif.enabled.v1';
+        const TRIX_BG_OUTER_IMAGE = 'assets/images/trix.webp';
+        const TRIX_SPECTRUM_SETTINGS = {
+            colorStreamId: 'aurora',
+            scale: 1.45,
+            opacity: 1,
+            audioStrength: 1,
+            colorFlow: 1,
+            eqColorStreamId: 'aurora',
+            eqScale: 1,
+            eqOpacity: 1,
+            eqAudioStrength: 1,
+            eqColorFlow: 1,
+            rotateLHigh: 0,
+            rotateLMid: 342,
+            rotateLLow: 310,
+            rotateRHigh: 0,
+            rotateRMid: 0,
+            rotateRLow: 0
+        };
+        const TRIX_BACKGROUND_GIF = { enabled: true, filename: 'digb.gif' };
         const DEFAULT_DIGITAL_THEME = {
-            presetId: 'midnight-blue',
+            presetId: 'trix',
             bgA: '#0a1628',
             bgB: '#061018',
             bgC: '#0c1020',
-            bgOuterA: '#0a1628',
+            bgOuterA: '#f31212',
             bgOuterB: '#061018',
-            bgOuterC: '#0c1020',
+            bgOuterC: '#db9706',
             bgGradientAngle: 165,
-            bgOuterGradientAngle: 165,
+            bgOuterGradientAngle: 162,
             bgOuterImageOpacity: 1,
+            bgOuterImageUrl: TRIX_BG_OUTER_IMAGE,
             bgPanelImageOpacity: 1,
-            bgPanelOpacity: 1,
+            bgPanelOpacity: 0.02,
             bgGifOpacity: 1,
-            accent: '#ffd246',
+            accent: '#ffe747',
             font: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
-            btnBlueTop: '#123048',
-            btnBlueBase: '#081820',
-            btnBlueAccent: '#00dcff',
-            btnBlueLabel: '#9eeeff',
-            btnBlueActive: '#ffe566',
-            btnBlueAccentOpacity: 1,
-            btnBlueOpacity: 1,
-            btnBlueTextOpacity: 1,
-            btnBlueBorderOpacity: 1,
-            btnPurpleTop: '#5a3488',
-            btnPurpleBase: '#1a0c30',
-            btnPurpleLabel: '#5cff9e',
-            btnPurpleActive: '#ff5ce8',
-            btnPurpleAccentOpacity: 1,
-            btnPurpleOpacity: 1,
-            btnPurpleTextOpacity: 1,
-            btnPurpleBorderOpacity: 1,
             btnBlueFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
             btnPurpleFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
-            btnBlueFontScale: 1,
-            btnPurpleFontScale: 1,
-            btnOrangeTop: '#e87820',
-            btnOrangeBase: '#8a4010',
-            btnOrangeLabel: '#ffe8cc',
+            btnBlueTop: '#9ab512',
+            btnBlueBase: '#5d6a2f',
+            btnBlueAccent: '#19c844',
+            btnBlueLabel: '#fff824',
+            btnBlueActive: '#cddb00',
+            btnBlueAccentOpacity: 0.33,
+            btnBlueOpacity: 0.15,
+            btnBlueTextOpacity: 0.44,
+            btnBlueBorderOpacity: 1,
+            btnPurpleTop: '#d9bb20',
+            btnPurpleBase: '#28d425',
+            btnPurpleLabel: '#b62534',
+            btnPurpleActive: '#f41fd8',
+            btnPurpleAccentOpacity: 0.83,
+            btnPurpleOpacity: 0.15,
+            btnPurpleTextOpacity: 0.93,
+            btnPurpleBorderOpacity: 0.86,
+            btnBlueFontScale: 1.15,
+            btnPurpleFontScale: 1.15,
+            btnOrangeTop: '#21e849',
+            btnOrangeBase: '#e71d1d',
+            btnOrangeLabel: '#fff1e0',
             btnOrangeActive: '#ffcc00',
             btnOrangeAccentOpacity: 1,
-            btnOrangeOpacity: 1,
-            btnOrangeTextOpacity: 1,
+            btnOrangeOpacity: 0.15,
+            btnOrangeTextOpacity: 0.57,
             btnOrangeBorderOpacity: 1,
             btnOrangeFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
             btnOrangeFontScale: 1,
             clockFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
-            clockColor: '#fff566',
-            clockFontScale: 1,
-            clockOpacity: 1,
+            clockColor: '#c3e70d',
+            clockFontScale: 1.45,
+            clockOpacity: 0.55,
             clockFormat: 'weekday-time',
             showButtonInfoOverlays: false,
             showBlueToolbar: true,
             showPurpleButtons: true,
-            showOrangeButtons: false,
+            showOrangeButtons: true,
             showStagingPanel: true,
-            stagingBorderColor: '#00dcff',
+            stagingBorderColor: '#00d5ff',
             stagingBorderOpacity: 0.35,
-            stagingGlowColor: '#00b4ff',
-            stagingGlowOpacity: 0.12,
+            stagingGlowColor: '#00b3ff',
+            stagingGlowOpacity: 0.15,
             stagingScale: 1,
-            toolbarDividerHeight: 2,
-            toolbarDividerColor: '#00dcff',
+            toolbarDividerHeight: 0,
+            toolbarDividerColor: '#ffa200',
             toolbarDividerGlow: 0,
             toolbarDividerStyle: 'groove',
             toolbarDividerSpacing: 3,
-            featureDividerHeight: 2,
+            featureDividerHeight: 0,
             featureDividerColor: '#c86bff',
             featureDividerGlow: 0,
             featureDividerStyle: 'groove',
             featureDividerSpacing: 3,
-            crossfadeTrackpadResponsiveness: 1,
+            crossfadeTrackpadResponsiveness: 1.55,
             crossfadeTrackpadInvert: false
         };
         const ROW_DIVIDER_STYLE_IDS = ['groove', 'solid', 'pulse', 'shimmer', 'scan', 'rainbow', 'wave'];
@@ -607,60 +628,72 @@ const QUALITY = {
                 bgGradientAngle: 165,
                 bgOuterGradientAngle: 162,
                 bgOuterImageOpacity: 1,
+                bgOuterImageUrl: TRIX_BG_OUTER_IMAGE,
                 bgPanelImageOpacity: 1,
-                bgPanelOpacity: 0.26,
+                bgPanelOpacity: 0.02,
+                bgGifOpacity: 1,
                 accent: '#ffe747',
                 font: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
                 btnBlueFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
                 btnPurpleFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
                 btnBlueTop: '#9ab512',
-                btnBlueBase: '#4a602a',
-                btnBlueAccent: '#1cce49',
+                btnBlueBase: '#5d6a2f',
+                btnBlueAccent: '#19c844',
                 btnBlueLabel: '#fff824',
+                btnBlueActive: '#cddb00',
+                btnBlueAccentOpacity: 0.33,
                 btnBlueOpacity: 0.15,
-                btnBlueTextOpacity: 0.56,
+                btnBlueTextOpacity: 0.44,
                 btnBlueBorderOpacity: 1,
-                btnPurpleTop: '#110e16',
+                btnPurpleTop: '#d9bb20',
                 btnPurpleBase: '#28d425',
                 btnPurpleLabel: '#b62534',
-                btnPurpleActive: '#ff5ce8',
-                btnPurpleOpacity: 0.2,
-                btnPurpleTextOpacity: 0.68,
-                btnPurpleBorderOpacity: 1,
+                btnPurpleActive: '#f41fd8',
+                btnPurpleAccentOpacity: 0.83,
+                btnPurpleOpacity: 0.15,
+                btnPurpleTextOpacity: 0.93,
+                btnPurpleBorderOpacity: 0.86,
                 btnBlueFontScale: 1.15,
-                btnPurpleFontScale: 1,
+                btnPurpleFontScale: 1.15,
+                btnOrangeTop: '#21e849',
+                btnOrangeBase: '#e71d1d',
+                btnOrangeLabel: '#fff1e0',
+                btnOrangeActive: '#ffcc00',
+                btnOrangeAccentOpacity: 1,
+                btnOrangeOpacity: 0.15,
+                btnOrangeTextOpacity: 0.57,
+                btnOrangeBorderOpacity: 1,
+                btnOrangeFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
+                btnOrangeFontScale: 1,
                 clockFont: "'Orbitron', 'Share Tech Mono', ui-monospace, monospace",
-                clockColor: '#1c9c1e',
+                clockColor: '#c3e70d',
                 clockFontScale: 1.45,
-                clockOpacity: 0.57,
+                clockOpacity: 0.55,
                 clockFormat: 'weekday-time',
                 showButtonInfoOverlays: false,
                 showBlueToolbar: true,
                 showPurpleButtons: true,
+                showOrangeButtons: true,
                 showStagingPanel: true,
                 stagingBorderColor: '#00d5ff',
                 stagingBorderOpacity: 0.35,
                 stagingGlowColor: '#00b3ff',
                 stagingGlowOpacity: 0.15,
                 stagingScale: 1,
-                spectrum: {
-                    colorStreamId: 'aurora',
-                    scale: 1,
-                    opacity: 1,
-                    audioStrength: 1,
-                    colorFlow: 1,
-                    eqColorStreamId: 'aurora',
-                    eqScale: 1,
-                    eqOpacity: 1,
-                    eqAudioStrength: 1,
-                    eqColorFlow: 1,
-                    rotateLHigh: 0,
-                    rotateLMid: 342,
-                    rotateLLow: 324,
-                    rotateRHigh: 0,
-                    rotateRMid: 0,
-                    rotateRLow: 0
-                }
+                toolbarDividerHeight: 0,
+                toolbarDividerColor: '#ffa200',
+                toolbarDividerGlow: 0,
+                toolbarDividerStyle: 'groove',
+                toolbarDividerSpacing: 3,
+                featureDividerHeight: 0,
+                featureDividerColor: '#c86bff',
+                featureDividerGlow: 0,
+                featureDividerStyle: 'groove',
+                featureDividerSpacing: 3,
+                crossfadeTrackpadResponsiveness: 1.55,
+                crossfadeTrackpadInvert: false,
+                spectrum: TRIX_SPECTRUM_SETTINGS,
+                backgroundGif: TRIX_BACKGROUND_GIF
             }
         };
         const optionsPanel = document.getElementById('options-panel');
@@ -1108,10 +1141,55 @@ const QUALITY = {
         }
         function themeImageStatusLabel(dataUrl, fallbackEmpty, appliedPrefix) {
             if (!dataUrl) return fallbackEmpty;
-            const mime = String(dataUrl).slice(5, String(dataUrl).indexOf(';')).toLowerCase();
-            if (mime === 'image/gif') return `${appliedPrefix} — animated GIF`;
-            if (mime === 'image/webp') return `${appliedPrefix} — WebP (animation preserved)`;
+            const s = String(dataUrl);
+            if (s.startsWith('data:')) {
+                const mime = s.slice(5, s.indexOf(';')).toLowerCase();
+                if (mime === 'image/gif') return `${appliedPrefix} — animated GIF`;
+                if (mime === 'image/webp') return `${appliedPrefix} — WebP (animation preserved)`;
+                return appliedPrefix;
+            }
+            if (/\.webp$/i.test(s)) return `${appliedPrefix} — WebP`;
+            if (/\.gif$/i.test(s)) return `${appliedPrefix} — animated GIF`;
             return appliedPrefix;
+        }
+        function resolveThemeImageSrc(url) {
+            const s = String(url || '').trim();
+            if (!s) return '';
+            if (s.startsWith('data:') || s.startsWith('blob:') || /^https?:\/\//i.test(s)) return s;
+            try {
+                return new URL(s, globalThis.location?.href || 'http://localhost/').href;
+            } catch (_) {
+                return s;
+            }
+        }
+        function resolveDigitalBgOuterImageUrl(theme) {
+            const custom = loadDigitalBgOuterImageFromStorage();
+            if (custom) return custom;
+            const t = normalizeDigitalTheme(theme || loadDigitalThemeFromStorage());
+            if (t.bgOuterImageUrl) return t.bgOuterImageUrl;
+            const preset = DIGITAL_THEME_PRESETS[t.presetId];
+            if (preset && preset.bgOuterImageUrl) return preset.bgOuterImageUrl;
+            return '';
+        }
+        function applyPresetThemeBundleExtras(preset) {
+            if (!preset) return;
+            if (preset.spectrum) {
+                const RVE = getSpectrumEngineClass();
+                const spectrum = (RVE && typeof RVE.clampSpectrumSettings === 'function')
+                    ? RVE.clampSpectrumSettings(preset.spectrum)
+                    : preset.spectrum;
+                applySpectrumSettingsToControls(spectrum);
+                applyDigitalSpectrumSettings(spectrum);
+            }
+            if (preset.backgroundGif) {
+                const filename = preset.backgroundGif.enabled
+                    ? String(preset.backgroundGif.filename || '').trim()
+                    : '';
+                applyDigitalBgGifFromOptions(filename);
+                if (optDigitalBgGif && filename) optDigitalBgGif.value = filename;
+                else if (optDigitalBgGif && !filename) optDigitalBgGif.value = '';
+            }
+            reapplyDigitalThemeImageLayers();
         }
         function syncDigitalBgOuterImageStatusUi(dataUrl) {
             if (!optDigitalBgOuterImageStatus) return;
@@ -1144,20 +1222,21 @@ const QUALITY = {
         }
         function applyDigitalBgOuterImageToUi(dataUrl, imageOpacity = 1) {
             const op = clampThemeOpacity(imageOpacity, 1, 0);
+            const src = dataUrl ? resolveThemeImageSrc(dataUrl) : '';
             const root = document.documentElement;
             root.style.setProperty('--global-rv-digital-bg-outer-image-opacity', String(op));
             const rvRoot = document.getElementById('radio-visual-root');
             if (rvRoot) {
                 rvRoot.style.setProperty('--rv-digital-bg-outer-image-opacity', String(op));
-                if (dataUrl) {
+                if (src) {
                     const img = ensureThemeOuterImageEl(rvRoot);
-                    if (img && img.src !== dataUrl) img.src = dataUrl;
+                    if (img && img.src !== src) img.src = src;
                 } else {
                     const img = rvRoot.querySelector('.radio-visual-digital-theme-outer-image');
                     if (img) img.remove();
                 }
             }
-            syncDigitalBgOuterImageStatusUi(dataUrl);
+            syncDigitalBgOuterImageStatusUi(dataUrl || src);
         }
         function loadDigitalBgPanelImageFromStorage() {
             try { return localStorage.getItem(DIGITAL_BG_PANEL_IMAGE_KEY) || ''; } catch (_) {}
@@ -1196,7 +1275,7 @@ const QUALITY = {
         }
         function reapplyDigitalThemeImageLayers() {
             const theme = loadDigitalThemeFromStorage();
-            applyDigitalBgOuterImageToUi(loadDigitalBgOuterImageFromStorage(), theme.bgOuterImageOpacity);
+            applyDigitalBgOuterImageToUi(resolveDigitalBgOuterImageUrl(theme), theme.bgOuterImageOpacity);
             applyDigitalBgPanelImageToUi(loadDigitalBgPanelImageFromStorage(), theme.bgPanelImageOpacity);
         }
         function readThemeImageFileAsDataUrl(file) {
@@ -1260,7 +1339,7 @@ const QUALITY = {
         function clearDigitalBgOuterImage() {
             saveDigitalBgOuterImageToStorage('');
             const theme = loadDigitalThemeFromStorage();
-            applyDigitalBgOuterImageToUi('', theme.bgOuterImageOpacity);
+            applyDigitalBgOuterImageToUi(resolveDigitalBgOuterImageUrl(theme), theme.bgOuterImageOpacity);
             if (optDigitalBgOuterImageFile) optDigitalBgOuterImageFile.value = '';
         }
         async function handleDigitalBgPanelImageUpload(file) {
@@ -1332,6 +1411,7 @@ const QUALITY = {
                     d.bgOuterGradientAngle
                 ),
                 bgOuterImageOpacity: clampThemeOpacity(src.bgOuterImageOpacity, d.bgOuterImageOpacity, 0),
+                bgOuterImageUrl: typeof src.bgOuterImageUrl === 'string' ? src.bgOuterImageUrl : (d.bgOuterImageUrl || ''),
                 bgPanelImageOpacity: clampThemeOpacity(src.bgPanelImageOpacity, d.bgPanelImageOpacity, 0),
                 bgPanelOpacity: clampThemeOpacity(src.bgPanelOpacity, d.bgPanelOpacity, 0),
                 bgGifOpacity: clampThemeOpacity(src.bgGifOpacity, d.bgGifOpacity, 0),
@@ -1401,7 +1481,7 @@ const QUALITY = {
             };
         }
         function digitalThemePresetKeys(preset) {
-            return Object.keys(preset).filter((key) => key !== 'label' && key !== 'spectrum');
+            return Object.keys(preset).filter((key) => key !== 'label' && key !== 'spectrum' && key !== 'backgroundGif');
         }
         function themeMatchesPreset(theme, preset) {
             const t = normalizeDigitalTheme(theme);
@@ -2509,13 +2589,11 @@ const QUALITY = {
         }
         function resetAppearanceOptionsSection() {
             saveDigitalThemeToStorage(DEFAULT_DIGITAL_THEME);
-            clearDigitalBgOuterImage();
             clearDigitalBgPanelImage();
-            applyDigitalRadioTheme(DEFAULT_DIGITAL_THEME);
+            clearDigitalBgOuterImage();
             applyDigitalThemeToControls(DEFAULT_DIGITAL_THEME);
-            applyDigitalBgGifFromOptions('');
-            if (optDigitalBgGif) optDigitalBgGif.value = '';
-            try { populateDigitalBgGifSelect(); } catch (_) {}
+            applyDigitalRadioTheme(DEFAULT_DIGITAL_THEME);
+            applyPresetThemeBundleExtras(DIGITAL_THEME_PRESETS.trix);
         }
         function resetStagingPanelOptions() {
             const d = DEFAULT_DIGITAL_THEME;
@@ -2890,14 +2968,7 @@ const QUALITY = {
                     applyDigitalThemeToControls(theme);
                     saveDigitalThemeToStorage(theme);
                     applyDigitalRadioTheme(theme);
-                    if (preset && preset.spectrum) {
-                        const RVE = getSpectrumEngineClass();
-                        const spectrum = (RVE && typeof RVE.clampSpectrumSettings === 'function')
-                            ? RVE.clampSpectrumSettings(preset.spectrum)
-                            : preset.spectrum;
-                        applySpectrumSettingsToControls(spectrum);
-                        applyDigitalSpectrumSettings(spectrum);
-                    }
+                    applyPresetThemeBundleExtras(preset);
                 });
             }
             [
@@ -3109,6 +3180,11 @@ const QUALITY = {
             }
         }
         applyDigitalRadioTheme(loadDigitalThemeFromStorage());
+        try {
+            if (!localStorage.getItem(DIGITAL_THEME_STORAGE_KEY)) {
+                applyPresetThemeBundleExtras(DIGITAL_THEME_PRESETS.trix);
+            }
+        } catch (_) {}
         wireOptionsPanelControls();
 
         const UI_HUD_POSITION_KEY = 'ui.hud.position.v1';
