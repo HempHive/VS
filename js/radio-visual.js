@@ -7199,23 +7199,30 @@
                 return { dx, dy };
             }
 
-            _isDigitalEqualiserCrossfadeWheelTarget(el) {
+            _isDigitalCrossfadeTrackpadWheelTarget(el) {
                 if (!el || !el.closest) return false;
                 if (this.skin !== 'digital') return false;
-                if (this._digitalHubMode !== 'equaliser') return false;
                 if (this.digitalCenterMode !== 'spectrum') return false;
-                if (this._digitalStagingView) return false;
                 if (el.closest(
                     '#options-panel, #top-menu-content, #settings-panel, #keyboard-shortcuts-panel, '
                     + '#bottom-avatar-content, #webm-settings-panel, #mix-panel, #dj-visual-root'
                 )) return false;
-                if (el.closest('.radio-visual-digital-staging-mount.is-active')) return false;
                 if (el.closest('.radio-visual-digital-local-queue-panel:not(.display-none)')) return false;
                 if (el.closest('.radio-visual-digital-stations-panel:not(.display-none)')) return false;
                 if (el.closest('.radio-visual-digital-toolbar')) return false;
+
+                const pane = el.closest('.radio-visual-digital-center-pane');
+                if (!pane || pane.classList.contains('is-spectrum-hud-hidden')) return false;
+
+                // Crossfader strip: always (while dash HUD is visible), including VIDEO hub / staging video.
+                if (el.closest('.radio-visual-digital-dash-xfade')) return true;
+
+                if (this._digitalStagingView) return false;
+                if (el.closest('.radio-visual-digital-staging-mount.is-active')) return false;
+                if (this._digitalHubMode !== 'equaliser') return false;
+
                 return !!el.closest(
-                    '.radio-visual-digital-center-pane[data-hub-mode="equaliser"] .radio-visual-digital-spectrum-row, '
-                    + '.radio-visual-digital-center-pane[data-hub-mode="equaliser"] .radio-visual-digital-dash-stack'
+                    '.radio-visual-digital-spectrum-row, .radio-visual-digital-dash-stack'
                 );
             }
 
@@ -7229,7 +7236,7 @@
             }
 
             _onDigitalEqualiserCrossfadeWheel(ev) {
-                if (!this._isDigitalEqualiserCrossfadeWheelTarget(ev.target)) return;
+                if (!this._isDigitalCrossfadeTrackpadWheelTarget(ev.target)) return;
                 const { dx, dy } = this._normalizeDigitalWheelDelta(ev);
                 let raw = 0;
                 if (Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) > 0.5) {
