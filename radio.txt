@@ -27,7 +27,6 @@ Dance♣️|http://stream.104.6rtl.com/dance-hits/mp3-192/
 Chill🥶FM|https://chillfm.stream.laut.fm/chillfm
 Los40♦️Urban|https://playerservices.streamtheworld.com/api/livestream-redirect/LOS40_URBAN.mp3
 bigFM💪TurnUP|https://stream.bigfm.de/urbanclubbeats/mp3-128/
-Radio🥗Mixes|http://usa10.fastcast4u.com:1470/stream
 Mix💗'97|https://live.leanstream.co/CIGLFM-MP3
 Trap🏡|https://trap.stream.laut.fm/trap
 Bestof🪤|https://bestoftrap.stream.laut.fm/bestoftrap
