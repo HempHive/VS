@@ -1399,16 +1399,16 @@
         #mix-bpm-row #mix-bpm-legend {
             order: 3;
         }
-        #mix-bpm-row .mix-bpm-controls {
+        #mix-bpm-row:not(.is-digital-hub-mounted) .mix-bpm-controls {
             display: contents;
         }
-        #mix-bpm-row #mix-bpm-a { order: 1; }
-        #mix-bpm-row #mix-bpm-b { order: 4; }
-        #mix-bpm-row #mix-bpm-grid { order: 5; }
-        #mix-bpm-row #mix-bpm-tap-a { order: 6; }
-        #mix-bpm-row #mix-bpm-tap-b { order: 7; }
-        #mix-bpm-row #mix-bpm-nudge-bm { order: 8; }
-        #mix-bpm-row #mix-bpm-nudge-bp { order: 9; }
+        #mix-bpm-row:not(.is-digital-hub-mounted) #mix-bpm-a { order: 1; }
+        #mix-bpm-row:not(.is-digital-hub-mounted) #mix-bpm-b { order: 4; }
+        #mix-bpm-row:not(.is-digital-hub-mounted) #mix-bpm-grid { order: 5; }
+        #mix-bpm-row:not(.is-digital-hub-mounted) #mix-bpm-tap-a { order: 6; }
+        #mix-bpm-row:not(.is-digital-hub-mounted) #mix-bpm-tap-b { order: 7; }
+        #mix-bpm-row:not(.is-digital-hub-mounted) #mix-bpm-nudge-bm { order: 8; }
+        #mix-bpm-row:not(.is-digital-hub-mounted) #mix-bpm-nudge-bp { order: 9; }
         #mix-bpm-a, #mix-bpm-b {
             flex: 0 0 auto;
         }

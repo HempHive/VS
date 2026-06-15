@@ -1744,7 +1744,7 @@
         #radio-visual-root .radio-visual-digital-hub-bpm #mix-bpm-row.is-digital-hub-mounted .mix-bpm-controls {
             grid-column: 1;
             grid-row: 3;
-            display: grid;
+            display: grid !important;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             grid-template-rows: repeat(2, minmax(clamp(22px, 4.5cqh, 30px), auto));
             gap: clamp(4px, 0.75cqw, 8px);
@@ -1754,6 +1754,7 @@
             box-sizing: border-box;
         }
         #radio-visual-root .radio-visual-digital-hub-bpm #mix-bpm-row.is-digital-hub-mounted .mix-bpm-controls .btn {
+            order: initial;
             width: 100%;
             min-width: 0;
             max-width: 100%;
