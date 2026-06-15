@@ -5113,7 +5113,7 @@ const QUALITY = {
 				color: '#9ffcff',
 				glow: '#00e8ff',
 				placementOffset: -100,
-				uprightOffset: 145,
+				uprightOffset: 155,
 				uprightSkew: 0,
 				clusterSpan: 108,
 				spreadSpan: 300
@@ -5133,7 +5133,7 @@ const QUALITY = {
 				color: '#fff3a8',
 				glow: '#ffd246',
 				placementOffset: -84,
-				uprightOffset: 164,
+				uprightOffset: 174,
 				uprightSkew: -10,
 				clusterSpan: 72,
 				spreadSpan: 220
