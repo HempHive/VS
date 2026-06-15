@@ -8,7 +8,7 @@
             /** Fixed layout width for Digital Radio (container-query scaling). */
             static get DIGITAL_STAGE_DESIGN_W() { return 960; }
             static get DIGITAL_HUB_CYCLE() {
-                return ['equaliser', 'volume', 'effects', 'live', 'video', 'ai-off', 'spectrum'];
+                return ['equaliser', 'volume', 'effects', 'live', 'video', 'ai-off', 'bpm', 'spectrum'];
             }
             /** EFFECTS hub centre: two 4×1 columns (mixer FX + sample pads). */
             static get DIGITAL_HUB_MIX_FX_COLS() {
@@ -179,6 +179,7 @@
                 return {
                     equaliser: 'EQUALISER',
                     spectrum: 'SPECTRUM',
+                    bpm: 'BPM',
                     volume: 'MIXER',
                     effects: 'EFFECTS',
                     live: 'LIVE',
@@ -266,7 +267,7 @@
                 this._volDrag = false;
                 this._rvAutoFadeRaf = null;
                 this.digitalCenterMode = 'spectrum';
-                /** Centre hub: equaliser → volume → effects → live → video → off → spectrum */
+                /** Centre hub: equaliser → volume → effects → live → video → off → bpm → spectrum */
                 this._digitalHubMode = 'equaliser';
                 this._digitalHubAiReturnMode = 'equaliser';
                 /** VIDEO toolbar: 0 off · 1 equaliser panel · 2 deck B centre */
@@ -5259,6 +5260,7 @@
                 switch (hubMode) {
                     case 'equaliser': return 'full';
                     case 'spectrum': return 'focus';
+                    case 'bpm':
                     case 'volume':
                     case 'effects':
                     case 'live':
@@ -5472,12 +5474,27 @@
                 deckVideoStack.appendChild(deckVideoB);
                 deckVideoWrap.appendChild(deckVideoStack);
 
+                const bpm = document.createElement('div');
+                bpm.className = 'radio-visual-digital-hub-bpm';
+                bpm.id = 'digital-hub-bpm-mount';
+                bpm.setAttribute('aria-label', 'BPM analyzer');
+
                 const off = document.createElement('div');
                 off.className = 'radio-visual-digital-hub-off';
                 off.textContent = 'OFF';
 
-                panel.append(volume, effects, aiWrap, deckVideoWrap, off);
+                panel.append(volume, effects, aiWrap, deckVideoWrap, bpm, off);
                 return panel;
+            }
+
+            _mountDigitalHubBpmRow(active) {
+                const row = document.getElementById('mix-bpm-row');
+                const mixSlot = document.getElementById('mix-bpm-row-slot');
+                const hubMount = this.els.digitalHubBpmMount;
+                if (!row || !mixSlot || !hubMount) return;
+                const target = active ? hubMount : mixSlot;
+                if (row.parentElement !== target) target.appendChild(row);
+                row.classList.toggle('is-digital-hub-mounted', !!active);
             }
 
             _wireDigitalHubPanel(abortSignal) {
@@ -5989,8 +6006,9 @@
                 pane.classList.toggle('is-hub-live', mode === 'live');
                 pane.classList.toggle('is-hub-video', mode === 'video');
                 pane.classList.toggle('is-hub-off', mode === 'ai-off');
+                pane.classList.toggle('is-hub-bpm', mode === 'bpm');
 
-                const showHub = mode === 'volume' || mode === 'effects'
+                const showHub = mode === 'volume' || mode === 'effects' || mode === 'bpm'
                     || RadioVisualEngine.digitalHubShowsCenterVideo(mode) || mode === 'ai-off';
                 panel.setAttribute('aria-hidden', showHub ? 'false' : 'true');
 
@@ -6009,6 +6027,7 @@
                     try { globalThis.syncDjBeatFxKnobActiveDom?.(this.root || document.getElementById('radio-visual-root')); } catch (_) {}
                     try { this._syncDigitalHubMixFxButtons(); } catch (_) {}
                 }
+                try { this._mountDigitalHubBpmRow(mode === 'bpm'); } catch (_) {}
                 if (mode === 'spectrum') {
                     this._spectrumStagingScale = this._getSpectrumHubSideScale();
                     const scaleSlider = this.els && this.els.digitalSpectrumScaleSlider;
@@ -6066,7 +6085,7 @@
                 try { btn.removeAttribute('title'); } catch (_) {}
             }
 
-            /** equaliser → volume → effects → live → video → off → spectrum → equaliser */
+            /** equaliser → volume → effects → live → video → off → bpm → spectrum → equaliser */
             _setDigitalHubModeOff() {
                 if (this._digitalStagingView) {
                     this._digitalStagingView = null;
@@ -8538,6 +8557,7 @@
                     digitalHubDeckVideoA: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video-el--a'),
                     digitalHubDeckVideoB: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video-el--b'),
                     digitalHubDeckVideo: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video-stack'),
+                    digitalHubBpmMount: digitalHubPanel?.querySelector('.radio-visual-digital-hub-bpm'),
                     digitalCarDisplay,
                     digitalDeckBVideo,
                     digitalDeckBVideoStack,
@@ -8974,6 +8994,7 @@
                 }
                 try { if (this.abortCtrl) this.abortCtrl.abort(); } catch (_) {}
                 this.abortCtrl = null;
+                try { this._mountDigitalHubBpmRow(false); } catch (_) {}
                 try {
                     window.removeEventListener('resize', this.resizeHandler);
                 } catch (_) {}

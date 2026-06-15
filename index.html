@@ -1064,7 +1064,8 @@
 
                 </div>
             </div>
-            <!-- BPM analyzer row (before FX buttons) -->
+            <!-- BPM analyzer row (before FX buttons; may mount in Digital Radio hub) -->
+            <div id="mix-bpm-row-slot">
             <div id="mix-bpm-row">
                 <button class="btn" id="mix-bpm-a" title="Toggle BPM and scope for A">BPM A</button>
                 <div id="mix-scope-wrap">
@@ -1080,6 +1081,7 @@
                 <button class="btn" id="mix-bpm-tap-b" title="Tap tempo for B">Tap B</button>
                 <button class="btn" id="mix-bpm-nudge-bm" title="Nudge B -10ms">B −10</button>
                 <button class="btn" id="mix-bpm-nudge-bp" title="Nudge B +10ms">B +10</button>
+            </div>
             </div>
             <div>
                 <div id="mix-effects">
@@ -1147,7 +1149,7 @@
                 <div class="kbd-row">
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">Z</span><span class="kbd-hint">Opacity −</span></div>
                     <div class="kbd-key kbd-lit-avatar"><span class="kbd-cap">X</span><span class="kbd-hint">Opacity +</span></div>
-                    <div class="kbd-key kbd-lit-avatar" title="ProjectM: next preset. Digital Radio (not ProjectM): cycle centre hub (Equaliser → Mixer → … → Spectrum)."><span class="kbd-cap">C</span><span class="kbd-hint">Preset / hub mode</span></div>
+                    <div class="kbd-key kbd-lit-avatar" title="ProjectM: next preset. Digital Radio (not ProjectM): cycle centre hub (Equaliser → Mixer → … → BPM → Spectrum)."><span class="kbd-cap">C</span><span class="kbd-hint">Preset / hub mode</span></div>
                     <div class="kbd-key kbd-lit-pink" title="Play / pause Deck A (boots the current Deck A station if nothing is loaded yet)."><span class="kbd-cap">V</span><span class="kbd-hint">Play / pause Deck A</span></div>
                     <div class="kbd-key kbd-lit-purple" title="Play / pause Deck B (boots the current Deck B station if nothing is loaded yet)."><span class="kbd-cap">B</span><span class="kbd-hint">Play / pause Deck B</span></div>
                     <div class="kbd-key kbd-lit-yellow" title="On Digital Radio: next queued local track on the crossfader-winning deck, else random station. Elsewhere: random station on the active deck."><span class="kbd-cap">N</span><span class="kbd-hint">Next track / station · active deck</span></div>
@@ -1184,7 +1186,7 @@
                         <li><strong>O</strong> — toggle AUTO-MIX (Digital Radio <strong>Mix</strong> button or DJ Auto-Mix)</li>
                         <li><strong>/</strong> — toggle Digital Radio <strong>A i</strong> (auto-mix + AI video hub)</li>
                         <li><strong>I</strong> — Digital Radio background visual (🔆): tap cycles GIFs when the layer is on; <em>hold I</em> toggles the GIF layer off or on (same as long-press on the 🔆 button)</li>
-                        <li><strong>C</strong> — next visual preset (ProjectM); on Digital Radio otherwise, cycle centre hub (Equaliser → Mixer → Effects → AI → Off → Spectrum) · <strong>,</strong> / <strong>.</strong> — previous / next visual mode</li>
+                        <li><strong>C</strong> — next visual preset (ProjectM); on Digital Radio otherwise, cycle centre hub (Equaliser → Mixer → Effects → Live → Video → Off → BPM → Spectrum) · <strong>,</strong> / <strong>.</strong> — previous / next visual mode</li>
                         <li><strong>←</strong> / <strong>→</strong> — crossfade toward Deck A / Deck B when the avatar overlay is off; move avatar position when the overlay is playing</li>
                     </ul>
                 </div>
