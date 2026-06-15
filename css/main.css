@@ -465,7 +465,7 @@
 			margin: 0;
 			padding: 0;
 			font-family: 'Audiowide', 'Orbitron', 'Electrolize', 'Share Tech Mono', sans-serif;
-			font-size: clamp(8px, 2.1vw, 10px);
+			font-size: clamp(10px, 2.65vw, 13px);
 			font-weight: 700;
 			line-height: 1;
 			letter-spacing: 0.02em;
@@ -478,7 +478,7 @@
 				translate(-50%, -50%)
 				rotate(var(--char-angle, 0deg))
 				translateY(calc(-1 * var(--orbit-radius)))
-				rotate(calc(-1 * var(--char-angle, 0deg) - 210deg));
+				rotate(var(--char-upright, 210deg));
 			transform-origin: center center;
 			user-select: none;
 			will-change: transform;

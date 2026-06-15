@@ -5108,17 +5108,48 @@ const QUALITY = {
 			return !!(tapGifLoadPromise && ptaGifLoadPromise && patGifLoadPromise);
 		}
 		const START_LOADER_PHRASES = [
-			{ text: 'Loading...', color: '#9ffcff', glow: '#00e8ff' },
-			{ text: 'Click2Play', color: '#ffc8f8', glow: '#ff5ce8' },
-			{ text: 'OMNI>', color: '#fff3a8', glow: '#ffd246' }
+			{
+				text: 'Loading...',
+				color: '#9ffcff',
+				glow: '#00e8ff',
+				placementOffset: -100,
+				uprightOffset: 210,
+				uprightSkew: 0,
+				clusterSpan: 108,
+				spreadSpan: 300
+			},
+			{
+				text: 'Click2Play',
+				color: '#ffc8f8',
+				glow: '#ff5ce8',
+				placementOffset: -96,
+				uprightOffset: 196,
+				uprightSkew: 14,
+				clusterSpan: 96,
+				spreadSpan: 288
+			},
+			{
+				text: 'OMNI>',
+				color: '#fff3a8',
+				glow: '#ffd246',
+				placementOffset: -84,
+				uprightOffset: 224,
+				uprightSkew: -10,
+				clusterSpan: 72,
+				spreadSpan: 220
+			}
 		];
+		function startLoaderPhraseConfig(text) {
+			return START_LOADER_PHRASES.find((p) => p.text === text) || START_LOADER_PHRASES[0];
+		}
 		let startLoaderOrbitRaf = 0;
 		let startLoaderOrbitHoldTimer = 0;
 		let startLoaderOrbitGapTimer = 0;
 		let startLoaderOrbitPhraseIdx = 0;
 		let startLoaderOrbitRunning = false;
-		function layoutStartLoaderPhrase(phraseEl, text, spread, opacity) {
+		function layoutStartLoaderPhrase(phraseEl, text, spread, opacity, phraseConfig) {
 			if (!phraseEl || !text) return;
+			const phrase = phraseConfig || startLoaderPhraseConfig(text);
 			if (phraseEl.dataset.text !== text) {
 				phraseEl.dataset.text = text;
 				phraseEl.innerHTML = '';
@@ -5132,21 +5163,25 @@ const QUALITY = {
 			const chars = phraseEl.querySelectorAll('.start-loader-char');
 			const n = chars.length;
 			if (!n) return;
-			const clusterSpan = Math.min(108, Math.max(42, n * 10));
-			const spreadSpan = Math.min(310, Math.max(170, n * 24));
+			const clusterSpan = phrase.clusterSpan ?? Math.min(108, Math.max(42, n * 10));
+			const spreadSpan = phrase.spreadSpan ?? Math.min(310, Math.max(170, n * 24));
 			const s = Math.max(0, Math.min(1, Number(spread) || 0));
 			const spanDeg = clusterSpan + (spreadSpan - clusterSpan) * s;
-			// Top of ring = -90°; centered glyphs need −100° to correct clockwise arc placement
-			const ORBIT_PLACEMENT_OFFSET = -100;
-			const orbitTop = -90 + ORBIT_PLACEMENT_OFFSET;
+			const placementOffset = Number(phrase.placementOffset) || -100;
+			const uprightOffset = Number(phrase.uprightOffset) || 210;
+			const uprightSkew = Number(phrase.uprightSkew) || 0;
+			const orbitTop = -90 + placementOffset;
 			const startAngle = orbitTop - spanDeg / 2;
 			chars.forEach((el, i) => {
 				const angle = n === 1 ? orbitTop : startAngle + (i / (n - 1)) * spanDeg;
+				const skewT = n === 1 ? 0 : (i / (n - 1)) - 0.5;
+				const upright = (-angle + uprightOffset + uprightSkew * skewT * 2);
 				el.style.setProperty('--char-angle', `${angle}deg`);
+				el.style.setProperty('--char-upright', `${upright}deg`);
 			});
 			phraseEl.style.setProperty('--phrase-opacity', String(Math.max(0, Math.min(1, Number(opacity) || 0))));
 		}
-		function animateStartLoaderSpread(phraseEl, text, from, to, durationMs, opacityFrom, opacityTo, onDone) {
+		function animateStartLoaderSpread(phraseEl, text, from, to, durationMs, opacityFrom, opacityTo, onDone, phraseConfig) {
 			if (startLoaderOrbitRaf) {
 				cancelAnimationFrame(startLoaderOrbitRaf);
 				startLoaderOrbitRaf = 0;
@@ -5157,7 +5192,7 @@ const QUALITY = {
 				const eased = 1 - Math.pow(1 - t, 3);
 				const spread = from + (to - from) * eased;
 				const opacity = opacityFrom + (opacityTo - opacityFrom) * eased;
-				layoutStartLoaderPhrase(phraseEl, text, spread, opacity);
+				layoutStartLoaderPhrase(phraseEl, text, spread, opacity, phraseConfig);
 				if (t < 1) {
 					startLoaderOrbitRaf = requestAnimationFrame(tick);
 					return;
@@ -5191,7 +5226,7 @@ const QUALITY = {
 			phraseEl.style.setProperty('--phrase-glow', phrase.glow);
 			phraseEl.classList.add('is-active');
 			loader.setAttribute('aria-label', phrase.text);
-			layoutStartLoaderPhrase(phraseEl, phrase.text, 1, 0.05);
+			layoutStartLoaderPhrase(phraseEl, phrase.text, 1, 0.05, phrase);
 			animateStartLoaderSpread(phraseEl, phrase.text, 1, 0, 780, 0.05, 1, () => {
 				if (!startLoaderOrbitRunning) return;
 				startLoaderOrbitHoldTimer = setTimeout(() => {
@@ -5201,9 +5236,9 @@ const QUALITY = {
 						phraseEl.classList.remove('is-active');
 						startLoaderOrbitPhraseIdx = (startLoaderOrbitPhraseIdx + 1) % START_LOADER_PHRASES.length;
 						startLoaderOrbitGapTimer = setTimeout(runStartLoaderOrbitPhrase, 220);
-					});
+					}, phrase);
 				}, 1100);
-			});
+			}, phrase);
 		}
 		function startStartLoaderOrbit() {
 			const loader = document.getElementById('start-loader');
