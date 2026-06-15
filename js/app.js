@@ -5119,7 +5119,7 @@ const QUALITY = {
 				spreadSpan: 300
 			},
 			{
-				text: 'Click2Play',
+				text: 'Click 2 Play',
 				color: '#ffc8f8',
 				glow: '#ff5ce8',
 				placementOffset: -96,
@@ -5129,7 +5129,7 @@ const QUALITY = {
 				spreadSpan: 288
 			},
 			{
-				text: 'OMNI>',
+				text: 'O M N I >',
 				color: '#fff3a8',
 				glow: '#ffd246',
 				placementOffset: -84,
