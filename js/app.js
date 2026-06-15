@@ -4651,12 +4651,14 @@ const QUALITY = {
         };
         // --- BPM scope + detection ---
         function syncBpmScopeCanvasSizes() {
+            const stack = document.getElementById('mix-scope-stack');
+            const stackW = stack ? Math.max(120, Math.round(stack.clientWidth)) : 0;
             [
                 { canvas: scopeCanvasA, wrap: document.getElementById('mix-scope-wrap-a') },
                 { canvas: scopeCanvasB, wrap: document.getElementById('mix-scope-wrap-b') }
             ].forEach(({ canvas, wrap }) => {
                 if (!canvas || !wrap) return;
-                const w = Math.max(120, Math.round(wrap.clientWidth || canvas.width));
+                const w = stackW || Math.max(120, Math.round(wrap.clientWidth || canvas.width));
                 const h = Math.max(16, Math.round(wrap.clientHeight || canvas.height));
                 if (canvas.width !== w || canvas.height !== h) {
                     canvas.width = w;

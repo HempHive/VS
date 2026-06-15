@@ -5497,6 +5497,9 @@
                 row.classList.toggle('is-digital-hub-mounted', !!active);
                 if (active) {
                     try { globalThis.syncBpmScopeCanvasSizes?.(); } catch (_) {}
+                    requestAnimationFrame(() => {
+                        try { globalThis.syncBpmScopeCanvasSizes?.(); } catch (_) {}
+                    });
                 }
             }
 

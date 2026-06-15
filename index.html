@@ -1067,7 +1067,6 @@
             <!-- BPM analyzer row (before FX buttons; may mount in Digital Radio hub) -->
             <div id="mix-bpm-row-slot">
             <div id="mix-bpm-row">
-                <button class="btn" id="mix-bpm-a" title="Toggle BPM and scope for A">BPM A</button>
                 <div id="mix-scope-stack" class="mix-scope-stack">
                     <div id="mix-scope-wrap-a" class="mix-scope-wrap mix-scope-wrap--a">
                         <canvas id="mix-scope-a" width="800" height="22" aria-label="Deck A beat scope"></canvas>
@@ -1077,15 +1076,18 @@
                     </div>
                 </div>
                 <div id="mix-bpm-legend">
-                    <div class="row"><span class="legend-dot legend-a"></span><span>A: <span id="mix-bpm-out-a">--</span> BPM</span></div>
-                    <div class="row"><span class="legend-dot legend-b"></span><span>B: <span id="mix-bpm-out-b">--</span> BPM</span></div>
+                    <div class="row row--a"><span class="legend-dot legend-a"></span><span class="legend-label">A: <span id="mix-bpm-out-a">--</span> BPM</span></div>
+                    <div class="row row--b"><span class="legend-dot legend-b"></span><span class="legend-label">B: <span id="mix-bpm-out-b">--</span> BPM</span></div>
                 </div>
-                <button class="btn" id="mix-bpm-b" title="Toggle BPM and scope for B">BPM B</button>
-                <button class="btn" id="mix-bpm-grid" title="Toggle beat grid overlay">Grid</button>
-                <button class="btn" id="mix-bpm-tap-a" title="Tap tempo for A">Tap A</button>
-                <button class="btn" id="mix-bpm-tap-b" title="Tap tempo for B">Tap B</button>
-                <button class="btn" id="mix-bpm-nudge-bm" title="Nudge B -10ms">B −10</button>
-                <button class="btn" id="mix-bpm-nudge-bp" title="Nudge B +10ms">B +10</button>
+                <div id="mix-bpm-controls" class="mix-bpm-controls">
+                    <button class="btn" id="mix-bpm-a" title="Toggle BPM and scope for A">BPM A</button>
+                    <button class="btn" id="mix-bpm-b" title="Toggle BPM and scope for B">BPM B</button>
+                    <button class="btn" id="mix-bpm-grid" title="Toggle beat grid overlay">Grid</button>
+                    <button class="btn" id="mix-bpm-tap-a" title="Tap tempo for A">Tap A</button>
+                    <button class="btn" id="mix-bpm-tap-b" title="Tap tempo for B">Tap B</button>
+                    <button class="btn" id="mix-bpm-nudge-bm" title="Nudge B -10ms">B −10</button>
+                    <button class="btn" id="mix-bpm-nudge-bp" title="Nudge B +10ms">B +10</button>
+                </div>
             </div>
             </div>
             <div>
