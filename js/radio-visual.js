@@ -8,7 +8,7 @@
             /** Fixed layout width for Digital Radio (container-query scaling). */
             static get DIGITAL_STAGE_DESIGN_W() { return 960; }
             static get DIGITAL_HUB_CYCLE() {
-                return ['equaliser', 'volume', 'effects', 'live', 'video', 'ai-off', 'bpm', 'spectrum'];
+                return ['equaliser', 'volume', 'effects', 'bpm', 'live', 'video', 'ai-off', 'spectrum'];
             }
             /** EFFECTS hub centre: two 4×1 columns (mixer FX + sample pads). */
             static get DIGITAL_HUB_MIX_FX_COLS() {
@@ -267,7 +267,7 @@
                 this._volDrag = false;
                 this._rvAutoFadeRaf = null;
                 this.digitalCenterMode = 'spectrum';
-                /** Centre hub: equaliser → volume → effects → live → video → off → bpm → spectrum */
+                /** Centre hub: equaliser → volume → effects → bpm → live → video → off → spectrum */
                 this._digitalHubMode = 'equaliser';
                 this._digitalHubAiReturnMode = 'equaliser';
                 /** VIDEO toolbar: 0 off · 1 equaliser panel · 2 deck B centre */
@@ -5495,6 +5495,9 @@
                 const target = active ? hubMount : mixSlot;
                 if (row.parentElement !== target) target.appendChild(row);
                 row.classList.toggle('is-digital-hub-mounted', !!active);
+                if (active) {
+                    try { globalThis.syncBpmScopeCanvasSizes?.(); } catch (_) {}
+                }
             }
 
             _wireDigitalHubPanel(abortSignal) {
@@ -6085,7 +6088,7 @@
                 try { btn.removeAttribute('title'); } catch (_) {}
             }
 
-            /** equaliser → volume → effects → live → video → off → bpm → spectrum → equaliser */
+            /** equaliser → volume → effects → bpm → live → video → off → spectrum → equaliser */
             _setDigitalHubModeOff() {
                 if (this._digitalStagingView) {
                     this._digitalStagingView = null;

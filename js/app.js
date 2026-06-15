@@ -425,8 +425,10 @@ const QUALITY = {
         const bpmBtnGrid = document.getElementById('mix-bpm-grid');
         const bpmOutA = document.getElementById('mix-bpm-out-a');
         const bpmOutB = document.getElementById('mix-bpm-out-b');
-        const scopeCanvas = document.getElementById('mix-scope');
-        const scopeCtx = scopeCanvas ? scopeCanvas.getContext('2d') : null;
+        const scopeCanvasA = document.getElementById('mix-scope-a');
+        const scopeCanvasB = document.getElementById('mix-scope-b');
+        const scopeCtxA = scopeCanvasA ? scopeCanvasA.getContext('2d') : null;
+        const scopeCtxB = scopeCanvasB ? scopeCanvasB.getContext('2d') : null;
         let scopeAnimId = null;
         let bpmOnA = false, bpmOnB = false;
         let envA = [], envB = [];
@@ -4648,14 +4650,53 @@ const QUALITY = {
             b: { gain: 1.0, high: 0, mid: 0, low: 0 }
         };
         // --- BPM scope + detection ---
+        function syncBpmScopeCanvasSizes() {
+            [
+                { canvas: scopeCanvasA, wrap: document.getElementById('mix-scope-wrap-a') },
+                { canvas: scopeCanvasB, wrap: document.getElementById('mix-scope-wrap-b') }
+            ].forEach(({ canvas, wrap }) => {
+                if (!canvas || !wrap) return;
+                const w = Math.max(120, Math.round(wrap.clientWidth || canvas.width));
+                const h = Math.max(16, Math.round(wrap.clientHeight || canvas.height));
+                if (canvas.width !== w || canvas.height !== h) {
+                    canvas.width = w;
+                    canvas.height = h;
+                }
+            });
+        }
+        function scrollBpmScopeLane(ctx, canvas) {
+            if (!ctx || !canvas) return { w: 0, h: 0 };
+            const w = canvas.width;
+            const h = canvas.height;
+            try { ctx.drawImage(canvas, -1, 0); } catch (_) {}
+            ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            ctx.fillRect(w - 1, 0, 1, h);
+            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+            ctx.lineWidth = 1;
+            const cx = Math.floor(w / 2) + 0.5;
+            ctx.beginPath();
+            ctx.moveTo(cx, 0);
+            ctx.lineTo(cx, h);
+            ctx.stroke();
+            return { w, h };
+        }
+        function clearBpmScopeLanes() {
+            if (scopeCtxA && scopeCanvasA) scopeCtxA.clearRect(0, 0, scopeCanvasA.width, scopeCanvasA.height);
+            if (scopeCtxB && scopeCanvasB) scopeCtxB.clearRect(0, 0, scopeCanvasB.width, scopeCanvasB.height);
+        }
         function drawScopeAndUpdateBpm() {
-            if (!scopeCanvas || !scopeCtx) return;
-            const w = scopeCanvas.width, h = scopeCanvas.height;
-            // Scroll left by 1px
-            try { scopeCtx.drawImage(scopeCanvas, -1, 0); } catch(_) {}
-            // Clear rightmost column slightly to create fresh lane
-            scopeCtx.fillStyle = 'rgba(0,0,0,0.35)';
-            scopeCtx.fillRect(w - 1, 0, 1, h);
+            if (!bpmOnA && !bpmOnB) {
+                scopeAnimId = null;
+                clearBpmScopeLanes();
+                return;
+            }
+            syncBpmScopeCanvasSizes();
+            const laneA = bpmOnA
+                ? scrollBpmScopeLane(scopeCtxA, scopeCanvasA)
+                : { w: scopeCanvasA?.width || 0, h: scopeCanvasA?.height || 0 };
+            const laneB = bpmOnB
+                ? scrollBpmScopeLane(scopeCtxB, scopeCanvasB)
+                : { w: scopeCanvasB?.width || 0, h: scopeCanvasB?.height || 0 };
             // Compute envelope (RMS) for BPM and spectral flux for beat onsets
             const calcRms = (analyser) => {
                 if (!analyser) return null;
@@ -4702,30 +4743,34 @@ const QUALITY = {
                 const sd = Math.sqrt(Math.max(0, v));
                 return { flux, mean: m, sd, last: cur };
             };
-            // A channel
-            let rmsA = null, rmsB = null;
-            if (bpmOnA) {
+            // A channel — top scope lane
+            let rmsA = null;
+            if (bpmOnA && scopeCtxA) {
                 rmsA = calcRms(state.analyserNodeA);
                 const fa = calcFlux(state.analyserNodeA, lastSpecA, fluxHistA);
                 lastSpecA = fa.last;
                 const now = performance.now();
                 const isBeatA = (typeof fa.flux === 'number') && (fa.flux > (fa.mean + 1.5 * (fa.sd || 0.0001))) && ((now - lastBeatTsA) > 200);
                 if (isBeatA) lastBeatTsA = now;
-                if (isBeatA) { scopeCtx.fillStyle = '#00ffff'; scopeCtx.fillRect(w-1, 2, 1, Math.max(2, Math.floor(h*0.4)-3)); }
+                if (isBeatA) {
+                    scopeCtxA.fillStyle = '#00ffff';
+                    scopeCtxA.fillRect(laneA.w - 1, 0, 1, laneA.h);
+                }
             }
-            // B channel
-            if (bpmOnB) {
+            // B channel — bottom scope lane
+            let rmsB = null;
+            if (bpmOnB && scopeCtxB) {
                 rmsB = calcRms(state.analyserNodeB);
                 const fb = calcFlux(state.analyserNodeB, lastSpecB, fluxHistB);
                 lastSpecB = fb.last;
                 const now = performance.now();
                 const isBeatB = (typeof fb.flux === 'number') && (fb.flux > (fb.mean + 1.5 * (fb.sd || 0.0001))) && ((now - lastBeatTsB) > 200);
                 if (isBeatB) lastBeatTsB = now;
-                if (isBeatB) { scopeCtx.fillStyle = '#ff00ff'; scopeCtx.fillRect(w-1, Math.floor(h*0.6), 1, Math.max(2, Math.floor(h*0.4)-2)); }
+                if (isBeatB) {
+                    scopeCtxB.fillStyle = '#ff00ff';
+                    scopeCtxB.fillRect(laneB.w - 1, 0, 1, laneB.h);
+                }
             }
-            // Center marker (now line)
-            scopeCtx.strokeStyle = 'rgba(255,255,255,0.25)'; scopeCtx.lineWidth = 1;
-            const cx = Math.floor(w/2) + 0.5; scopeCtx.beginPath(); scopeCtx.moveTo(cx, 0); scopeCtx.lineTo(cx, h); scopeCtx.stroke();
             const pushEnv = (arr, v) => { if (typeof v === 'number') { arr.push(v); if (arr.length > maxEnvSamples) arr.shift(); } };
             pushEnv(envA, rmsA); pushEnv(envB, rmsB);
             // Push flux envelope for comb BPM
@@ -4791,31 +4836,32 @@ const QUALITY = {
                     }
                 }
             }
-            // Draw beat grid markers at right edge when a predicted beat occurs (they will scroll left)
             if (showBeatGrid) {
                 const nowTs = performance.now();
-                const drawGridTick = (tsNext, color, bpmVal, setNext) => {
-                    if (!tsNext || !bpmVal) return tsNext;
+                const drawGridTick = (ctx, lane, tsNext, color, bpmVal) => {
+                    if (!ctx || !lane.w || !tsNext || !bpmVal) return tsNext;
                     const interval = 60000 / bpmVal;
-                    if (nowTs + 8 >= tsNext) { // small lookahead to avoid misses
-                        scopeCtx.fillStyle = color;
-                        scopeCtx.globalAlpha = 0.25;
-                        scopeCtx.fillRect(w - 1, 0, 1, h);
-                        scopeCtx.globalAlpha = 1.0;
+                    if (nowTs + 8 >= tsNext) {
+                        ctx.fillStyle = color;
+                        ctx.globalAlpha = 0.25;
+                        ctx.fillRect(lane.w - 1, 0, 1, lane.h);
+                        ctx.globalAlpha = 1.0;
                         tsNext = tsNext + interval;
                     }
                     return tsNext;
                 };
-                nextBeatTsA = drawGridTick(nextBeatTsA, '#00ffff', bpmSmoothA, (v)=>nextBeatTsA=v);
-                // Apply B phase offset
+                nextBeatTsA = drawGridTick(scopeCtxA, laneA, nextBeatTsA, '#00ffff', bpmSmoothA);
                 const adjBpm = bpmSmoothB;
-                if (nextBeatTsB && typeof phaseOffsetBms === 'number') {
-                    nextBeatTsB += 0; // keep accumulator; visual offset applied by early-fire logic
-                }
-                nextBeatTsB = drawGridTick(nextBeatTsB ? nextBeatTsB + phaseOffsetBms : nextBeatTsB, '#ff00ff', adjBpm, (v)=>nextBeatTsB=v);
+                nextBeatTsB = drawGridTick(
+                    scopeCtxB,
+                    laneB,
+                    nextBeatTsB ? nextBeatTsB + phaseOffsetBms : nextBeatTsB,
+                    '#ff00ff',
+                    adjBpm
+                );
             }
             if (bpmOnA || bpmOnB) scopeAnimId = requestAnimationFrame(drawScopeAndUpdateBpm);
-            else { scopeAnimId = null; if (scopeCtx) scopeCtx.clearRect(0,0,w,h); }
+            else { scopeAnimId = null; clearBpmScopeLanes(); }
         }
         function updateBpmRunLoop() {
             if ((bpmOnA || bpmOnB) && !scopeAnimId) {
@@ -4825,7 +4871,7 @@ const QUALITY = {
             if (!bpmOnA && !bpmOnB && scopeAnimId) {
                 try { cancelAnimationFrame(scopeAnimId); } catch(_) {}
                 scopeAnimId = null;
-                if (scopeCtx) scopeCtx.clearRect(0,0,scopeCanvas.width, scopeCanvas.height);
+                clearBpmScopeLanes();
             }
         }
         if (bpmBtnA) bpmBtnA.addEventListener('click', (e) => {
@@ -6578,6 +6624,7 @@ function exposeAppBindingsToGlobal() {
     try { g.bits = bits; } catch (_) {}
     try { g.blob = blob; } catch (_) {}
     try { g.border = border; } catch (_) {}
+    try { g.syncBpmScopeCanvasSizes = syncBpmScopeCanvasSizes; } catch (_) {}
     try { g.bpm = bpm; } catch (_) {}
     try { g.bpmBtnA = bpmBtnA; } catch (_) {}
     try { g.bpmBtnB = bpmBtnB; } catch (_) {}

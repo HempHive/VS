@@ -1675,29 +1675,34 @@
         }
         #radio-visual-root .radio-visual-digital-hub-bpm #mix-bpm-row.is-digital-hub-mounted {
             display: grid;
+            grid-template-rows: minmax(0, 1fr) auto auto;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            align-items: center;
+            align-items: stretch;
             gap: clamp(4px, 0.83cqw, 8px);
             width: 100%;
             height: 100%;
             min-height: 0;
             margin: 0;
         }
-        #radio-visual-root .radio-visual-digital-hub-bpm #mix-bpm-row.is-digital-hub-mounted #mix-scope-wrap {
-            order: -2;
+        #radio-visual-root .radio-visual-digital-hub-bpm #mix-bpm-row.is-digital-hub-mounted #mix-scope-stack {
             grid-column: 1 / -1;
+            grid-row: 1;
+            display: flex;
+            flex-direction: column;
             width: 100%;
-            min-height: clamp(40px, 20cqh, 80px);
-            height: auto;
-            max-height: 50%;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            height: 100%;
+            min-height: 0;
+            gap: clamp(4px, 0.7cqw, 8px);
+        }
+        #radio-visual-root .radio-visual-digital-hub-bpm #mix-bpm-row.is-digital-hub-mounted .mix-scope-wrap {
+            flex: 1 1 50%;
+            min-height: 0;
+            width: 100%;
             border-radius: 8px;
-            overflow: hidden;
         }
         #radio-visual-root .radio-visual-digital-hub-bpm #mix-bpm-row.is-digital-hub-mounted #mix-bpm-legend {
-            order: -1;
             grid-column: 1 / -1;
+            grid-row: 2;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: clamp(4px, 0.83cqw, 8px);
@@ -1706,6 +1711,7 @@
             min-width: 0;
         }
         #radio-visual-root .radio-visual-digital-hub-bpm #mix-bpm-row.is-digital-hub-mounted .btn {
+            grid-row: 3;
             width: 100%;
             min-width: 0;
             padding: clamp(4px, 0.83cqw, 8px) clamp(6px, 1cqw, 10px);
