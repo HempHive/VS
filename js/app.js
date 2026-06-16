@@ -5650,6 +5650,15 @@ function randomGlowColor() {
                 }
             } catch (_) {}
         }
+        function stripVideoFsTitles(target) {
+            if (!target) return;
+            try {
+                target.removeAttribute('title');
+                target.querySelectorAll?.('[title]').forEach((el) => {
+                    try { el.removeAttribute('title'); } catch (_) {}
+                });
+            } catch (_) {}
+        }
         /** Fullscreen Deck B visuals (`#dj-deck-b-viz-mount` or nested `.dj-video-shell`), not the whole DJ canvas. */
         function toggleVideoSurfaceFullscreen(videoEl, containerEl) {
             if (!videoEl) return false;
@@ -5665,6 +5674,7 @@ function randomGlowColor() {
                     return true;
                 }
                 const target = container;
+                stripVideoFsTitles(target);
                 const req = target.requestFullscreen || target.webkitRequestFullscreen;
                 if (req) {
                     req.call(target).then(afterDeckBVizFullscreenChange).catch(() => {});
@@ -5692,6 +5702,7 @@ function randomGlowColor() {
                         if (shell) target = shell;
                     }
                 } catch (_) {}
+                stripVideoFsTitles(target);
                 const req = target.requestFullscreen || target.webkitRequestFullscreen;
                 if (req) {
                     req.call(target).then(afterDeckBVizFullscreenChange).catch(() => {});

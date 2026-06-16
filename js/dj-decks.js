@@ -1008,7 +1008,7 @@
                     }
                 } catch (_) {}
                 if (!mount) return;
-                try { mount.title = 'Double-click for fullscreen · Esc to exit'; } catch (_) {}
+                try { mount.removeAttribute('title'); } catch (_) {}
                 const getFs = () => document.fullscreenElement || document.webkitFullscreenElement;
                 const exitFs = () => {
                     try { exitDeckBVizFullscreen(); } catch (_) {}
@@ -1224,9 +1224,9 @@
                         try { resetIdleTimer(); } catch (_) {}
                     });
                     try {
-                        stack.title = 'Double-click video for fullscreen · Esc to exit';
+                        stack.removeAttribute('title');
                         [vA, vB, vQ].forEach((v) => {
-                            try { v.title = stack.title; } catch (_) {}
+                            try { v.removeAttribute('title'); } catch (_) {}
                         });
                     } catch (_) {}
                     stack.addEventListener(

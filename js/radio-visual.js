@@ -1798,9 +1798,7 @@
                 iframe.src = href;
                 shell.appendChild(iframe);
                 mount.appendChild(shell);
-                try {
-                    mount.title = 'Double-click for fullscreen · Esc to exit';
-                } catch (_) {}
+                try { mount.removeAttribute('title'); } catch (_) {}
             }
 
             _showDigitalStagingEmbed(entry) {
@@ -2163,8 +2161,8 @@
                 if (vid.dataset.rvVideoFsWired === '1') return;
                 vid.dataset.rvVideoFsWired = '1';
                 const sig = { signal: this.abortCtrl.signal };
-                try { vid.title = 'Double-click for fullscreen · Esc to exit'; } catch (_) {}
-                try { mount.title = vid.title; } catch (_) {}
+                try { vid.removeAttribute('title'); } catch (_) {}
+                try { mount.removeAttribute('title'); } catch (_) {}
                 const onDbl = (ev) => {
                     try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
                     try {
@@ -2181,7 +2179,8 @@
                 if (!vid || !mount) return;
                 if (vid.dataset.rvDeckBVideoFsWired === '1') return;
                 vid.dataset.rvDeckBVideoFsWired = '1';
-                try { vid.title = 'Double-click for fullscreen · Esc to exit'; } catch (_) {}
+                try { vid.removeAttribute('title'); } catch (_) {}
+                try { mount.removeAttribute('title'); } catch (_) {}
                 const onDbl = (ev) => {
                     try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
                     try {
@@ -2424,9 +2423,7 @@
                     } catch (_) {}
                 };
                 loop();
-                try {
-                    mount.title = 'Double-click for fullscreen · Esc to exit';
-                } catch (_) {}
+                try { mount.removeAttribute('title'); } catch (_) {}
             }
 
             _getDigitalStagingMountFullscreenEl() {
@@ -5894,10 +5891,15 @@
             _wireDigitalHubDeckVideoInteractions(abortSignal) {
                 const wrap = this.els.digitalHubDeckVideoWrap;
                 const stack = this.els.digitalHubDeckVideoStack || this.els.digitalHubDeckVideo;
+                const videos = [this.els.digitalHubDeckVideoA, this.els.digitalHubDeckVideoB].filter(Boolean);
                 if (!wrap || !stack || wrap.dataset.rvHubDeckVideoWired === '1') return;
                 const sig = abortSignal && abortSignal.signal ? abortSignal.signal : abortSignal;
                 const capOpts = sig ? { signal: sig, capture: true } : { capture: true };
-                try { wrap.title = 'Double-click for fullscreen · Esc to exit'; } catch (_) {}
+                try { wrap.removeAttribute('title'); } catch (_) {}
+                try { stack.removeAttribute('title'); } catch (_) {}
+                videos.forEach((vid) => {
+                    try { vid.removeAttribute('title'); } catch (_) {}
+                });
                 const onClick = (ev) => { this._onDigitalHubDeckVideoClick(ev); };
                 const onDbl = (ev) => {
                     if (this.skin !== 'digital') return;
@@ -5908,8 +5910,12 @@
                 };
                 wrap.addEventListener('click', onClick, capOpts);
                 wrap.addEventListener('dblclick', onDbl, capOpts);
-                video.addEventListener('click', onClick, capOpts);
-                video.addEventListener('dblclick', onDbl, capOpts);
+                stack.addEventListener('click', onClick, capOpts);
+                stack.addEventListener('dblclick', onDbl, capOpts);
+                videos.forEach((vid) => {
+                    vid.addEventListener('click', onClick, capOpts);
+                    vid.addEventListener('dblclick', onDbl, capOpts);
+                });
                 wrap.dataset.rvHubDeckVideoWired = '1';
             }
 
