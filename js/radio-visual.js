@@ -690,7 +690,7 @@
             }
 
             _syncDigitalVisBgButton() {
-                const btn = this.els.btnVis;
+                const btn = this.els.btnDigitalVisBg;
                 if (!btn) return;
                 const on = this._isDigitalBgGifEnabled();
                 btn.classList.toggle('is-active', on);
@@ -827,6 +827,29 @@
                     longPressHandled = false;
                 }, sig);
                 btn.addEventListener('click', (ev) => this._stopClick(ev), sig);
+            }
+
+            _wireDigitalFullscreenButton(btn, sig) {
+                if (!btn) return;
+                btn.addEventListener('click', (ev) => {
+                    this._stopClick(ev);
+                    try {
+                        if (typeof globalThis.toggleFullscreen === 'function') {
+                            globalThis.toggleFullscreen();
+                        }
+                    } catch (_) {}
+                    try { resetIdleTimer(); } catch (_) {}
+                }, sig);
+                this._syncDigitalFullscreenButton();
+            }
+
+            _syncDigitalFullscreenButton() {
+                const btn = this.els.btnVis;
+                if (!btn) return;
+                const on = this._isDigitalPageFullscreen();
+                btn.classList.toggle('is-active', on);
+                btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                try { btn.removeAttribute('title'); } catch (_) {}
             }
 
             _ingestLocalFilesToDeckAndPlay(deckKey, files) {
@@ -7630,7 +7653,6 @@
                 const stagingByLabel = {
                     ProjectM: 'projectm',
                     'Audio:Bar': 'bars',
-                    LOGOFX: 'logofx',
                     KARAOKE: 'karaoke'
                 };
                 const items = [
@@ -7652,7 +7674,7 @@
                     ...(deckBInPanel ? [
                         { label: 'Audio:Bar', fn: () => { this._toggleDigitalStagingFeature('bars'); } },
                         { label: 'ProjectM', fn: () => { this._toggleDigitalStagingFeature('projectm'); } },
-                        { label: 'LOGOFX', fn: () => { this._toggleDigitalStagingFeature('logofx'); } }
+                        { label: 'BACK🔆', visBg: true }
                     ] : [
                         { label: 'Video', fn: () => {
                             this._withDjDeck((dj) => {
@@ -7695,13 +7717,17 @@
                     } else {
                         b.textContent = it.label;
                     }
+                    if (deckBInPanel && it.visBg) {
+                        b.dataset.rvVisBg = '1';
+                        b.setAttribute('aria-label', 'Background visual — tap to cycle, hold to toggle, right-click for first');
+                        this._wireDigitalVisBgButton(b, { signal: this.abortCtrl.signal });
+                        this.els.btnDigitalVisBg = b;
+                        gridEl.appendChild(b);
+                        return;
+                    }
                     if (it.label === 'DECKS') {
                         b.title = 'Open DJ Decks visual';
                         b.setAttribute('aria-label', 'Open DJ Decks visual');
-                    }
-                    if (deckBInPanel && it.label === 'LOGOFX') {
-                        b.title = 'Toggle Logo FX in staging area';
-                        b.setAttribute('aria-label', 'Logo FX staging');
                     }
                     const stagingKind = stagingByLabel[it.label];
                     if (deckBInPanel && stagingKind) {
@@ -8397,9 +8423,9 @@
                 this._appendRvButtonLabel(btnDigitalVideo, 'VIDEO');
                 btnVis = document.createElement('button');
                 btnVis.type = 'button';
-                btnVis.className = 'radio-visual-btn radio-visual-digital-toolbar-icon-btn radio-visual-digital-vis-btn';
-                btnVis.textContent = ' 🔆 ';
-                btnVis.setAttribute('aria-label', 'Background visual');
+                btnVis.className = 'radio-visual-btn radio-visual-digital-toolbar-icon-btn radio-visual-digital-fs-btn';
+                btnVis.textContent = ' ⿴ ';
+                btnVis.setAttribute('aria-label', 'Toggle Digital Radio fullscreen');
                 btnVis.setAttribute('aria-pressed', 'false');
                 volGroup = document.createElement('div');
                 volGroup.className = 'radio-visual-digital-toolbar-vol radio-visual-digital-toolbar-center';
@@ -8497,9 +8523,9 @@
                 toolbarMain.appendChild(btnDeckBTransport);
                 toolbarMain.appendChild(btnFade);
                 toolbarMain.appendChild(btnDigitalVideo);
-                digitalToolbar.appendChild(btnVis);
-                digitalToolbar.appendChild(toolbarMain);
                 digitalToolbar.appendChild(btnXfadeStation);
+                digitalToolbar.appendChild(toolbarMain);
+                digitalToolbar.appendChild(btnVis);
                 dPanel.appendChild(digitalCenter);
                 dPanel.appendChild(digitalToolbar);
                 dPanel.appendChild(digitalAutoMixPanel);
@@ -8544,6 +8570,7 @@
                     btnDigitalSpectrum,
                     btnDigitalVideo,
                     btnVis,
+                    btnDigitalVisBg: null,
                     btnDigitalAi,
                     btnDigitalFade,
                     btnDeckATransport,
@@ -8677,7 +8704,7 @@
                             this._cycleDigitalToolbarCenterMode();
                         }, sig);
                     }
-                    if (btnVis) this._wireDigitalVisBgButton(btnVis, sig);
+                    if (btnVis) this._wireDigitalFullscreenButton(btnVis, sig);
                     try { this._wireDigitalKeyboardShortcuts(sig); } catch (_) {}
                     try {
                         this._wireDigitalSpectrumLocalDrop(
@@ -8834,6 +8861,7 @@
                 const onRvFsResize = () => {
                     requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
+                            try { this._syncDigitalFullscreenButton(); } catch (_) {}
                             try { this.onResize(); } catch (_) {}
                         });
                     });
@@ -8967,6 +8995,7 @@
 
             onResize() {
                 try { this._syncDigitalFullscreenLayout(); } catch (_) {}
+                try { this._syncDigitalFullscreenButton(); } catch (_) {}
                 try { this._resizeCanvases(); } catch (_) {}
                 if (this.skin === 'digital' && this._digitalHubMode === 'spectrum') {
                     try { this._syncSpectrumStagingScale(); } catch (_) {}
