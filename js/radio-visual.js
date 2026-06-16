@@ -177,11 +177,11 @@
             }
             static get DIGITAL_HUB_LABELS() {
                 return {
-                    equaliser: 'EQUALISER',
-                    spectrum: 'SPECTRUM',
+                    equaliser: 'EQ',
+                    spectrum: 'ORBS',
                     bpm: 'BPM',
                     volume: 'MIXER',
-                    effects: 'EFFECTS',
+                    effects: 'Fx',
                     live: 'LIVE',
                     video: 'VIDEO',
                     'ai-off': 'OFF'
@@ -5288,7 +5288,7 @@
             }
 
             _digitalHubModeLabel(mode) {
-                return RadioVisualEngine.DIGITAL_HUB_LABELS[mode] || 'EQUALISER';
+                return RadioVisualEngine.DIGITAL_HUB_LABELS[mode] || 'EQ';
             }
 
             _hubSpectrumLayout(hubMode) {
@@ -7655,7 +7655,24 @@
                     'Audio:Bar': 'bars',
                     KARAOKE: 'karaoke'
                 };
-                const items = [
+                const items = deckBInPanel ? [
+                    { label: 'BACK🔆', visBg: true },
+                    { label: 'DANCE', fn: () => {
+                        try {
+                            if (typeof g.toggleWebmOverlay === 'function') g.toggleWebmOverlay();
+                        } catch (_) {}
+                    }},
+                    {
+                        label: 'DECKS',
+                        fn: () => { this._loadVisualByName('DJ Decks'); }
+                    },
+                    { label: 'Audio:Bar', fn: () => { this._toggleDigitalStagingFeature('bars'); } },
+                    { label: 'ProjectM', fn: () => { this._toggleDigitalStagingFeature('projectm'); } },
+                    { label: 'KARAOKE', fn: () => { this.toggleDigitalStagingKaraoke(); } },
+                    { label: 'OPTIONS', fn: () => { try { g.toggleOptionsPanel?.(); } catch (_) {} } },
+                    { label: 'Queue', fn: () => { this._toggleDigitalLocalQueuePanel(); } },
+                    { label: 'Stations', fn: () => { this._toggleDigitalStationsPanel(); } }
+                ] : [
                     { label: 'OPTIONS', fn: () => { try { g.toggleOptionsPanel?.(); } catch (_) {} } },
                     { label: 'DANCE', fn: () => {
                         try {
@@ -7663,44 +7680,20 @@
                         } catch (_) {}
                     }},
                     { label: 'KARAOKE', fn: () => {
-                        if (deckBInPanel) {
-                            this.toggleDigitalStagingKaraoke();
-                            return;
-                        }
                         this._withDjDeck((dj) => {
                             if (typeof dj.toggleDeckBKaraokeEmbed === 'function') dj.toggleDeckBKaraokeEmbed();
                         });
                     }},
-                    ...(deckBInPanel ? [
-                        { label: 'Audio:Bar', fn: () => { this._toggleDigitalStagingFeature('bars'); } },
-                        { label: 'ProjectM', fn: () => { this._toggleDigitalStagingFeature('projectm'); } },
-                        { label: 'BACK🔆', visBg: true }
-                    ] : [
-                        { label: 'Video', fn: () => {
-                            this._withDjDeck((dj) => {
-                                if (dj.deckBVizMode === 'video') { dj.tearDownDeckBViz(); dj.syncDeckBVisualButtons(); }
-                                else dj.startDeckBVideoVisual();
-                            });
-                        }},
-                        { label: 'ProjectM', fn: () => { this._loadVisualByName('ProjectM v2'); } },
-                        { label: 'Audio:Bar', fn: () => { this._loadVisualByName('Audio Bars'); } }
-                    ]),
-                    ...(deckBInPanel ? [{
-                        label: 'DECKS',
-                        fn: () => { this._loadVisualByName('DJ Decks'); }
-                    }] : []),
-                    { label: 'Queue', fn: () => {
-                        if (deckBInPanel) {
-                            this._toggleDigitalLocalQueuePanel();
-                            return;
-                        }
-                        this._withDjDeck((dj) => dj.toggleDeckBQueuePanel());
+                    { label: 'Video', fn: () => {
+                        this._withDjDeck((dj) => {
+                            if (dj.deckBVizMode === 'video') { dj.tearDownDeckBViz(); dj.syncDeckBVisualButtons(); }
+                            else dj.startDeckBVideoVisual();
+                        });
                     }},
+                    { label: 'ProjectM', fn: () => { this._loadVisualByName('ProjectM v2'); } },
+                    { label: 'Audio:Bar', fn: () => { this._loadVisualByName('Audio Bars'); } },
+                    { label: 'Queue', fn: () => { this._withDjDeck((dj) => dj.toggleDeckBQueuePanel()); } },
                     { label: 'Stations', fn: () => {
-                        if (deckBInPanel) {
-                            this._toggleDigitalStationsPanel();
-                            return;
-                        }
                         try {
                             if (g.uiLocked) return;
                             if (typeof g.toggleRadioPanel === 'function') g.toggleRadioPanel();
@@ -8415,7 +8408,7 @@
                 btnDigitalSpectrum = document.createElement('button');
                 btnDigitalSpectrum.type = 'button';
                 btnDigitalSpectrum.className = rvToolbarTextBtnClass;
-                this._appendRvButtonLabel(btnDigitalSpectrum, 'EQUALISER');
+                this._appendRvButtonLabel(btnDigitalSpectrum, 'EQ');
                 btnDigitalVideo = document.createElement('button');
                 btnDigitalVideo.type = 'button';
                 btnDigitalVideo.className = rvToolbarTextBtnClass;
@@ -8513,7 +8506,7 @@
                 btnXfadeStation.type = 'button';
                 btnXfadeStation.className = 'radio-visual-btn radio-visual-digital-toolbar-icon-btn radio-visual-digital-xfade-station-btn';
                 btnXfadeStation.dataset.rvDigital = 'xfade-station';
-                btnXfadeStation.textContent = ' 🔀 ';
+                btnXfadeStation.textContent = ' ∞ ';
                 btnXfadeStation.title = 'Change station when auto-fading (toggle)';
                 btnXfadeStation.setAttribute('aria-label', 'Change station when auto-fading');
                 toolbarMain.appendChild(btnDigitalSpectrum);
