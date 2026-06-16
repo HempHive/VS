@@ -357,7 +357,7 @@
                     { id: 'hugginf', label: 'HUGGINF', url: 'https://huggingface.co/spaces' },
                     { id: 'links', label: 'LINKS', url: 'https://streamurl.link/' },
                     { id: 'racing', label: 'RACING', url: 'https://hemphive.github.io/CHR/' },
-                    { id: 'shazam', label: 'SHAZAM', url: 'https://streamurl.link/' },
+                    { id: 'shazam', label: 'SHAZAM', url: 'https://messenger.abeto.co/' },
                     { id: 'trading', label: 'TRADING', url: 'https://hemphive.github.io/ATB3/' }
                 ];
             }
