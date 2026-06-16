@@ -2,6 +2,7 @@
 #   LABEL URL          embed site in staging (LABEL|URL also works)
 #   LABEL URL interaction:none   embed view-only (no clicks in staging)
 #   LABEL action:text-in   open/close Text-In panel (no URL)
+#   LABEL action:logofx   toggle Logo FX in staging (no URL)
 # Pipe form: ANIME|https://example.com|interaction:none
 ANIME https://jannerap.github.io/Trailers/
 BUBBLES https://mindseye.dev/

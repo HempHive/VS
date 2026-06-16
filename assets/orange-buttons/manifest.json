@@ -5,7 +5,7 @@
     { "label": "CHAT", "action": "text-in" },
     { "label": "IDEAS", "url": "https://hemphive.farm/" },
     { "label": "RACING", "url": "https://hemphive.github.io/CHR/" },
-    { "label": "SUGGEST", "url": "https://streamurl.link/" },
+    { "label": "LOGOFX", "action": "logofx" },
     { "label": "TRADING", "url": "https://hemphive.github.io/ATB3/" }
   ]
 }

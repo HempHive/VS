@@ -367,6 +367,9 @@
                 if (a === 'text-in' || a === 'textin' || a === 'toggle-text-in' || a === 'toggletextinpanel') {
                     return 'text-in';
                 }
+                if (a === 'logofx' || a === 'logo-fx' || a === 'logo fx') {
+                    return 'logofx';
+                }
                 return '';
             }
             static normalizeOrangeButtonInteraction(raw, fallback = 'full') {
@@ -1530,6 +1533,8 @@
                     let on = false;
                     if (entry && entry.action === 'text-in') {
                         on = textInActive;
+                    } else if (entry && entry.action === 'logofx') {
+                        on = this._digitalStagingView === 'logofx';
                     } else {
                         on = !!(activeId && btn.dataset.rvOrangeEmbed === activeId);
                     }
@@ -1574,6 +1579,13 @@
                     try { globalThis.toggleTextInPanel?.(); } catch (_) {}
                     this._syncDigitalStagingButtons();
                     this._syncDigitalOrangeButtons();
+                    return;
+                }
+                if (entry.action === 'logofx') {
+                    if (this._isDigitalOrangeTextInActive()) {
+                        try { globalThis.toggleTextInPanel?.(); } catch (_) {}
+                    }
+                    this._toggleDigitalStagingFeature('logofx');
                     return;
                 }
             }
@@ -1634,6 +1646,9 @@
                     if (entry.action === 'text-in') {
                         b.title = `${entry.label} — tap to open or close Text-In panel`;
                         b.setAttribute('aria-label', `${entry.label} Text-In panel`);
+                    } else if (entry.action === 'logofx') {
+                        b.title = `${entry.label} — tap to toggle Logo FX in staging`;
+                        b.setAttribute('aria-label', `${entry.label} Logo FX`);
                     } else if (entry.interaction === 'none') {
                         b.title = `${entry.label} — view only in staging · tap again for equaliser · right-click for new window`;
                         b.setAttribute('aria-label', `${entry.label} view only`);
@@ -7619,8 +7634,8 @@
                     KARAOKE: 'karaoke'
                 };
                 const items = [
-                    { label: 'Mixer', fn: () => { try { g.toggleMixPanel?.(); } catch (_) {} } },
-                    { label: 'Avatar', fn: () => {
+                    { label: 'OPTIONS', fn: () => { try { g.toggleOptionsPanel?.(); } catch (_) {} } },
+                    { label: 'DANCE', fn: () => {
                         try {
                             if (typeof g.toggleWebmOverlay === 'function') g.toggleWebmOverlay();
                         } catch (_) {}
