@@ -5553,13 +5553,8 @@
                     mount.setAttribute('role', 'button');
                     mount.setAttribute('tabindex', '0');
                     mount.setAttribute('aria-label', 'Cycle secondary visual');
-                    const cycleBtn = document.createElement('button');
-                    cycleBtn.type = 'button';
-                    cycleBtn.className = 'radio-visual-digital-hub-fs-viz-cycle';
-                    cycleBtn.setAttribute('aria-label', 'Cycle secondary visual');
-                    cycleBtn.textContent = 'ProjectM';
-                    dock.append(mount, cycleBtn);
-                    return { dock, mount, cycleBtn };
+                    dock.append(mount);
+                    return { dock, mount };
                 };
                 const mkHubVideoColumn = (innerWrap, columnKey) => {
                     const col = document.createElement('div');
@@ -5570,8 +5565,6 @@
                     primary.appendChild(innerWrap);
                     const dockParts = mkHubFsVizDock();
                     col.append(primary, dockParts.dock);
-                    col._rvFsVizMount = dockParts.mount;
-                    col._rvFsVizCycle = dockParts.cycleBtn;
                     return col;
                 };
 
@@ -6149,13 +6142,6 @@
                 return null;
             }
 
-            _activeHubFsVizCycleBtn() {
-                const mode = this._digitalHubMode;
-                if (mode === 'live' || mode === 'ai') return this.els.digitalHubFsVizCycleAi;
-                if (mode === 'video') return this.els.digitalHubFsVizCycleVideo;
-                return null;
-            }
-
             _hubFsVizHasRoom() {
                 const col = this._activeHubVideoColumnEl();
                 if (!col) return false;
@@ -6373,11 +6359,6 @@
                 if (entry.kind === 'projectm') this._mountHubFsVizProjectM(mount);
                 else if (entry.kind === 'logofx') this._mountHubFsVizLogoFx(mount);
                 else if (entry.kind === 'three') this._mountHubFsVizThree(mount, entry.sceneFn);
-                const labelBtn = this._activeHubFsVizCycleBtn();
-                if (labelBtn) {
-                    const short = String(entry.label || entry.kind || 'Visual');
-                    labelBtn.textContent = short.length > 22 ? short.slice(0, 21) + '…' : short;
-                }
             }
 
             _cycleHubFsViz() {
@@ -6407,17 +6388,6 @@
             }
 
             _wireHubFsVizDock(sig) {
-                const wire = (btn) => {
-                    if (!btn || btn.dataset.rvHubFsVizWired === '1') return;
-                    btn.addEventListener('click', (ev) => {
-                        this._stopClick(ev);
-                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
-                        this._cycleHubFsViz();
-                    }, sig);
-                    btn.dataset.rvHubFsVizWired = '1';
-                };
-                wire(this.els.digitalHubFsVizCycleAi);
-                wire(this.els.digitalHubFsVizCycleVideo);
                 [this.els.digitalHubFsVizMountAi, this.els.digitalHubFsVizMountVideo].forEach((mount) => {
                     if (!mount || mount.dataset.rvHubFsVizWired === '1') return;
                     mount.addEventListener('click', (ev) => {
@@ -8921,7 +8891,7 @@
                 btnXfadeStation.type = 'button';
                 btnXfadeStation.className = 'radio-visual-btn radio-visual-digital-toolbar-icon-btn radio-visual-digital-xfade-station-btn';
                 btnXfadeStation.dataset.rvDigital = 'xfade-station';
-                btnXfadeStation.textContent = ' ♾ ';
+                btnXfadeStation.textContent = ' 〾 ';
                 btnXfadeStation.title = 'Change station when auto-fading (toggle)';
                 btnXfadeStation.setAttribute('aria-label', 'Change station when auto-fading');
                 toolbarMain.appendChild(btnDigitalSpectrum);
@@ -9017,8 +8987,6 @@
                     digitalHubDeckVideoColumn: digitalHubPanel?.querySelector('[data-hub-video-column="video"]'),
                     digitalHubFsVizMountAi: digitalHubPanel?.querySelector('[data-hub-video-column="ai"] .radio-visual-digital-hub-fs-viz-mount'),
                     digitalHubFsVizMountVideo: digitalHubPanel?.querySelector('[data-hub-video-column="video"] .radio-visual-digital-hub-fs-viz-mount'),
-                    digitalHubFsVizCycleAi: digitalHubPanel?.querySelector('[data-hub-video-column="ai"] .radio-visual-digital-hub-fs-viz-cycle'),
-                    digitalHubFsVizCycleVideo: digitalHubPanel?.querySelector('[data-hub-video-column="video"] .radio-visual-digital-hub-fs-viz-cycle'),
                     digitalHubAiLoader: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai-loader'),
                     digitalHubDeckVideoWrap: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video'),
                     digitalHubDeckVideoStack: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video-stack'),
