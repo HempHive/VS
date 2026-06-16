@@ -1984,6 +1984,94 @@
             margin-left: 0;
             margin-top: calc((var(--rv-range-thumb) - var(--rv-range-rail)) / -2);
         }
+        #radio-visual-root .radio-visual-digital-hub-video-column {
+            display: none !important;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            min-width: 0;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: stretch;
+            gap: clamp(4px, 0.8cqw, 8px);
+            box-sizing: border-box;
+        }
+        #radio-visual-root .radio-visual-digital-hub-video-primary {
+            flex: 1 1 0;
+            min-height: 0;
+            min-width: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #radio-visual-root .radio-visual-digital-hub-fs-viz-dock {
+            display: none;
+            flex: 0 0 auto;
+            width: 100%;
+            min-height: 0;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 2px;
+            pointer-events: auto;
+            touch-action: manipulation;
+            position: relative;
+            z-index: 7;
+        }
+        #radio-visual-root .radio-visual-digital-hub-fs-viz-mount {
+            flex: 1 1 auto;
+            min-height: clamp(72px, 16vh, 140px);
+            max-height: clamp(96px, 22vh, 180px);
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+            border: 1px solid rgba(0, 220, 255, 0.28);
+            cursor: pointer;
+            position: relative;
+        }
+        #radio-visual-root .radio-visual-digital-hub-fs-viz-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        #radio-visual-root .radio-visual-digital-hub-fs-viz-cycle {
+            flex: 0 0 auto;
+            align-self: center;
+            max-width: 100%;
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 220, 255, 0.35);
+            background: rgba(8, 24, 32, 0.88);
+            color: #9eeeff;
+            font-size: clamp(8px, 2cqi, 11px);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai"] .radio-visual-digital-hub-video-column[data-hub-video-column="ai"],
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="live"] .radio-visual-digital-hub-video-column[data-hub-video-column="ai"],
+        #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="video"] .radio-visual-digital-hub-video-column[data-hub-video-column="video"] {
+            display: flex !important;
+            pointer-events: none;
+            position: relative;
+            z-index: 6;
+        }
+        #radio-visual-root.radio-visual-root--digital-fs .radio-visual-digital-hub-video-column.is-fs-viz-dock-active .radio-visual-digital-hub-fs-viz-dock,
+        html:fullscreen #radio-visual-root .radio-visual-digital-hub-video-column.is-fs-viz-dock-active .radio-visual-digital-hub-fs-viz-dock,
+        html:-webkit-full-screen #radio-visual-root .radio-visual-digital-hub-video-column.is-fs-viz-dock-active .radio-visual-digital-hub-fs-viz-dock {
+            display: flex;
+        }
+        #radio-visual-root.radio-visual-root--digital-fs .radio-visual-digital-hub-video-column.is-fs-viz-dock-active .radio-visual-digital-hub-video-primary,
+        html:fullscreen #radio-visual-root .radio-visual-digital-hub-video-column.is-fs-viz-dock-active .radio-visual-digital-hub-video-primary,
+        html:-webkit-full-screen #radio-visual-root .radio-visual-digital-hub-video-column.is-fs-viz-dock-active .radio-visual-digital-hub-video-primary {
+            flex: 1 1 0;
+            min-height: 0;
+        }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="ai"] .radio-visual-digital-hub-ai,
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="live"] .radio-visual-digital-hub-ai {
             display: flex !important;
@@ -1992,6 +2080,9 @@
             background: #000;
             border-radius: 8px;
             overflow: hidden;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
         }
         #radio-visual-root .radio-visual-digital-center-pane[data-hub-mode="video"] .radio-visual-digital-hub-deck-video {
             display: flex !important;

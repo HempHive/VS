@@ -187,6 +187,55 @@
                     'ai-off': 'OFF'
                 };
             }
+            static buildHubFsVizCycle() {
+                const modes = globalThis.modes;
+                const out = [];
+                const keys = new Set();
+                const push = (entry) => {
+                    if (!entry || !entry.key || keys.has(entry.key)) return;
+                    keys.add(entry.key);
+                    out.push(entry);
+                };
+                if (Array.isArray(modes)) {
+                    for (const m of modes) {
+                        const name = m && m.name;
+                        if (!name) continue;
+                        if (RadioVisualEngine.isRadioModeName(name)) continue;
+                        try {
+                            if (globalThis.isRadioVisualModeName?.(name)) continue;
+                        } catch (_) {}
+                        if (name === 'DJ Decks' || name === 'Blank') continue;
+                        if (/projectm|milkdrop/i.test(name) || /rainbow \(invert\)/i.test(name)) {
+                            push({ kind: 'projectm', key: 'projectm', label: 'ProjectM' });
+                            continue;
+                        }
+                        if (name === 'Logo Fx' || name === 'Logo') {
+                            push({ kind: 'logofx', key: 'logofx-' + name, label: name === 'Logo Fx' ? 'LOGOFX' : 'Logo' });
+                            continue;
+                        }
+                        if (m.sceneFn && typeof m.sceneFn === 'function') {
+                            push({
+                                kind: 'three',
+                                key: 'three-' + name,
+                                label: name,
+                                sceneFn: m.sceneFn
+                            });
+                        }
+                    }
+                }
+                if (!keys.has('projectm')) {
+                    out.unshift({ kind: 'projectm', key: 'projectm', label: 'ProjectM' });
+                } else {
+                    const i = out.findIndex((e) => e.kind === 'projectm');
+                    if (i > 0) {
+                        const [entry] = out.splice(i, 1);
+                        out.unshift(entry);
+                    }
+                }
+                return out.length
+                    ? out
+                    : [{ kind: 'projectm', key: 'projectm', label: 'ProjectM' }];
+            }
             static get DIGITAL_AI_VIDEO_DIR() { return 'assets/ai/'; }
             static get DIGITAL_AI_VIDEO_MANIFEST() { return 'assets/ai/manifest.json'; }
             /** Hub AI / LIVE overlay clips (random pick, then next random on end). */
@@ -285,6 +334,8 @@
                 this._digitalHubAiEndGuard = false;
                 this._digitalAiVideoFilesList = null;
                 this._digitalAiVideoManifestPromise = null;
+                this._hubFsVizIdx = 0;
+                this._hubFsVizMountedKey = '';
                 /** Derived from hub mode for spectrum flower / HUD layout. */
                 this._digitalSpectrumLayout = 'full';
                 /** Spectrum hub staging scale (1 = default flower size). */
@@ -850,6 +901,7 @@
                 btn.classList.toggle('is-active', on);
                 btn.setAttribute('aria-pressed', on ? 'true' : 'false');
                 try { btn.removeAttribute('title'); } catch (_) {}
+                try { this._syncHubFsVizDock(); } catch (_) {}
             }
 
             _ingestLocalFilesToDeckAndPlay(deckKey, files) {
@@ -5491,6 +5543,37 @@
                 aiLoader.appendChild(aiLoaderRing);
                 aiWrap.append(aiStack, aiLoader);
 
+                const mkHubFsVizDock = () => {
+                    const dock = document.createElement('div');
+                    dock.className = 'radio-visual-digital-hub-fs-viz-dock';
+                    dock.setAttribute('aria-hidden', 'true');
+                    const mount = document.createElement('div');
+                    mount.className = 'radio-visual-digital-hub-fs-viz-mount';
+                    mount.setAttribute('role', 'button');
+                    mount.setAttribute('tabindex', '0');
+                    mount.setAttribute('aria-label', 'Cycle secondary visual');
+                    const cycleBtn = document.createElement('button');
+                    cycleBtn.type = 'button';
+                    cycleBtn.className = 'radio-visual-digital-hub-fs-viz-cycle';
+                    cycleBtn.setAttribute('aria-label', 'Cycle secondary visual');
+                    cycleBtn.textContent = 'ProjectM';
+                    dock.append(mount, cycleBtn);
+                    return { dock, mount, cycleBtn };
+                };
+                const mkHubVideoColumn = (innerWrap, columnKey) => {
+                    const col = document.createElement('div');
+                    col.className = 'radio-visual-digital-hub-video-column';
+                    col.dataset.hubVideoColumn = columnKey;
+                    const primary = document.createElement('div');
+                    primary.className = 'radio-visual-digital-hub-video-primary';
+                    primary.appendChild(innerWrap);
+                    const dockParts = mkHubFsVizDock();
+                    col.append(primary, dockParts.dock);
+                    col._rvFsVizMount = dockParts.mount;
+                    col._rvFsVizCycle = dockParts.cycleBtn;
+                    return col;
+                };
+
                 const deckVideoWrap = document.createElement('div');
                 deckVideoWrap.className = 'radio-visual-digital-hub-deck-video';
                 const deckVideoStack = document.createElement('div');
@@ -5509,6 +5592,9 @@
                 deckVideoStack.appendChild(deckVideoB);
                 deckVideoWrap.appendChild(deckVideoStack);
 
+                const digitalHubAiColumn = mkHubVideoColumn(aiWrap, 'ai');
+                const digitalHubDeckVideoColumn = mkHubVideoColumn(deckVideoWrap, 'video');
+
                 const bpm = document.createElement('div');
                 bpm.className = 'radio-visual-digital-hub-bpm';
                 bpm.id = 'digital-hub-bpm-mount';
@@ -5518,7 +5604,7 @@
                 off.className = 'radio-visual-digital-hub-off';
                 off.textContent = 'OFF';
 
-                panel.append(volume, effects, aiWrap, deckVideoWrap, bpm, off);
+                panel.append(volume, effects, digitalHubAiColumn, digitalHubDeckVideoColumn, bpm, off);
                 return panel;
             }
 
@@ -6041,6 +6127,308 @@
                 });
             }
 
+            _hubFsVizCycleList() {
+                if (!this._hubFsVizCycleCache) {
+                    this._hubFsVizCycleCache = RadioVisualEngine.buildHubFsVizCycle();
+                }
+                return this._hubFsVizCycleCache;
+            }
+
+            _activeHubVideoColumnEl() {
+                const mode = this._digitalHubMode;
+                if (mode === 'live' || mode === 'ai') return this.els.digitalHubAiColumn;
+                if (mode === 'video') return this.els.digitalHubDeckVideoColumn;
+                return null;
+            }
+
+            _activeHubFsVizMountEl() {
+                const mode = this._digitalHubMode;
+                if (mode === 'live' || mode === 'ai') return this.els.digitalHubFsVizMountAi;
+                if (mode === 'video') return this.els.digitalHubFsVizMountVideo;
+                return null;
+            }
+
+            _activeHubFsVizCycleBtn() {
+                const mode = this._digitalHubMode;
+                if (mode === 'live' || mode === 'ai') return this.els.digitalHubFsVizCycleAi;
+                if (mode === 'video') return this.els.digitalHubFsVizCycleVideo;
+                return null;
+            }
+
+            _hubFsVizHasRoom() {
+                const col = this._activeHubVideoColumnEl();
+                if (!col) return false;
+                try {
+                    const h = col.getBoundingClientRect().height;
+                    return h >= 280;
+                } catch (_) {}
+                return false;
+            }
+
+            _hubFsVizShouldShowDock() {
+                if (!this._isDigitalPageFullscreen()) return false;
+                const mode = this._digitalHubMode;
+                if (mode !== 'live' && mode !== 'ai' && mode !== 'video') return false;
+                return this._hubFsVizHasRoom();
+            }
+
+            _tearDownHubFsViz() {
+                try {
+                    if (this._hubFsVizAnimId) cancelAnimationFrame(this._hubFsVizAnimId);
+                } catch (_) {}
+                this._hubFsVizAnimId = null;
+                try {
+                    if (this._hubFsVizPmCycleTimeout) clearTimeout(this._hubFsVizPmCycleTimeout);
+                } catch (_) {}
+                this._hubFsVizPmCycleTimeout = null;
+                try {
+                    if (this._hubFsVizDetachInput) this._hubFsVizDetachInput();
+                } catch (_) {}
+                this._hubFsVizDetachInput = null;
+                try {
+                    const spin = this._hubFsVizScene
+                        && this._hubFsVizScene.userData
+                        && this._hubFsVizScene.userData.logoSpin;
+                    if (spin && typeof spin.dispose === 'function') spin.dispose();
+                } catch (_) {}
+                try {
+                    if (this._hubFsVizRenderer) this._hubFsVizRenderer.dispose();
+                } catch (_) {}
+                this._hubFsVizRenderer = null;
+                this._hubFsVizScene = null;
+                this._hubFsVizPmVisualizer = null;
+                this._hubFsVizPmCanvas = null;
+                this._hubFsVizResize = null;
+                this._hubFsVizMountedKey = '';
+                [this.els.digitalHubFsVizMountAi, this.els.digitalHubFsVizMountVideo].forEach((mount) => {
+                    if (!mount) return;
+                    try { mount.innerHTML = ''; } catch (_) {}
+                });
+            }
+
+            _mountHubFsVizProjectM(mount) {
+                if (!mount || typeof butterchurn === 'undefined') return;
+                try { initAudio(); } catch (_) {}
+                if (!state || !state.audioCtx) return;
+                const canvas = document.createElement('canvas');
+                canvas.className = 'radio-visual-digital-hub-fs-viz-canvas';
+                mount.appendChild(canvas);
+                const resizePm = () => {
+                    try {
+                        const rect = mount.getBoundingClientRect();
+                        const w = Math.max(64, Math.floor(rect.width));
+                        const h = Math.max(64, Math.floor(rect.height));
+                        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                        canvas.width = Math.floor(w * dpr);
+                        canvas.height = Math.floor(h * dpr);
+                        if (this._hubFsVizPmVisualizer && this._hubFsVizPmVisualizer.setRendererSize) {
+                            this._hubFsVizPmVisualizer.setRendererSize(w, h);
+                        }
+                    } catch (_) {}
+                };
+                const rect0 = mount.getBoundingClientRect();
+                const w0 = Math.max(64, Math.floor(rect0.width));
+                const h0 = Math.max(64, Math.floor(rect0.height));
+                const dpr0 = Math.min(window.devicePixelRatio || 1, 2);
+                canvas.width = Math.floor(w0 * dpr0);
+                canvas.height = Math.floor(h0 * dpr0);
+                const pxRatio = Number(visualSettings.pixelRatio) || Math.min(window.devicePixelRatio || 1, 2);
+                let viz;
+                try {
+                    viz = butterchurn.createVisualizer(state.audioCtx, canvas, {
+                        width: w0, height: h0, pixelRatio: pxRatio
+                    });
+                } catch (_) {
+                    viz = null;
+                }
+                if (!viz) return;
+                this._hubFsVizPmVisualizer = viz;
+                this._hubFsVizPmCanvas = canvas;
+                try { viz.connectAudio(state.analyserNode); } catch (_) {}
+                const presetMap = (typeof butterchurnPresets !== 'undefined' && butterchurnPresets.getPresets)
+                    ? butterchurnPresets.getPresets() : {};
+                const presetKeys = Object.keys(presetMap);
+                let currentPresetIdx = Math.floor(Math.random() * Math.max(1, presetKeys.length));
+                const loadPmPreset = (idx) => {
+                    if (!presetKeys.length || !this._hubFsVizPmVisualizer) return;
+                    try {
+                        this._hubFsVizPmVisualizer.loadPreset(
+                            presetMap[presetKeys[idx]],
+                            Number(visualSettings.transitionSec) || 2.7
+                        );
+                    } catch (_) {}
+                };
+                loadPmPreset(currentPresetIdx);
+                this._hubFsVizResize = resizePm;
+                resizePm();
+                const loop = () => {
+                    this._hubFsVizAnimId = requestAnimationFrame(loop);
+                    try {
+                        if (this._hubFsVizPmVisualizer) this._hubFsVizPmVisualizer.render();
+                    } catch (_) {}
+                };
+                loop();
+            }
+
+            _mountHubFsVizLogoFx(mount) {
+                if (!mount || typeof THREE === 'undefined' || typeof sceneLogoFx !== 'function') return;
+                try { initAudio(); } catch (_) {}
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+                try { renderer.setClearColor(0x000000, 1); } catch (_) {}
+                const canvas = renderer.domElement;
+                canvas.className = 'radio-visual-digital-hub-fs-viz-canvas';
+                mount.appendChild(canvas);
+                const updateFn = sceneLogoFx(scene, camera);
+                const spin = scene.userData && scene.userData.logoSpin;
+                const resizeLogoFx = () => {
+                    try {
+                        const rect = mount.getBoundingClientRect();
+                        const w = Math.max(64, Math.floor(rect.width));
+                        const h = Math.max(64, Math.floor(rect.height));
+                        camera.aspect = w / h;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(w, h, false);
+                        this._fitDigitalStagingLogoFxCard(mount, camera, spin);
+                    } catch (_) {}
+                };
+                this._hubFsVizRenderer = renderer;
+                this._hubFsVizScene = scene;
+                this._hubFsVizResize = resizeLogoFx;
+                resizeLogoFx();
+                let lastLogoFxImgAspect = spin && spin.imgAspect ? spin.imgAspect : 0;
+                const loop = () => {
+                    this._hubFsVizAnimId = requestAnimationFrame(loop);
+                    try {
+                        if (spin && spin.imgAspect && spin.imgAspect !== lastLogoFxImgAspect) {
+                            lastLogoFxImgAspect = spin.imgAspect;
+                            this._fitDigitalStagingLogoFxCard(mount, camera, spin);
+                        }
+                        if (updateFn) updateFn();
+                        renderer.render(scene, camera);
+                    } catch (_) {}
+                };
+                loop();
+            }
+
+            _mountHubFsVizThree(mount, sceneFn) {
+                if (!mount || typeof THREE === 'undefined' || typeof sceneFn !== 'function') return;
+                try { initAudio(); } catch (_) {}
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                camera.position.z = 8;
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+                try { renderer.setClearColor(0x000000, 1); } catch (_) {}
+                const canvas = renderer.domElement;
+                canvas.className = 'radio-visual-digital-hub-fs-viz-canvas';
+                mount.appendChild(canvas);
+                let updateFn = null;
+                try { updateFn = sceneFn(scene, camera); } catch (_) {}
+                if (!updateFn) {
+                    try { updateFn = sceneFn(scene, camera, null); } catch (_) {}
+                }
+                const resize = () => {
+                    try {
+                        const rect = mount.getBoundingClientRect();
+                        const w = Math.max(64, Math.floor(rect.width));
+                        const h = Math.max(64, Math.floor(rect.height));
+                        camera.aspect = w / h;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(w, h, false);
+                    } catch (_) {}
+                };
+                this._hubFsVizRenderer = renderer;
+                this._hubFsVizScene = scene;
+                this._hubFsVizResize = resize;
+                resize();
+                let dataArray = null;
+                const loop = () => {
+                    this._hubFsVizAnimId = requestAnimationFrame(loop);
+                    try {
+                        const an = state.analyserNode || state.analyserNodeA;
+                        if (!an) return;
+                        if (!dataArray || dataArray.length !== an.frequencyBinCount) {
+                            dataArray = new Uint8Array(an.frequencyBinCount);
+                        }
+                        an.getByteFrequencyData(dataArray);
+                        if (updateFn) updateFn(dataArray, performance.now());
+                        renderer.render(scene, camera);
+                    } catch (_) {}
+                };
+                loop();
+            }
+
+            _mountHubFsVizCurrent() {
+                const list = this._hubFsVizCycleList();
+                const entry = list[this._hubFsVizIdx || 0];
+                const mount = this._activeHubFsVizMountEl();
+                if (!entry || !mount) return;
+                if (this._hubFsVizMountedKey === entry.key) return;
+                this._tearDownHubFsViz();
+                this._hubFsVizMountedKey = entry.key;
+                if (entry.kind === 'projectm') this._mountHubFsVizProjectM(mount);
+                else if (entry.kind === 'logofx') this._mountHubFsVizLogoFx(mount);
+                else if (entry.kind === 'three') this._mountHubFsVizThree(mount, entry.sceneFn);
+                const labelBtn = this._activeHubFsVizCycleBtn();
+                if (labelBtn) {
+                    const short = String(entry.label || entry.kind || 'Visual');
+                    labelBtn.textContent = short.length > 22 ? short.slice(0, 21) + '…' : short;
+                }
+            }
+
+            _cycleHubFsViz() {
+                const list = this._hubFsVizCycleList();
+                if (!list.length) return;
+                this._hubFsVizIdx = ((this._hubFsVizIdx || 0) + 1) % list.length;
+                this._mountHubFsVizCurrent();
+                try { resetIdleTimer(); } catch (_) {}
+            }
+
+            _syncHubFsVizDock() {
+                const show = this._hubFsVizShouldShowDock();
+                [this.els.digitalHubAiColumn, this.els.digitalHubDeckVideoColumn].forEach((col) => {
+                    if (!col) return;
+                    col.classList.toggle('is-fs-viz-dock-active', !!(show && col === this._activeHubVideoColumnEl()));
+                    const dock = col.querySelector('.radio-visual-digital-hub-fs-viz-dock');
+                    if (dock) dock.setAttribute('aria-hidden', show && col === this._activeHubVideoColumnEl() ? 'false' : 'true');
+                });
+                if (!show) {
+                    this._tearDownHubFsViz();
+                    return;
+                }
+                this._mountHubFsVizCurrent();
+                try {
+                    if (this._hubFsVizResize) this._hubFsVizResize();
+                } catch (_) {}
+            }
+
+            _wireHubFsVizDock(sig) {
+                const wire = (btn) => {
+                    if (!btn || btn.dataset.rvHubFsVizWired === '1') return;
+                    btn.addEventListener('click', (ev) => {
+                        this._stopClick(ev);
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        this._cycleHubFsViz();
+                    }, sig);
+                    btn.dataset.rvHubFsVizWired = '1';
+                };
+                wire(this.els.digitalHubFsVizCycleAi);
+                wire(this.els.digitalHubFsVizCycleVideo);
+                [this.els.digitalHubFsVizMountAi, this.els.digitalHubFsVizMountVideo].forEach((mount) => {
+                    if (!mount || mount.dataset.rvHubFsVizWired === '1') return;
+                    mount.addEventListener('click', (ev) => {
+                        if (!this._hubFsVizShouldShowDock()) return;
+                        this._stopClick(ev);
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        this._cycleHubFsViz();
+                    }, sig);
+                    mount.dataset.rvHubFsVizWired = '1';
+                });
+            }
+
             _syncDigitalHubPanel() {
                 const mode = this._digitalHubMode || 'equaliser';
                 const panel = this.els.digitalHubPanel;
@@ -6096,6 +6484,7 @@
                     this._pauseDigitalHubDeckVideo();
                 }
                 this._syncDigitalHubAiVideo();
+                try { this._syncHubFsVizDock(); } catch (_) {}
             }
 
             _syncDigitalSpectrumLayout() {
@@ -8598,6 +8987,12 @@
                     digitalHubAiVideoB: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai-video--b'),
                     digitalHubAiVideo: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai-video--a'),
                     digitalHubAi: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai'),
+                    digitalHubAiColumn: digitalHubPanel?.querySelector('[data-hub-video-column="ai"]'),
+                    digitalHubDeckVideoColumn: digitalHubPanel?.querySelector('[data-hub-video-column="video"]'),
+                    digitalHubFsVizMountAi: digitalHubPanel?.querySelector('[data-hub-video-column="ai"] .radio-visual-digital-hub-fs-viz-mount'),
+                    digitalHubFsVizMountVideo: digitalHubPanel?.querySelector('[data-hub-video-column="video"] .radio-visual-digital-hub-fs-viz-mount'),
+                    digitalHubFsVizCycleAi: digitalHubPanel?.querySelector('[data-hub-video-column="ai"] .radio-visual-digital-hub-fs-viz-cycle'),
+                    digitalHubFsVizCycleVideo: digitalHubPanel?.querySelector('[data-hub-video-column="video"] .radio-visual-digital-hub-fs-viz-cycle'),
                     digitalHubAiLoader: digitalHubPanel?.querySelector('.radio-visual-digital-hub-ai-loader'),
                     digitalHubDeckVideoWrap: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video'),
                     digitalHubDeckVideoStack: digitalHubPanel?.querySelector('.radio-visual-digital-hub-deck-video-stack'),
@@ -8638,6 +9033,7 @@
                 if (digitalCenter) this._bindDigitalStageInteractions(digitalCenter);
                 try { this._wireDigitalHubAiVideoInteractions(this.abortCtrl.signal); } catch (_) {}
                 try { this._wireDigitalHubDeckVideoInteractions(this.abortCtrl.signal); } catch (_) {}
+                try { this._wireHubFsVizDock(sig); } catch (_) {}
                 try { this._applySkinUi(); } catch (_) {}
                 try { this._syncVolumeFromGlobal(); } catch (_) {}
                 try { this._syncDigitalToolbarCenterMode(); } catch (_) {}
@@ -8989,6 +9385,7 @@
             onResize() {
                 try { this._syncDigitalFullscreenLayout(); } catch (_) {}
                 try { this._syncDigitalFullscreenButton(); } catch (_) {}
+                try { this._syncHubFsVizDock(); } catch (_) {}
                 try { this._resizeCanvases(); } catch (_) {}
                 if (this.skin === 'digital' && this._digitalHubMode === 'spectrum') {
                     try { this._syncSpectrumStagingScale(); } catch (_) {}
@@ -9010,6 +9407,7 @@
 
             destroy() {
                 this._clearRadioAutoMixTimer();
+                try { this._tearDownHubFsViz(); } catch (_) {}
                 this._rvAutoMixCyclePending = false;
                 try { this._closeDigitalAutoMixPanel(); } catch (_) {}
                 this._digitalStagingView = null;
