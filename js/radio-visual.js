@@ -476,7 +476,8 @@
                 if (!label || (!action && !url)) return null;
                 const id = String(raw.id || label).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
                 if (!id) return null;
-                return { id, label: label.toUpperCase(), url, action, interaction };
+                const displayLabel = /[a-z]/.test(label) ? label : label.toUpperCase();
+                return { id, label: displayLabel, url, action, interaction };
             }
             static parseOrangeButtonsJson(data) {
                 const list = Array.isArray(data) ? data : (data && Array.isArray(data.buttons) ? data.buttons : []);
@@ -8920,7 +8921,7 @@
                 btnXfadeStation.type = 'button';
                 btnXfadeStation.className = 'radio-visual-btn radio-visual-digital-toolbar-icon-btn radio-visual-digital-xfade-station-btn';
                 btnXfadeStation.dataset.rvDigital = 'xfade-station';
-                btnXfadeStation.textContent = ' ∞ ';
+                btnXfadeStation.textContent = ' ♾ ';
                 btnXfadeStation.title = 'Change station when auto-fading (toggle)';
                 btnXfadeStation.setAttribute('aria-label', 'Change station when auto-fading');
                 toolbarMain.appendChild(btnDigitalSpectrum);

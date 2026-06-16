@@ -4,8 +4,8 @@
     { "label": "BUBBLES", "url": "https://mindseye.dev/" },
     { "label": "CHAT", "action": "text-in" },
     { "label": "IDEAS", "url": "https://hemphive.farm/" },
+    { "label": "LOGOFx", "action": "logofx" },
     { "label": "RACING", "url": "https://hemphive.github.io/CHR/" },
-    { "label": "LOGOFX", "action": "logofx" },
     { "label": "TRADING", "url": "https://hemphive.github.io/ATB3/" }
   ]
 }

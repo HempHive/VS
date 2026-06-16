@@ -2573,6 +2573,9 @@
                 0 0 6px color-mix(in srgb, var(--rv-digital-btn-orange-label) 95%, transparent),
                 0 0 14px color-mix(in srgb, var(--rv-digital-btn-orange-label) 55%, transparent);
         }
+        #radio-visual-root .radio-visual-btn-grid.radio-visual-digital-orange-btns .radio-visual-btn[data-rv-orange-embed="logofx"] .radio-visual-btn-label {
+            text-transform: none;
+        }
         #radio-visual-root .radio-visual-btn-grid.radio-visual-digital-orange-btns .radio-visual-btn.is-active .radio-visual-btn-label {
             color: color-mix(
                 in srgb,
