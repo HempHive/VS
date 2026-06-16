@@ -6429,6 +6429,30 @@
                 });
             }
 
+            _syncDigitalHubGainSliderLengths() {
+                const wraps = this.els.digitalHubPanel?.querySelectorAll('.radio-visual-digital-hub-gain-wrap');
+                if (!wraps || !wraps.length) return;
+                wraps.forEach((wrap) => {
+                    const slider = wrap.querySelector('.radio-visual-digital-hub-gain-slider');
+                    if (!slider) return;
+                    try {
+                        const h = Math.max(0, Math.floor(wrap.getBoundingClientRect().height || 0));
+                        const label = wrap.querySelector('.radio-visual-digital-hub-gain-label');
+                        const labelH = label ? Math.ceil(label.getBoundingClientRect().height || 0) : 0;
+                        const gap = 6;
+                        let thumb = 32;
+                        try {
+                            thumb = parseFloat(getComputedStyle(wrap).getPropertyValue('--rv-range-thumb')) || thumb;
+                        } catch (_) {}
+                        const travel = Math.max(48, Math.round(h - labelH - gap - thumb));
+                        const key = String(travel);
+                        if (slider.dataset.hubGainSyncPx === key) return;
+                        slider.dataset.hubGainSyncPx = key;
+                        slider.style.width = `${travel}px`;
+                    } catch (_) {}
+                });
+            }
+
             _syncDigitalHubPanel() {
                 const mode = this._digitalHubMode || 'equaliser';
                 const panel = this.els.digitalHubPanel;
@@ -6459,6 +6483,7 @@
                         const initial = deckState?.gain ?? cfg?.stateObj?.[cfg?.key] ?? 1;
                         slider.value = String(Math.round(initial * 100));
                     });
+                    try { this._syncDigitalHubGainSliderLengths(); } catch (_) {}
                 }
 
                 if (mode === 'effects') {
@@ -9386,6 +9411,7 @@
                 try { this._syncDigitalFullscreenLayout(); } catch (_) {}
                 try { this._syncDigitalFullscreenButton(); } catch (_) {}
                 try { this._syncHubFsVizDock(); } catch (_) {}
+                try { this._syncDigitalHubGainSliderLengths(); } catch (_) {}
                 try { this._resizeCanvases(); } catch (_) {}
                 if (this.skin === 'digital' && this._digitalHubMode === 'spectrum') {
                     try { this._syncSpectrumStagingScale(); } catch (_) {}

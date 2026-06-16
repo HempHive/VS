@@ -1583,8 +1583,10 @@
             transform-origin: center center;
             writing-mode: horizontal-tb;
             direction: ltr;
+            /* Pre-rotate width = vertical thumb travel (match ::before rail inset by thumb + label). */
             width: calc(100cqh - 1.05em - var(--rv-range-thumb));
-            max-width: calc(100% - var(--rv-range-thumb));
+            min-width: 48px;
+            max-width: none;
             height: var(--rv-range-rail) !important;
             min-height: var(--rv-range-rail);
             flex: none;
