@@ -8048,7 +8048,7 @@
                     KARAOKE: 'karaoke'
                 };
                 const items = deckBInPanel ? [
-                    { label: 'BACK🔆', visBg: true },
+                    { label: '3D⿻', visBg: true },
                     { label: 'DANCE', fn: () => {
                         try {
                             if (typeof g.toggleWebmOverlay === 'function') g.toggleWebmOverlay();
