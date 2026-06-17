@@ -2470,7 +2470,7 @@
             text-transform: uppercase;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
+            text-overflow: clip;
             text-shadow:
                 0 0 6px color-mix(in srgb, var(--rv-digital-btn-purple-label) 95%, transparent),
                 0 0 14px color-mix(in srgb, var(--rv-digital-btn-purple-label) 55%, transparent);
@@ -2568,7 +2568,7 @@
             text-transform: uppercase;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
+            text-overflow: clip;
             text-shadow:
                 0 0 6px color-mix(in srgb, var(--rv-digital-btn-orange-label) 95%, transparent),
                 0 0 14px color-mix(in srgb, var(--rv-digital-btn-orange-label) 55%, transparent);
@@ -2928,7 +2928,7 @@
             text-align: center;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
+            text-overflow: clip;
             text-shadow:
                 0 0 6px color-mix(in srgb, var(--rv-digital-btn-blue-label) 95%, transparent),
                 0 0 14px color-mix(in srgb, var(--rv-digital-btn-blue-label) 55%, transparent);

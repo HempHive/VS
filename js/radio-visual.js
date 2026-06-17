@@ -8150,50 +8150,92 @@
             }
 
             _computeRvButtonLabelFitPx(btn, label, opts = {}) {
-                const pad = opts.pad ?? 4;
                 const maxCap = opts.maxCap ?? 12;
-                const minPx = opts.minPx ?? 5;
-                const heightFactor = opts.heightFactor ?? 0.68;
-                const widthFactor = opts.widthFactor ?? 0.22;
+                const minPx = opts.minPx ?? 4;
+                const heightFactor = opts.heightFactor ?? 0.88;
                 const fill = !!opts.fill;
-                const maxW = Math.max(8, btn.clientWidth - pad);
-                const maxH = Math.max(8, btn.clientHeight - pad);
-                let size = Math.min(maxW * widthFactor, maxH * heightFactor, maxCap);
-                size = Math.max(size, minPx);
-                label.style.fontSize = `${size}px`;
-                if (fill) {
-                    size = maxCap;
-                    label.style.fontSize = `${size}px`;
-                    for (let guard = 0; guard < 120 && size > minPx; guard++) {
-                        if (label.scrollWidth <= maxW && label.scrollHeight <= maxH) break;
-                        size -= 0.25;
-                        label.style.fontSize = `${size}px`;
-                    }
+                if (!btn || !label || btn.clientWidth < 8 || btn.clientHeight < 6) return minPx;
+
+                label.style.fontSize = '';
+                label.style.letterSpacing = '';
+                label.style.width = '';
+                label.style.maxWidth = '';
+                label.style.display = '';
+
+                const btnCs = window.getComputedStyle(btn);
+                const padX = (parseFloat(btnCs.paddingLeft) || 0) + (parseFloat(btnCs.paddingRight) || 0);
+                const padY = (parseFloat(btnCs.paddingTop) || 0) + (parseFloat(btnCs.paddingBottom) || 0);
+                const extraPad = opts.pad ?? 2;
+                const maxW = Math.max(4, btn.clientWidth - padX - extraPad);
+                const maxH = Math.max(4, btn.clientHeight - padY - extraPad);
+
+                const measure = () => {
+                    label.style.display = 'inline-block';
+                    label.style.width = 'auto';
+                    label.style.maxWidth = 'none';
+                };
+                const fits = () => (
+                    label.scrollWidth <= maxW + 0.5
+                    && label.scrollHeight <= maxH + 0.5
+                );
+
+                measure();
+                let hi = maxCap;
+                let lo = minPx;
+                if (!fill) {
+                    const widthFactor = opts.widthFactor ?? 0.42;
+                    hi = Math.min(maxCap, maxW * widthFactor, maxH * heightFactor);
+                    hi = Math.max(hi, minPx);
+                }
+
+                let best = minPx;
+                label.style.fontSize = `${hi}px`;
+                if (fits()) {
+                    best = hi;
                 } else {
-                    for (let guard = 0; guard < 80 && size > minPx; guard++) {
-                        if (label.scrollWidth <= maxW && label.scrollHeight <= maxH) break;
-                        size -= 0.25;
-                        label.style.fontSize = `${size}px`;
+                    for (let i = 0; i < 28 && hi - lo > 0.08; i++) {
+                        const mid = (lo + hi) / 2;
+                        label.style.fontSize = `${mid}px`;
+                        if (fits()) {
+                            best = mid;
+                            lo = mid;
+                        } else {
+                            hi = mid;
+                        }
+                    }
+                    label.style.fontSize = `${best}px`;
+                }
+
+                if (!fits()) {
+                    let spacingEm = 0.02;
+                    label.style.letterSpacing = `${spacingEm}em`;
+                    for (let i = 0; i < 48 && !fits() && spacingEm > -0.1; i++) {
+                        spacingEm -= 0.0025;
+                        label.style.letterSpacing = `${spacingEm}em`;
                     }
                 }
-                return size;
+
+                label.style.display = 'block';
+                label.style.width = '100%';
+                label.style.maxWidth = '';
+                return best;
             }
 
             _rvLabelFitOpts(kind) {
                 if (kind === 'toolbar-vol') {
                     const blueScale = this._readRvThemeCssNumber('--rv-digital-btn-blue-font-scale', 1);
-                    return { fill: true, maxCap: 12 * blueScale, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
+                    return { fill: true, maxCap: 12 * blueScale, heightFactor: 0.9, minPx: 4, pad: 1 };
                 }
                 if (kind === 'feature-orange') {
                     const orangeScale = this._readRvThemeCssNumber('--rv-digital-btn-orange-font-scale', 1);
-                    return { fill: true, maxCap: 12 * orangeScale, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
+                    return { fill: true, maxCap: 12 * orangeScale, heightFactor: 0.9, minPx: 4, pad: 1 };
                 }
                 if (kind === 'feature') {
                     const purpleScale = this._readRvThemeCssNumber('--rv-digital-btn-purple-font-scale', 1);
-                    return { fill: true, maxCap: 12 * purpleScale, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
+                    return { fill: true, maxCap: 12 * purpleScale, heightFactor: 0.9, minPx: 4, pad: 1 };
                 }
                 const blueScale = this._readRvThemeCssNumber('--rv-digital-btn-blue-font-scale', 1);
-                return { fill: true, maxCap: 12 * blueScale, heightFactor: 0.88, widthFactor: 0.42, minPx: 5 };
+                return { fill: true, maxCap: 12 * blueScale, heightFactor: 0.9, minPx: 4, pad: 1 };
             }
 
             _fitDigitalFeatureButtonLabels(gridEl) {
@@ -8203,7 +8245,6 @@
                 gridEl.querySelectorAll('.radio-visual-btn').forEach((btn) => {
                     const label = btn.querySelector('.radio-visual-btn-label');
                     if (!label) return;
-                    label.style.fontSize = '';
                     this._computeRvButtonLabelFitPx(btn, label, opts);
                 });
             }
@@ -8215,7 +8256,6 @@
                 const fitBtn = (btn, opts) => {
                     const label = btn.querySelector('.radio-visual-btn-label');
                     if (!label) return;
-                    label.style.fontSize = '';
                     if (btn.clientWidth < 10 || btn.clientHeight < 8) return;
                     this._computeRvButtonLabelFitPx(btn, label, opts);
                 };
@@ -8244,6 +8284,11 @@
                     });
                 };
                 run();
+                try {
+                    if (document.fonts && typeof document.fonts.ready?.then === 'function') {
+                        document.fonts.ready.then(() => run()).catch(() => {});
+                    }
+                } catch (_) {}
                 if (typeof ResizeObserver === 'undefined') {
                     globalThis.addEventListener('resize', run, { signal: this.abortCtrl.signal });
                     return;
