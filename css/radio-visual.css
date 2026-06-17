@@ -3009,7 +3009,7 @@
             color: #9ff;
             text-shadow: 0 0 10px rgba(0, 255, 200, 0.45);
             overflow: hidden;
-            text-overflow: ellipsis;
+            text-overflow: clip;
             white-space: nowrap;
         }
         #radio-visual-root .radio-visual-digital-center-readout {
@@ -3029,7 +3029,7 @@
             width: 100%;
             max-width: 100%;
             overflow: hidden;
-            text-overflow: ellipsis;
+            text-overflow: clip;
             white-space: nowrap;
             line-height: 1;
             transition: color 0.55s ease, text-shadow 0.55s ease, opacity 0.45s ease;

@@ -4998,8 +4998,6 @@
                 const readout = toolbarEl?.querySelector('.radio-visual-digital-center-readout');
                 const label = readout?.querySelector('.radio-visual-center-readout-text');
                 if (!readout || !label) return;
-                label.style.fontSize = '';
-                label.style.letterSpacing = '';
                 if (readout.clientWidth < 8 || readout.clientHeight < 6) return;
                 const mode = this._digitalToolbarCenterMode || 'clock';
                 if (mode === 'crossfade') return;
@@ -5011,36 +5009,7 @@
                     const next = this._formatDigitalClockReadout(undefined, { compact: clockCompact });
                     if (current !== next) label.textContent = next;
                 }
-                const maxW = Math.max(6, readout.clientWidth - 1);
-                const maxH = Math.max(6, readout.clientHeight - 1);
-                const clockScale = this._readRvThemeCssNumber('--rv-digital-clock-font-scale', 1);
-                const minPx = fitAsClock ? 4 : 6;
-                const maxCap = (fitAsClock ? 11 : 13) * clockScale;
-                let size = Math.min(maxH * 0.9, maxCap);
-                label.style.fontSize = `${size}px`;
-                if (fitAsClock) label.style.letterSpacing = '0.03em';
-                for (let guard = 0; guard < 200 && size > minPx; guard++) {
-                    if (label.scrollWidth <= maxW && label.scrollHeight <= maxH) break;
-                    size -= 0.2;
-                    label.style.fontSize = `${size}px`;
-                }
-                if (fitAsClock && label.scrollWidth > maxW) {
-                    let spacing = 0.03;
-                    for (let i = 0; i < 30 && label.scrollWidth > maxW && spacing > -0.04; i++) {
-                        spacing -= 0.003;
-                        label.style.letterSpacing = `${spacing}em`;
-                    }
-                }
-                if (!fitAsClock) {
-                    this._computeRvButtonLabelFitPx(readout, label, {
-                        fill: true,
-                        maxCap,
-                        heightFactor: 0.88,
-                        widthFactor: (mode === 'automix' || mode === 'remaining') ? 0.92 : 0.55,
-                        minPx,
-                        pad: 2
-                    });
-                }
+                this._computeRvButtonLabelFitPx(readout, label, this._rvLabelFitOpts('toolbar-clock'));
             }
 
             _scheduleDigitalSpectrumLayoutSync() {
@@ -8222,6 +8191,10 @@
             }
 
             _rvLabelFitOpts(kind) {
+                if (kind === 'toolbar-clock') {
+                    const clockScale = this._readRvThemeCssNumber('--rv-digital-clock-font-scale', 1);
+                    return { fill: true, maxCap: 13 * clockScale, heightFactor: 0.9, minPx: 4, pad: 1 };
+                }
                 if (kind === 'toolbar-vol') {
                     const blueScale = this._readRvThemeCssNumber('--rv-digital-btn-blue-font-scale', 1);
                     return { fill: true, maxCap: 12 * blueScale, heightFactor: 0.9, minPx: 4, pad: 1 };
