@@ -6365,7 +6365,7 @@
                 const list = this._hubFsVizCycleList();
                 if (!list.length) return;
                 const n = list.length;
-                this._hubFsVizIdx = (((this._hubFsVizIdx || 0) + direction) % n) + n) % n;
+                this._hubFsVizIdx = (((this._hubFsVizIdx || 0) + direction) % n + n) % n;
                 this._mountHubFsVizCurrent();
                 try { resetIdleTimer(); } catch (_) {}
             }
