@@ -1413,7 +1413,9 @@ const QUALITY = {
                     d.bgOuterGradientAngle
                 ),
                 bgOuterImageOpacity: clampThemeOpacity(src.bgOuterImageOpacity, d.bgOuterImageOpacity, 0),
-                bgOuterImageUrl: typeof src.bgOuterImageUrl === 'string' ? src.bgOuterImageUrl : (d.bgOuterImageUrl || ''),
+                bgOuterImageUrl: (typeof src.bgOuterImageUrl === 'string' && src.bgOuterImageUrl.trim())
+                    ? src.bgOuterImageUrl.trim()
+                    : (d.bgOuterImageUrl || ''),
                 bgPanelImageOpacity: clampThemeOpacity(src.bgPanelImageOpacity, d.bgPanelImageOpacity, 0),
                 bgPanelOpacity: clampThemeOpacity(src.bgPanelOpacity, d.bgPanelOpacity, 0),
                 bgGifOpacity: clampThemeOpacity(src.bgGifOpacity, d.bgGifOpacity, 0),
@@ -1458,7 +1460,7 @@ const QUALITY = {
                 showButtonInfoOverlays: src.showButtonInfoOverlays === true,
                 showBlueToolbar: src.showBlueToolbar !== false,
                 showPurpleButtons: src.showPurpleButtons !== false,
-                showOrangeButtons: src.showOrangeButtons === true,
+                showOrangeButtons: src.showOrangeButtons !== false,
                 showStagingPanel: src.showStagingPanel !== false,
                 stagingBorderColor: src.stagingBorderColor || d.stagingBorderColor,
                 stagingBorderOpacity: clampThemeOpacity(src.stagingBorderOpacity, d.stagingBorderOpacity, 0),
@@ -1533,11 +1535,33 @@ const QUALITY = {
                 const raw = localStorage.getItem(DIGITAL_THEME_STORAGE_KEY);
                 const parsed = raw ? JSON.parse(raw) : null;
                 const theme = normalizeDigitalTheme(parsed);
-                theme.presetId = detectDigitalThemePresetId(theme);
+                const explicitId = (parsed && typeof parsed.presetId === 'string') ? parsed.presetId.trim() : '';
+                if (explicitId && DIGITAL_THEME_PRESETS[explicitId]) {
+                    theme.presetId = explicitId;
+                } else if (!parsed) {
+                    theme.presetId = DEFAULT_DIGITAL_THEME.presetId;
+                } else {
+                    const detected = detectDigitalThemePresetId(theme);
+                    theme.presetId = detected !== 'custom' ? detected : (theme.presetId || 'custom');
+                }
                 return theme;
             } catch (_) {
-                return { ...DEFAULT_DIGITAL_THEME };
+                return normalizeDigitalTheme({ ...DEFAULT_DIGITAL_THEME });
             }
+        }
+        function bootDigitalTheme({ applyBundleExtras = false } = {}) {
+            const hasStoredTheme = !!localStorage.getItem(DIGITAL_THEME_STORAGE_KEY);
+            let theme = loadDigitalThemeFromStorage();
+            if (!hasStoredTheme) {
+                theme = normalizeDigitalTheme({ ...DEFAULT_DIGITAL_THEME, presetId: 'trix' });
+                saveDigitalThemeToStorage(theme);
+            }
+            applyDigitalRadioTheme(theme);
+            const useTrixBundle = !hasStoredTheme || theme.presetId === 'trix';
+            if (applyBundleExtras && useTrixBundle) {
+                applyPresetThemeBundleExtras(DIGITAL_THEME_PRESETS.trix);
+            }
+            return theme;
         }
         function saveDigitalThemeToStorage(theme) {
             try { localStorage.setItem(DIGITAL_THEME_STORAGE_KEY, JSON.stringify(normalizeDigitalTheme(theme))); } catch (_) {}
@@ -3181,12 +3205,7 @@ const QUALITY = {
                 });
             }
         }
-        applyDigitalRadioTheme(loadDigitalThemeFromStorage());
-        try {
-            if (!localStorage.getItem(DIGITAL_THEME_STORAGE_KEY)) {
-                applyPresetThemeBundleExtras(DIGITAL_THEME_PRESETS.trix);
-            }
-        } catch (_) {}
+        bootDigitalTheme();
         wireOptionsPanelControls();
 
         const UI_HUD_POSITION_KEY = 'ui.hud.position.v1';
@@ -7329,6 +7348,7 @@ try {
     console.error('[VS] Failed to load app chunks:', err);
     try { hideStartLoader(); } catch (_) {}
 }
+try { bootDigitalTheme({ applyBundleExtras: true }); } catch (_) {}
 try { globalThis.syncSpectrumOptionsControlsFromStorage?.(); } catch (_) {}
 
 // Bridge extracted globals into this module (same bindings as former single-file scope).
