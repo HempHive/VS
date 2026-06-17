@@ -5552,7 +5552,7 @@
                     mount.className = 'radio-visual-digital-hub-fs-viz-mount';
                     mount.setAttribute('role', 'button');
                     mount.setAttribute('tabindex', '0');
-                    mount.setAttribute('aria-label', 'Cycle secondary visual');
+                    mount.setAttribute('aria-label', 'Cycle secondary visual; click next, right-click previous');
                     dock.append(mount);
                     return { dock, mount };
                 };
@@ -6361,10 +6361,11 @@
                 else if (entry.kind === 'three') this._mountHubFsVizThree(mount, entry.sceneFn);
             }
 
-            _cycleHubFsViz() {
+            _cycleHubFsViz(direction = 1) {
                 const list = this._hubFsVizCycleList();
                 if (!list.length) return;
-                this._hubFsVizIdx = ((this._hubFsVizIdx || 0) + 1) % list.length;
+                const n = list.length;
+                this._hubFsVizIdx = (((this._hubFsVizIdx || 0) + direction) % n) + n) % n;
                 this._mountHubFsVizCurrent();
                 try { resetIdleTimer(); } catch (_) {}
             }
@@ -6394,7 +6395,13 @@
                         if (!this._hubFsVizShouldShowDock()) return;
                         this._stopClick(ev);
                         try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
-                        this._cycleHubFsViz();
+                        this._cycleHubFsViz(1);
+                    }, sig);
+                    mount.addEventListener('contextmenu', (ev) => {
+                        if (!this._hubFsVizShouldShowDock()) return;
+                        this._stopClick(ev);
+                        try { ev.preventDefault(); ev.stopPropagation(); } catch (_) {}
+                        this._cycleHubFsViz(-1);
                     }, sig);
                     mount.dataset.rvHubFsVizWired = '1';
                 });
