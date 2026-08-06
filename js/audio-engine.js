@@ -1235,14 +1235,6 @@
             }
         }
 
-        function shouldAutoplayDeckLocalQueue(deckKey) {
-            const dk = deckKey === 'b' ? 'b' : 'a';
-            try {
-                if (deckLocalPlaybackInProgress(dk)) return false;
-                if (otherDeckIsAudiblyPlaying(dk) && !deckWinsCrossfade(dk)) return false;
-            } catch (_) {}
-            return true;
-        }
         function addDeckLocalFilesToDeck(deckKey, files, opts) {
             const dk = deckKey === 'b' ? 'b' : 'a';
             const sorted = sortDeckLocalFileList(files);
@@ -1259,11 +1251,8 @@
                 else playDeckATrackFromQueue(playOpts);
                 return;
             }
+            // Queue-only: wait for Play / A> / B> (or an in-queue play control). Spectrum drops use forceImmediate.
             enqueueDeckLocalFiles(dk, sorted);
-            if (shouldAutoplayDeckLocalQueue(dk)) {
-                if (dk === 'b') playDeckBTrackFromQueue(opts);
-                else playDeckATrackFromQueue(opts);
-            }
         }
         function isVideoFileForMediaQueue(file) {
             const k = inferLocalMediaKind(file);
@@ -2233,11 +2222,7 @@
             if (!files.length) return;
             enqueueDeckLocalFiles('a', files);
             statusEl.innerText = `Queued ${files.length} track(s) on Deck A`;
-            const playingLocal = state.deckSourceMode.a === 'local';
-            const mediaGoing = audioEl && audioEl.src && !audioEl.paused && !audioEl.ended;
-            const startNow = !playingLocal || !mediaGoing;
-            if (startNow) playDeckATrackFromQueue();
-            else try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+            try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
         }
 
         function startGame() {
