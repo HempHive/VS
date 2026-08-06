@@ -2999,7 +2999,7 @@
                 } catch (_) {}
             }
 
-            /** A> / B> tap: resume paused station; if already playing, tune random radio on that deck. */
+            /** A> / B> tap: resume paused output; if playing, next queued local track (else random station). */
             async _deckTransportToolbarTap(deckKey) {
                 const dk = deckKey === 'b' ? 'b' : 'a';
                 try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
@@ -3037,18 +3037,15 @@
                 } else if (isPlaying) {
                     this._clearSuppressCrossfadeResume();
                     this._markCrossfadePauseExempt(dk);
-                    if (dk === 'b') this._stationBRand();
-                    else this._stationRand();
+                    if (dk === 'b') this._deckBNextOrStation();
+                    else this._deckANextOrStation();
+                    return;
                 } else {
                     this._deckEngClearSuppress();
                     this._markCrossfadePauseExempt(dk);
-                    try {
-                        if (dk === 'b') {
-                            if (typeof playRadioB === 'function') playRadioB();
-                        } else if (typeof playRadio === 'function') {
-                            playRadio();
-                        }
-                    } catch (_) {}
+                    if (dk === 'b') this._deckBNextOrStation();
+                    else this._deckANextOrStation();
+                    return;
                 }
                 try { this._updateStationUi(); } catch (_) {}
                 try { this._syncDeckSwitches(); } catch (_) {}
@@ -3342,16 +3339,14 @@
                 wrap.style.setProperty('--xf-label-scale-b', String(minScale + (x * span)));
             }
 
-            /** Deck B LCD line: show whenever B has a station/track name (same as Deck A), including when paused/muted by the crossfader. */
+            /** Deck B LCD line: show station/track only after B has loaded or played something; otherwise keep the EQ placeholder. */
             _deckBLcdLineReady() {
-                try {
-                    const name = this._deckStationDisplayName('b');
-                    if (name && name !== '—') return true;
-                } catch (_) {}
                 if (this._deckBActive()) return true;
                 try {
                     const el = this._deckBPlaybackMedia();
                     if (this._deckHasSource(el)) return true;
+                } catch (_) {}
+                try {
                     if (state.deckSourceMode && state.deckSourceMode.b === 'local') {
                         const dn = state.deckLocalDisplayName && state.deckLocalDisplayName.b;
                         if (dn && String(dn).trim()) return true;
