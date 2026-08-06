@@ -3476,25 +3476,45 @@
                 attachJogRingPolarSeek('a', this.els.jogA);
                 attachJogRingPolarSeek('b', this.els.jogB);
 
-                /** Keep deck audio elements playing whenever the crossfader gives them audible gain (fixes mismatches after interrupted/completed auto-fades). */
+                /** Keep deck audio playing when audible on the crossfader; pause muted only after idle auto-pause. */
                 const ensureCrossfadeDeckPlayback = () => {
                     try {
-                        if (this.suppressEnsureCrossfadeDeckPlayback) return;
+                        if (typeof resumeDecksForCrossfadeLevels === 'function') {
+                            resumeDecksForCrossfadeLevels();
+                            return;
+                        }
+                    } catch (_) {}
+                    try {
                         const xv = Math.max(0, Math.min(1, Number((djCross && djCross.value) || (mixCross && mixCross.value) || 0)));
                         const ga = 1 - xv;
                         const gb = xv;
                         const thresh = 0.03;
-                        if (ga > thresh) {
-                            const elA = (typeof getDeckAMediaForPlaybackState === 'function') ? getDeckAMediaForPlaybackState() : audioEl;
+                        const elA = (typeof getDeckAMediaForPlaybackState === 'function') ? getDeckAMediaForPlaybackState() : audioEl;
+                        const exemptA = (typeof isCrossfadePauseExempt === 'function') && isCrossfadePauseExempt('a');
+                        const exemptB = (typeof isCrossfadePauseExempt === 'function') && isCrossfadePauseExempt('b');
+                        const allowPause = (typeof isCrossfadeIdleAutoPauseReady === 'function')
+                            ? isCrossfadeIdleAutoPauseReady()
+                            : false;
+                        if (ga <= thresh) {
+                            if (allowPause && !exemptA && elA && !elA.paused) {
+                                try { elA.pause(); } catch (_) {}
+                            }
+                        } else if (!this.suppressEnsureCrossfadeDeckPlayback) {
                             if (elA && elA.src && elA.paused) {
                                 if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('a'))) {
                                     elA.play().catch(() => {});
                                 }
                             }
                         }
-                        if (gb > thresh && audioElB && audioElB.src && audioElB.paused) {
-                            if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('b'))) {
-                                audioElB.play().catch(() => {});
+                        if (gb <= thresh) {
+                            if (allowPause && !exemptB && audioElB && !audioElB.paused) {
+                                try { audioElB.pause(); } catch (_) {}
+                            }
+                        } else if (!this.suppressEnsureCrossfadeDeckPlayback) {
+                            if (audioElB && audioElB.src && audioElB.paused) {
+                                if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('b'))) {
+                                    audioElB.play().catch(() => {});
+                                }
                             }
                         }
                     } catch (_) {}

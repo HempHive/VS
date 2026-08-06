@@ -56,13 +56,18 @@
             gap: clamp(12px, 2vh, 20px);
         }
         #radio-visual-root .radio-visual-stage.is-active { display: flex; }
-        /* Digital stage: scale interior from a fixed 960px-wide design (keeps layout ratio on narrow viewports). */
+        /* Digital stage: Panel size scales staging + buttons from centre, capped to display width. */
         #radio-visual-root .radio-visual-stage.radio-visual-skin--digital {
             container-type: inline-size;
             container-name: rv-digital;
-            width: min(960px, 100%);
+            width: min(100%, calc(960px * var(--global-rv-digital-staging-scale, 1)));
+            max-width: 100%;
+            box-sizing: border-box;
             margin-left: auto;
             margin-right: auto;
+            align-self: center;
+            overflow: visible;
+            --rv-digital-staging-scale: var(--global-rv-digital-staging-scale, 1);
             --rv-digital-bg-a: var(--global-rv-digital-bg-a, #0a1628);
             --rv-digital-bg-b: var(--global-rv-digital-bg-b, #061018);
             --rv-digital-bg-c: var(--global-rv-digital-bg-c, #0c1020);
@@ -578,7 +583,7 @@
         }
         #radio-visual-root .radio-visual-digital-center {
             position: relative;
-            width: calc(100% * var(--rv-digital-staging-scale, 1));
+            width: 100%;
             margin-left: auto;
             margin-right: auto;
             aspect-ratio: 960 / 320;
@@ -689,6 +694,7 @@
             --rv-digital-bg-outer-image-opacity: var(--global-rv-digital-bg-outer-image-opacity, 1);
             --rv-digital-bg-panel-image-opacity: var(--global-rv-digital-bg-panel-image-opacity, 1);
             --rv-digital-panel-opacity: var(--global-rv-digital-panel-opacity, 1);
+            --rv-digital-staging-scale: var(--global-rv-digital-staging-scale, 1);
             --rv-digital-bg-gif-opacity: var(--global-rv-digital-bg-gif-opacity, 1);
             --rv-digital-accent-color: var(--global-rv-digital-accent-color, #ffd246);
             --rv-digital-ui-font: var(--global-rv-digital-ui-font, 'Orbitron', 'Share Tech Mono', ui-monospace, monospace);
@@ -1091,6 +1097,37 @@
                 var(--rv-digital-btn-purple-active) calc(45% * var(--rv-digital-btn-purple-accent-opacity, 1)),
                 transparent
             );
+        }
+        /* First-load border flash: intensity rises then falls (see --rv-border-flash). */
+        @property --rv-border-flash {
+            syntax: '<number>';
+            inherits: false;
+            initial-value: 0;
+        }
+        @keyframes rv-digital-btn-border-flash {
+            0% { --rv-border-flash: 0; }
+            45% { --rv-border-flash: 1; }
+            100% { --rv-border-flash: 0; }
+        }
+        #radio-visual-root .radio-visual-btn.is-border-flash,
+        #radio-visual-root .radio-visual-digital-toolbar-text-btn.is-border-flash {
+            animation: rv-digital-btn-border-flash 1.05s ease-in-out forwards;
+            border-color: color-mix(
+                in srgb,
+                rgba(255, 236, 170, 0.98) calc(var(--rv-border-flash) * 100%),
+                rgba(200, 160, 90, 0.45) calc((1 - var(--rv-border-flash)) * 100%)
+            ) !important;
+            box-shadow:
+                0 0 0 color-mix(
+                    in srgb,
+                    rgba(255, 220, 120, 0.65) calc(var(--rv-border-flash) * 100%),
+                    transparent
+                ),
+                0 0 calc(4px + (16px * var(--rv-border-flash))) color-mix(
+                    in srgb,
+                    rgba(255, 210, 90, 0.8) calc(var(--rv-border-flash) * 100%),
+                    transparent
+                ) !important;
         }
         #radio-visual-root .radio-visual-digital-automix-panel,
         #radio-visual-root .radio-visual-digital-autofade-panel {
@@ -2910,6 +2947,9 @@
             letter-spacing: 0.02em;
             line-height: 1;
             overflow: hidden;
+            position: relative;
+            z-index: 2;
+            pointer-events: auto;
         }
         #radio-visual-root .radio-visual-digital-toolbar-main > .radio-visual-digital-toolbar-vol {
             width: 100%;

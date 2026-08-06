@@ -1508,6 +1508,63 @@
             scrollbar-width: thin;
             scrollbar-color: rgba(0, 0, 0, 0.58) transparent;
         }
+        .options-session-usage {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 0;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(130, 200, 255, 0.28);
+            background: rgba(8, 18, 36, 0.55);
+        }
+        .options-session-usage-block {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 0 0 12px;
+        }
+        .options-session-usage-option {
+            margin: 0;
+            padding: 0 2px;
+        }
+        .options-session-sleep-row {
+            margin: 0;
+            padding: 2px 2px 0;
+            align-items: center;
+        }
+        .options-session-sleep-row .options-label {
+            min-width: 5.5em;
+        }
+        .options-session-sleep-row .options-select {
+            flex: 1 1 auto;
+            min-width: 0;
+            max-width: 9.5em;
+        }
+        .options-session-sleep-remaining {
+            margin-left: auto;
+            min-width: 3.5em;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            color: rgba(200, 230, 255, 0.9);
+        }
+        .options-session-sleep-remaining.is-active {
+            color: #9fffc8;
+        }
+        .options-session-usage-label {
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(180, 210, 255, 0.78);
+            font-weight: 600;
+        }
+        .options-session-usage-value {
+            font-size: 13px;
+            font-variant-numeric: tabular-nums;
+            color: #d8ecff;
+            font-weight: 700;
+        }
         #options-body::-webkit-scrollbar {
             width: 10px;
         }
@@ -1748,6 +1805,79 @@
             align-items: center;
             gap: 8px;
             margin-bottom: 8px;
+        }
+        .options-row--spectrum-rotate {
+            grid-template-columns: minmax(2.5em, auto) minmax(0, 1fr) auto auto;
+        }
+        .options-subsection-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+        .options-subsection-action {
+            appearance: none;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            border-radius: 6px;
+            border: 1px solid rgba(160, 200, 255, 0.35);
+            background: rgba(10, 18, 32, 0.85);
+            color: #d8ecff;
+            font-size: 13px;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .options-subsection-action:hover {
+            border-color: rgba(180, 220, 255, 0.65);
+            background: rgba(20, 36, 58, 0.95);
+        }
+        .options-rotate-stepper {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+        .options-rotate-step,
+        .options-rotate-value {
+            appearance: none;
+            border: 1px solid rgba(160, 200, 255, 0.35);
+            background: rgba(10, 18, 32, 0.85);
+            color: #d8ecff;
+            border-radius: 6px;
+            cursor: pointer;
+            line-height: 1;
+            font-weight: 700;
+        }
+        .options-rotate-step {
+            width: 26px;
+            height: 26px;
+            font-size: 14px;
+            padding: 0;
+        }
+        .options-rotate-value {
+            min-width: 3.4em;
+            height: 26px;
+            padding: 0 6px;
+            font-size: 11px;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.02em;
+        }
+        .options-rotate-step:hover,
+        .options-rotate-value:hover {
+            border-color: rgba(180, 220, 255, 0.65);
+            background: rgba(20, 36, 58, 0.95);
+        }
+        .options-rotate-value.is-spinning,
+        .options-rotate-value[aria-pressed="true"] {
+            border-color: rgba(120, 255, 200, 0.7);
+            color: #b8ffe0;
+            box-shadow: 0 0 10px rgba(80, 220, 170, 0.35);
         }
         .options-row--stack {
             grid-template-columns: 1fr;

@@ -246,6 +246,29 @@
                 <button type="button" class="icon-btn interactive" id="btn-options-close" title="Close" aria-label="Close">✕</button>
             </div>
             <div id="options-body">
+                <div class="options-session-usage-block">
+                    <div class="options-session-usage" id="options-session-download-usage" aria-live="polite">
+                        <span class="options-session-usage-label">Session download</span>
+                        <span class="options-session-usage-value" id="opt-session-download-usage">0 B</span>
+                    </div>
+                    <label class="options-check options-session-usage-option" title="After the crossfader is unused for 3 minutes, pause the deck that is fully faded out to save download bandwidth. Moving the crossfader again resumes the audible deck.">
+                        <input type="checkbox" id="opt-crossfade-idle-autopause" checked>
+                        <span>Auto-pause muted deck after 3 min idle</span>
+                    </label>
+                    <div class="options-row options-session-sleep-row" title="Pause both decks after the selected time">
+                        <label class="options-label" for="opt-sleep-timer">Sleep timer</label>
+                        <select class="options-select" id="opt-sleep-timer" aria-label="Sleep timer duration">
+                            <option value="0">Off</option>
+                            <option value="15">15 min</option>
+                            <option value="30">30 min</option>
+                            <option value="45">45 min</option>
+                            <option value="60">1 hour</option>
+                            <option value="90">1.5 hours</option>
+                            <option value="120">2 hours</option>
+                        </select>
+                        <span class="options-readout options-session-sleep-remaining" id="opt-sleep-timer-remaining" aria-live="polite">—</span>
+                    </div>
+                </div>
                 <section class="options-section options-section--tone-gold" aria-label="Appearance">
                     <div class="options-section-head">
                         <h4 class="options-section-title">Appearance</h4>
@@ -726,41 +749,78 @@
                     </div>
                     <div class="options-subsection-head options-subsection-head--pink">
                         <p class="options-subsection-title">Left spectrum ribbon rotation</p>
-                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-rotate-l-reset" title="Reset left ribbon rotation" aria-label="Reset left ribbon rotation">↺</button>
+                        <div class="options-subsection-actions">
+                            <button type="button" class="options-subsection-action" id="opt-spectrum-rotate-l-random" title="Random left ribbon spin speeds" aria-label="Random left ribbon spin speeds">⚄</button>
+                            <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-rotate-l-reset" title="Reset left ribbon rotation" aria-label="Reset left ribbon rotation">↺</button>
+                        </div>
                     </div>
-                    <div class="options-row">
+                    <p class="options-hint options-hint--inline">Slider = angle (0–360°). − / speed / + = spin speed in steps of 10 (−100…100). Negative = anti-clockwise. Click the speed to spin or stop. ⚄ randomizes Hi/Med/Lo speeds.</p>
+                    <div class="options-row options-row--spectrum-rotate">
                         <label class="options-label" for="opt-spectrum-rotate-l-hi">Hi</label>
-                        <input type="range" class="options-range" id="opt-spectrum-rotate-l-hi" min="0" max="360" step="1" value="0" aria-label="Left spectrum high ribbon rotation">
+                        <input type="range" class="options-range" id="opt-spectrum-rotate-l-hi" min="0" max="360" step="1" value="0" aria-label="Left spectrum high ribbon angle">
                         <span class="options-readout" id="opt-spectrum-rotate-l-hi-readout">0°</span>
+                        <div class="options-rotate-stepper" data-rotate-key="rotateLHigh" data-spin-key="spinLHigh">
+                            <button type="button" class="options-rotate-step" data-spin-delta="-10" aria-label="Decrease left high spin speed">−</button>
+                            <button type="button" class="options-rotate-value" id="opt-spectrum-spin-l-hi" data-rotate-spin aria-pressed="false" title="Click to spin at this speed">0</button>
+                            <button type="button" class="options-rotate-step" data-spin-delta="10" aria-label="Increase left high spin speed">+</button>
+                        </div>
                     </div>
-                    <div class="options-row">
+                    <div class="options-row options-row--spectrum-rotate">
                         <label class="options-label" for="opt-spectrum-rotate-l-med">Med</label>
-                        <input type="range" class="options-range" id="opt-spectrum-rotate-l-med" min="0" max="360" step="1" value="0" aria-label="Left spectrum mid ribbon rotation">
+                        <input type="range" class="options-range" id="opt-spectrum-rotate-l-med" min="0" max="360" step="1" value="0" aria-label="Left spectrum mid ribbon angle">
                         <span class="options-readout" id="opt-spectrum-rotate-l-med-readout">0°</span>
+                        <div class="options-rotate-stepper" data-rotate-key="rotateLMid" data-spin-key="spinLMid">
+                            <button type="button" class="options-rotate-step" data-spin-delta="-10" aria-label="Decrease left mid spin speed">−</button>
+                            <button type="button" class="options-rotate-value" id="opt-spectrum-spin-l-med" data-rotate-spin aria-pressed="false" title="Click to spin at this speed">0</button>
+                            <button type="button" class="options-rotate-step" data-spin-delta="10" aria-label="Increase left mid spin speed">+</button>
+                        </div>
                     </div>
-                    <div class="options-row">
+                    <div class="options-row options-row--spectrum-rotate">
                         <label class="options-label" for="opt-spectrum-rotate-l-lo">Lo</label>
-                        <input type="range" class="options-range" id="opt-spectrum-rotate-l-lo" min="0" max="360" step="1" value="0" aria-label="Left spectrum low ribbon rotation">
+                        <input type="range" class="options-range" id="opt-spectrum-rotate-l-lo" min="0" max="360" step="1" value="0" aria-label="Left spectrum low ribbon angle">
                         <span class="options-readout" id="opt-spectrum-rotate-l-lo-readout">0°</span>
+                        <div class="options-rotate-stepper" data-rotate-key="rotateLLow" data-spin-key="spinLLow">
+                            <button type="button" class="options-rotate-step" data-spin-delta="-10" aria-label="Decrease left low spin speed">−</button>
+                            <button type="button" class="options-rotate-value" id="opt-spectrum-spin-l-lo" data-rotate-spin aria-pressed="false" title="Click to spin at this speed">0</button>
+                            <button type="button" class="options-rotate-step" data-spin-delta="10" aria-label="Increase left low spin speed">+</button>
+                        </div>
                     </div>
                     <div class="options-subsection-head options-subsection-head--orchid">
                         <p class="options-subsection-title">Right spectrum ribbon rotation</p>
-                        <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-rotate-r-reset" title="Reset right ribbon rotation" aria-label="Reset right ribbon rotation">↺</button>
+                        <div class="options-subsection-actions">
+                            <button type="button" class="options-subsection-action" id="opt-spectrum-rotate-r-random" title="Random right ribbon spin speeds" aria-label="Random right ribbon spin speeds">⚄</button>
+                            <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-rotate-r-reset" title="Reset right ribbon rotation" aria-label="Reset right ribbon rotation">↺</button>
+                        </div>
                     </div>
-                    <div class="options-row">
+                    <div class="options-row options-row--spectrum-rotate">
                         <label class="options-label" for="opt-spectrum-rotate-r-hi">Hi</label>
-                        <input type="range" class="options-range" id="opt-spectrum-rotate-r-hi" min="0" max="360" step="1" value="0" aria-label="Right spectrum high ribbon rotation">
+                        <input type="range" class="options-range" id="opt-spectrum-rotate-r-hi" min="0" max="360" step="1" value="0" aria-label="Right spectrum high ribbon angle">
                         <span class="options-readout" id="opt-spectrum-rotate-r-hi-readout">0°</span>
+                        <div class="options-rotate-stepper" data-rotate-key="rotateRHigh" data-spin-key="spinRHigh">
+                            <button type="button" class="options-rotate-step" data-spin-delta="-10" aria-label="Decrease right high spin speed">−</button>
+                            <button type="button" class="options-rotate-value" id="opt-spectrum-spin-r-hi" data-rotate-spin aria-pressed="false" title="Click to spin at this speed">0</button>
+                            <button type="button" class="options-rotate-step" data-spin-delta="10" aria-label="Increase right high spin speed">+</button>
+                        </div>
                     </div>
-                    <div class="options-row">
+                    <div class="options-row options-row--spectrum-rotate">
                         <label class="options-label" for="opt-spectrum-rotate-r-med">Med</label>
-                        <input type="range" class="options-range" id="opt-spectrum-rotate-r-med" min="0" max="360" step="1" value="0" aria-label="Right spectrum mid ribbon rotation">
+                        <input type="range" class="options-range" id="opt-spectrum-rotate-r-med" min="0" max="360" step="1" value="0" aria-label="Right spectrum mid ribbon angle">
                         <span class="options-readout" id="opt-spectrum-rotate-r-med-readout">0°</span>
+                        <div class="options-rotate-stepper" data-rotate-key="rotateRMid" data-spin-key="spinRMid">
+                            <button type="button" class="options-rotate-step" data-spin-delta="-10" aria-label="Decrease right mid spin speed">−</button>
+                            <button type="button" class="options-rotate-value" id="opt-spectrum-spin-r-med" data-rotate-spin aria-pressed="false" title="Click to spin at this speed">0</button>
+                            <button type="button" class="options-rotate-step" data-spin-delta="10" aria-label="Increase right mid spin speed">+</button>
+                        </div>
                     </div>
-                    <div class="options-row">
+                    <div class="options-row options-row--spectrum-rotate">
                         <label class="options-label" for="opt-spectrum-rotate-r-lo">Lo</label>
-                        <input type="range" class="options-range" id="opt-spectrum-rotate-r-lo" min="0" max="360" step="1" value="0" aria-label="Right spectrum low ribbon rotation">
+                        <input type="range" class="options-range" id="opt-spectrum-rotate-r-lo" min="0" max="360" step="1" value="0" aria-label="Right spectrum low ribbon angle">
                         <span class="options-readout" id="opt-spectrum-rotate-r-lo-readout">0°</span>
+                        <div class="options-rotate-stepper" data-rotate-key="rotateRLow" data-spin-key="spinRLow">
+                            <button type="button" class="options-rotate-step" data-spin-delta="-10" aria-label="Decrease right low spin speed">−</button>
+                            <button type="button" class="options-rotate-value" id="opt-spectrum-spin-r-lo" data-rotate-spin aria-pressed="false" title="Click to spin at this speed">0</button>
+                            <button type="button" class="options-rotate-step" data-spin-delta="10" aria-label="Increase right low spin speed">+</button>
+                        </div>
                     </div>
                 </section>
                 <section class="options-section options-section--tone-orange" aria-label="Auto-Mix">

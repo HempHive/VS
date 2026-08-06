@@ -40,6 +40,16 @@
                     rotateRLow: 0
                 };
             }
+            static get DEFAULT_SPECTRUM_RIBBON_SPIN() {
+                return {
+                    spinLHigh: 0,
+                    spinLMid: 0,
+                    spinLLow: 0,
+                    spinRHigh: 0,
+                    spinRMid: 0,
+                    spinRLow: 0
+                };
+            }
             static get DEFAULT_SPECTRUM_SETTINGS() {
                 return {
                     colorStreamId: 'aurora',
@@ -52,7 +62,8 @@
                     eqOpacity: 1,
                     eqAudioStrength: 1,
                     eqColorFlow: 1,
-                    ...RadioVisualEngine.DEFAULT_SPECTRUM_RIBBON_ROTATE
+                    ...RadioVisualEngine.DEFAULT_SPECTRUM_RIBBON_ROTATE,
+                    ...RadioVisualEngine.DEFAULT_SPECTRUM_RIBBON_SPIN
                 };
             }
             static get SPECTRUM_COLOR_STREAM_PRESETS() {
@@ -116,6 +127,25 @@
                     rotateRLow: clampDeg('rotateRLow')
                 };
             }
+            static clampSpectrumRibbonSpin(raw, fallback) {
+                const d = fallback || RadioVisualEngine.DEFAULT_SPECTRUM_RIBBON_SPIN;
+                const src = (raw && typeof raw === 'object') ? raw : {};
+                const clampSpeed = (key) => {
+                    let v = Number(src[key]);
+                    if (!Number.isFinite(v)) v = d[key];
+                    v = Math.max(-100, Math.min(100, Math.round(v)));
+                    // Snap to steps of 10.
+                    return Math.round(v / 10) * 10;
+                };
+                return {
+                    spinLHigh: clampSpeed('spinLHigh'),
+                    spinLMid: clampSpeed('spinLMid'),
+                    spinLLow: clampSpeed('spinLLow'),
+                    spinRHigh: clampSpeed('spinRHigh'),
+                    spinRMid: clampSpeed('spinRMid'),
+                    spinRLow: clampSpeed('spinRLow')
+                };
+            }
             static clampSpectrumSettings(raw) {
                 const d = RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
                 const presets = RadioVisualEngine.SPECTRUM_COLOR_STREAM_PRESETS;
@@ -155,7 +185,8 @@
                     eqOpacity: clampOpacity(raw && raw.eqOpacity, d.eqOpacity),
                     eqAudioStrength: clampStrength(raw && raw.eqAudioStrength, d.eqAudioStrength),
                     eqColorFlow: clampFlow(raw && raw.eqColorFlow, d.eqColorFlow),
-                    ...RadioVisualEngine.clampSpectrumRibbonRotate(raw, d)
+                    ...RadioVisualEngine.clampSpectrumRibbonRotate(raw, d),
+                    ...RadioVisualEngine.clampSpectrumRibbonSpin(raw, d)
                 };
             }
             static loadSpectrumSettingsFromStorage() {
@@ -379,8 +410,14 @@
                 this._spectrumSettings = RadioVisualEngine.loadSpectrumSettingsFromStorage();
                 this._spectrumStagingScale = this._spectrumSettings.scale;
                 this._rvStagingPmFsToggleAt = 0;
+                /** Per-ribbon continuous spin (Options value button). */
+                this._spectrumRibbonSpinActive = Object.create(null);
+                this._spectrumRibbonSpinAccum = Object.create(null);
+                this._spectrumRibbonSpinLastT = 0;
                 /** After long Space-hold pause, block auto-fade resume ticks until play again. */
                 this._suppressCrossfadeResume = false;
+                /** Decks started via A>/B> stay playing until the next crossfader move (even if currently muted). */
+                this._crossfadePauseExempt = { a: false, b: false };
             }
 
             static get AUTOFADE_MS_KEY() { return 'dj.autofade.duration.ms.v1'; }
@@ -2940,6 +2977,28 @@
                     : audioEl;
             }
 
+            /** Reconnect the deck's current station (no random skip). */
+            _reconnectCurrentDeckStation(deckKey) {
+                const dk = deckKey === 'b' ? 'b' : 'a';
+                try {
+                    if (dk === 'b') {
+                        const idx = (typeof currentStationBIndex === 'number') ? currentStationBIndex : -1;
+                        if (idx >= 0 && typeof setStationB === 'function') {
+                            setStationB(idx, { force: true });
+                            return;
+                        }
+                        if (typeof playRadioB === 'function') playRadioB();
+                    } else {
+                        const idx = (typeof currentStationIndex === 'number') ? currentStationIndex : -1;
+                        if (idx >= 0 && typeof setStation === 'function') {
+                            setStation(idx, { force: true });
+                            return;
+                        }
+                        if (typeof playRadio === 'function') playRadio();
+                    }
+                } catch (_) {}
+            }
+
             /** A> / B> tap: resume paused station; if already playing, tune random radio on that deck. */
             async _deckTransportToolbarTap(deckKey) {
                 const dk = deckKey === 'b' ? 'b' : 'a';
@@ -2950,36 +3009,39 @@
                     }
                 } catch (_) {}
                 const media = this._deckTransportMedia(dk);
+                const hasSrc = !!(media && this._deckHasSource(media));
                 const isPlaying = dk === 'b' ? this._deckBActive() : this._deckAActive();
-                if (isPlaying) {
-                    this._clearSuppressCrossfadeResume();
-                    if (dk === 'b') this._stationBRand();
-                    else this._stationRand();
-                } else if (media && this._deckHasSource(media) && !media.ended) {
+                // Prefer resume when paused (or live stream dropped after pause) — never random-skip a paused deck.
+                if (hasSrc && !isPlaying) {
                     this._deckEngClearSuppress();
+                    this._markCrossfadePauseExempt(dk);
                     try {
                         if (typeof releaseAutoMixDeferredLocal === 'function') {
                             releaseAutoMixDeferredLocal(dk, 'play');
                         }
                     } catch (_) {}
-                    try {
-                        await media.play();
-                        if (dk === 'b') {
-                            try {
-                                if (typeof connectDeckMediaToEq === 'function') connectDeckMediaToEq('b');
-                            } catch (_) {}
-                        }
-                    } catch (_) {
+                    if (media.paused && !media.ended) {
                         try {
+                            await media.play();
                             if (dk === 'b') {
-                                if (typeof playRadioB === 'function') playRadioB();
-                            } else if (typeof playRadio === 'function') {
-                                playRadio();
+                                try {
+                                    if (typeof connectDeckMediaToEq === 'function') connectDeckMediaToEq('b');
+                                } catch (_) {}
                             }
-                        } catch (_) {}
+                        } catch (_) {
+                            this._reconnectCurrentDeckStation(dk);
+                        }
+                    } else {
+                        this._reconnectCurrentDeckStation(dk);
                     }
+                } else if (isPlaying) {
+                    this._clearSuppressCrossfadeResume();
+                    this._markCrossfadePauseExempt(dk);
+                    if (dk === 'b') this._stationBRand();
+                    else this._stationRand();
                 } else {
                     this._deckEngClearSuppress();
+                    this._markCrossfadePauseExempt(dk);
                     try {
                         if (dk === 'b') {
                             if (typeof playRadioB === 'function') playRadioB();
@@ -3153,8 +3215,43 @@
                 return Math.max(0, Math.min(1, Number(raw) || 0));
             }
 
+            _markCrossfadePauseExempt(deckKey) {
+                const dk = deckKey === 'b' ? 'b' : 'a';
+                if (!this._crossfadePauseExempt) this._crossfadePauseExempt = { a: false, b: false };
+                this._crossfadePauseExempt[dk] = true;
+                try {
+                    if (typeof globalThis.markCrossfadePauseExempt === 'function') {
+                        globalThis.markCrossfadePauseExempt(dk);
+                    }
+                } catch (_) {}
+            }
+
+            _clearCrossfadePauseExempt() {
+                this._crossfadePauseExempt = { a: false, b: false };
+                try {
+                    if (typeof globalThis.clearCrossfadePauseExempt === 'function') {
+                        globalThis.clearCrossfadePauseExempt();
+                    }
+                } catch (_) {}
+            }
+
+            _isCrossfadePauseExempt(deckKey) {
+                const dk = deckKey === 'b' ? 'b' : 'a';
+                try {
+                    if (typeof globalThis.isCrossfadePauseExempt === 'function'
+                        && globalThis.isCrossfadePauseExempt(dk)) {
+                        return true;
+                    }
+                } catch (_) {}
+                return !!(this._crossfadePauseExempt && this._crossfadePauseExempt[dk]);
+            }
+
             _setCrossfadeX(x) {
+                const prev = this._getCrossfadeX();
                 const v = Math.max(0, Math.min(1, Number(x) || 0));
+                if (Math.abs(prev - v) > 0.0005) {
+                    try { this._clearCrossfadePauseExempt(); } catch (_) {}
+                }
                 try {
                     if (typeof applyCrossfade === 'function') applyCrossfade(v);
                 } catch (_) {}
@@ -3245,13 +3342,17 @@
                 wrap.style.setProperty('--xf-label-scale-b', String(minScale + (x * span)));
             }
 
-            /** Deck B has a local track cued/loaded (may be paused while crossfader favours A). */
+            /** Deck B LCD line: show whenever B has a station/track name (same as Deck A), including when paused/muted by the crossfader. */
             _deckBLcdLineReady() {
+                try {
+                    const name = this._deckStationDisplayName('b');
+                    if (name && name !== '—') return true;
+                } catch (_) {}
                 if (this._deckBActive()) return true;
                 try {
+                    const el = this._deckBPlaybackMedia();
+                    if (this._deckHasSource(el)) return true;
                     if (state.deckSourceMode && state.deckSourceMode.b === 'local') {
-                        const el = this._deckBPlaybackMedia();
-                        if (this._deckHasSource(el)) return true;
                         const dn = state.deckLocalDisplayName && state.deckLocalDisplayName.b;
                         if (dn && String(dn).trim()) return true;
                     }
@@ -3499,7 +3600,12 @@
             }
 
             _resumeDecksForCrossfade() {
-                if (this._suppressCrossfadeResume) return;
+                try {
+                    if (typeof resumeDecksForCrossfadeLevels === 'function') {
+                        resumeDecksForCrossfadeLevels();
+                        return;
+                    }
+                } catch (_) {}
                 try {
                     const x = this._getCrossfadeX();
                     const ga = 1 - x;
@@ -3511,11 +3617,27 @@
                     const mediaB = (typeof getDeckBRadioAudibleEl === 'function')
                         ? getDeckBRadioAudibleEl()
                         : audioElB;
-                    if (ga > thresh && mediaA && mediaA.src && mediaA.paused) {
-                        mediaA.play().catch(() => {});
+                    const allowPause = (typeof isCrossfadeIdleAutoPauseReady === 'function')
+                        ? isCrossfadeIdleAutoPauseReady()
+                        : false;
+                    // Resume audible decks immediately; pause muted only after idle auto-pause arms.
+                    if (ga <= thresh) {
+                        if (allowPause && !this._isCrossfadePauseExempt('a')) {
+                            try { if (mediaA && !mediaA.paused) mediaA.pause(); } catch (_) {}
+                        }
+                    } else if (!this._suppressCrossfadeResume && mediaA && mediaA.src && mediaA.paused) {
+                        if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('a'))) {
+                            mediaA.play().catch(() => {});
+                        }
                     }
-                    if (gb > thresh && mediaB && mediaB.src && mediaB.paused) {
-                        mediaB.play().catch(() => {});
+                    if (gb <= thresh) {
+                        if (allowPause && !this._isCrossfadePauseExempt('b')) {
+                            try { if (mediaB && !mediaB.paused) mediaB.pause(); } catch (_) {}
+                        }
+                    } else if (!this._suppressCrossfadeResume && mediaB && mediaB.src && mediaB.paused) {
+                        if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('b'))) {
+                            mediaB.play().catch(() => {});
+                        }
                     }
                 } catch (_) {}
             }
@@ -4117,6 +4239,22 @@
                 this._digitalAiIntroRunning = false;
             }
 
+            _cancelDigitalRandomButtonsIntroHint() {
+                if (this._digitalRandomButtonsIntroTimeouts) {
+                    this._digitalRandomButtonsIntroTimeouts.forEach((t) => clearTimeout(t));
+                    this._digitalRandomButtonsIntroTimeouts = null;
+                }
+                this._digitalRandomButtonsIntroRunning = false;
+                try {
+                    const root = this.root;
+                    if (root) {
+                        root.querySelectorAll('.is-border-flash').forEach((el) => {
+                            el.classList.remove('is-border-flash');
+                        });
+                    }
+                } catch (_) {}
+            }
+
             _scheduleDigitalAiButtonIntroHint() {
                 if (this.skin !== 'digital') return;
                 this._cancelDigitalAiButtonIntroHint();
@@ -4127,6 +4265,79 @@
                     try { this._playDigitalAiButtonIntroHint(); } catch (_) {}
                 }, 900);
                 this._digitalAiIntroTimeouts = [t];
+            }
+
+            _scheduleDigitalRandomButtonsIntroHint() {
+                if (this.skin !== 'digital') return;
+                if (RadioVisualEngine._sessionRandomButtonsIntroDone) return;
+                this._cancelDigitalRandomButtonsIntroHint();
+                const t = setTimeout(() => {
+                    try { this._playDigitalRandomButtonsIntroHint(); } catch (_) {}
+                }, 700);
+                this._digitalRandomButtonsIntroTimeouts = [t];
+            }
+
+            _collectDigitalIntroFlashButtons() {
+                const root = this.root;
+                if (!root) return [];
+                const nodes = root.querySelectorAll(
+                    '.radio-visual-digital-toolbar-text-btn, ' +
+                    '.radio-visual-digital-feature-btns .radio-visual-btn, ' +
+                    '.radio-visual-digital-orange-btns .radio-visual-btn'
+                );
+                return Array.from(nodes).filter((el) => el && el.offsetParent !== null);
+            }
+
+            _playDigitalRandomButtonsIntroHint() {
+                if (this.skin !== 'digital' || this._digitalRandomButtonsIntroRunning) return;
+                if (RadioVisualEngine._sessionRandomButtonsIntroDone) return;
+                const pool = this._collectDigitalIntroFlashButtons();
+                if (pool.length < 1) return;
+                RadioVisualEngine._sessionRandomButtonsIntroDone = true;
+                this._digitalRandomButtonsIntroRunning = true;
+                const timeouts = [];
+                this._digitalRandomButtonsIntroTimeouts = timeouts;
+                const count = Math.min(5, pool.length);
+                const picks = [];
+                const available = pool.slice();
+                while (picks.length < count && available.length) {
+                    const i = Math.floor(Math.random() * available.length);
+                    picks.push(available.splice(i, 1)[0]);
+                }
+                // Rise to peak, then fall; next button starts rising as this one fades down.
+                const flashMs = 1050;
+                const nextStartsAtMs = 480;
+                let idx = 0;
+                let pending = 0;
+                const finishIfDone = () => {
+                    if (pending > 0) return;
+                    this._digitalRandomButtonsIntroRunning = false;
+                    this._digitalRandomButtonsIntroTimeouts = null;
+                };
+                const flashNext = () => {
+                    if (!this._digitalRandomButtonsIntroRunning) return;
+                    if (idx >= picks.length) return;
+                    const btn = picks[idx];
+                    idx += 1;
+                    if (!btn || !btn.isConnected) {
+                        const tSkip = setTimeout(flashNext, 80);
+                        timeouts.push(tSkip);
+                        return;
+                    }
+                    pending += 1;
+                    btn.classList.add('is-border-flash');
+                    const tClear = setTimeout(() => {
+                        try { btn.classList.remove('is-border-flash'); } catch (_) {}
+                        pending -= 1;
+                        finishIfDone();
+                    }, flashMs);
+                    timeouts.push(tClear);
+                    if (idx < picks.length) {
+                        const tNext = setTimeout(flashNext, nextStartsAtMs);
+                        timeouts.push(tNext);
+                    }
+                };
+                flashNext();
             }
 
             _playDigitalAiButtonIntroHint() {
@@ -4261,8 +4472,8 @@
                     }, 400);
                 };
                 try { btn.removeAttribute('title'); } catch (_) {}
-                btn.title = 'Tap: play or next random station · Right-click: pause deck';
-                btn.setAttribute('aria-label', `${deckLabel}; tap to play or next random station, right-click to pause`);
+                btn.title = 'Tap: play paused station, or next random if already playing · Right-click: pause deck';
+                btn.setAttribute('aria-label', `${deckLabel}; tap to play paused station or next random if playing, right-click to pause`);
                 btn.addEventListener('contextmenu', (ev) => {
                     stopDeckTransportEvent(ev);
                     armTransportClickSuppress();
@@ -5092,6 +5303,29 @@
                 return RadioVisualEngine.SPECTRUM_COLOR_STREAM_PRESETS.aurora.palette;
             }
 
+            static get SPECTRUM_RIBBON_ROTATE_KEYS() {
+                return [
+                    'rotateLHigh', 'rotateLMid', 'rotateLLow',
+                    'rotateRHigh', 'rotateRMid', 'rotateRLow'
+                ];
+            }
+            static get SPECTRUM_RIBBON_SPIN_KEYS() {
+                return [
+                    'spinLHigh', 'spinLMid', 'spinLLow',
+                    'spinRHigh', 'spinRMid', 'spinRLow'
+                ];
+            }
+            static spectrumRibbonSpinKeyFromRotate(rotateKey) {
+                return String(rotateKey || '').replace(/^rotate/, 'spin');
+            }
+            static normalizeSpectrumRibbonDeg(deg) {
+                let d = Number(deg);
+                if (!Number.isFinite(d)) return 0;
+                d = d % 360;
+                if (d < 0) d += 360;
+                return Math.round(d);
+            }
+
             _spectrumRibbonRotateKey(side, bandKey) {
                 const sideKey = side === 'R' ? 'R' : 'L';
                 const band = String(bandKey || 'high');
@@ -5099,12 +5333,103 @@
                 return `rotate${sideKey}${cap}`;
             }
 
+            _spectrumRibbonSpinSpeed(rotateKey) {
+                const s = this._spectrumSettings || RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
+                const spinKey = RadioVisualEngine.spectrumRibbonSpinKeyFromRotate(rotateKey);
+                let v = Number(s[spinKey]);
+                if (!Number.isFinite(v)) return 0;
+                v = Math.max(-100, Math.min(100, Math.round(v)));
+                return Math.round(v / 10) * 10;
+            }
+
             _spectrumRibbonRotateDeg(side, bandKey) {
                 const s = this._spectrumSettings || RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
                 const key = this._spectrumRibbonRotateKey(side, bandKey);
-                const v = Number(s[key]);
-                if (!Number.isFinite(v)) return 0;
-                return Math.max(0, Math.min(360, v));
+                const base = Number(s[key]);
+                const angle = Number.isFinite(base) ? Math.max(0, Math.min(360, base)) : 0;
+                if (this._spectrumRibbonSpinActive && this._spectrumRibbonSpinActive[key]) {
+                    const spun = Number(this._spectrumRibbonSpinAccum[key]) || 0;
+                    return angle + spun;
+                }
+                return angle;
+            }
+
+            _isSpectrumRibbonSpinActive(key) {
+                return !!(this._spectrumRibbonSpinActive && this._spectrumRibbonSpinActive[key]);
+            }
+
+            _syncSpectrumRibbonSpinUi() {
+                try {
+                    if (typeof globalThis.syncSpectrumRibbonSpinButtons === 'function') {
+                        globalThis.syncSpectrumRibbonSpinButtons();
+                    }
+                } catch (_) {}
+            }
+
+            _updateSpectrumRibbonSpin(nowSec) {
+                if (!this._spectrumRibbonSpinActive) this._spectrumRibbonSpinActive = Object.create(null);
+                if (!this._spectrumRibbonSpinAccum) this._spectrumRibbonSpinAccum = Object.create(null);
+                const prevT = Number(this._spectrumRibbonSpinLastT) || 0;
+                this._spectrumRibbonSpinLastT = nowSec;
+                if (!(prevT > 0)) return;
+                let dt = nowSec - prevT;
+                if (!(dt > 0) || dt > 0.5) return;
+                const keys = RadioVisualEngine.SPECTRUM_RIBBON_ROTATE_KEYS;
+                for (let i = 0; i < keys.length; i++) {
+                    const key = keys[i];
+                    if (!this._spectrumRibbonSpinActive[key]) continue;
+                    const speed = this._spectrumRibbonSpinSpeed(key);
+                    if (!speed) continue;
+                    const cur = Number(this._spectrumRibbonSpinAccum[key]) || 0;
+                    this._spectrumRibbonSpinAccum[key] = cur + (speed * dt);
+                }
+            }
+
+            /**
+             * Toggle continuous spin for one ribbon. Angle stays on the slider;
+             * speed comes from the separate spin control (−100…100).
+             */
+            toggleSpectrumRibbonSpin(key) {
+                const keys = RadioVisualEngine.SPECTRUM_RIBBON_ROTATE_KEYS;
+                if (!keys.includes(key)) return false;
+                if (!this._spectrumRibbonSpinActive) this._spectrumRibbonSpinActive = Object.create(null);
+                if (!this._spectrumRibbonSpinAccum) this._spectrumRibbonSpinAccum = Object.create(null);
+                if (this._spectrumRibbonSpinActive[key]) {
+                    // Freeze current visual angle back onto the angle slider.
+                    const s = this._spectrumSettings || RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
+                    const base = Number(s[key]) || 0;
+                    const spun = Number(this._spectrumRibbonSpinAccum[key]) || 0;
+                    const frozen = RadioVisualEngine.normalizeSpectrumRibbonDeg(base + spun);
+                    this._spectrumRibbonSpinActive[key] = false;
+                    this._spectrumRibbonSpinAccum[key] = 0;
+                    this.applySpectrumSettings({ [key]: frozen });
+                    try {
+                        if (typeof globalThis.applySpectrumBandControlsToUi === 'function') {
+                            globalThis.applySpectrumBandControlsToUi(this._spectrumSettings);
+                        } else if (typeof globalThis.syncSpectrumOptionsControlsFromStorage === 'function') {
+                            globalThis.syncSpectrumOptionsControlsFromStorage();
+                        }
+                    } catch (_) {}
+                } else {
+                    this._spectrumRibbonSpinAccum[key] = 0;
+                    this._spectrumRibbonSpinActive[key] = true;
+                    this._spectrumRibbonSpinLastT = performance.now() * 0.001;
+                }
+                this._syncSpectrumRibbonSpinUi();
+                return !!this._spectrumRibbonSpinActive[key];
+            }
+
+            clearSpectrumRibbonSpin(keys) {
+                const list = Array.isArray(keys) && keys.length
+                    ? keys
+                    : RadioVisualEngine.SPECTRUM_RIBBON_ROTATE_KEYS;
+                if (!this._spectrumRibbonSpinActive) this._spectrumRibbonSpinActive = Object.create(null);
+                if (!this._spectrumRibbonSpinAccum) this._spectrumRibbonSpinAccum = Object.create(null);
+                list.forEach((key) => {
+                    this._spectrumRibbonSpinActive[key] = false;
+                    this._spectrumRibbonSpinAccum[key] = 0;
+                });
+                this._syncSpectrumRibbonSpinUi();
             }
 
             _effectiveRibbonPhaseBins(basePhaseBins, side, bandKey) {
@@ -6931,6 +7256,7 @@
 
             _computeDigitalSpectrumRadiiAndEq() {
                 const t = performance.now() * 0.001;
+                try { this._updateSpectrumRibbonSpin(t); } catch (_) {}
                 const sampled = this._sampleDigitalSpectrumBandLevels(t);
                 const n = RadioVisualEngine.SPECTRUM_ANGULAR_BINS;
                 const layersL = [];
@@ -8377,6 +8703,7 @@
 
             init() {
                 try { this._cancelDigitalAiButtonIntroHint(); } catch (_) {}
+                try { this._cancelDigitalRandomButtonsIntroHint(); } catch (_) {}
                 try { if (this.abortCtrl) this.abortCtrl.abort(); } catch (_) {}
                 container.innerHTML = '';
                 try { initAudio(); } catch (_) {}
@@ -9086,6 +9413,7 @@
                         }
                     } catch (_) {}
                     try { this._scheduleDigitalAiButtonIntroHint(); } catch (_) {}
+                    try { this._scheduleDigitalRandomButtonsIntroHint(); } catch (_) {}
                 }
                 try { this._updateStationUi(); } catch (_) {}
                 try { this._tickClock(); } catch (_) {}

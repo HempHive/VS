@@ -475,7 +475,13 @@ const QUALITY = {
             rotateLLow: 310,
             rotateRHigh: 0,
             rotateRMid: 0,
-            rotateRLow: 0
+            rotateRLow: 0,
+            spinLHigh: 0,
+            spinLMid: 0,
+            spinLLow: 0,
+            spinRHigh: 0,
+            spinRMid: 0,
+            spinRLow: 0
         };
         const TRIX_BACKGROUND_GIF = { enabled: true, filename: 'digb.gif' };
         const DEFAULT_DIGITAL_THEME = {
@@ -859,6 +865,12 @@ const QUALITY = {
         const optSpectrumRotateRMedReadout = document.getElementById('opt-spectrum-rotate-r-med-readout');
         const optSpectrumRotateRLo = document.getElementById('opt-spectrum-rotate-r-lo');
         const optSpectrumRotateRLoReadout = document.getElementById('opt-spectrum-rotate-r-lo-readout');
+        const optSpectrumSpinLHi = document.getElementById('opt-spectrum-spin-l-hi');
+        const optSpectrumSpinLMed = document.getElementById('opt-spectrum-spin-l-med');
+        const optSpectrumSpinLLo = document.getElementById('opt-spectrum-spin-l-lo');
+        const optSpectrumSpinRHi = document.getElementById('opt-spectrum-spin-r-hi');
+        const optSpectrumSpinRMed = document.getElementById('opt-spectrum-spin-r-med');
+        const optSpectrumSpinRLo = document.getElementById('opt-spectrum-spin-r-lo');
         const optSpectrumReset = document.getElementById('opt-spectrum-reset');
         let spectrumColorStreamSelectReady = false;
         let spectrumEqColorStreamSelectReady = false;
@@ -894,7 +906,13 @@ const QUALITY = {
                         rotateLLow: 0,
                         rotateRHigh: 0,
                         rotateRMid: 0,
-                        rotateRLow: 0
+                        rotateRLow: 0,
+                        spinLHigh: 0,
+                        spinLMid: 0,
+                        spinLLow: 0,
+                        spinRHigh: 0,
+                        spinRMid: 0,
+                        spinRLow: 0
                     };
                 }
                 const RVE = getSpectrumEngineClass();
@@ -923,7 +941,13 @@ const QUALITY = {
                     rotateLLow: 0,
                     rotateRHigh: 0,
                     rotateRMid: 0,
-                    rotateRLow: 0
+                    rotateRLow: 0,
+                    spinLHigh: 0,
+                    spinLMid: 0,
+                    spinLLow: 0,
+                    spinRHigh: 0,
+                    spinRMid: 0,
+                    spinRLow: 0
                 };
             }
         }
@@ -1024,6 +1048,27 @@ const QUALITY = {
                 if (input) input.value = String(deg);
                 if (readout) readout.textContent = `${deg}°`;
             });
+            const spinPairs = [
+                [optSpectrumSpinLHi, 'spinLHigh', 'rotateLHigh'],
+                [optSpectrumSpinLMed, 'spinLMid', 'rotateLMid'],
+                [optSpectrumSpinLLo, 'spinLLow', 'rotateLLow'],
+                [optSpectrumSpinRHi, 'spinRHigh', 'rotateRHigh'],
+                [optSpectrumSpinRMed, 'spinRMid', 'rotateRMid'],
+                [optSpectrumSpinRLo, 'spinRLow', 'rotateRLow']
+            ];
+            spinPairs.forEach(([btn, spinKey, rotateKey]) => {
+                if (!btn) return;
+                let speed = Math.round(Number(s[spinKey]) || 0);
+                speed = Math.max(-100, Math.min(100, Math.round(speed / 10) * 10));
+                btn.textContent = String(speed);
+                try {
+                    const rv = getActiveRadioVisualEngine();
+                    const spinning = !!(rv && typeof rv._isSpectrumRibbonSpinActive === 'function'
+                        && rv._isSpectrumRibbonSpinActive(rotateKey));
+                    btn.classList.toggle('is-spinning', spinning);
+                    btn.setAttribute('aria-pressed', spinning ? 'true' : 'false');
+                } catch (_) {}
+            });
         }
         function applySpectrumSettingsToControls(settings) {
             applySpectrumBandControlsToUi(settings);
@@ -1042,6 +1087,11 @@ const QUALITY = {
             const eqAudioStrength = spectrumUnitFromPct(optSpectrumEqAudioStrength && optSpectrumEqAudioStrength.value, 25, 300);
             const eqColorFlow = spectrumUnitFromPct(optSpectrumEqColorFlow && optSpectrumEqColorFlow.value, 25, 300);
             const clampRotate = (input) => Math.max(0, Math.min(360, Math.round(Number(input && input.value) || 0)));
+            const clampSpinFromBtn = (btn) => {
+                let v = Math.round(Number(btn && btn.textContent) || 0);
+                v = Math.max(-100, Math.min(100, v));
+                return Math.round(v / 10) * 10;
+            };
             return {
                 colorStreamId: (optSpectrumColorStream && optSpectrumColorStream.value) || current.colorStreamId || 'aurora',
                 scale,
@@ -1058,7 +1108,13 @@ const QUALITY = {
                 rotateLLow: clampRotate(optSpectrumRotateLLo),
                 rotateRHigh: clampRotate(optSpectrumRotateRHi),
                 rotateRMid: clampRotate(optSpectrumRotateRMed),
-                rotateRLow: clampRotate(optSpectrumRotateRLo)
+                rotateRLow: clampRotate(optSpectrumRotateRLo),
+                spinLHigh: clampSpinFromBtn(optSpectrumSpinLHi),
+                spinLMid: clampSpinFromBtn(optSpectrumSpinLMed),
+                spinLLow: clampSpinFromBtn(optSpectrumSpinLLo),
+                spinRHigh: clampSpinFromBtn(optSpectrumSpinRHi),
+                spinRMid: clampSpinFromBtn(optSpectrumSpinRMed),
+                spinRLow: clampSpinFromBtn(optSpectrumSpinRLo)
             };
         }
         function syncSpectrumOptionsControlsFromStorage() {
@@ -1626,6 +1682,9 @@ const QUALITY = {
                 String(Math.min(1, Math.max(0, t.stagingGlowOpacity * 0.5)))
             );
             target.style.setProperty('--rv-digital-staging-scale', String(t.stagingScale));
+            try {
+                document.documentElement.style.setProperty('--global-rv-digital-staging-scale', String(t.stagingScale));
+            } catch (_) {}
             target.style.setProperty(
                 '--rv-digital-crossfade-trackpad-responsiveness',
                 String(t.crossfadeTrackpadResponsiveness)
@@ -1728,6 +1787,7 @@ const QUALITY = {
                 '--global-rv-digital-crossfade-trackpad-responsiveness',
                 String(t.crossfadeTrackpadResponsiveness)
             );
+            root.style.setProperty('--global-rv-digital-staging-scale', String(t.stagingScale));
             applyDigitalThemeCssVars(document.getElementById('radio-visual-root'), t);
             applyButtonInfoOverlaysFromTheme(t);
             reapplyDigitalThemeImageLayers();
@@ -2569,6 +2629,419 @@ const QUALITY = {
             return !!(optionsPanel && !optionsPanel.classList.contains('display-none') && optionsPanel.classList.contains('show'));
         }
         let optionsAutoCloseId = null;
+        let sessionDownloadBytes = 0;
+        let optionsDownloadUsageTimer = null;
+        const optSessionDownloadUsage = document.getElementById('opt-session-download-usage');
+        const optCrossfadeIdleAutopause = document.getElementById('opt-crossfade-idle-autopause');
+        const optSleepTimer = document.getElementById('opt-sleep-timer');
+        const optSleepTimerRemaining = document.getElementById('opt-sleep-timer-remaining');
+        const CROSSFADE_IDLE_AUTOPAUSE_KEY = 'vs.crossfadeIdleAutoPause.enabled.v1';
+        const CROSSFADE_IDLE_AUTOPAUSE_MS = 3 * 60 * 1000;
+        let crossfadeIdleAutoPauseEnabled = true;
+        let crossfadeIdleAutoPauseTimer = null;
+        /** True only after the idle timer fires; muted decks may then be paused. */
+        let crossfadeIdleAutoPauseReady = false;
+        let sleepTimerTimeoutId = null;
+        let sleepTimerEndsAt = 0;
+        let sleepTimerDurationMin = 0;
+
+        function loadCrossfadeIdleAutoPauseSetting() {
+            try {
+                const v = localStorage.getItem(CROSSFADE_IDLE_AUTOPAUSE_KEY);
+                if (v === '0') crossfadeIdleAutoPauseEnabled = false;
+                else if (v === '1') crossfadeIdleAutoPauseEnabled = true;
+            } catch (_) {}
+            if (optCrossfadeIdleAutopause) {
+                optCrossfadeIdleAutopause.checked = crossfadeIdleAutoPauseEnabled;
+            }
+        }
+
+        function isCrossfadeIdleAutoPauseEnabled() {
+            return !!crossfadeIdleAutoPauseEnabled;
+        }
+
+        function isCrossfadeIdleAutoPauseReady() {
+            return !!(crossfadeIdleAutoPauseEnabled && crossfadeIdleAutoPauseReady);
+        }
+
+        function clearCrossfadeIdleAutoPauseTimer() {
+            if (crossfadeIdleAutoPauseTimer) {
+                try { clearTimeout(crossfadeIdleAutoPauseTimer); } catch (_) {}
+                crossfadeIdleAutoPauseTimer = null;
+            }
+        }
+
+        function setCrossfadeIdleAutoPauseEnabled(on) {
+            crossfadeIdleAutoPauseEnabled = !!on;
+            try {
+                localStorage.setItem(CROSSFADE_IDLE_AUTOPAUSE_KEY, crossfadeIdleAutoPauseEnabled ? '1' : '0');
+            } catch (_) {}
+            if (optCrossfadeIdleAutopause) {
+                optCrossfadeIdleAutopause.checked = crossfadeIdleAutoPauseEnabled;
+            }
+            clearCrossfadeIdleAutoPauseTimer();
+            crossfadeIdleAutoPauseReady = false;
+            if (crossfadeIdleAutoPauseEnabled) {
+                try { noteCrossfadeActivity(); } catch (_) {}
+            }
+        }
+
+        function noteCrossfadeActivity() {
+            crossfadeIdleAutoPauseReady = false;
+            clearCrossfadeIdleAutoPauseTimer();
+            if (!crossfadeIdleAutoPauseEnabled) return;
+            crossfadeIdleAutoPauseTimer = setTimeout(() => {
+                crossfadeIdleAutoPauseTimer = null;
+                crossfadeIdleAutoPauseReady = true;
+                try {
+                    if (typeof pauseInaudibleCrossfadeDecks === 'function') {
+                        pauseInaudibleCrossfadeDecks();
+                    }
+                } catch (_) {}
+            }, CROSSFADE_IDLE_AUTOPAUSE_MS);
+        }
+
+        function syncCrossfadeIdleAutopauseOptionUi() {
+            if (optCrossfadeIdleAutopause) {
+                optCrossfadeIdleAutopause.checked = crossfadeIdleAutoPauseEnabled;
+            }
+        }
+
+        function formatSleepTimerRemaining(ms) {
+            const totalSec = Math.max(0, Math.ceil(ms / 1000));
+            const m = Math.floor(totalSec / 60);
+            const s = totalSec % 60;
+            return `${m}:${String(s).padStart(2, '0')}`;
+        }
+
+        function clearSleepTimer() {
+            if (sleepTimerTimeoutId) {
+                try { clearTimeout(sleepTimerTimeoutId); } catch (_) {}
+                sleepTimerTimeoutId = null;
+            }
+            sleepTimerEndsAt = 0;
+            sleepTimerDurationMin = 0;
+            if (optSleepTimer) optSleepTimer.value = '0';
+            updateSleepTimerRemainingUi();
+        }
+
+        function updateSleepTimerRemainingUi() {
+            if (!optSleepTimerRemaining) return;
+            try {
+                if (!sleepTimerEndsAt || sleepTimerEndsAt <= Date.now()) {
+                    optSleepTimerRemaining.textContent = '—';
+                    optSleepTimerRemaining.classList.remove('is-active');
+                    return;
+                }
+                optSleepTimerRemaining.textContent = formatSleepTimerRemaining(sleepTimerEndsAt - Date.now());
+                optSleepTimerRemaining.classList.add('is-active');
+            } catch (_) {}
+        }
+
+        function fireSleepTimer() {
+            sleepTimerTimeoutId = null;
+            sleepTimerEndsAt = 0;
+            sleepTimerDurationMin = 0;
+            if (optSleepTimer) optSleepTimer.value = '0';
+            updateSleepTimerRemainingUi();
+            try {
+                if (typeof cancelActiveAutoFade === 'function') cancelActiveAutoFade();
+            } catch (_) {}
+            try {
+                const dj = (typeof getDjDecksEngineIfActive === 'function') ? getDjDecksEngineIfActive() : null;
+                if (dj) {
+                    dj.suppressEnsureCrossfadeDeckPlayback = true;
+                }
+            } catch (_) {}
+            try {
+                const rv = (typeof getActiveRadioVisualEngine === 'function') ? getActiveRadioVisualEngine() : null;
+                if (rv) rv._suppressCrossfadeResume = true;
+            } catch (_) {}
+            try {
+                const mediaA = (typeof getDeckAMediaForPlaybackState === 'function')
+                    ? getDeckAMediaForPlaybackState()
+                    : (typeof audioEl !== 'undefined' ? audioEl : null);
+                const mediaB = (typeof getDeckBPlaybackMedia === 'function')
+                    ? getDeckBPlaybackMedia()
+                    : ((typeof getDeckBRadioAudibleEl === 'function')
+                        ? getDeckBRadioAudibleEl()
+                        : (typeof audioElB !== 'undefined' ? audioElB : null));
+                try { if (mediaA && !mediaA.paused) mediaA.pause(); } catch (_) {}
+                try { if (mediaB && !mediaB.paused) mediaB.pause(); } catch (_) {}
+                try {
+                    if (typeof audioElRadioAAlt !== 'undefined' && audioElRadioAAlt && !audioElRadioAAlt.paused) {
+                        audioElRadioAAlt.pause();
+                    }
+                } catch (_) {}
+                try {
+                    if (typeof audioElRadioBAlt !== 'undefined' && audioElRadioBAlt && !audioElRadioBAlt.paused) {
+                        audioElRadioBAlt.pause();
+                    }
+                } catch (_) {}
+            } catch (_) {}
+            try {
+                const rv = (typeof getActiveRadioVisualEngine === 'function') ? getActiveRadioVisualEngine() : null;
+                if (rv && typeof rv._syncDeckSwitches === 'function') rv._syncDeckSwitches();
+            } catch (_) {}
+            try {
+                if (typeof statusEl !== 'undefined' && statusEl) {
+                    statusEl.innerText = 'Sleep timer — playback paused';
+                }
+            } catch (_) {}
+        }
+
+        function startSleepTimer(minutes) {
+            const mins = Math.max(0, Math.round(Number(minutes) || 0));
+            if (sleepTimerTimeoutId) {
+                try { clearTimeout(sleepTimerTimeoutId); } catch (_) {}
+                sleepTimerTimeoutId = null;
+            }
+            if (mins <= 0) {
+                sleepTimerEndsAt = 0;
+                sleepTimerDurationMin = 0;
+                if (optSleepTimer) optSleepTimer.value = '0';
+                updateSleepTimerRemainingUi();
+                return;
+            }
+            sleepTimerDurationMin = mins;
+            sleepTimerEndsAt = Date.now() + (mins * 60 * 1000);
+            if (optSleepTimer) optSleepTimer.value = String(mins);
+            sleepTimerTimeoutId = setTimeout(() => {
+                try { fireSleepTimer(); } catch (_) {}
+            }, mins * 60 * 1000);
+            updateSleepTimerRemainingUi();
+        }
+
+        function syncSleepTimerOptionUi() {
+            if (optSleepTimer) {
+                optSleepTimer.value = sleepTimerDurationMin > 0 ? String(sleepTimerDurationMin) : '0';
+            }
+            updateSleepTimerRemainingUi();
+        }
+
+        function formatSessionDownloadBytes(bytes) {
+            const n = Math.max(0, Number(bytes) || 0);
+            if (n < 1024) return `${Math.round(n)} B`;
+            if (n < 1024 * 1024) return `${(n / 1024).toFixed(n < 10 * 1024 ? 1 : 0)} KB`;
+            if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(n < 10 * 1024 * 1024 ? 2 : 1)} MB`;
+            return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+        }
+
+        function updateOptionsDownloadUsageUi() {
+            if (!optSessionDownloadUsage) return;
+            try {
+                optSessionDownloadUsage.textContent = formatSessionDownloadBytes(sessionDownloadBytes);
+            } catch (_) {}
+        }
+
+        /** Per resource entry: last counted byte size (avoids double-counting buffered + live observer). */
+        const sessionResourceBytesByKey = new Map();
+        /** Per media element: last decoded/estimate snapshot for streaming downloads. */
+        const sessionMediaDownloadState = new Map();
+        let sessionDownloadPerfObserver = null;
+        let sessionDownloadMediaTimer = null;
+        /** Fallback stream estimate when decoded-byte counters are unavailable (~128 kbps). */
+        const SESSION_MEDIA_ESTIMATE_BPS_AUDIO = 16000;
+        const SESSION_MEDIA_ESTIMATE_BPS_VIDEO = 75000;
+
+        function sessionResourceEntryKey(entry) {
+            try {
+                return `${Number(entry.startTime) || 0}|${String(entry.name || '')}|${String(entry.initiatorType || '')}`;
+            } catch (_) {
+                return String(Math.random());
+            }
+        }
+
+        function sessionResourceEntryBytes(entry) {
+            try {
+                const transfer = Number(entry.transferSize);
+                if (Number.isFinite(transfer) && transfer > 0) return transfer;
+                const decoded = Number(entry.decodedBodySize);
+                if (Number.isFinite(decoded) && decoded > 0) return decoded;
+                const encoded = Number(entry.encodedBodySize);
+                if (Number.isFinite(encoded) && encoded > 0) return encoded;
+            } catch (_) {}
+            return 0;
+        }
+
+        function syncSessionResourceEntry(entry) {
+            try {
+                if (!entry) return;
+                const key = sessionResourceEntryKey(entry);
+                const bytes = sessionResourceEntryBytes(entry);
+                if (bytes <= 0) return;
+                const prev = sessionResourceBytesByKey.get(key) || 0;
+                if (bytes <= prev) return;
+                sessionResourceBytesByKey.set(key, bytes);
+                sessionDownloadBytes += (bytes - prev);
+            } catch (_) {}
+        }
+
+        function rescanSessionResourceEntries() {
+            try {
+                const list = performance.getEntriesByType('resource') || [];
+                list.forEach(syncSessionResourceEntry);
+            } catch (_) {}
+            try {
+                const nav = performance.getEntriesByType('navigation') || [];
+                nav.forEach(syncSessionResourceEntry);
+            } catch (_) {}
+        }
+
+        function collectSessionMediaElements() {
+            const els = [];
+            const push = (el) => {
+                if (!el || els.indexOf(el) >= 0) return;
+                els.push(el);
+            };
+            try { push(typeof audioEl !== 'undefined' ? audioEl : null); } catch (_) {}
+            try { push(typeof audioElB !== 'undefined' ? audioElB : null); } catch (_) {}
+            try { push(typeof audioElRadioAAlt !== 'undefined' ? audioElRadioAAlt : null); } catch (_) {}
+            try { push(typeof audioElRadioBAlt !== 'undefined' ? audioElRadioBAlt : null); } catch (_) {}
+            try {
+                document.querySelectorAll('audio, video').forEach((el) => push(el));
+            } catch (_) {}
+            return els;
+        }
+
+        function mediaElementDecodedBytes(el) {
+            try {
+                const a = Number(el.webkitAudioDecodedByteCount);
+                const v = Number(el.webkitVideoDecodedByteCount);
+                const sum = (Number.isFinite(a) ? a : 0) + (Number.isFinite(v) ? v : 0);
+                return sum > 0 ? sum : 0;
+            } catch (_) {
+                return 0;
+            }
+        }
+
+        function mediaElementHasNetworkSource(el) {
+            try {
+                const src = String(el.currentSrc || el.src || '');
+                if (!src || src === 'about:blank') return false;
+                if (src.startsWith('blob:') || src.startsWith('data:')) return false;
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function pollSessionMediaDownload() {
+            const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+            const els = collectSessionMediaElements();
+            const seen = new Set();
+            els.forEach((el) => {
+                try {
+                    seen.add(el);
+                    if (!mediaElementHasNetworkSource(el)) {
+                        sessionMediaDownloadState.delete(el);
+                        return;
+                    }
+                    const src = String(el.currentSrc || el.src || '');
+                    const decoded = mediaElementDecodedBytes(el);
+                    let st = sessionMediaDownloadState.get(el);
+                    // New station / new URL: decoded counters reset — re-baseline so counting resumes.
+                    if (!st || st.src !== src) {
+                        st = {
+                            src,
+                            decoded,
+                            lastT: now,
+                            hasDecodedCounter: decoded > 0
+                        };
+                        sessionMediaDownloadState.set(el, st);
+                        return;
+                    }
+                    // Some engines zero decoded counters on pause/reload without changing src.
+                    if (decoded + 2048 < st.decoded) {
+                        st.decoded = decoded;
+                        st.hasDecodedCounter = decoded > 0;
+                        st.lastT = now;
+                        return;
+                    }
+                    if (decoded > st.decoded) {
+                        sessionDownloadBytes += (decoded - st.decoded);
+                        st.decoded = decoded;
+                        st.hasDecodedCounter = true;
+                        st.lastT = now;
+                        return;
+                    }
+                    // Live radio/video streams often never finish as Resource Timing entries.
+                    // When decoded-byte counters are unavailable, estimate from play time.
+                    if (!st.hasDecodedCounter && !el.paused && !el.ended) {
+                        const dt = Math.max(0, Math.min(5, (now - st.lastT) / 1000));
+                        if (dt > 0.05) {
+                            const bps = (el.tagName === 'VIDEO')
+                                ? SESSION_MEDIA_ESTIMATE_BPS_VIDEO
+                                : SESSION_MEDIA_ESTIMATE_BPS_AUDIO;
+                            const add = Math.round(dt * bps);
+                            if (add > 0) sessionDownloadBytes += add;
+                        }
+                    }
+                    st.lastT = now;
+                } catch (_) {}
+            });
+            try {
+                sessionMediaDownloadState.forEach((_, el) => {
+                    if (!seen.has(el) || el.isConnected === false) {
+                        sessionMediaDownloadState.delete(el);
+                    }
+                });
+            } catch (_) {}
+        }
+
+        function tickSessionDownloadUsage() {
+            try { rescanSessionResourceEntries(); } catch (_) {}
+            try { pollSessionMediaDownload(); } catch (_) {}
+            if (isOptionsOpen()) updateOptionsDownloadUsageUi();
+        }
+
+        function initSessionDownloadUsageTracker() {
+            try {
+                if (typeof PerformanceObserver === 'function') {
+                    sessionDownloadPerfObserver = new PerformanceObserver((list) => {
+                        try {
+                            (list.getEntries() || []).forEach(syncSessionResourceEntry);
+                            if (isOptionsOpen()) updateOptionsDownloadUsageUi();
+                        } catch (_) {}
+                    });
+                    try {
+                        sessionDownloadPerfObserver.observe({ type: 'resource', buffered: true });
+                    } catch (_) {
+                        sessionDownloadPerfObserver.observe({ entryTypes: ['resource'] });
+                    }
+                }
+            } catch (_) {}
+            try { rescanSessionResourceEntries(); } catch (_) {}
+            try { pollSessionMediaDownload(); } catch (_) {}
+            if (sessionDownloadMediaTimer) {
+                try { clearInterval(sessionDownloadMediaTimer); } catch (_) {}
+            }
+            sessionDownloadMediaTimer = setInterval(() => {
+                try { tickSessionDownloadUsage(); } catch (_) {}
+            }, 2000);
+            updateOptionsDownloadUsageUi();
+        }
+
+        function armOptionsDownloadUsageRefresh() {
+            if (optionsDownloadUsageTimer) {
+                try { clearInterval(optionsDownloadUsageTimer); } catch (_) {}
+                optionsDownloadUsageTimer = null;
+            }
+            try { tickSessionDownloadUsage(); } catch (_) {}
+            updateOptionsDownloadUsageUi();
+            updateSleepTimerRemainingUi();
+            optionsDownloadUsageTimer = setInterval(() => {
+                if (!isOptionsOpen()) {
+                    try { clearInterval(optionsDownloadUsageTimer); } catch (_) {}
+                    optionsDownloadUsageTimer = null;
+                    return;
+                }
+                try { tickSessionDownloadUsage(); } catch (_) {}
+                updateOptionsDownloadUsageUi();
+                updateSleepTimerRemainingUi();
+            }, 1000);
+        }
+
         function armOptionsAutoClose() {
             if (optionsAutoCloseId) { clearTimeout(optionsAutoCloseId); optionsAutoCloseId = null; }
             optionsAutoCloseId = setTimeout(() => { closeOptionsPanel(); }, OPTIONS_AUTO_CLOSE_MS);
@@ -2577,13 +3050,26 @@ const QUALITY = {
             if (uiLocked) return;
             if (!optionsPanel) return;
             try { syncOptionsPanelControlsFromStorage(); } catch (_) {}
+            try { syncCrossfadeIdleAutopauseOptionUi(); } catch (_) {}
+            try { syncSleepTimerOptionUi(); } catch (_) {}
+            try { updateOptionsDownloadUsageUi(); } catch (_) {}
+            try {
+                if (typeof globalThis.syncSpectrumRibbonSpinButtons === 'function') {
+                    globalThis.syncSpectrumRibbonSpinButtons();
+                }
+            } catch (_) {}
             optionsPanel.classList.remove('display-none');
             requestAnimationFrame(() => optionsPanel.classList.add('show'));
             armOptionsAutoClose();
+            armOptionsDownloadUsageRefresh();
         }
         function closeOptionsPanel() {
             if (!optionsPanel) return;
             if (optionsAutoCloseId) { clearTimeout(optionsAutoCloseId); optionsAutoCloseId = null; }
+            if (optionsDownloadUsageTimer) {
+                try { clearInterval(optionsDownloadUsageTimer); } catch (_) {}
+                optionsDownloadUsageTimer = null;
+            }
             optionsPanel.classList.remove('show');
             setTimeout(() => optionsPanel.classList.add('display-none'), 350);
         }
@@ -2602,6 +3088,24 @@ const QUALITY = {
             optionsPanel.addEventListener('pointerdown', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
             optionsPanel.addEventListener('input', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
             optionsPanel.addEventListener('mousemove', () => { if (isOptionsOpen()) armOptionsAutoClose(); });
+        }
+        try { initSessionDownloadUsageTracker(); } catch (_) {}
+        try { loadCrossfadeIdleAutoPauseSetting(); } catch (_) {}
+        if (optCrossfadeIdleAutopause) {
+            optCrossfadeIdleAutopause.addEventListener('change', () => {
+                try {
+                    setCrossfadeIdleAutoPauseEnabled(!!optCrossfadeIdleAutopause.checked);
+                } catch (_) {}
+                try { if (isOptionsOpen()) armOptionsAutoClose(); } catch (_) {}
+            });
+        }
+        if (optSleepTimer) {
+            optSleepTimer.addEventListener('change', () => {
+                try {
+                    startSleepTimer(Number(optSleepTimer.value) || 0);
+                } catch (_) {}
+                try { if (isOptionsOpen()) armOptionsAutoClose(); } catch (_) {}
+            });
         }
         function applyDigitalThemePartial(patch, afterApply) {
             const theme = normalizeDigitalTheme({
@@ -2744,6 +3248,10 @@ const QUALITY = {
             applyDigitalSpectrumSettings(next);
         }
         function resetSpectrumOptionsSection() {
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (rv && typeof rv.clearSpectrumRibbonSpin === 'function') rv.clearSpectrumRibbonSpin();
+            } catch (_) {}
             const defaults = getDefaultSpectrumSettings();
             applySpectrumSettingsToControls(defaults);
             applyDigitalSpectrumSettings(defaults);
@@ -2770,19 +3278,67 @@ const QUALITY = {
         }
         function resetSpectrumRotateLOptions() {
             const d = getDefaultSpectrumSettings();
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (rv && typeof rv.clearSpectrumRibbonSpin === 'function') {
+                    rv.clearSpectrumRibbonSpin(['rotateLHigh', 'rotateLMid', 'rotateLLow']);
+                }
+            } catch (_) {}
             applySpectrumPartial({
                 rotateLHigh: d.rotateLHigh,
                 rotateLMid: d.rotateLMid,
-                rotateLLow: d.rotateLLow
+                rotateLLow: d.rotateLLow,
+                spinLHigh: 0,
+                spinLMid: 0,
+                spinLLow: 0
             });
         }
         function resetSpectrumRotateROptions() {
             const d = getDefaultSpectrumSettings();
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (rv && typeof rv.clearSpectrumRibbonSpin === 'function') {
+                    rv.clearSpectrumRibbonSpin(['rotateRHigh', 'rotateRMid', 'rotateRLow']);
+                }
+            } catch (_) {}
             applySpectrumPartial({
                 rotateRHigh: d.rotateRHigh,
                 rotateRMid: d.rotateRMid,
-                rotateRLow: d.rotateRLow
+                rotateRLow: d.rotateRLow,
+                spinRHigh: 0,
+                spinRMid: 0,
+                spinRLow: 0
             });
+        }
+        function randomSpectrumRibbonSpinSpeed() {
+            const steps = [];
+            for (let v = -100; v <= 100; v += 10) steps.push(v);
+            return steps[Math.floor(Math.random() * steps.length)];
+        }
+        function activateSpectrumRibbonSpins(rotateKeys) {
+            try {
+                const rv = getActiveRadioVisualEngine();
+                if (!rv || typeof rv.toggleSpectrumRibbonSpin !== 'function') return;
+                (rotateKeys || []).forEach((key) => {
+                    if (!rv._isSpectrumRibbonSpinActive(key)) rv.toggleSpectrumRibbonSpin(key);
+                });
+            } catch (_) {}
+        }
+        function randomizeSpectrumRotateLSpeeds() {
+            applySpectrumPartial({
+                spinLHigh: randomSpectrumRibbonSpinSpeed(),
+                spinLMid: randomSpectrumRibbonSpinSpeed(),
+                spinLLow: randomSpectrumRibbonSpinSpeed()
+            });
+            activateSpectrumRibbonSpins(['rotateLHigh', 'rotateLMid', 'rotateLLow']);
+        }
+        function randomizeSpectrumRotateRSpeeds() {
+            applySpectrumPartial({
+                spinRHigh: randomSpectrumRibbonSpinSpeed(),
+                spinRMid: randomSpectrumRibbonSpinSpeed(),
+                spinRLow: randomSpectrumRibbonSpinSpeed()
+            });
+            activateSpectrumRibbonSpins(['rotateRHigh', 'rotateRMid', 'rotateRLow']);
         }
         function wireOptionsSubsectionReset(btn, handler) {
             if (!btn) return;
@@ -3118,6 +3674,66 @@ const QUALITY = {
                     el.addEventListener('change', onSpectrumSettingsChange);
                 }
             });
+            const spectrumSpinButtonsByKey = {
+                spinLHigh: optSpectrumSpinLHi,
+                spinLMid: optSpectrumSpinLMed,
+                spinLLow: optSpectrumSpinLLo,
+                spinRHigh: optSpectrumSpinRHi,
+                spinRMid: optSpectrumSpinRMed,
+                spinRLow: optSpectrumSpinRLo
+            };
+            function syncSpectrumRibbonSpinButtons() {
+                document.querySelectorAll('.options-rotate-stepper[data-rotate-key]').forEach((wrap) => {
+                    const rotateKey = wrap.getAttribute('data-rotate-key');
+                    const valueBtn = wrap.querySelector('.options-rotate-value');
+                    if (!valueBtn || !rotateKey) return;
+                    let spinning = false;
+                    try {
+                        const rv = getActiveRadioVisualEngine();
+                        spinning = !!(rv && typeof rv._isSpectrumRibbonSpinActive === 'function'
+                            && rv._isSpectrumRibbonSpinActive(rotateKey));
+                    } catch (_) {}
+                    valueBtn.classList.toggle('is-spinning', spinning);
+                    valueBtn.setAttribute('aria-pressed', spinning ? 'true' : 'false');
+                });
+            }
+            function nudgeSpectrumSpin(spinKey, delta) {
+                const btn = spectrumSpinButtonsByKey[spinKey];
+                if (!btn) return;
+                let next = Math.round(Number(btn.textContent) || 0) + delta;
+                next = Math.max(-100, Math.min(100, Math.round(next / 10) * 10));
+                btn.textContent = String(next);
+                onSpectrumSettingsChange();
+            }
+            document.querySelectorAll('.options-rotate-stepper[data-rotate-key]').forEach((wrap) => {
+                const rotateKey = wrap.getAttribute('data-rotate-key');
+                const spinKey = wrap.getAttribute('data-spin-key');
+                if (!rotateKey || !spinKey) return;
+                wrap.querySelectorAll('.options-rotate-step[data-spin-delta]').forEach((btn) => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const delta = Number(btn.getAttribute('data-spin-delta')) || 0;
+                        nudgeSpectrumSpin(spinKey, delta);
+                        if (isOptionsOpen()) armOptionsAutoClose();
+                    });
+                });
+                const valueBtn = wrap.querySelector('.options-rotate-value[data-rotate-spin]');
+                if (valueBtn) {
+                    valueBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        try {
+                            const rv = getActiveRadioVisualEngine();
+                            if (rv && typeof rv.toggleSpectrumRibbonSpin === 'function') {
+                                rv.toggleSpectrumRibbonSpin(rotateKey);
+                            }
+                        } catch (_) {}
+                        syncSpectrumRibbonSpinButtons();
+                        if (isOptionsOpen()) armOptionsAutoClose();
+                    });
+                }
+            });
+            try { globalThis.syncSpectrumRibbonSpinButtons = syncSpectrumRibbonSpinButtons; } catch (_) {}
+            try { globalThis.applySpectrumBandControlsToUi = applySpectrumBandControlsToUi; } catch (_) {}
             if (optSpectrumReset) {
                 optSpectrumReset.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -3129,6 +3745,22 @@ const QUALITY = {
             wireOptionsSubsectionReset(document.getElementById('opt-spectrum-eq-reset'), resetSpectrumEqOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-spectrum-rotate-l-reset'), resetSpectrumRotateLOptions);
             wireOptionsSubsectionReset(document.getElementById('opt-spectrum-rotate-r-reset'), resetSpectrumRotateROptions);
+            const optSpectrumRotateLRandom = document.getElementById('opt-spectrum-rotate-l-random');
+            const optSpectrumRotateRRandom = document.getElementById('opt-spectrum-rotate-r-random');
+            if (optSpectrumRotateLRandom) {
+                optSpectrumRotateLRandom.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    randomizeSpectrumRotateLSpeeds();
+                    if (isOptionsOpen()) armOptionsAutoClose();
+                });
+            }
+            if (optSpectrumRotateRRandom) {
+                optSpectrumRotateRRandom.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    randomizeSpectrumRotateRSpeeds();
+                    if (isOptionsOpen()) armOptionsAutoClose();
+                });
+            }
             if (optAutomixReset) {
                 optAutomixReset.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -6628,6 +7260,15 @@ function exposeAppBindingsToGlobal() {
     try { g.applyDeckBVideoPayloadToElement = applyDeckBVideoPayloadToElement; } catch (_) {}
     try { g.applyUiLockState = applyUiLockState; } catch (_) {}
     try { g.applyCrossfade = applyCrossfade; } catch (_) {}
+    try { g.markCrossfadePauseExempt = markCrossfadePauseExempt; } catch (_) {}
+    try { g.clearCrossfadePauseExempt = clearCrossfadePauseExempt; } catch (_) {}
+    try { g.isCrossfadePauseExempt = isCrossfadePauseExempt; } catch (_) {}
+    try { g.noteCrossfadeActivity = noteCrossfadeActivity; } catch (_) {}
+    try { g.isCrossfadeIdleAutoPauseReady = isCrossfadeIdleAutoPauseReady; } catch (_) {}
+    try { g.isCrossfadeIdleAutoPauseEnabled = isCrossfadeIdleAutoPauseEnabled; } catch (_) {}
+    try { g.pauseInaudibleCrossfadeDecks = pauseInaudibleCrossfadeDecks; } catch (_) {}
+    try { g.setCrossfadeIdleAutoPauseEnabled = setCrossfadeIdleAutoPauseEnabled; } catch (_) {}
+    try { g.resumeDecksForCrossfadeLevels = resumeDecksForCrossfadeLevels; } catch (_) {}
     try { g.area = area; } catch (_) {}
     try { g.arr = arr; } catch (_) {}
     try { g.attempts = attempts; } catch (_) {}
@@ -7755,6 +8396,20 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
         }
         refreshMixStationB();
         // Crossfader handler (equal-power)
+        let _lastAppliedCrossfadeX = null;
+        const crossfadePauseExemptDecks = { a: false, b: false };
+        function markCrossfadePauseExempt(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            crossfadePauseExemptDecks[dk] = true;
+        }
+        function clearCrossfadePauseExempt() {
+            crossfadePauseExemptDecks.a = false;
+            crossfadePauseExemptDecks.b = false;
+        }
+        function isCrossfadePauseExempt(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            return !!crossfadePauseExemptDecks[dk];
+        }
         function applyCrossfade(val) {
             let x = Math.max(0, Math.min(1, Number(val)||0));
             // Add a small dead-zone at both extremes so "fully A/B" is a hard cut.
@@ -7765,6 +8420,13 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             // Linear crossfade: exact 50/50 amplitude at midpoint
             const ga = 1 - x;
             const gb = x;
+            if (_lastAppliedCrossfadeX !== null && Math.abs(_lastAppliedCrossfadeX - x) > 0.0005) {
+                clearCrossfadePauseExempt();
+                try { noteCrossfadeActivity(); } catch (_) {}
+            } else if (_lastAppliedCrossfadeX === null) {
+                try { noteCrossfadeActivity(); } catch (_) {}
+            }
+            _lastAppliedCrossfadeX = x;
             if (state && state.audioCtx) {
                 const t = state.audioCtx.currentTime;
                 try {
@@ -7809,6 +8471,7 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             } catch(_) {}
             try { refreshActiveDeckVideoDisplays(); } catch (_) {}
             try { updateModeSubStationLine(); } catch (_) {}
+            try { resumeDecksForCrossfadeLevels(); } catch (_) {}
         }
 
         const CROSSFADE_KEY_STEP = 0.04;
@@ -7817,7 +8480,6 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             if (!Number.isFinite(d) || d === 0) return;
             const cur = getAppCrossfade01();
             applyCrossfade(Math.max(0, Math.min(1, cur + d)));
-            try { resumeDecksForCrossfadeLevels(); } catch (_) {}
             try {
                 const rv = getActiveRadioVisualEngine();
                 if (rv && typeof rv._syncCrossfadeKnob === 'function') rv._syncCrossfadeKnob();
@@ -7830,15 +8492,83 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
             try { applyCrossfade(mixCross.value); } catch(_) {}
         }
 
-        function resumeDecksForCrossfadeLevels() {
+        /** Pause decks that are fully faded out (used after 3 min crossfader idle). */
+        function pauseInaudibleCrossfadeDecks() {
             try {
+                if (!isCrossfadeIdleAutoPauseEnabled()) return;
                 const djX = document.getElementById('dj-crossfader');
-                const xv = Math.max(0, Math.min(1, Number((djX && djX.value) || (mixCross && mixCross.value) || 0)));
+                const rdX = document.getElementById('radio-visual-cross-digital');
+                const xv = Math.max(0, Math.min(1, Number(
+                    (djX && djX.value) || (rdX && rdX.value) || (mixCross && mixCross.value) || 0
+                )));
                 const ga = 1 - xv;
                 const gb = xv;
                 const thresh = 0.03;
-                if (ga > thresh && typeof audioEl !== 'undefined' && audioEl && audioEl.src && audioEl.paused) audioEl.play().catch(() => {});
-                if (gb > thresh && typeof audioElB !== 'undefined' && audioElB && audioElB.src && audioElB.paused) audioElB.play().catch(() => {});
+                const mediaA = (typeof getDeckAMediaForPlaybackState === 'function')
+                    ? getDeckAMediaForPlaybackState()
+                    : (typeof audioEl !== 'undefined' ? audioEl : null);
+                const mediaB = (typeof getDeckBRadioAudibleEl === 'function')
+                    ? getDeckBRadioAudibleEl()
+                    : (typeof audioElB !== 'undefined' ? audioElB : null);
+                if (ga <= thresh && !isCrossfadePauseExempt('a')) {
+                    try { if (mediaA && !mediaA.paused) mediaA.pause(); } catch (_) {}
+                }
+                if (gb <= thresh && !isCrossfadePauseExempt('b')) {
+                    try { if (mediaB && !mediaB.paused) mediaB.pause(); } catch (_) {}
+                }
+                try { updateModeSubStationLine(); } catch (_) {}
+                try {
+                    const rv = (typeof getActiveRadioVisualEngine === 'function') ? getActiveRadioVisualEngine() : null;
+                    if (rv && typeof rv._syncDeckSwitches === 'function') rv._syncDeckSwitches();
+                } catch (_) {}
+            } catch (_) {}
+        }
+
+        /** Resume audible decks; pause muted decks only after idle auto-pause arms. */
+        function resumeDecksForCrossfadeLevels() {
+            try {
+                let suppressResume = false;
+                try {
+                    const dj = (typeof getDjDecksEngineIfActive === 'function') ? getDjDecksEngineIfActive() : null;
+                    if (dj && dj.suppressEnsureCrossfadeDeckPlayback) suppressResume = true;
+                } catch (_) {}
+                try {
+                    const rv = (typeof getActiveRadioVisualEngine === 'function') ? getActiveRadioVisualEngine() : null;
+                    if (rv && rv._suppressCrossfadeResume) suppressResume = true;
+                } catch (_) {}
+                const djX = document.getElementById('dj-crossfader');
+                const rdX = document.getElementById('radio-visual-cross-digital');
+                const xv = Math.max(0, Math.min(1, Number(
+                    (djX && djX.value) || (rdX && rdX.value) || (mixCross && mixCross.value) || 0
+                )));
+                const ga = 1 - xv;
+                const gb = xv;
+                const thresh = 0.03;
+                const mediaA = (typeof getDeckAMediaForPlaybackState === 'function')
+                    ? getDeckAMediaForPlaybackState()
+                    : (typeof audioEl !== 'undefined' ? audioEl : null);
+                const mediaB = (typeof getDeckBRadioAudibleEl === 'function')
+                    ? getDeckBRadioAudibleEl()
+                    : (typeof audioElB !== 'undefined' ? audioElB : null);
+                const allowPause = isCrossfadeIdleAutoPauseReady();
+                if (ga <= thresh) {
+                    if (allowPause && !isCrossfadePauseExempt('a')) {
+                        try { if (mediaA && !mediaA.paused) mediaA.pause(); } catch (_) {}
+                    }
+                } else if (!suppressResume && mediaA && mediaA.src && mediaA.paused) {
+                    if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('a'))) {
+                        mediaA.play().catch(() => {});
+                    }
+                }
+                if (gb <= thresh) {
+                    if (allowPause && !isCrossfadePauseExempt('b')) {
+                        try { if (mediaB && !mediaB.paused) mediaB.pause(); } catch (_) {}
+                    }
+                } else if (!suppressResume && mediaB && mediaB.src && mediaB.paused) {
+                    if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('b'))) {
+                        mediaB.play().catch(() => {});
+                    }
+                }
             } catch (_) {}
         }
         function wireMixCrossCutFadeHold() {
