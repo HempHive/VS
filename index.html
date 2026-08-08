@@ -754,7 +754,7 @@
                             <button type="button" class="options-section-reset options-subsection-reset" id="opt-spectrum-rotate-l-reset" title="Reset left ribbon rotation" aria-label="Reset left ribbon rotation">↺</button>
                         </div>
                     </div>
-                    <p class="options-hint options-hint--inline">Slider = angle (0–360°). − / speed / + = spin speed in steps of 10 (−100…100). Negative = anti-clockwise. Click the speed to spin or stop. ⚄ randomizes Hi/Med/Lo speeds.</p>
+                    <p class="options-hint options-hint--inline">Slider = angle (0–360°). − / speed / + = spin speed in steps of 10 (−200…200). Negative = anti-clockwise. Click the speed to spin or stop. ⚄ randomizes Hi/Med/Lo speeds.</p>
                     <div class="options-row options-row--spectrum-rotate">
                         <label class="options-label" for="opt-spectrum-rotate-l-hi">Hi</label>
                         <input type="range" class="options-range" id="opt-spectrum-rotate-l-hi" min="0" max="360" step="1" value="0" aria-label="Left spectrum high ribbon angle">
@@ -822,6 +822,13 @@
                             <button type="button" class="options-rotate-step" data-spin-delta="10" aria-label="Increase right low spin speed">+</button>
                         </div>
                     </div>
+                    <div class="options-subsection-head options-subsection-head--violet">
+                        <p class="options-subsection-title">Animate spectrums</p>
+                        <div class="options-subsection-actions">
+                            <button type="button" class="options-subsection-action" id="opt-spectrum-animate-all" aria-pressed="false" title="Spin all six ribbons (L 90/−80/100 · R −90/80/−100)" aria-label="Animate all spectrum ribbons">⟳</button>
+                        </div>
+                    </div>
+                    <p class="options-hint options-hint--inline">Toggle on to spin all six ribbons (Left 90/−80/100, Right −90/80/−100). Toggle off to stop and reset speeds to 0.</p>
                 </section>
                 <section class="options-section options-section--tone-orange" aria-label="Auto-Mix">
                     <div class="options-section-head">

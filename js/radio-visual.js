@@ -33,11 +33,35 @@
             static get DEFAULT_SPECTRUM_RIBBON_ROTATE() {
                 return {
                     rotateLHigh: 0,
-                    rotateLMid: 342,
-                    rotateLLow: 310,
+                    rotateLMid: 0,
+                    rotateLLow: 0,
                     rotateRHigh: 0,
                     rotateRMid: 0,
                     rotateRLow: 0
+                };
+            }
+            /**
+             * Built-in phase offsets so L/R ribbons mirror correctly at slider 0°.
+             * (Former Options defaults: L mid 342°, L low 310°.)
+             */
+            static get SPECTRUM_RIBBON_BASE_ROTATE_DEG() {
+                return {
+                    L: { high: 0, mid: 342, low: 310 },
+                    R: { high: 0, mid: 0, low: 0 }
+                };
+            }
+            static get SPECTRUM_RIBBON_SPIN_MIN() { return -200; }
+            static get SPECTRUM_RIBBON_SPIN_MAX() { return 200; }
+            static get SPECTRUM_RIBBON_SPIN_STEP() { return 10; }
+            /** Preset used by Options “Animate spectrums”. */
+            static get SPECTRUM_RIBBON_ANIMATE_SPIN() {
+                return {
+                    spinLHigh: 90,
+                    spinLMid: -80,
+                    spinLLow: 100,
+                    spinRHigh: -90,
+                    spinRMid: 80,
+                    spinRLow: -100
                 };
             }
             static get DEFAULT_SPECTRUM_RIBBON_SPIN() {
@@ -130,12 +154,14 @@
             static clampSpectrumRibbonSpin(raw, fallback) {
                 const d = fallback || RadioVisualEngine.DEFAULT_SPECTRUM_RIBBON_SPIN;
                 const src = (raw && typeof raw === 'object') ? raw : {};
+                const min = RadioVisualEngine.SPECTRUM_RIBBON_SPIN_MIN;
+                const max = RadioVisualEngine.SPECTRUM_RIBBON_SPIN_MAX;
+                const step = RadioVisualEngine.SPECTRUM_RIBBON_SPIN_STEP;
                 const clampSpeed = (key) => {
                     let v = Number(src[key]);
                     if (!Number.isFinite(v)) v = d[key];
-                    v = Math.max(-100, Math.min(100, Math.round(v)));
-                    // Snap to steps of 10.
-                    return Math.round(v / 10) * 10;
+                    v = Math.max(min, Math.min(max, Math.round(v)));
+                    return Math.round(v / step) * step;
                 };
                 return {
                     spinLHigh: clampSpeed('spinLHigh'),
@@ -189,20 +215,53 @@
                     ...RadioVisualEngine.clampSpectrumRibbonSpin(raw, d)
                 };
             }
+            static migrateSpectrumRibbonRotateBase(raw) {
+                const src = (raw && typeof raw === 'object') ? { ...raw } : {};
+                if (src.ribbonRotateBaseV2) return src;
+                const base = RadioVisualEngine.SPECTRUM_RIBBON_BASE_ROTATE_DEG;
+                const norm = (deg) => {
+                    let d = Number(deg);
+                    if (!Number.isFinite(d)) return 0;
+                    d = d % 360;
+                    if (d < 0) d += 360;
+                    return Math.round(d);
+                };
+                // Former Options defaults are now baked into SPECTRUM_RIBBON_BASE_ROTATE_DEG.
+                src.rotateLMid = norm((Number(src.rotateLMid) || 0) - (base.L.mid || 0));
+                src.rotateLLow = norm((Number(src.rotateLLow) || 0) - (base.L.low || 0));
+                src.rotateLHigh = norm((Number(src.rotateLHigh) || 0) - (base.L.high || 0));
+                src.rotateRMid = norm((Number(src.rotateRMid) || 0) - (base.R.mid || 0));
+                src.rotateRLow = norm((Number(src.rotateRLow) || 0) - (base.R.low || 0));
+                src.rotateRHigh = norm((Number(src.rotateRHigh) || 0) - (base.R.high || 0));
+                src.ribbonRotateBaseV2 = 1;
+                return src;
+            }
             static loadSpectrumSettingsFromStorage() {
                 try {
                     const raw = localStorage.getItem(RadioVisualEngine.SPECTRUM_SETTINGS_KEY);
                     const parsed = raw ? JSON.parse(raw) : null;
                     if (!parsed || typeof parsed !== 'object') {
-                        return { ...RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS };
+                        return { ...RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS, ribbonRotateBaseV2: 1 };
                     }
-                    return RadioVisualEngine.clampSpectrumSettings(parsed);
+                    const migrated = RadioVisualEngine.migrateSpectrumRibbonRotateBase(parsed);
+                    const next = RadioVisualEngine.clampSpectrumSettings(migrated);
+                    next.ribbonRotateBaseV2 = 1;
+                    if (!parsed.ribbonRotateBaseV2) {
+                        try {
+                            localStorage.setItem(
+                                RadioVisualEngine.SPECTRUM_SETTINGS_KEY,
+                                JSON.stringify(next)
+                            );
+                        } catch (_) {}
+                    }
+                    return next;
                 } catch (_) {
-                    return { ...RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS };
+                    return { ...RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS, ribbonRotateBaseV2: 1 };
                 }
             }
             static saveSpectrumSettingsToStorage(settings) {
                 const next = RadioVisualEngine.clampSpectrumSettings(settings);
+                next.ribbonRotateBaseV2 = 1;
                 try { localStorage.setItem(RadioVisualEngine.SPECTRUM_SETTINGS_KEY, JSON.stringify(next)); } catch (_) {}
                 return next;
             }
@@ -273,7 +332,7 @@
             static get DIGITAL_AI_VIDEO_LIST() {
                 return ['ai.mp4', 'ai1.mp4', 'ai2.mp4', 'ai3.mp4', 'ai4.mp4', 'ai5.mp4', 'ai6.mp4'];
             }
-            /** Toolbar centre strip: clock → volume → crossfade → auto-mix countdown. */
+            /** Toolbar centre strip: clock → volume → crossfade → auto-mix countdown → track remaining. */
             static get DIGITAL_TOOLBAR_CENTER_CYCLE() {
                 return ['clock', 'volume', 'crossfade', 'automix', 'remaining'];
             }
@@ -395,6 +454,8 @@
                 this._digitalToolbarCenterMode = 'clock';
                 this._digitalToolbarVolumePeekTimer = null;
                 this._digitalToolbarVolumePeekActive = false;
+                /** Last local track key that auto-switched the centre readout to remaining. */
+                this._digitalToolbarRemainingAutoKey = '';
                 this._rvLastGlobalVolumeNorm = undefined;
                 this._volMuted = false;
                 this._volUnmuteNorm = 0.5;
@@ -2956,7 +3017,9 @@
                 } catch (_) {}
                 this._suppressCrossfadeResume = true;
                 try {
-                    if (dk === 'b') {
+                    if (typeof pauseDeckOutput === 'function') {
+                        pauseDeckOutput(dk);
+                    } else if (dk === 'b') {
                         const mediaB = this._deckBPlaybackMedia();
                         if (mediaB && !mediaB.paused) mediaB.pause();
                     } else {
@@ -3011,8 +3074,19 @@
                 const media = this._deckTransportMedia(dk);
                 const hasSrc = !!(media && this._deckHasSource(media));
                 const isPlaying = dk === 'b' ? this._deckBActive() : this._deckAActive();
+                const radioMode = (typeof isDeckInRadioMode === 'function') && isDeckInRadioMode(dk);
                 // Prefer resume when paused (or live stream dropped after pause) — never random-skip a paused deck.
-                if (hasSrc && !isPlaying) {
+                if (radioMode && !isPlaying) {
+                    this._deckEngClearSuppress();
+                    this._markCrossfadePauseExempt(dk);
+                    try {
+                        if (typeof releaseAutoMixDeferredLocal === 'function') {
+                            releaseAutoMixDeferredLocal(dk, 'play');
+                        }
+                    } catch (_) {}
+                    if (typeof playDeckOutput === 'function') playDeckOutput(dk);
+                    else this._reconnectCurrentDeckStation(dk);
+                } else if (hasSrc && !isPlaying) {
                     this._deckEngClearSuppress();
                     this._markCrossfadePauseExempt(dk);
                     try {
@@ -3061,6 +3135,23 @@
                     }
                 } catch (_) {}
                 if (dk === 'a') {
+                    if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('a')) {
+                        if (this._deckAActive()) {
+                            this._deckANextOrStation();
+                            return;
+                        }
+                        this._deckEngClearSuppress();
+                        try {
+                            if (typeof releaseAutoMixDeferredLocal === 'function') {
+                                releaseAutoMixDeferredLocal('a', 'play');
+                            }
+                        } catch (_) {}
+                        if (typeof playDeckOutput === 'function') playDeckOutput('a');
+                        else if (typeof playRadio === 'function') playRadio();
+                        try { this._updateStationUi(); } catch (_) {}
+                        try { this._syncDeckSwitches(); } catch (_) {}
+                        return;
+                    }
                     const media = (typeof getDeckAMediaForPlaybackState === 'function')
                         ? getDeckAMediaForPlaybackState()
                         : audioEl;
@@ -3087,6 +3178,23 @@
                         return;
                     }
                     this._deckANextOrStation();
+                    return;
+                }
+                if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('b')) {
+                    if (this._deckBActive()) {
+                        this._deckBNextOrStation();
+                        return;
+                    }
+                    this._deckEngClearSuppress();
+                    try {
+                        if (typeof releaseAutoMixDeferredLocal === 'function') {
+                            releaseAutoMixDeferredLocal('b', 'play');
+                        }
+                    } catch (_) {}
+                    if (typeof playDeckOutput === 'function') playDeckOutput('b');
+                    else if (typeof playRadioB === 'function') playRadioB();
+                    try { this._updateStationUi(); } catch (_) {}
+                    try { this._syncDeckSwitches(); } catch (_) {}
                     return;
                 }
                 const mediaB = this._deckBPlaybackMedia();
@@ -3878,12 +3986,17 @@
                     if (!this._bothDecksSilent()) {
                         this._suppressCrossfadeResume = true;
                         this.cancelAutoFade();
-                        const mediaA = (typeof getDeckAMediaForPlaybackState === 'function')
-                            ? getDeckAMediaForPlaybackState()
-                            : audioEl;
-                        const mediaB = this._deckBPlaybackMedia();
-                        try { if (mediaA && !mediaA.paused) mediaA.pause(); } catch (_) {}
-                        try { if (mediaB && !mediaB.paused) mediaB.pause(); } catch (_) {}
+                        if (typeof pauseDeckOutput === 'function') {
+                            pauseDeckOutput('a');
+                            pauseDeckOutput('b');
+                        } else {
+                            const mediaA = (typeof getDeckAMediaForPlaybackState === 'function')
+                                ? getDeckAMediaForPlaybackState()
+                                : audioEl;
+                            const mediaB = this._deckBPlaybackMedia();
+                            try { if (mediaA && !mediaA.paused) mediaA.pause(); } catch (_) {}
+                            try { if (mediaB && !mediaB.paused) mediaB.pause(); } catch (_) {}
+                        }
                         return;
                     }
                     this._startActiveDeckByCrossfader();
@@ -4665,6 +4778,12 @@
                 try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
                 try {
                     this._deckEngCancelAutoFade();
+                    if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('a')) {
+                        this._deckEngClearSuppress();
+                        if (typeof playDeckOutput === 'function') playDeckOutput('a');
+                        else if (typeof playRadio === 'function') playRadio();
+                        return;
+                    }
                     const media = (typeof getDeckAMediaForPlaybackState === 'function')
                         ? getDeckAMediaForPlaybackState()
                         : audioEl;
@@ -4686,6 +4805,10 @@
                 try {
                     this._deckEngCancelAutoFade();
                     this._deckEngClearSuppress();
+                    if (typeof pauseDeckOutput === 'function') {
+                        pauseDeckOutput('a');
+                        return;
+                    }
                     const media = (typeof getDeckAMediaForPlaybackState === 'function')
                         ? getDeckAMediaForPlaybackState()
                         : audioEl;
@@ -4704,6 +4827,12 @@
                 try { if (typeof initAudio === 'function') initAudio(); } catch (_) {}
                 try {
                     this._deckEngCancelAutoFade();
+                    if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('b')) {
+                        this._deckEngClearSuppress();
+                        if (typeof playDeckOutput === 'function') playDeckOutput('b');
+                        else if (typeof playRadioB === 'function') playRadioB();
+                        return;
+                    }
                     const mediaB = this._deckBPlaybackMedia();
                     if (!mediaB || !this._deckHasSource(mediaB)) {
                         this._deckEngClearSuppress();
@@ -4724,6 +4853,10 @@
                 try {
                     this._deckEngCancelAutoFade();
                     this._deckEngClearSuppress();
+                    if (typeof pauseDeckOutput === 'function') {
+                        pauseDeckOutput('b');
+                        return;
+                    }
                     const mediaB = this._deckBPlaybackMedia();
                     if (mediaB && !mediaB.paused) mediaB.pause();
                 } catch (_) {}
@@ -4800,40 +4933,135 @@
                 this._digitalToolbarVolumePeekActive = false;
             }
 
-            _crossfadedDeckPlaybackMedia() {
-                const deck = this._crossfaderAudibleDeckKey();
+            _deckPlaybackMediaForRemaining(deckKey) {
+                const dk = deckKey === 'b' ? 'b' : 'a';
                 try {
-                    if (deck === 'a') {
+                    if (dk === 'a') {
                         if (typeof getDeckAMediaForPlaybackState === 'function') {
                             return getDeckAMediaForPlaybackState();
                         }
-                    } else if (typeof getDeckBJogSeekMedia === 'function') {
-                        return getDeckBJogSeekMedia();
-                    } else if (typeof getDeckBRadioAudibleEl === 'function') {
-                        return getDeckBRadioAudibleEl();
+                        return (typeof audioEl !== 'undefined') ? audioEl : null;
                     }
-                } catch (_) {}
-                try {
-                    return deck === 'b'
-                        ? (typeof audioElB !== 'undefined' ? audioElB : null)
-                        : (typeof audioEl !== 'undefined' ? audioEl : null);
+                    if (typeof getDeckBJogSeekMedia === 'function') return getDeckBJogSeekMedia();
+                    if (typeof getDeckBRadioAudibleEl === 'function') return getDeckBRadioAudibleEl();
+                    return (typeof audioElB !== 'undefined') ? audioElB : null;
                 } catch (_) {}
                 return null;
             }
 
-            _digitalTrackRemainingReadoutText() {
-                const media = this._crossfadedDeckPlaybackMedia();
-                if (!media) return '—:—';
+            _deckHasFiniteLocalDuration(deckKey) {
+                const dk = deckKey === 'b' ? 'b' : 'a';
                 try {
-                    if (!media.src && !media.currentSrc) return '—:—';
-                    const dur = Number(media.duration);
-                    if (!Number.isFinite(dur) || dur <= 0 || dur >= 86400) return '—:—';
-                    const t = Math.max(0, Number(media.currentTime) || 0);
-                    const leftMs = Math.max(0, (dur - t) * 1000);
-                    return `-${this._formatAutoMixCountdown(leftMs)}`;
+                    if (!state || !state.deckSourceMode || state.deckSourceMode[dk] !== 'local') return false;
                 } catch (_) {
-                    return '—:—';
+                    return false;
                 }
+                const media = this._deckPlaybackMediaForRemaining(dk);
+                if (!media) return false;
+                try {
+                    const src = String(media.currentSrc || media.src || '');
+                    if (!src || src === 'about:blank') return false;
+                    const dur = Number(media.duration);
+                    return Number.isFinite(dur) && dur > 0 && dur < 86400;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            /**
+             * Prefer the crossfader-audible deck when it has a local track with known duration;
+             * otherwise use the other deck if it does.
+             */
+            _digitalTrackRemainingInfo() {
+                const prefer = this._crossfaderAudibleDeckKey();
+                const order = prefer === 'b' ? ['b', 'a'] : ['a', 'b'];
+                for (let i = 0; i < order.length; i++) {
+                    const dk = order[i];
+                    if (!this._deckHasFiniteLocalDuration(dk)) continue;
+                    const media = this._deckPlaybackMediaForRemaining(dk);
+                    if (!media) continue;
+                    try {
+                        const dur = Number(media.duration);
+                        const t = Math.max(0, Number(media.currentTime) || 0);
+                        const leftMs = Math.max(0, (dur - t) * 1000);
+                        const src = String(media.currentSrc || media.src || '');
+                        return { deck: dk, media, leftMs, key: `${dk}:${src}` };
+                    } catch (_) {}
+                }
+                return null;
+            }
+
+            /** Track remaining: m:ss under one hour; h:mm when an hour or more remains. */
+            _formatTrackRemainingReadout(ms) {
+                if (!Number.isFinite(ms) || ms <= 0) return '0:00';
+                const totalSec = Math.max(0, Math.ceil(ms / 1000));
+                const h = Math.floor(totalSec / 3600);
+                const m = Math.floor((totalSec % 3600) / 60);
+                const sec = totalSec % 60;
+                if (h > 0) return `${h}:${String(m).padStart(2, '0')}`;
+                return `${m}:${String(sec).padStart(2, '0')}`;
+            }
+
+            _crossfadedDeckPlaybackMedia() {
+                const deck = this._crossfaderAudibleDeckKey();
+                return this._deckPlaybackMediaForRemaining(deck);
+            }
+
+            _digitalTrackRemainingReadoutText() {
+                const info = this._digitalTrackRemainingInfo();
+                if (!info) return '—:—';
+                return `-${this._formatTrackRemainingReadout(info.leftMs)}`;
+            }
+
+            _showDigitalToolbarTrackRemaining(deckKey) {
+                if (this.skin !== 'digital') return;
+                try {
+                    if (deckKey === 'a' || deckKey === 'b') {
+                        // Prefer the deck that just loaded when resolving remaining.
+                        if (this._deckHasFiniteLocalDuration(deckKey)) {
+                            const media = this._deckPlaybackMediaForRemaining(deckKey);
+                            const src = media ? String(media.currentSrc || media.src || '') : '';
+                            if (src) this._digitalToolbarRemainingAutoKey = `${deckKey}:${src}`;
+                        }
+                    }
+                } catch (_) {}
+                this._setDigitalToolbarCenterMode('remaining');
+            }
+
+            /** Called when a local track is loaded on a deck (play or arm). */
+            notifyDigitalToolbarLocalTrack(deckKey) {
+                if (this.skin !== 'digital') return;
+                const dk = deckKey === 'b' ? 'b' : 'a';
+                const media = this._deckPlaybackMediaForRemaining(dk);
+                const tryShow = () => {
+                    if (!this._deckHasFiniteLocalDuration(dk)) return false;
+                    this._showDigitalToolbarTrackRemaining(dk);
+                    return true;
+                };
+                if (tryShow()) return;
+                if (!media) {
+                    try { this._maybeAutoShowTrackRemaining(); } catch (_) {}
+                    return;
+                }
+                const onMeta = () => {
+                    try { media.removeEventListener('loadedmetadata', onMeta); } catch (_) {}
+                    try { media.removeEventListener('durationchange', onMeta); } catch (_) {}
+                    tryShow();
+                };
+                try { media.addEventListener('loadedmetadata', onMeta); } catch (_) {}
+                try { media.addEventListener('durationchange', onMeta); } catch (_) {}
+            }
+
+            _maybeAutoShowTrackRemaining() {
+                if (this.skin !== 'digital') return;
+                if (this._digitalToolbarCenterMode === 'remaining') return;
+                if (this._digitalToolbarCenterMode === 'automix') return;
+                if (this._digitalToolbarCenterMode === 'crossfade') return;
+                const info = this._digitalTrackRemainingInfo();
+                if (!info) return;
+                if (info.key === this._digitalToolbarRemainingAutoKey) return;
+                this._digitalToolbarRemainingAutoKey = info.key;
+                this._setDigitalToolbarCenterMode('remaining');
             }
 
             _peekDigitalToolbarVolumeReadout() {
@@ -5040,7 +5268,7 @@
                         volume: 'Volume — date and time; level shown briefly when adjusted — tap to change centre display',
                         crossfade: 'Crossfade position — tap to change centre display',
                         automix: 'Auto-mix countdown — tap for date and time; volume shown briefly when adjusted',
-                        remaining: 'Track time remaining on crossfader deck — tap to change centre display'
+                        remaining: 'Track time remaining — tap for date and time'
                     };
                     readout.setAttribute('aria-label', ariaLabels[mode] || 'Centre display — tap to change mode');
                 }
@@ -5079,7 +5307,8 @@
             }
 
             _cycleDigitalToolbarCenterMode() {
-                if (this._digitalToolbarCenterMode === 'automix') {
+                // Remaining is a track overlay on the date/time slot — tap returns to the clock.
+                if (this._digitalToolbarCenterMode === 'remaining') {
                     this._setDigitalToolbarCenterMode('clock');
                     return;
                 }
@@ -5333,20 +5562,28 @@
                 const spinKey = RadioVisualEngine.spectrumRibbonSpinKeyFromRotate(rotateKey);
                 let v = Number(s[spinKey]);
                 if (!Number.isFinite(v)) return 0;
-                v = Math.max(-100, Math.min(100, Math.round(v)));
-                return Math.round(v / 10) * 10;
+                const min = RadioVisualEngine.SPECTRUM_RIBBON_SPIN_MIN;
+                const max = RadioVisualEngine.SPECTRUM_RIBBON_SPIN_MAX;
+                const step = RadioVisualEngine.SPECTRUM_RIBBON_SPIN_STEP;
+                v = Math.max(min, Math.min(max, Math.round(v)));
+                return Math.round(v / step) * step;
             }
 
             _spectrumRibbonRotateDeg(side, bandKey) {
                 const s = this._spectrumSettings || RadioVisualEngine.DEFAULT_SPECTRUM_SETTINGS;
                 const key = this._spectrumRibbonRotateKey(side, bandKey);
-                const base = Number(s[key]);
-                const angle = Number.isFinite(base) ? Math.max(0, Math.min(360, base)) : 0;
+                const sideKey = side === 'R' ? 'R' : 'L';
+                const band = String(bandKey || 'high').toLowerCase();
+                const baseMap = RadioVisualEngine.SPECTRUM_RIBBON_BASE_ROTATE_DEG[sideKey] || {};
+                const baseOff = Number(baseMap[band]) || 0;
+                const user = Number(s[key]);
+                const angle = Number.isFinite(user) ? Math.max(0, Math.min(360, user)) : 0;
+                const total = baseOff + angle;
                 if (this._spectrumRibbonSpinActive && this._spectrumRibbonSpinActive[key]) {
                     const spun = Number(this._spectrumRibbonSpinAccum[key]) || 0;
-                    return angle + spun;
+                    return total + spun;
                 }
-                return angle;
+                return total;
             }
 
             _isSpectrumRibbonSpinActive(key) {
@@ -7921,10 +8158,18 @@
                     } catch (_) {}
                 }
                 const mode = this._digitalToolbarCenterMode;
-                if (mode === 'clock' || (mode === 'volume' && !this._digitalToolbarVolumePeekActive)
-                    || mode === 'remaining'
+                if (mode === 'remaining') {
+                    if (!this._digitalTrackRemainingInfo()) {
+                        try { this._setDigitalToolbarCenterMode('clock'); } catch (_) {}
+                    } else {
+                        this._syncDigitalToolbarCenterReadout();
+                    }
+                } else if (mode === 'clock' || (mode === 'volume' && !this._digitalToolbarVolumePeekActive)
                     || (mode === 'automix' && !this._digitalToolbarVolumePeekActive)) {
                     this._syncDigitalToolbarCenterReadout();
+                    if (mode === 'clock' || (mode === 'volume' && !this._digitalToolbarVolumePeekActive)) {
+                        try { this._maybeAutoShowTrackRemaining(); } catch (_) {}
+                    }
                 }
             }
 

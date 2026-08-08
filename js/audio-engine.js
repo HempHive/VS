@@ -1235,6 +1235,15 @@
             }
         }
 
+        function notifyDigitalToolbarLocalTrack(deckKey) {
+            try {
+                const av = state && state.activeVisualizer;
+                if (av && typeof av.notifyDigitalToolbarLocalTrack === 'function') {
+                    av.notifyDigitalToolbarLocalTrack(deckKey);
+                }
+            } catch (_) {}
+        }
+
         function addDeckLocalFilesToDeck(deckKey, files, opts) {
             const dk = deckKey === 'b' ? 'b' : 'a';
             const sorted = sortDeckLocalFileList(files);
@@ -1536,6 +1545,7 @@
                         } catch (_) {}
                         if (!state.isPlaying) startGame();
                         try { if (typeof updateMixBStatus === 'function') updateMixBStatus(); } catch (_) {}
+                        try { notifyDigitalToolbarLocalTrack('b'); } catch (_) {}
                     }).catch(() => {});
                 } else {
                     if (!item.isVideo) {
@@ -1556,6 +1566,7 @@
                             }
                         } catch (_) {}
                         if (!state.isPlaying) startGame();
+                        try { notifyDigitalToolbarLocalTrack('a'); } catch (_) {}
                     }).catch(() => {});
                 }
             } catch (_) {}
@@ -1669,6 +1680,7 @@
                     try { connectDeckMediaToEq('a'); } catch (_) {}
                     markAutoMixDeferredLocal('a', true);
                     try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+                    try { notifyDigitalToolbarLocalTrack('a'); } catch (_) {}
                     return;
                 }
                 audioEl.play().then(() => {
@@ -1680,6 +1692,7 @@
                     } catch (e) { /* ignore */ }
                     if (!state.isPlaying) startGame();
                     try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+                    try { notifyDigitalToolbarLocalTrack('a'); } catch (_) {}
                 }).catch((e) => {
                     console.warn('Deck A local playback failed:', e);
                     state.deckSourceMode.a = 'radio';
@@ -1735,6 +1748,7 @@
                 if (!state.isPlaying) startGame();
                 try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
                 try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+                try { notifyDigitalToolbarLocalTrack('a'); } catch (_) {}
             };
 
             const onLocalPrepFail = (e) => {
@@ -1782,6 +1796,7 @@
                 try { connectDeckMediaToEq('b'); } catch (_) {}
                 if (deferForAutoMix) markAutoMixDeferredLocal('b', true);
                 try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+                try { notifyDigitalToolbarLocalTrack('b'); } catch (_) {}
                 return;
             }
             ensureLocalDeckCrossfadeAudible('b', opts);
@@ -1795,6 +1810,7 @@
                 if (!state.isPlaying) startGame();
                 try { if (typeof updateMixBStatus === 'function') updateMixBStatus(); } catch (_) {}
                 try { if (typeof window.__refreshDjQueueUi === 'function') window.__refreshDjQueueUi(); } catch (_) {}
+                try { notifyDigitalToolbarLocalTrack('b'); } catch (_) {}
             }).catch((e) => {
                 console.warn('Deck B local playback failed:', e);
                 state.deckSourceMode.b = 'radio';
@@ -2076,6 +2092,107 @@
 
         // --- FIXED PLAYRADIO FUNCTION ---
         // --- FIXED PLAYRADIO FUNCTION (Routes through EQ; warm station changes pre-buffer on alt element) ---
+
+        function isDeckInRadioMode(deckKey) {
+            try {
+                const dk = deckKey === 'b' ? 'b' : 'a';
+                return !!(state && state.deckSourceMode && state.deckSourceMode[dk] === 'radio');
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function clearMediaNetworkSource(el) {
+            if (!el) return;
+            try { el.pause(); } catch (_) {}
+            try {
+                const src = String(el.currentSrc || el.src || '');
+                if (src && src !== 'about:blank') {
+                    el.removeAttribute('src');
+                    try { el.src = ''; } catch (_) {}
+                    el.load();
+                }
+            } catch (_) {}
+        }
+
+        /**
+         * Pause a live radio deck and drop the network stream so it stops downloading.
+         * Returns true when radio mode was handled.
+         */
+        function detachRadioStreamOnPause(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            if (!isDeckInRadioMode(dk)) return false;
+            try {
+                if (dk === 'a') {
+                    try { abortRadioAHandoff(); } catch (_) {}
+                    clearMediaNetworkSource(typeof audioEl !== 'undefined' ? audioEl : null);
+                    clearMediaNetworkSource(typeof audioElRadioAAlt !== 'undefined' ? audioElRadioAAlt : null);
+                    try { resetRadioADualStreamHandoff(); } catch (_) {}
+                    try { stopNowPlayingPoll(); } catch (_) {}
+                    try { setDjDeckRadioLoadingSpinner('a', false); } catch (_) {}
+                } else {
+                    try { abortRadioBHandoff(); } catch (_) {}
+                    clearMediaNetworkSource(typeof audioElB !== 'undefined' ? audioElB : null);
+                    clearMediaNetworkSource(typeof audioElRadioBAlt !== 'undefined' ? audioElRadioBAlt : null);
+                    try { resetRadioBDualStreamHandoff(); } catch (_) {}
+                    try { setDjDeckRadioLoadingSpinner('b', false); } catch (_) {}
+                }
+            } catch (_) {}
+            return true;
+        }
+
+        /** Re-seek / reconnect the current radio station after a detach pause. */
+        function resumeRadioStreamAfterPause(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            if (!isDeckInRadioMode(dk)) return false;
+            try {
+                if (dk === 'b') {
+                    if (typeof globalThis.playRadioB === 'function') globalThis.playRadioB();
+                } else {
+                    playRadio();
+                }
+            } catch (_) {}
+            return true;
+        }
+
+        /** Pause deck output: radio detaches the stream; local files pause normally. */
+        function pauseDeckOutput(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            if (detachRadioStreamOnPause(dk)) return;
+            try {
+                const media = dk === 'b'
+                    ? ((typeof getDeckBRadioAudibleEl === 'function')
+                        ? getDeckBRadioAudibleEl()
+                        : (typeof audioElB !== 'undefined' ? audioElB : null))
+                    : ((typeof getDeckAMediaForPlaybackState === 'function')
+                        ? getDeckAMediaForPlaybackState()
+                        : (typeof audioEl !== 'undefined' ? audioEl : null));
+                if (media && !media.paused) media.pause();
+            } catch (_) {}
+        }
+
+        /** Play/resume deck output: radio reconnects; local files call play(). */
+        function playDeckOutput(deckKey) {
+            const dk = deckKey === 'b' ? 'b' : 'a';
+            if (isDeckInRadioMode(dk)) {
+                resumeRadioStreamAfterPause(dk);
+                return;
+            }
+            try {
+                if (dk === 'b') {
+                    const mediaB = (typeof getDeckBRadioAudibleEl === 'function')
+                        ? getDeckBRadioAudibleEl()
+                        : (typeof audioElB !== 'undefined' ? audioElB : null);
+                    if (mediaB) mediaB.play().catch(() => {});
+                } else {
+                    const mediaA = (typeof getDeckAMediaForPlaybackState === 'function')
+                        ? getDeckAMediaForPlaybackState()
+                        : (typeof audioEl !== 'undefined' ? audioEl : null);
+                    if (mediaA) mediaA.play().catch(() => {});
+                }
+            } catch (_) {}
+        }
+
         function playRadio() {
             initAudio();
             try { if (typeof releaseDeckVideoFeed === 'function') releaseDeckVideoFeed('a'); } catch (_) {}
@@ -2324,3 +2441,9 @@ function stopAllAndShowStart() {
 }
         try { globalThis.applyOverlayGlowFx = applyOverlayGlowFx; } catch (_) {}
         try { globalThis.applyOverlayLogoFx = applyOverlayLogoFx; } catch (_) {}
+        try { globalThis.isDeckInRadioMode = isDeckInRadioMode; } catch (_) {}
+        try { globalThis.detachRadioStreamOnPause = detachRadioStreamOnPause; } catch (_) {}
+        try { globalThis.resumeRadioStreamAfterPause = resumeRadioStreamAfterPause; } catch (_) {}
+        try { globalThis.pauseDeckOutput = pauseDeckOutput; } catch (_) {}
+        try { globalThis.playDeckOutput = playDeckOutput; } catch (_) {}
+        try { globalThis.clearMediaNetworkSource = clearMediaNetworkSource; } catch (_) {}

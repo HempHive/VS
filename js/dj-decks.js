@@ -3496,23 +3496,35 @@
                             ? isCrossfadeIdleAutoPauseReady()
                             : false;
                         if (ga <= thresh) {
-                            if (allowPause && !exemptA && elA && !elA.paused) {
-                                try { elA.pause(); } catch (_) {}
+                            if (allowPause && !exemptA) {
+                                try {
+                                    if (typeof pauseDeckOutput === 'function') pauseDeckOutput('a');
+                                    else if (elA && !elA.paused) elA.pause();
+                                } catch (_) {}
                             }
                         } else if (!this.suppressEnsureCrossfadeDeckPlayback) {
-                            if (elA && elA.src && elA.paused) {
-                                if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('a'))) {
+                            if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('a'))) {
+                                if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('a')) {
+                                    const needs = !elA || !elA.src || elA.src === 'about:blank' || elA.paused;
+                                    if (needs && typeof playDeckOutput === 'function') playDeckOutput('a');
+                                } else if (elA && elA.src && elA.paused) {
                                     elA.play().catch(() => {});
                                 }
                             }
                         }
                         if (gb <= thresh) {
-                            if (allowPause && !exemptB && audioElB && !audioElB.paused) {
-                                try { audioElB.pause(); } catch (_) {}
+                            if (allowPause && !exemptB) {
+                                try {
+                                    if (typeof pauseDeckOutput === 'function') pauseDeckOutput('b');
+                                    else if (audioElB && !audioElB.paused) audioElB.pause();
+                                } catch (_) {}
                             }
                         } else if (!this.suppressEnsureCrossfadeDeckPlayback) {
-                            if (audioElB && audioElB.src && audioElB.paused) {
-                                if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('b'))) {
+                            if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('b'))) {
+                                if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('b')) {
+                                    const needs = !audioElB || !audioElB.src || audioElB.src === 'about:blank' || audioElB.paused;
+                                    if (needs && typeof playDeckOutput === 'function') playDeckOutput('b');
+                                } else if (audioElB && audioElB.src && audioElB.paused) {
                                     audioElB.play().catch(() => {});
                                 }
                             }
@@ -4451,11 +4463,24 @@
                         const raw = (djCross && djCross.value) || (mixCross && mixCross.value) || 0;
                         const x = Math.max(0, Math.min(1, Number(raw) || 0));
                         if (x < 0.5) {
-                            const src = audioEl ? String(audioEl.currentSrc || audioEl.src || '') : '';
+                            if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('a')) {
+                                if (typeof playDeckOutput === 'function') playDeckOutput('a');
+                                else if (typeof playRadio === 'function') playRadio();
+                                return;
+                            }
+                            const elA = (typeof getDeckAMediaForPlaybackState === 'function')
+                                ? getDeckAMediaForPlaybackState()
+                                : audioEl;
+                            const src = elA ? String(elA.currentSrc || elA.src || '') : '';
                             const hasSource = !!(src && src !== 'about:blank');
-                            if (hasSource && audioEl) audioEl.play().catch(() => {});
+                            if (hasSource && elA) elA.play().catch(() => {});
                             else if (typeof playRadio === 'function') playRadio();
                         } else {
+                            if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('b')) {
+                                if (typeof playDeckOutput === 'function') playDeckOutput('b');
+                                else if (typeof playRadioB === 'function') playRadioB();
+                                return;
+                            }
                             const src = audioElB ? String(audioElB.currentSrc || audioElB.src || '') : '';
                             const hasSource = !!(src && src !== 'about:blank');
                             if (hasSource && audioElB) audioElB.play().catch(() => {});
@@ -4518,8 +4543,13 @@
                                 this.autoFadeTargetDeck = null;
                                 if (btnAutoFade) btnAutoFade.classList.remove('on');
                             }
-                            try { if (audioEl) audioEl.pause(); } catch (_) {}
-                            try { if (audioElB) audioElB.pause(); } catch (_) {}
+                            if (typeof pauseDeckOutput === 'function') {
+                                pauseDeckOutput('a');
+                                pauseDeckOutput('b');
+                            } else {
+                                try { if (audioEl) audioEl.pause(); } catch (_) {}
+                                try { if (audioElB) audioElB.pause(); } catch (_) {}
+                            }
                             return;
                         }
                         startActiveDeckByCrossfader();
@@ -5851,19 +5881,34 @@
                     this.els.playA.addEventListener('click', async () => {
                         try {
                             initAudio();
-                            const aMedia = getDeckAMediaForPlaybackState();
-                            if (aMedia && aMedia.src && !aMedia.paused) {
-                                aMedia.pause();
-                            } else if (aMedia && aMedia.src && aMedia.paused) {
-                                try { if (typeof releaseAutoMixDeferredLocal === 'function') releaseAutoMixDeferredLocal('a', 'play'); } catch (_) {}
-                                await aMedia.play().catch(() => {
-                                    if (deckFileQueues.a.length > 0) playDeckATrackFromQueue({ forceImmediate: true });
+                            if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('a')) {
+                                const aMedia = (typeof getDeckAMediaForPlaybackState === 'function')
+                                    ? getDeckAMediaForPlaybackState()
+                                    : audioEl;
+                                const playing = !!(aMedia && aMedia.src && aMedia.src !== 'about:blank' && !aMedia.paused);
+                                if (playing) {
+                                    if (typeof pauseDeckOutput === 'function') pauseDeckOutput('a');
+                                    else if (aMedia) aMedia.pause();
+                                } else {
+                                    try { if (typeof releaseAutoMixDeferredLocal === 'function') releaseAutoMixDeferredLocal('a', 'play'); } catch (_) {}
+                                    if (typeof playDeckOutput === 'function') playDeckOutput('a');
                                     else if (typeof playRadio === 'function') playRadio();
-                                });
-                            } else if (deckFileQueues.a.length > 0) {
-                                playDeckATrackFromQueue({ forceImmediate: true });
-                            } else if (typeof playRadio === 'function') {
-                                playRadio();
+                                }
+                            } else {
+                                const aMedia = getDeckAMediaForPlaybackState();
+                                if (aMedia && aMedia.src && !aMedia.paused) {
+                                    aMedia.pause();
+                                } else if (aMedia && aMedia.src && aMedia.paused) {
+                                    try { if (typeof releaseAutoMixDeferredLocal === 'function') releaseAutoMixDeferredLocal('a', 'play'); } catch (_) {}
+                                    await aMedia.play().catch(() => {
+                                        if (deckFileQueues.a.length > 0) playDeckATrackFromQueue({ forceImmediate: true });
+                                        else if (typeof playRadio === 'function') playRadio();
+                                    });
+                                } else if (deckFileQueues.a.length > 0) {
+                                    playDeckATrackFromQueue({ forceImmediate: true });
+                                } else if (typeof playRadio === 'function') {
+                                    playRadio();
+                                }
                             }
                         } catch(_) {}
                         this.syncPlayLabels();
@@ -5873,7 +5918,20 @@
                     this.els.playB.addEventListener('click', async () => {
                         try {
                             initAudio();
-                            if (audioElB && audioElB.src && !audioElB.paused) {
+                            if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('b')) {
+                                const bMedia = (typeof getDeckBRadioAudibleEl === 'function')
+                                    ? getDeckBRadioAudibleEl()
+                                    : audioElB;
+                                const playing = !!(bMedia && bMedia.src && bMedia.src !== 'about:blank' && !bMedia.paused);
+                                if (playing) {
+                                    if (typeof pauseDeckOutput === 'function') pauseDeckOutput('b');
+                                    else if (bMedia) bMedia.pause();
+                                } else {
+                                    try { if (typeof releaseAutoMixDeferredLocal === 'function') releaseAutoMixDeferredLocal('b', 'play'); } catch (_) {}
+                                    if (typeof playDeckOutput === 'function') playDeckOutput('b');
+                                    else if (typeof playRadioB === 'function') playRadioB();
+                                }
+                            } else if (audioElB && audioElB.src && !audioElB.paused) {
                                 audioElB.pause();
                             } else if (audioElB && audioElB.src && audioElB.paused) {
                                 try { if (typeof releaseAutoMixDeferredLocal === 'function') releaseAutoMixDeferredLocal('b', 'play'); } catch (_) {}

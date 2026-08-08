@@ -3232,19 +3232,34 @@
                 0 0 18px rgba(57, 255, 20, 0.55);
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="automix"] .radio-visual-digital-center-readout[data-volume-peek="1"] .radio-visual-center-readout-text {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-            letter-spacing: 0.02em;
-            color: #9ff;
-            text-shadow: 0 0 10px rgba(0, 255, 200, 0.45);
+            font-family: var(--rv-digital-clock-font) !important;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: clamp(0.01em, 0.18cqw, 0.05em);
+            color: var(--rv-digital-clock-color);
+            opacity: var(--rv-digital-clock-opacity, 1);
+            text-shadow:
+                0 0 12px rgba(0, 0, 0, 0.9),
+                0 0 10px color-mix(in srgb, var(--rv-digital-clock-color) 35%, transparent);
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="remaining"] .radio-visual-center-readout-text {
-            font-family: 'Orbitron', 'Share Tech Mono', ui-monospace, monospace;
+            font-family: var(--rv-digital-clock-font) !important;
             font-variant-numeric: tabular-nums;
-            letter-spacing: clamp(0.03em, 0.3cqw, 0.08em);
-            color: #8ef;
+            letter-spacing: clamp(0.01em, 0.18cqw, 0.05em);
+            color: var(--rv-digital-clock-color);
+            opacity: var(--rv-digital-clock-opacity, 1);
             text-shadow:
-                0 0 10px rgba(0, 220, 255, 0.55),
-                0 0 18px rgba(120, 210, 255, 0.35);
+                0 0 12px rgba(0, 0, 0, 0.9),
+                0 0 10px color-mix(in srgb, var(--rv-digital-clock-color) 35%, transparent);
+        }
+        #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="volume"] .radio-visual-digital-center-readout[data-volume-peek="1"] .radio-visual-center-readout-text {
+            font-family: var(--rv-digital-clock-font) !important;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: clamp(0.01em, 0.18cqw, 0.05em);
+            color: var(--rv-digital-clock-color);
+            opacity: var(--rv-digital-clock-opacity, 1);
+            text-shadow:
+                0 0 12px rgba(0, 0, 0, 0.9),
+                0 0 10px color-mix(in srgb, var(--rv-digital-clock-color) 35%, transparent);
         }
         #radio-visual-root .radio-visual-digital-toolbar-center[data-center-mode="clock"] .radio-visual-digital-step-btn:first-of-type .radio-visual-btn-label {
             letter-spacing: -0.06em;
