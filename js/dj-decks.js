@@ -3504,7 +3504,8 @@
                             }
                         } else if (!this.suppressEnsureCrossfadeDeckPlayback) {
                             if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('a'))) {
-                                if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('a')) {
+                                const appLive = !!(typeof state !== 'undefined' && state && state.isPlaying);
+                                if (appLive && typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('a')) {
                                     const needs = !elA || !elA.src || elA.src === 'about:blank' || elA.paused;
                                     if (needs && typeof playDeckOutput === 'function') playDeckOutput('a');
                                 } else if (elA && elA.src && elA.paused) {
@@ -3521,7 +3522,8 @@
                             }
                         } else if (!this.suppressEnsureCrossfadeDeckPlayback) {
                             if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('b'))) {
-                                if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('b')) {
+                                const appLive = !!(typeof state !== 'undefined' && state && state.isPlaying);
+                                if (appLive && typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('b')) {
                                     const needs = !audioElB || !audioElB.src || audioElB.src === 'about:blank' || audioElB.paused;
                                     if (needs && typeof playDeckOutput === 'function') playDeckOutput('b');
                                 } else if (audioElB && audioElB.src && audioElB.paused) {

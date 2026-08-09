@@ -255,6 +255,10 @@
                         <input type="checkbox" id="opt-crossfade-idle-autopause" checked>
                         <span>Auto-pause muted deck after 3 min idle</span>
                     </label>
+                    <label class="options-check options-session-usage-option" title="On load, skip the OMNI> splash and open the last visual immediately. Radio may still need a click if the browser blocks autoplay.">
+                        <input type="checkbox" id="opt-auto-skip-splash">
+                        <span>Auto-skip splash screen</span>
+                    </label>
                     <div class="options-row options-session-sleep-row" title="Pause both decks after the selected time">
                         <label class="options-label" for="opt-sleep-timer">Sleep timer</label>
                         <select class="options-select" id="opt-sleep-timer" aria-label="Sleep timer duration">
@@ -402,7 +406,10 @@
                         <span class="options-readout" id="opt-digital-bg-outer-gradient-angle-readout">165°</span>
                     </div>
                     <div class="options-row options-row--stack">
-                        <label class="options-label" for="opt-digital-bg-outer-image-file">Background image</label>
+                        <label class="options-label" for="opt-digital-bg-outer-image">Background image</label>
+                        <select class="options-select options-select--full" id="opt-digital-bg-outer-image" aria-label="Screen background image">
+                            <option value="">None — gradient only</option>
+                        </select>
                         <div class="options-upload-row">
                             <input type="file" class="options-file-input" id="opt-digital-bg-outer-image-file" accept="image/png,image/jpeg,image/webp,image/gif" aria-label="Upload screen background image">
                             <button type="button" class="options-btn options-btn--compact" id="opt-digital-bg-outer-image-upload">Upload image</button>

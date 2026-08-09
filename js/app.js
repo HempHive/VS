@@ -453,12 +453,17 @@ const QUALITY = {
         const OPTIONS_EXPORT_VERSION = 1;
         const DIGITAL_THEME_STORAGE_KEY = 'radioVisual.digitalTheme.v1';
         const DIGITAL_BG_OUTER_IMAGE_KEY = 'radioVisual.digitalBgOuterImage.v1';
+        const DIGITAL_BG_OUTER_IMAGE_CHOICE_KEY = 'radioVisual.digitalBgOuterImage.choice.v1';
+        const DIGITAL_BG_OUTER_UPLOAD_CHOICE = '__upload__';
         const DIGITAL_BG_PANEL_IMAGE_KEY = 'radioVisual.digitalBgPanelImage.v1';
         const OPTIONS_AUTO_CLOSE_MS = 30000;
         const DIGITAL_BG_GIF_MANIFEST_URL = 'assets/gifs/digital/manifest.json';
+        const DIGITAL_BG_OUTER_IMAGE_MANIFEST_URL = 'assets/images/bg-manifest.json';
         const DIGITAL_BG_GIF_STORAGE_KEY = 'radioVisual.digitalBgGif.v1';
         const DIGITAL_BG_GIF_ENABLED_KEY = 'radioVisual.digitalBgGif.enabled.v1';
         const TRIX_BG_OUTER_IMAGE = 'assets/images/trix.webp';
+        /** True only between first theme seed and first applyBundleExtras boot. */
+        let digitalThemeFreshInstall = false;
         const TRIX_SPECTRUM_SETTINGS = {
             colorStreamId: 'aurora',
             scale: 1.45,
@@ -719,6 +724,7 @@ const QUALITY = {
         const optDigitalBgOuterGradientAngle = document.getElementById('opt-digital-bg-outer-gradient-angle');
         const optDigitalBgOuterGradientAngleReadout = document.getElementById('opt-digital-bg-outer-gradient-angle-readout');
         const optDigitalBgOuterImageFile = document.getElementById('opt-digital-bg-outer-image-file');
+        const optDigitalBgOuterImage = document.getElementById('opt-digital-bg-outer-image');
         const optDigitalBgOuterImageUpload = document.getElementById('opt-digital-bg-outer-image-upload');
         const optDigitalBgOuterImageClear = document.getElementById('opt-digital-bg-outer-image-clear');
         const optDigitalBgOuterImageStatus = document.getElementById('opt-digital-bg-outer-image-status');
@@ -1197,6 +1203,31 @@ const QUALITY = {
                 else localStorage.removeItem(DIGITAL_BG_OUTER_IMAGE_KEY);
             } catch (_) {}
         }
+        function loadDigitalBgOuterImageChoice() {
+            try {
+                const v = localStorage.getItem(DIGITAL_BG_OUTER_IMAGE_CHOICE_KEY);
+                return v == null ? null : v;
+            } catch (_) {}
+            return null;
+        }
+        function saveDigitalBgOuterImageChoice(choice) {
+            try {
+                if (choice == null) localStorage.removeItem(DIGITAL_BG_OUTER_IMAGE_CHOICE_KEY);
+                else localStorage.setItem(DIGITAL_BG_OUTER_IMAGE_CHOICE_KEY, String(choice));
+            } catch (_) {}
+        }
+        function digitalBgOuterLibraryPathFromName(name) {
+            const n = String(name || '').trim().replace(/^.*\//, '');
+            if (!n) return '';
+            return `assets/images/${n}`;
+        }
+        function digitalBgOuterImageLabel(pathOrChoice) {
+            const v = String(pathOrChoice || '');
+            if (v === DIGITAL_BG_OUTER_UPLOAD_CHOICE) return 'Uploaded image';
+            if (!v) return 'None — gradient only';
+            const base = v.replace(/^.*\//, '').replace(/\.(webp|png|jpe?g|gif)$/i, '');
+            return base || v;
+        }
         function themeImageStatusLabel(dataUrl, fallbackEmpty, appliedPrefix) {
             if (!dataUrl) return fallbackEmpty;
             const s = String(dataUrl);
@@ -1222,12 +1253,99 @@ const QUALITY = {
         }
         function resolveDigitalBgOuterImageUrl(theme) {
             const custom = loadDigitalBgOuterImageFromStorage();
+            const choice = loadDigitalBgOuterImageChoice();
+            if (choice === DIGITAL_BG_OUTER_UPLOAD_CHOICE) {
+                if (custom) return custom;
+            } else if (choice === '') {
+                return '';
+            } else if (choice) {
+                return choice;
+            }
+            // No explicit choice yet: prefer an uploaded image by default.
             if (custom) return custom;
             const t = normalizeDigitalTheme(theme || loadDigitalThemeFromStorage());
             if (t.bgOuterImageUrl) return t.bgOuterImageUrl;
             const preset = DIGITAL_THEME_PRESETS[t.presetId];
             if (preset && preset.bgOuterImageUrl) return preset.bgOuterImageUrl;
             return '';
+        }
+        function currentDigitalBgOuterImageChoice() {
+            const choice = loadDigitalBgOuterImageChoice();
+            if (choice != null) return choice;
+            const custom = loadDigitalBgOuterImageFromStorage();
+            if (custom) return DIGITAL_BG_OUTER_UPLOAD_CHOICE;
+            const resolved = resolveDigitalBgOuterImageUrl();
+            if (!resolved || resolved.startsWith('data:')) {
+                return custom ? DIGITAL_BG_OUTER_UPLOAD_CHOICE : '';
+            }
+            return resolved;
+        }
+        async function populateDigitalBgOuterImageSelect() {
+            if (!optDigitalBgOuterImage) return;
+            let files = [];
+            try {
+                const res = await fetch(`${DIGITAL_BG_OUTER_IMAGE_MANIFEST_URL}?t=${Date.now()}`, { cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json();
+                    const raw = Array.isArray(data) ? data : (data && (data.images || data.files)) || [];
+                    files = raw
+                        .map((n) => String(n || '').trim().replace(/^.*\//, ''))
+                        .filter(Boolean)
+                        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+                }
+            } catch (_) {}
+            if (!files.length) files = ['trix.webp'];
+            const custom = loadDigitalBgOuterImageFromStorage();
+            const prev = optDigitalBgOuterImage.value;
+            optDigitalBgOuterImage.innerHTML = '';
+            const noneOpt = document.createElement('option');
+            noneOpt.value = '';
+            noneOpt.textContent = 'None — gradient only';
+            optDigitalBgOuterImage.appendChild(noneOpt);
+            if (custom) {
+                const upOpt = document.createElement('option');
+                upOpt.value = DIGITAL_BG_OUTER_UPLOAD_CHOICE;
+                upOpt.textContent = 'Uploaded image (default)';
+                optDigitalBgOuterImage.appendChild(upOpt);
+            }
+            files.forEach((file) => {
+                const path = digitalBgOuterLibraryPathFromName(file);
+                const opt = document.createElement('option');
+                opt.value = path;
+                opt.textContent = digitalBgOuterImageLabel(path);
+                optDigitalBgOuterImage.appendChild(opt);
+            });
+            let selected = currentDigitalBgOuterImageChoice();
+            if (selected === DIGITAL_BG_OUTER_UPLOAD_CHOICE && !custom) {
+                selected = TRIX_BG_OUTER_IMAGE;
+            }
+            const hasOption = Array.from(optDigitalBgOuterImage.options).some((o) => o.value === selected);
+            if (hasOption) optDigitalBgOuterImage.value = selected;
+            else if (prev && Array.from(optDigitalBgOuterImage.options).some((o) => o.value === prev)) {
+                optDigitalBgOuterImage.value = prev;
+            } else if (custom) {
+                optDigitalBgOuterImage.value = DIGITAL_BG_OUTER_UPLOAD_CHOICE;
+            } else {
+                optDigitalBgOuterImage.value = '';
+            }
+        }
+        function applyDigitalBgOuterImageChoice(choiceRaw, { persistThemeUrl = true } = {}) {
+            const choice = choiceRaw == null ? '' : String(choiceRaw);
+            saveDigitalBgOuterImageChoice(choice);
+            const theme = loadDigitalThemeFromStorage();
+            if (persistThemeUrl) {
+                if (choice === DIGITAL_BG_OUTER_UPLOAD_CHOICE) {
+                    // Keep library fallback URL for when upload is removed.
+                    if (!theme.bgOuterImageUrl) theme.bgOuterImageUrl = TRIX_BG_OUTER_IMAGE;
+                } else if (choice === '') {
+                    theme.bgOuterImageUrl = '';
+                } else {
+                    theme.bgOuterImageUrl = choice;
+                }
+                saveDigitalThemeToStorage(theme);
+            }
+            applyDigitalBgOuterImageToUi(resolveDigitalBgOuterImageUrl(theme), theme.bgOuterImageOpacity);
+            try { populateDigitalBgOuterImageSelect(); } catch (_) {}
         }
         function applyPresetThemeBundleExtras(preset) {
             if (!preset) return;
@@ -1251,10 +1369,23 @@ const QUALITY = {
         }
         function syncDigitalBgOuterImageStatusUi(dataUrl) {
             if (!optDigitalBgOuterImageStatus) return;
+            const choice = currentDigitalBgOuterImageChoice();
+            if (choice === DIGITAL_BG_OUTER_UPLOAD_CHOICE || (dataUrl && String(dataUrl).startsWith('data:'))) {
+                optDigitalBgOuterImageStatus.textContent = themeImageStatusLabel(
+                    dataUrl,
+                    'No image uploaded — PNG, JPEG, WebP, or animated GIF/WebP',
+                    'Uploaded image applied (used by default)'
+                );
+                return;
+            }
+            if (!dataUrl) {
+                optDigitalBgOuterImageStatus.textContent = 'No background image — screen gradient colours are used';
+                return;
+            }
             optDigitalBgOuterImageStatus.textContent = themeImageStatusLabel(
                 dataUrl,
-                'No image uploaded — PNG, JPEG, WebP, or animated GIF/WebP',
-                'Screen background image applied'
+                'No background image — screen gradient colours are used',
+                `Library image applied (${digitalBgOuterImageLabel(dataUrl)})`
             );
         }
         function syncDigitalBgPanelImageStatusUi(dataUrl) {
@@ -1390,15 +1521,20 @@ const QUALITY = {
             try {
                 const dataUrl = await readThemeImageFile(file);
                 saveDigitalBgOuterImageToStorage(dataUrl);
+                saveDigitalBgOuterImageChoice(DIGITAL_BG_OUTER_UPLOAD_CHOICE);
                 const theme = loadDigitalThemeFromStorage();
                 applyDigitalBgOuterImageToUi(dataUrl, theme.bgOuterImageOpacity);
+                try { await populateDigitalBgOuterImageSelect(); } catch (_) {}
             } catch (_) {}
         }
         function clearDigitalBgOuterImage() {
             saveDigitalBgOuterImageToStorage('');
             const theme = loadDigitalThemeFromStorage();
+            const fallback = theme.bgOuterImageUrl || TRIX_BG_OUTER_IMAGE;
+            saveDigitalBgOuterImageChoice(fallback);
             applyDigitalBgOuterImageToUi(resolveDigitalBgOuterImageUrl(theme), theme.bgOuterImageOpacity);
             if (optDigitalBgOuterImageFile) optDigitalBgOuterImageFile.value = '';
+            try { populateDigitalBgOuterImageSelect(); } catch (_) {}
         }
         async function handleDigitalBgPanelImageUpload(file) {
             if (!file || !/^image\//i.test(file.type || '')) return;
@@ -1611,11 +1747,25 @@ const QUALITY = {
             if (!hasStoredTheme) {
                 theme = normalizeDigitalTheme({ ...DEFAULT_DIGITAL_THEME, presetId: 'trix' });
                 saveDigitalThemeToStorage(theme);
+                digitalThemeFreshInstall = true;
+                // First boot: seed Trix library background unless an upload already exists.
+                if (loadDigitalBgOuterImageChoice() == null && !loadDigitalBgOuterImageFromStorage()) {
+                    saveDigitalBgOuterImageChoice(TRIX_BG_OUTER_IMAGE);
+                }
+            } else if (loadDigitalBgOuterImageChoice() == null) {
+                // Migrate prior sessions: uploaded image wins by default; else keep theme URL.
+                if (loadDigitalBgOuterImageFromStorage()) {
+                    saveDigitalBgOuterImageChoice(DIGITAL_BG_OUTER_UPLOAD_CHOICE);
+                } else if (theme.bgOuterImageUrl) {
+                    saveDigitalBgOuterImageChoice(theme.bgOuterImageUrl);
+                }
             }
             applyDigitalRadioTheme(theme);
-            const useTrixBundle = !hasStoredTheme || theme.presetId === 'trix';
-            if (applyBundleExtras && useTrixBundle) {
+            // Apply Trix GIF/spectrum bundle only for a brand-new install. Never overwrite
+            // saved Options on later loads (even when the preset remains Trix).
+            if (applyBundleExtras && digitalThemeFreshInstall) {
                 applyPresetThemeBundleExtras(DIGITAL_THEME_PRESETS.trix);
+                digitalThemeFreshInstall = false;
             }
             return theme;
         }
@@ -1856,8 +2006,9 @@ const QUALITY = {
             if (optDigitalBgGifOpacityReadout) {
                 optDigitalBgGifOpacityReadout.textContent = `${Math.round(theme.bgGifOpacity * 100)}%`;
             }
-            syncDigitalBgOuterImageStatusUi(loadDigitalBgOuterImageFromStorage());
+            syncDigitalBgOuterImageStatusUi(resolveDigitalBgOuterImageUrl(theme));
             syncDigitalBgPanelImageStatusUi(loadDigitalBgPanelImageFromStorage());
+            try { populateDigitalBgOuterImageSelect(); } catch (_) {}
             if (optDigitalAccent) optDigitalAccent.value = theme.accent;
             if (typeof populateSiteFontSelect === 'function') {
                 populateSiteFontSelect(optDigitalFont, theme.font);
@@ -2067,6 +2218,9 @@ const QUALITY = {
             if (optAutofadeChangeStation) optAutofadeChangeStation.checked = changeStation;
             try { syncSpectrumOptionsControlsFromStorage(); } catch (_) {}
             try { populateDigitalBgGifSelect(); } catch (_) {}
+            try { populateDigitalBgOuterImageSelect(); } catch (_) {}
+            try { loadAutoSkipSplashSetting(); } catch (_) {}
+            try { loadCrossfadeIdleAutoPauseSetting(); } catch (_) {}
             try { if (typeof syncAvatarOptionsControlsFromSettings === 'function') syncAvatarOptionsControlsFromSettings(); } catch (_) {}
         }
         function syncRadioVisualMixPanelsFromOptions() {
@@ -2291,7 +2445,18 @@ const QUALITY = {
                 featureDividerSpacing: clampRowDividerSpacing(
                     Number(optDigitalFeatureDividerSpacing && optDigitalFeatureDividerSpacing.value),
                     DEFAULT_DIGITAL_THEME.featureDividerSpacing
-                )
+                ),
+                bgOuterImageUrl: (() => {
+                    const choice = currentDigitalBgOuterImageChoice();
+                    if (choice === DIGITAL_BG_OUTER_UPLOAD_CHOICE) {
+                        const prev = loadDigitalThemeFromStorage();
+                        return prev.bgOuterImageUrl || TRIX_BG_OUTER_IMAGE;
+                    }
+                    if (choice === '') return '';
+                    if (choice) return choice;
+                    const prev = loadDigitalThemeFromStorage();
+                    return prev.bgOuterImageUrl || DEFAULT_DIGITAL_THEME.bgOuterImageUrl;
+                })()
             };
             theme.presetId = detectDigitalThemePresetId(theme);
             if (optDigitalThemePreset) optDigitalThemePreset.value = theme.presetId;
@@ -2633,17 +2798,21 @@ const QUALITY = {
         let optionsDownloadUsageTimer = null;
         const optSessionDownloadUsage = document.getElementById('opt-session-download-usage');
         const optCrossfadeIdleAutopause = document.getElementById('opt-crossfade-idle-autopause');
+        const optAutoSkipSplash = document.getElementById('opt-auto-skip-splash');
         const optSleepTimer = document.getElementById('opt-sleep-timer');
         const optSleepTimerRemaining = document.getElementById('opt-sleep-timer-remaining');
         const CROSSFADE_IDLE_AUTOPAUSE_KEY = 'vs.crossfadeIdleAutoPause.enabled.v1';
+        const AUTO_SKIP_SPLASH_KEY = 'vs.autoSkipSplash.enabled.v1';
         const CROSSFADE_IDLE_AUTOPAUSE_MS = 3 * 60 * 1000;
         let crossfadeIdleAutoPauseEnabled = true;
+        let autoSkipSplashEnabled = false;
         let crossfadeIdleAutoPauseTimer = null;
         /** True only after the idle timer fires; muted decks may then be paused. */
         let crossfadeIdleAutoPauseReady = false;
         let sleepTimerTimeoutId = null;
         let sleepTimerEndsAt = 0;
         let sleepTimerDurationMin = 0;
+        let autoSkipSplashBooted = false;
 
         function loadCrossfadeIdleAutoPauseSetting() {
             try {
@@ -2654,6 +2823,64 @@ const QUALITY = {
             if (optCrossfadeIdleAutopause) {
                 optCrossfadeIdleAutopause.checked = crossfadeIdleAutoPauseEnabled;
             }
+        }
+
+        function loadAutoSkipSplashSetting() {
+            try {
+                autoSkipSplashEnabled = localStorage.getItem(AUTO_SKIP_SPLASH_KEY) === '1';
+            } catch (_) {
+                autoSkipSplashEnabled = false;
+            }
+            if (optAutoSkipSplash) {
+                optAutoSkipSplash.checked = autoSkipSplashEnabled;
+            }
+        }
+
+        function isAutoSkipSplashEnabled() {
+            return !!autoSkipSplashEnabled;
+        }
+
+        function setAutoSkipSplashEnabled(on) {
+            autoSkipSplashEnabled = !!on;
+            try {
+                localStorage.setItem(AUTO_SKIP_SPLASH_KEY, autoSkipSplashEnabled ? '1' : '0');
+            } catch (_) {}
+            if (optAutoSkipSplash) {
+                optAutoSkipSplash.checked = autoSkipSplashEnabled;
+            }
+        }
+
+        /**
+         * Skip OMNI> splash on boot when Options → Auto-skip splash is on.
+         * Always enters the last visual; radio start may still need a gesture
+         * if the browser blocks autoplay.
+         */
+        function tryAutoSkipSplashScreen() {
+            if (!autoSkipSplashEnabled || autoSkipSplashBooted) return false;
+            if (typeof state !== 'undefined' && state && state.isPlaying) {
+                autoSkipSplashBooted = true;
+                return true;
+            }
+            autoSkipSplashBooted = true;
+            try {
+                if (typeof hideStartLoader === 'function') hideStartLoader();
+                else if (typeof globalThis.hideStartLoader === 'function') globalThis.hideStartLoader();
+            } catch (_) {}
+            try {
+                if (typeof startGame === 'function') startGame();
+                else if (typeof globalThis.startGame === 'function') globalThis.startGame();
+            } catch (_) {}
+            setTimeout(() => {
+                try {
+                    if (typeof initAudio === 'function') initAudio();
+                    else if (typeof globalThis.initAudio === 'function') globalThis.initAudio();
+                } catch (_) {}
+                try {
+                    if (typeof playRadio === 'function') playRadio();
+                    else if (typeof globalThis.playRadio === 'function') globalThis.playRadio();
+                } catch (_) {}
+            }, 580);
+            return true;
         }
 
         function isCrossfadeIdleAutoPauseEnabled() {
@@ -3046,6 +3273,7 @@ const QUALITY = {
             if (!optionsPanel) return;
             try { syncOptionsPanelControlsFromStorage(); } catch (_) {}
             try { syncCrossfadeIdleAutopauseOptionUi(); } catch (_) {}
+            try { loadAutoSkipSplashSetting(); } catch (_) {}
             try { syncSleepTimerOptionUi(); } catch (_) {}
             try { updateOptionsDownloadUsageUi(); } catch (_) {}
             try {
@@ -3086,10 +3314,19 @@ const QUALITY = {
         }
         try { initSessionDownloadUsageTracker(); } catch (_) {}
         try { loadCrossfadeIdleAutoPauseSetting(); } catch (_) {}
+        try { loadAutoSkipSplashSetting(); } catch (_) {}
         if (optCrossfadeIdleAutopause) {
             optCrossfadeIdleAutopause.addEventListener('change', () => {
                 try {
                     setCrossfadeIdleAutoPauseEnabled(!!optCrossfadeIdleAutopause.checked);
+                } catch (_) {}
+                try { if (isOptionsOpen()) armOptionsAutoClose(); } catch (_) {}
+            });
+        }
+        if (optAutoSkipSplash) {
+            optAutoSkipSplash.addEventListener('change', () => {
+                try {
+                    setAutoSkipSplashEnabled(!!optAutoSkipSplash.checked);
                 } catch (_) {}
                 try { if (isOptionsOpen()) armOptionsAutoClose(); } catch (_) {}
             });
@@ -3145,9 +3382,13 @@ const QUALITY = {
                 bgOuterB: d.bgOuterB,
                 bgOuterC: d.bgOuterC,
                 bgOuterGradientAngle: d.bgOuterGradientAngle,
-                bgOuterImageOpacity: d.bgOuterImageOpacity
+                bgOuterImageOpacity: d.bgOuterImageOpacity,
+                bgOuterImageUrl: d.bgOuterImageUrl
             }, () => {
-                clearDigitalBgOuterImage();
+                saveDigitalBgOuterImageToStorage('');
+                saveDigitalBgOuterImageChoice(d.bgOuterImageUrl || TRIX_BG_OUTER_IMAGE);
+                applyDigitalBgOuterImageToUi(resolveDigitalBgOuterImageUrl(), d.bgOuterImageOpacity);
+                try { populateDigitalBgOuterImageSelect(); } catch (_) {}
                 applyDigitalBgGifFromOptions('');
                 if (optDigitalBgGif) optDigitalBgGif.value = '';
             });
@@ -3503,6 +3744,14 @@ const QUALITY = {
                     enabled: !!(gifEnabled && gifFilename),
                     filename: gifEnabled ? gifFilename : ''
                 },
+                backgroundOuterImage: {
+                    choice: currentDigitalBgOuterImageChoice(),
+                    hasUpload: !!loadDigitalBgOuterImageFromStorage()
+                },
+                session: {
+                    autoSkipSplash: isAutoSkipSplashEnabled(),
+                    crossfadeIdleAutoPause: isCrossfadeIdleAutoPauseEnabled()
+                },
                 avatar: (typeof collectAvatarSettingsForExport === 'function')
                     ? collectAvatarSettingsForExport()
                     : null
@@ -3564,6 +3813,24 @@ const QUALITY = {
                     : '';
                 applyDigitalBgGifFromOptions(filename);
                 if (optDigitalBgGif) optDigitalBgGif.value = filename;
+            }
+            if (payload.backgroundOuterImage && typeof payload.backgroundOuterImage === 'object') {
+                const choice = payload.backgroundOuterImage.choice;
+                if (choice === DIGITAL_BG_OUTER_UPLOAD_CHOICE && !loadDigitalBgOuterImageFromStorage()) {
+                    // Keep current upload/library if import asks for upload but none is stored.
+                    applyDigitalBgOuterImageChoice(TRIX_BG_OUTER_IMAGE);
+                } else if (choice != null) {
+                    applyDigitalBgOuterImageChoice(String(choice));
+                }
+                try { await populateDigitalBgOuterImageSelect(); } catch (_) {}
+            }
+            if (payload.session && typeof payload.session === 'object') {
+                if (typeof payload.session.autoSkipSplash === 'boolean') {
+                    setAutoSkipSplashEnabled(payload.session.autoSkipSplash);
+                }
+                if (typeof payload.session.crossfadeIdleAutoPause === 'boolean') {
+                    setCrossfadeIdleAutoPauseEnabled(payload.session.crossfadeIdleAutoPause);
+                }
             }
             if (payload.avatar && typeof payload.avatar === 'object') {
                 try {
@@ -3658,6 +3925,14 @@ const QUALITY = {
                     if (isOptionsOpen()) armOptionsAutoClose();
                 });
             }
+            try { populateDigitalBgOuterImageSelect(); } catch (_) {}
+            if (optDigitalBgOuterImage) {
+                optDigitalBgOuterImage.addEventListener('change', () => {
+                    applyDigitalBgOuterImageChoice(optDigitalBgOuterImage.value);
+                    onThemeChange();
+                    if (isOptionsOpen()) armOptionsAutoClose();
+                });
+            }
             if (optDigitalBgOuterImageUpload && optDigitalBgOuterImageFile) {
                 optDigitalBgOuterImageUpload.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -3675,6 +3950,7 @@ const QUALITY = {
                 optDigitalBgOuterImageClear.addEventListener('click', (e) => {
                     e.preventDefault();
                     clearDigitalBgOuterImage();
+                    onThemeChange();
                     if (isOptionsOpen()) armOptionsAutoClose();
                 });
             }
@@ -7337,6 +7613,9 @@ function exposeAppBindingsToGlobal() {
     try { g.isCrossfadeIdleAutoPauseEnabled = isCrossfadeIdleAutoPauseEnabled; } catch (_) {}
     try { g.pauseInaudibleCrossfadeDecks = pauseInaudibleCrossfadeDecks; } catch (_) {}
     try { g.setCrossfadeIdleAutoPauseEnabled = setCrossfadeIdleAutoPauseEnabled; } catch (_) {}
+    try { g.isAutoSkipSplashEnabled = isAutoSkipSplashEnabled; } catch (_) {}
+    try { g.setAutoSkipSplashEnabled = setAutoSkipSplashEnabled; } catch (_) {}
+    try { g.tryAutoSkipSplashScreen = tryAutoSkipSplashScreen; } catch (_) {}
     try { g.resumeDecksForCrossfadeLevels = resumeDecksForCrossfadeLevels; } catch (_) {}
     try { g.area = area; } catch (_) {}
     try { g.arr = arr; } catch (_) {}
@@ -8639,8 +8918,12 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                         } catch (_) {}
                     }
                 } else if (!suppressResume) {
+                    // Only reconnect radio after the app has left the splash screen.
+                    // Cold boot has radio mode + empty src; auto-playRadio here stole
+                    // the start gesture and could leave the site stuck on splash.
+                    const appLive = !!(typeof state !== 'undefined' && state && state.isPlaying);
                     if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('a'))) {
-                        if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('a')) {
+                        if (appLive && typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('a')) {
                             let hasSrc = false;
                             try {
                                 const src = mediaA ? String(mediaA.currentSrc || mediaA.src || '') : '';
@@ -8661,8 +8944,9 @@ const wireDjBeatFxKnobs = globalThis.wireDjBeatFxKnobs;
                         } catch (_) {}
                     }
                 } else if (!suppressResume) {
+                    const appLive = !!(typeof state !== 'undefined' && state && state.isPlaying);
                     if (!(typeof isAutoMixDeferredLocalArmed === 'function' && isAutoMixDeferredLocalArmed('b'))) {
-                        if (typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('b')) {
+                        if (appLive && typeof isDeckInRadioMode === 'function' && isDeckInRadioMode('b')) {
                             let hasSrc = false;
                             try {
                                 const src = mediaB ? String(mediaB.currentSrc || mediaB.src || '') : '';
@@ -11586,4 +11870,5 @@ tiGlowColorRandBtn.addEventListener('click', () => {
     });
 
 try { hideStationBannerPermanently(); } catch (_) {}
+try { tryAutoSkipSplashScreen(); } catch (_) {}
 exposeAppBindingsToGlobal();
